@@ -1,0 +1,23 @@
+[mysql]
+
+host: [mysql db host name]
+user: [mysql db user]
+passwd: [mysql db password]
+db: [db name]
+
+[aws]
+
+access_key_id: [amazon access key]
+secret_access_key: [amazon secret access]
+hosted_zone_id: [amazon hosted zone id]
+
+[redirect]
+
+domain: [domain for dynamic dns]
+default_url: [default url to redirect if user not found]
+#Send activation token by email (True) or return as Token header (False)
+token_by_mail: True
+
+[mail]
+#Activation email form field
+from: noreply@example.com

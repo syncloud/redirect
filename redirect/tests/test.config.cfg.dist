@@ -1,0 +1,9 @@
+[full_cycle]
+
+route_53_server: [amazon route 53 name server name]
+test_url: example.com
+
+[mail]
+
+user_email: user1@example.com
+mail_from: noreply@example.com
