@@ -9,6 +9,7 @@ Configure apache:
 sudo cp apache/redirect.conf /etc/apache2/sites-available/redirect.conf
 sudo a2dissite 000-default.conf
 sudo a2ensite redirect
+sudo useradd -m redirect
 sudo service apache2 restart
 
 Configure mail
@@ -24,9 +25,4 @@ sudo pip install mock
 Configuration
 
 Copy redirect/config.cfg.dist to redirect/config.cfg
-and set all needed config properties
-
-Integration test configuration
-
-Copy redirect/tests/config.cfg.dist to redirect/tests/config.cfg
 and set all needed config properties
