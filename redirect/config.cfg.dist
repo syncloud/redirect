@@ -1,6 +1,6 @@
 [mysql]
 
-host: [mysql db host name]
+host: localhost
 user: [mysql db user]
 passwd: [mysql db password]
 db: [db name]

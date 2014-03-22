@@ -2,6 +2,4 @@ language: python
 install:
   - pip install -r requirements.txt
   - pip install -r dev_requirements.txt
-script:
-  - cp redirect/config.cfg.dist redirect/config.cfg
-  - py.test
+script: py.test
