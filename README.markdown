@@ -27,9 +27,15 @@
     
     sudo pip install -r dev_requirements.txt
 
-Configuration
+### Configuration
 
 Copy redirect/config.cfg.dist to redirect/config.cfg
 and set all needed config properties
+
+
+### Run tests
+
+    py.test
+
 
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
