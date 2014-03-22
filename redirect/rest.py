@@ -33,6 +33,10 @@ def activate():
 def update():
     return manager().update(request)
 
+@app.route('/token')
+def update():
+    return manager().token(request)
+
 
 @app.route('/delete')
 def delete():

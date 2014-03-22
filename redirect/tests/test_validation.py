@@ -131,7 +131,7 @@ class TestValidation(unittest.TestCase):
 
         params = {'password': 'pass123'}
 
-        errors, username, password = Validator().validate_delete(params)
+        errors, username, password = Validator().validate_credentials(params)
 
         self.assertEqual(len(errors), 1)
         self.assertEqual(password, 'pass123')
@@ -141,7 +141,7 @@ class TestValidation(unittest.TestCase):
 
         params = {'username': 'user'}
 
-        errors, username, password = Validator().validate_delete(params)
+        errors, username, password = Validator().validate_credentials(params)
 
         self.assertEqual(len(errors), 1)
         self.assertEqual(username, 'user')

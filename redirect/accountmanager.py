@@ -81,6 +81,22 @@ class AccountManager:
         except Exception, e:
             return "Not activated: {0}\n".format(e), 500
 
+    def token(self, request):
+
+        (errors, username, password) = self.validator.validate_credentials(request.args)
+        if errors:
+            return ", ".join(errors) + '\n', 400
+
+        try:
+
+            if self.db.valid_user(username, password):
+                token = self.db.get_token_by_password(username, password)
+                return "Token found\n", 200, {'Token': token}
+            else:
+                return "User does not exist or password is incorrect\n", 400
+        except Exception, e:
+            return "Unable to get token: {0}\n".format(e), 500
+
     def update(self, request):
 
         (errors, token, new_ip, new_port) = self.validator.validate_update(request.args, request.remote_addr)
@@ -106,7 +122,7 @@ class AccountManager:
 
     def delete(self, request):
 
-        (errors, username, password) = self.validator.validate_delete(request.args)
+        (errors, username, password) = self.validator.validate_credentials(request.args)
         if errors:
             return ", ".join(errors) + '\n', 400
 

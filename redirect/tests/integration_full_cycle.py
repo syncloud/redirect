@@ -13,27 +13,28 @@ config.read(os.path.dirname(__file__) + '/test.config.cfg')
 
 test_url = config.get('full_cycle', 'test_url')
 user = 'user1'
+password = 'pass123'
+email = user + '@example.com'
 
 
 class TestIntegrationCycle(unittest.TestCase):
     def test_full_cycle(self):
 
         # Create
-        params = urllib.urlencode({
-            'username': user,
-            'email': user + '@example.com',
-            'password': 'pass123',
-            'ip': '192.168.0.1',  # TODO: Not needed on registration
-            'port': '80'  # TODO: Not needed on registration
-        })
-        response = urllib.urlopen("http://%s/create?%s" % (test_url, params))
+        response = urllib.urlopen(
+            "http://{}/create?username={}&password={}&email={}&port=80"
+            .format(test_url, user, password, email))
         self.assertEquals(response.getcode(), 200, response.read())
 
         token = response.headers.get('Token')
         self.assertTrue(token is not None, response.read())
 
-        # Check DNS (nothing)
+        # Check DNS (not available yet)
         self.assertFalse(self.wait_for_dns(user + '.test.com', 'CNAME'))
+
+        # Check Token (not available yet)
+        response = urllib.urlopen("http://{}/token?username={}&password={}".format(test_url, user, password))
+        self.assertFalse(response.getcode(), 200)
 
         # Activate
         response = urllib.urlopen("http://{1}/activate?token={0}".format(token, test_url))
@@ -41,6 +42,10 @@ class TestIntegrationCycle(unittest.TestCase):
 
         # Check DNS (something)
         self.assertTrue(self.wait_for_dns(user + '.test.com', 'CNAME'))
+
+        # Check Token (available)
+        response = urllib.urlopen("http://{}/token?username={}&password={}".format(test_url, user, password))
+        self.assertTrue(response.headers.get('Token'), token)
 
         # Change IP
         self.change_ip(token)
