@@ -26,3 +26,5 @@ Configuration
 
 Copy redirect/config.cfg.dist to redirect/config.cfg
 and set all needed config properties
+
+[![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
