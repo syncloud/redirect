@@ -12,7 +12,7 @@
     sudo useradd -m redirect
     sudo service apache2 restart
 
-Configure mail
+### Configure mail server
 
     sudo apt-get install exim4
     sudo dpkg-reconfigure exim4-config
