@@ -34,7 +34,7 @@ class TestIntegrationCycle(unittest.TestCase):
 
         # Check Token (not available yet)
         response = urllib.urlopen("http://{}/token?username={}&password={}".format(test_url, user, password))
-        self.assertFalse(response.getcode(), 200)
+        self.assertNotEqual(response.getcode(), 200)
 
         # Activate
         response = urllib.urlopen("http://{1}/activate?token={0}".format(token, test_url))
@@ -45,7 +45,7 @@ class TestIntegrationCycle(unittest.TestCase):
 
         # Check Token (available)
         response = urllib.urlopen("http://{}/token?username={}&password={}".format(test_url, user, password))
-        self.assertTrue(response.headers.get('Token'), token)
+        self.assertEquals(response.headers.get('Token'), token)
 
         # Change IP
         self.change_ip(token)
