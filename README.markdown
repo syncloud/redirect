@@ -1,26 +1,28 @@
-Install dependencies:
+### Install dependencies:
 
-sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb
-sudo pip install Flask
-sudo pip install boto
+    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb
+    sudo pip install Flask
+    sudo pip install boto
 
-Configure apache:
+### Configure apache:
 
-sudo cp apache/redirect.conf /etc/apache2/sites-available/redirect.conf
-sudo a2dissite 000-default.conf
-sudo a2ensite redirect
-sudo useradd -m redirect
-sudo service apache2 restart
+    sudo cp apache/redirect.conf /etc/apache2/sites-available/redirect.conf
+    sudo a2dissite 000-default.conf
+    sudo a2ensite redirect
+    sudo useradd -m redirect
+    sudo service apache2 restart
 
 Configure mail
 
-sudo apt-get install exim4
-sudo dpkg-reconfigure exim4-config
-# internet site: Y
-# the rest leave as is and never allow relay
+    sudo apt-get install exim4
+    sudo dpkg-reconfigure exim4-config
 
-Development dependencies
-sudo pip install mock
+* internet site: Y
+* leave the rest as is and never allow relay
+
+### Development dependencies
+    
+    sudo pip install mock
 
 Configuration
 
