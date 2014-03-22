@@ -1,8 +1,7 @@
 ### Install dependencies:
 
     sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb
-    sudo pip install Flask
-    sudo pip install boto
+    sudo pip install -r requirements.txt
 
 ### Configure apache:
 
@@ -20,9 +19,13 @@
 * internet site: Y
 * leave the rest as is and never allow relay
 
+### Configure mysql database (redirect)
+
+    mysql -u login -p password < db/init.sql
+
 ### Development dependencies
     
-    sudo pip install mock
+    sudo pip install -r dev_requirements.txt
 
 Configuration
 

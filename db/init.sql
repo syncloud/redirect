@@ -1,3 +1,5 @@
+create database redirect;
+use redirect;
 CREATE TABLE `user` (
   `username` varchar(100) NOT NULL PRIMARY KEY,
   `email` varchar(100) NOT NULL UNIQUE,
@@ -6,4 +8,4 @@ CREATE TABLE `user` (
   `ip` varchar(15) NOT NULL,
   `port` int(11) NOT NULL,
   `active` BIT(1) NOT NULL DEFAULT 0
-)
+);
