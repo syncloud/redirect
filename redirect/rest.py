@@ -34,7 +34,7 @@ def update():
     return manager().update(request)
 
 @app.route('/token')
-def update():
+def token():
     return manager().token(request)
 
 
