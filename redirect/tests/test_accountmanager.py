@@ -2,7 +2,6 @@ import unittest
 from mock import MagicMock
 from .. accountmanager import AccountManager
 
-
 class TestAccountManager(unittest.TestCase):
 
     def setUp(self):
@@ -219,7 +218,7 @@ class TestAccountManager(unittest.TestCase):
 
     def test_delete_invalid_input(self):
 
-        self.validator.validate_delete = MagicMock(return_value=(['invalid input'], 'user', 'pass'))
+        self.validator.validate_credentials = MagicMock(return_value=(['invalid input'], 'user', 'pass'))
 
         manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
 
@@ -229,9 +228,9 @@ class TestAccountManager(unittest.TestCase):
         self.assertFalse(self.dns.delete_records.called)
         self.assertEquals(code, 400)
 
-    def test_invalid_user(self):
+    def test_delete_invalid_user(self):
 
-        self.validator.validate_delete = MagicMock(return_value=([], 'user', 'pass'))
+        self.validator.validate_credentials = MagicMock(return_value=([], 'user', 'pass'))
 
         self.db.valid_user = MagicMock(return_value=False)
 
@@ -245,7 +244,7 @@ class TestAccountManager(unittest.TestCase):
 
     def test_delete_exception(self):
 
-        self.validator.validate_delete = MagicMock(return_value=([], 'user', 'pass'))
+        self.validator.validate_credentials = MagicMock(return_value=([], 'user', 'pass'))
 
         self.db.valid_user = MagicMock(return_value=True)
         self.db.delete_user = MagicMock(side_effect=Exception)
@@ -254,13 +253,12 @@ class TestAccountManager(unittest.TestCase):
 
         (text, code) = manager.delete(self.request)
 
-        # self.assertFalse(self.db.delete_user.called)
         self.assertFalse(self.dns.delete_records.called)
         self.assertEquals(code, 500)
 
     def test_delete_success(self):
 
-        self.validator.validate_delete = MagicMock(return_value=([], 'user', 'pass'))
+        self.validator.validate_credentials = MagicMock(return_value=([], 'user', 'pass'))
 
         self.db.valid_user = MagicMock(return_value=True)
         self.db.get_user_info_by_password = MagicMock(return_value=('user', 'ip', 80))
@@ -271,3 +269,53 @@ class TestAccountManager(unittest.TestCase):
         self.assertTrue(self.db.delete_user.called)
         self.assertTrue(self.dns.delete_records.called)
         self.assertEquals(code, 200)
+
+    def test_token_invalid_input(self):
+
+        self.validator.validate_credentials = MagicMock(return_value=(['invalid input'], 'user', 'pass'))
+
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+
+        (text, code) = manager.token(self.request)
+
+        self.assertFalse(self.dns.get_token_by_password.called)
+        self.assertEquals(code, 400)
+
+    def test_token_invalid_user(self):
+
+        self.validator.validate_credentials = MagicMock(return_value=([], 'user', 'pass'))
+
+        self.db.valid_user = MagicMock(return_value=False)
+
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+
+        (text, code) = manager.token(self.request)
+
+        self.assertFalse(self.dns.get_token_by_password.called)
+        self.assertEquals(code, 400)
+
+    def test_token_exception(self):
+
+        self.validator.validate_credentials = MagicMock(return_value=([], 'user', 'pass'))
+
+        self.db.valid_user = MagicMock(return_value=True)
+        self.db.get_token_by_password = MagicMock(side_effect=Exception)
+
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+
+        (text, code) = manager.token(self.request)
+
+        self.assertEquals(code, 500)
+
+    def test_token_success(self):
+
+        self.validator.validate_credentials = MagicMock(return_value=([], 'user', 'pass'))
+
+        self.db.valid_user = MagicMock(return_value=True)
+        self.db.get_token_by_password = MagicMock(return_value='token123')
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+
+        (text, code, headers) = manager.token(self.request)
+
+        self.assertEquals(code, 200)
+        self.assertEquals(headers['Token'], 'token123')

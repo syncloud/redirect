@@ -35,25 +35,25 @@ class Db:
     def update(self, token, ip, port):
 
         with DbContext(self.connect()) as cursor:
-            cursor.execute("update user set ip = %s, port = %s where update_token = %s", (ip, port, token))
+            cursor.execute("update user set ip = %s, port = %s where update_token = %s and active = 1", (ip, port, token))
 
     def existing_token(self, token):
 
         with DbContext(self.connect()) as cursor:
-            return cursor.execute("select update_token from user where update_token = %s", token) > 0
+            return cursor.execute("select update_token from user where update_token = %s and active = 1", token) > 0
 
     def valid_user(self, username, password):
 
         with DbContext(self.connect()) as cursor:
             return cursor.execute(
-                "select username from user where username = %s and password_hash = password(%s)",
+                "select username from user where username = %s and password_hash = password(%s) and active = 1",
                 (username, password)) > 0
 
     def delete_user(self, username, password):
 
         with DbContext(self.connect()) as cursor:
             return cursor.execute(
-                "delete from user where username = %s and password_hash = password(%s)", (username, password)) > 0
+                "delete from user where username = %s and password_hash = password(%s) and active = 1", (username, password)) > 0
 
     def activate(self, token):
 
@@ -63,7 +63,7 @@ class Db:
     def get_port_by_username(self, username):
 
         with DbContext(self.connect()) as cursor:
-            num = cursor.execute('select port from user where username = %s', username)
+            num = cursor.execute('select port from user where username = %s and active = 1', username)
             if num == 1:
                 return cursor.fetchone()
             else:
@@ -82,7 +82,18 @@ class Db:
 
         with DbContext(self.connect()) as cursor:
             num = cursor.execute(
-                'select username, ip, port from user where username = %s and password_hash = password(%s)',
+                'select username, ip, port from user where username = %s and password_hash = password(%s) and active=1',
+                (username, password))
+            if num == 1:
+                return cursor.fetchone()
+            else:
+                return None
+
+    def get_token_by_password(self, username, password):
+
+        with DbContext(self.connect()) as cursor:
+            num = cursor.execute(
+                'select update_token from user where username = %s and password_hash = password(%s) and active = 1',
                 (username, password))
             if num == 1:
                 return cursor.fetchone()

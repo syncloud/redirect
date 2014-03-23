@@ -55,7 +55,29 @@ class Validator:
 
         return errors, token, ip, port
 
-    def validate_delete(self, params):
+    def validate_credentials(self, params):
+
+        errors = []
+        (username_errors, username) = self.validate_username(params)
+        errors += username_errors
+
+        (password_errors, password) = self.validate_password(params)
+        errors += password_errors
+
+        return errors, username, password
+
+    def validate_password(self, params):
+
+        errors = []
+        password = None
+        if not 'password' in params:
+            errors.append('missing password')
+        else:
+            password = params['password']
+
+        return errors, password
+
+    def validate_username(self, params):
 
         errors = []
         username = None
@@ -64,13 +86,7 @@ class Validator:
         else:
             username = params['username']
 
-        password = None
-        if not 'password' in params:
-            errors.append('missing password')
-        else:
-            password = params['password']
-
-        return errors, username, password
+        return errors, username
 
     def validate_port(self, params):
         errors = []
