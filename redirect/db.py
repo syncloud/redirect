@@ -53,7 +53,8 @@ class Db:
 
         with DbContext(self.connect()) as cursor:
             return cursor.execute(
-                "delete from user where username = %s and password_hash = password(%s) and active = 1", (username, password)) > 0
+                "delete from user where username = %s and password_hash = password(%s) and active = 1",
+                (username, password)) > 0
 
     def activate(self, token):
 
@@ -65,7 +66,7 @@ class Db:
         with DbContext(self.connect()) as cursor:
             num = cursor.execute('select port from user where username = %s and active = 1', username)
             if num == 1:
-                return cursor.fetchone()
+                return cursor.fetchone()[0]
             else:
                 return None
 
