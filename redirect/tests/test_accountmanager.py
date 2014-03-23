@@ -1,6 +1,6 @@
 import unittest
 from mock import MagicMock
-from accountmanager import AccountManager
+from .. accountmanager import AccountManager
 
 
 class TestAccountManager(unittest.TestCase):
