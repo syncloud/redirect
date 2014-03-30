@@ -3,27 +3,30 @@ from urlparse import urlparse
 
 
 class AccountManager:
-    def __init__(self, validator, db, dns, domain, token_by_mail, mail):
+    def __init__(self, validation, database, dns, domain, token_by_mail, mail):
         self.mail = mail
         self.token_by_mail = token_by_mail
         self.domain = domain
-        self.validator = validator
-        self.db = db
+        self.validation = validation
+        self.database = database
         self.dns = dns
 
     def request_account(self, request):
 
         (errors, username, email, password, port, ip) = \
-            self.validator.validate_create(request.args, request.remote_addr)
+            self.validation.validate_create(request.args)
 
         if errors:
             return ", ".join(errors) + '\n', 400
+
+        if port is None:
+            port = request.remote_addr
 
         result = None
         status = None
         headers = {}
 
-        exists = self.db.exists(username, email)
+        exists = self.database.exists(username, email)
 
         if exists:
             result = 'User already exists'
@@ -34,7 +37,7 @@ class AccountManager:
             token = uuid.uuid4().hex
 
             try:
-                self.db.insert(username, email, password, token, ip, port)
+                self.database.insert(username, email, password, token, ip, port)
 
                 result = "Created, check your mail for activation"
                 status = 200
@@ -57,7 +60,7 @@ class AccountManager:
         username = addr[:-(len(self.domain) + 1)]
 
         try:
-            port = self.db.get_port_by_username(username)
+            port = self.database.get_port_by_username(username)
             if port is not None:
                 url = 'device.{0}.{1}:{2}/owncloud'.format(username, self.domain, port)
         except Exception:
@@ -67,13 +70,13 @@ class AccountManager:
 
     def activate(self, request):
 
-        (errors, token) = self.validator.validate_token(request.args)
+        (errors, token) = self.validation.validate_token(request.args)
         if errors:
             return ", ".join(errors) + '\n', 400
 
         try:
-            if self.db.activate(token):
-                (username, ip, port) = self.db.get_user_info_by_token(token)
+            if self.database.activate(token):
+                (username, ip, port) = self.database.get_user_info_by_token(token)
                 self.dns.create_records(username, ip, port, self.domain)
                 return "Activated\n", 200
             else:
@@ -83,14 +86,14 @@ class AccountManager:
 
     def token(self, request):
 
-        (errors, username, password) = self.validator.validate_credentials(request.args)
+        (errors, username, password) = self.validation.validate_credentials(request.args)
         if errors:
             return ", ".join(errors) + '\n', 400
 
         try:
 
-            if self.db.valid_user(username, password):
-                token = self.db.get_token_by_password(username, password)
+            if self.database.valid_user(username, password):
+                token = self.database.get_token_by_password(username, password)
                 return "Token found\n", 200, {'Token': token}
             else:
                 return "User does not exist or password is incorrect\n", 400
@@ -99,20 +102,23 @@ class AccountManager:
 
     def update(self, request):
 
-        (errors, token, new_ip, new_port) = self.validator.validate_update(request.args, request.remote_addr)
+        (errors, token, new_ip, new_port) = self.validation.validate_update(request.args)
         if errors:
             return ", ".join(errors) + '\n', 400
 
+        if new_port is None:
+            new_port = request.remote_addr
+
         try:
 
-            if self.db.existing_token(token):
-                (username, ip, port) = self.db.get_user_info_by_token(token)
+            if self.database.existing_token(token):
+                (username, ip, port) = self.database.get_user_info_by_token(token)
 
                 if new_ip == ip and new_port == port:
                     return "No modified\n".format(ip, port), 304
                 else:
                     self.dns.update_records(username, new_ip, new_port, self.domain)
-                    self.db.update(token, new_ip, new_port)
+                    self.database.update(token, new_ip, new_port)
 
                     return "Updated to {0}:{1}\n".format(new_ip, new_port), 200
             else:
@@ -122,16 +128,16 @@ class AccountManager:
 
     def delete(self, request):
 
-        (errors, username, password) = self.validator.validate_credentials(request.args)
+        (errors, username, password) = self.validation.validate_credentials(request.args)
         if errors:
             return ", ".join(errors) + '\n', 400
 
         try:
 
-            if self.db.valid_user(username, password):
-                (username, ip, port) = self.db.get_user_info_by_password(username, password)
+            if self.database.valid_user(username, password):
+                (username, ip, port) = self.database.get_user_info_by_password(username, password)
                 self.dns.delete_records(username, ip, port, self.domain)
-                self.db.delete_user(username, password)
+                self.database.delete_user(username, password)
                 return "User and dns are removed\n", 200
             else:
                 return "User does not exist or password is incorrect\n", 400

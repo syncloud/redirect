@@ -5,7 +5,7 @@ from dns import Dns
 from db import Db
 from mail import Mail
 from accountmanager import AccountManager
-from validation import Validator
+from validation import Validation
 
 
 config = ConfigParser.ConfigParser()
@@ -45,7 +45,7 @@ def delete():
 
 def manager():
     return AccountManager(
-        Validator(),
+        Validation(),
         Db(
             config.get('mysql', 'host'),
             config.get('mysql', 'user'),

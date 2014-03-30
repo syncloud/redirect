@@ -1,123 +1,125 @@
 import re
 import socket
 
-
 class Validator:
+    def __init__(self, params):
+        self.params = params
+        self.errors = []
+
+    def new_username(self):
+        username = self.username()
+        if username is not None:
+            if not re.match("^[\w-]+$", username):
+                self.errors.append("username has invalid characters")
+            if len(username) < 5:
+                self.errors.append('username is too short (< 5)')
+            if len(username) > 50:
+                self.errors.append('username is too long (> 50)')
+        return username
+
+    def username(self):
+        if 'username' in self.params:
+            return self.params['username']
+        else:
+            self.errors.append('missing username')
+        return None
+
+    def email(self):
+        if 'email' in self.params:
+            email = self.params['email']
+            if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                self.errors.append('not valid email')
+            else:
+                return email
+        else:
+            self.errors.append('missing email')
+        return None
+
+    def new_password(self):
+        password = self.password()
+        if password is not None:
+            if len(password) < 7:
+                self.errors.append('password should be 7 or more characters')
+        return password
+
+    def password(self):
+        if 'password' not in self.params:
+            self.errors.append('missing password')
+            return None
+        return self.params['password']
+
+    def port(self):
+        if 'port' not in self.params:
+            self.errors.append('missing port')
+            return None
+        port = self.params['port']
+        try:
+            port_num = int(port)
+            if port_num < 1 or port_num > 65535:
+                self.errors.append('port should a number between 1 and 65535')
+                return None
+            return port_num
+        except:
+            return None
+
+    def token(self):
+        if 'token' not in self.params:
+            self.errors.append('No token provided')
+            return None
+        return self.params['token']
+
+    def ip(self):
+        if 'ip' not in self.params:
+            return None
+        ip = self.params['ip']
+        try:
+            socket.inet_aton(ip)
+        except socket.error:
+            self.errors.append('invalid ip')
+        return ip
+
+
+def create(params):
+    validator = Validator(params)
+    username = validator.new_username()
+    email = validator.email()
+    password = validator.new_password()
+    port = validator.port()
+    ip = validator.ip()
+    return validator.errors, username, email, password, port, ip
+
+def update(params):
+    validator = Validator(params)
+    token = validator.token()
+    ip = validator.ip()
+    port = validator.port()
+    return validator.errors, token, ip, port
+
+def credentials(params):
+    validator = Validator(params)
+    username = validator.username()
+    password = validator.password()
+    return validator.errors, username, password
+
+def token(params):
+    validator = Validator(params)
+    token = validator.token()
+    return validator.errors, token
+
+
+
+class Validation:
     def __init__(self):
         pass
 
-    def validate_create(self, params, remote_addr):
+    def validate_create(self, params):
+        return create(params)
 
-        errors = []
-        username = None
-        if not 'username' in params:
-            errors.append('missing username')
-        else:
-            username = params['username']
-            if not re.match("^[\w-]+$", username):
-                errors.append("username has invalid characters")
-            if len(username) < 5:
-                errors.append('username is too short (< 5)')
-            if len(username) > 50:
-                errors.append('username is too long (> 50)')
-
-        email = None
-        if not 'email' in params:
-            errors.append('missing email')
-        else:
-            email = params['email']
-            if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-                errors.append('not valid email')
-
-        password = None
-        if not 'password' in params:
-            errors.append('missing password')
-        else:
-            password = params['password']
-            if len(password) < 7:
-                errors.append('password should be 7 or more characters')
-
-        (port_errors, port) = self.validate_port(params)
-        errors += port_errors
-
-        (ip_errors, ip) = self.validate_ip(params, remote_addr)
-        errors += ip_errors
-
-        return errors, username, email, password, port, ip
-
-    def validate_update(self, params, remote_addr):
-
-        (token_errors, token) = self.validate_token(params)
-        (ip_errors, ip) = self.validate_ip(params, remote_addr)
-        (port_errors, port) = self.validate_port(params)
-
-        errors = token_errors + ip_errors + port_errors
-
-        return errors, token, ip, port
+    def validate_update(self, params):
+        return update(params)
 
     def validate_credentials(self, params):
-
-        errors = []
-        (username_errors, username) = self.validate_username(params)
-        errors += username_errors
-
-        (password_errors, password) = self.validate_password(params)
-        errors += password_errors
-
-        return errors, username, password
-
-    def validate_password(self, params):
-
-        errors = []
-        password = None
-        if not 'password' in params:
-            errors.append('missing password')
-        else:
-            password = params['password']
-
-        return errors, password
-
-    def validate_username(self, params):
-
-        errors = []
-        username = None
-        if not 'username' in params:
-            errors.append('missing username')
-        else:
-            username = params['username']
-
-        return errors, username
-
-    def validate_port(self, params):
-        errors = []
-        port = None
-        if not 'port' in params:
-            errors.append('missing port')
-        else:
-            port = params['port']
-            if not port.isdigit() or int(port) < 1 or int(port) > 65535:
-                errors.append('port should a number between 1 and 65535')
-        return errors, port
-
-    def validate_ip(self, params, remote_addr):
-        errors = []
-
-        if 'ip' in params:
-            ip = params['ip']
-            try:
-                socket.inet_aton(ip)
-            except socket.error:
-                errors.append('invalid ip')
-        else:
-            ip = remote_addr
-        return errors, ip
+        return credentials(params)
 
     def validate_token(self, params):
-        errors = []
-        token = None
-        if not 'token' in params:
-            errors.append('No token provided')
-        else:
-            token = params['token']
-
-        return errors, token
+        return token(params)

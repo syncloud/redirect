@@ -1,4 +1,4 @@
-from .. validation import Validator
+from .. validation import Validator, Validation
 import unittest
 
 valid_params = {
@@ -11,127 +11,129 @@ valid_params = {
 
 class TestValidation(unittest.TestCase):
 
-    def test_username_missing(self):
+    def assertUsernameError(self, params):
 
-        params = dict(valid_params)
-        del params['username']
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
+        validator = Validator(params)
+        value = validator.new_username()
+        self.assertEqual(len(validator.errors), 1)
+        return value
 
-        self.assertEqual(len(errors), 1)
+    def assertEmailError(self, params):
 
-    def test_username_invalid(self):
+        validator = Validator(params)
+        value = validator.email()
+        self.assertEqual(len(validator.errors), 1)
+        return value
 
-        params = dict(valid_params)
-        params['username'] = 'user.name'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
+    def assertNewPasswordError(self, params):
 
-        self.assertEqual(len(errors), 1)
+        validator = Validator(params)
+        value = validator.new_password()
+        self.assertEqual(len(validator.errors), 1)
+        return value
+
+    def assertPortError(self, params):
+
+        validator = Validator(params)
+        value = validator.port()
+        self.assertEqual(len(validator.errors), 1)
+        return value
+
+    def test_new_username_missing(self):
+
+        params = {}
+        username = self.assertUsernameError(params)
+        self.assertIsNone(username)
+
+    def test_new_username_invalid(self):
+
+        params = {'username': 'user.name'}
+        self.assertUsernameError(params)
 
     def test_username_short(self):
 
-        params = dict(valid_params)
-        params['username'] = 'use'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
+        params = {'username': 'use'}
+        self.assertUsernameError(params)
 
     def test_username_long(self):
 
-        params = dict(valid_params)
-        params['username'] = '12345678901234567890123456789012345678901234567890_'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
+        params = {'username': '12345678901234567890123456789012345678901234567890_'}
+        self.assertUsernameError(params)
 
     def test_email_missing(self):
 
-        params = dict(valid_params)
-        del params['email']
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
+        params = {}
+        self.assertEmailError(params)
 
     def test_email_invalid(self):
 
-        params = dict(valid_params)
-        params['email'] = 'invalid.email'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
+        params = {'email': 'invalid.email'}
+        self.assertEmailError(params)
 
     def test_password_missing(self):
 
-        params = dict(valid_params)
-        del params['password']
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
+        params = {}
+        self.assertNewPasswordError(params)
 
     def test_password_short(self):
 
-        params = dict(valid_params)
-        params['password'] = '123456'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
-
-    def test_port_missing(self):
-
-        params = dict(valid_params)
-        del params['port']
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
-
-    def test_port_short(self):
-
-        params = dict(valid_params)
-        params['port'] = '0'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
-
-    def test_port_long(self):
-
-        params = dict(valid_params)
-        params['port'] = '65536'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
-
-        self.assertEqual(len(errors), 1)
+        params = {'password': '123456'}
+        self.assertNewPasswordError(params)
 
     def test_ip_missing(self):
 
-        params = dict(valid_params)
-        del params['ip']
-        errors, _, _, _, _, ip = Validator().validate_create(params, '192.192.192.192')
-
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(ip, '192.192.192.192')
+        params = {}
+        validator = Validator(params)
+        ip = validator.ip()
+        self.assertIsNone(ip)
+        self.assertEquals(0, len(validator.errors))
 
     def test_ip_invalid(self):
 
-        params = dict(valid_params)
-        params['ip'] = '256.256.256.256'
-        errors, _, _, _, _, _ = Validator().validate_create(params, None)
+        params = {'ip': '256.256.256.256'}
+        validator = Validator(params)
+        ip = validator.ip()
+        self.assertEqual(len(validator.errors), 1)
 
-        self.assertEqual(len(errors), 1)
+    def test_port_missing(self):
+
+        params = {}
+        self.assertPortError(params)
+
+    def test_port_small(self):
+
+        params = {'port': '0'}
+        self.assertPortError(params)
+
+    def test_port_big(self):
+
+        params = {'port': '65536'}
+        self.assertPortError(params)
+
+    def test_errors_aggregated(self):
+
+        params = {}
+        validator = Validator(params)
+        validator.username()
+        validator.password()
+        self.assertEquals(2, len(validator.errors))
 
     def test_all_valid(self):
 
-        errors, username, email, password, port, ip = Validator().validate_create(valid_params, None)
+        errors, username, email, password, port, ip = Validation().validate_create(valid_params)
 
         self.assertEqual(len(errors), 0)
-        self.assertEqual(username, valid_params['username'])
-        self.assertEqual(email, valid_params['email'])
-        self.assertEqual(password, valid_params['password'])
-        self.assertEqual(port, valid_params['port'])
-        self.assertEqual(ip, valid_params['ip'])
+        self.assertEqual(username, 'username')
+        self.assertEqual(email, 'valid@mail.com')
+        self.assertEqual(password, 'pass123456')
+        self.assertEqual(port, 80)
+        self.assertEqual(ip, '192.168.1.1')
 
     def test_delete_username_missing(self):
 
         params = {'password': 'pass123'}
 
-        errors, username, password = Validator().validate_credentials(params)
+        errors, username, password = Validation().validate_credentials(params)
 
         self.assertEqual(len(errors), 1)
         self.assertEqual(password, 'pass123')
@@ -141,7 +143,7 @@ class TestValidation(unittest.TestCase):
 
         params = {'username': 'user'}
 
-        errors, username, password = Validator().validate_credentials(params)
+        errors, username, password = Validation().validate_credentials(params)
 
         self.assertEqual(len(errors), 1)
         self.assertEqual(username, 'user')
