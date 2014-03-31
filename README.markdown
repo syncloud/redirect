@@ -44,16 +44,20 @@ and set all needed config properties
 mysqladmin -uroot -proot -f drop redirect
 mysql -uroot -proot < db/init.sql
 ````
-#### Setup apache site 
-````
-cp apache/redirect.conf /etc/apache2/sites-available/
-a2ensite redirect
-````
 #### Add hosts (local dns)
 ````
 sudo sh -c 'echo "127.0.0.1 example.com" >> /etc/hosts'
 sudo sh -c 'echo "127.0.0.1 user.example.com" >> /etc/hosts'
 ````
-
+#### Create and edit config
+````
+cp config.cfg.dist config.cfg
+````
+#### Setup apache site 
+````
+sudo cp apache/redirect.conf /etc/apache2/sites-available
+sudo a2ensite redirect
+sudo service apache2 restart
+````
 
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
