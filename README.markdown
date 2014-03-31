@@ -46,8 +46,8 @@ mysql -uroot -proot < db/init.sql
 ````
 #### Add hosts (local dns)
 ````
-sudo sh -c 'echo "127.0.0.1 example.com" >> /etc/hosts'
-sudo sh -c 'echo "127.0.0.1 user.example.com" >> /etc/hosts'
+sudo sh -c 'echo "127.0.0.1 test.com" >> /etc/hosts'
+sudo sh -c 'echo "127.0.0.1 user.test.com" >> /etc/hosts'
 ````
 #### Create and edit config
 ````
