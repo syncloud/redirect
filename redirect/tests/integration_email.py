@@ -7,7 +7,7 @@ config = ConfigParser.ConfigParser()
 config.read(os.path.dirname(__file__) + '/test.config.cfg')
 
 token = "token123"
-username = "user1"
+user_domain = "user1"
 domain = "example.com"
 user_email = config.get('mail', 'user_email')
 mail_from = config.get('mail', 'mail_from')
@@ -18,4 +18,4 @@ class TestIntegrationMail(unittest.TestCase):
     def test_send(self):
 
         mail = Mail(domain, mail_from)
-        mail.send(username, user_email, token)
+        mail.send(user_domain, user_email, token)

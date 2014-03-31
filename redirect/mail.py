@@ -7,7 +7,7 @@ class Mail:
         self.email_from = email_from
         self.domain = domain
 
-    def send(self, username, email_to, token):
+    def send(self, user_domain, email_to, token):
 
         msg = MIMEText("""
         Hello
@@ -17,9 +17,9 @@ class Mail:
         Domain name: {1}.{0}
 
         Use the link to activate your domain: http://{0}/activate?token={2}
-        """.format(self.domain, username, token))
+        """.format(self.domain, user_domain, token))
 
-        msg['Subject'] = 'Activate your domain: {0}.{1}'.format(username, self.domain)
+        msg['Subject'] = 'Activate your domain: {0}.{1}'.format(user_domain, self.domain)
         msg['From'] = self.email_from
         msg['To'] = email_to
 

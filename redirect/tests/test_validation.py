@@ -2,7 +2,7 @@ from .. validation import Validator, Validation
 import unittest
 
 valid_params = {
-    'username': 'username',
+    'user_domain': 'username',
     'email': 'valid@mail.com',
     'password': 'pass123456',
     'port': '80',
@@ -14,7 +14,7 @@ class TestValidation(unittest.TestCase):
     def assertUsernameError(self, params):
 
         validator = Validator(params)
-        value = validator.new_username()
+        value = validator.new_user_domain()
         self.assertEqual(len(validator.errors), 1)
         return value
 
@@ -39,25 +39,25 @@ class TestValidation(unittest.TestCase):
         self.assertEqual(len(validator.errors), 1)
         return value
 
-    def test_new_username_missing(self):
+    def test_new_user_domain_missing(self):
 
         params = {}
-        username = self.assertUsernameError(params)
-        self.assertIsNone(username)
+        user_domain = self.assertUsernameError(params)
+        self.assertIsNone(user_domain)
 
-    def test_new_username_invalid(self):
+    def test_new_user_domain_invalid(self):
 
-        params = {'username': 'user.name'}
+        params = {'user_domain': 'user.name'}
         self.assertUsernameError(params)
 
-    def test_username_short(self):
+    def test_user_domain_short(self):
 
-        params = {'username': 'use'}
+        params = {'user_domain': 'use'}
         self.assertUsernameError(params)
 
-    def test_username_long(self):
+    def test_user_domain_long(self):
 
-        params = {'username': '12345678901234567890123456789012345678901234567890_'}
+        params = {'user_domain': '12345678901234567890123456789012345678901234567890_'}
         self.assertUsernameError(params)
 
     def test_email_missing(self):
@@ -114,37 +114,37 @@ class TestValidation(unittest.TestCase):
 
         params = {}
         validator = Validator(params)
-        validator.username()
+        validator.user_domain()
         validator.password()
         self.assertEquals(2, len(validator.errors))
 
     def test_all_valid(self):
 
-        errors, username, email, password, port, ip = Validation().validate_create(valid_params)
+        errors, user_domain, email, password, port, ip = Validation().validate_create(valid_params)
 
         self.assertEqual(len(errors), 0)
-        self.assertEqual(username, 'username')
+        self.assertEqual(user_domain, 'username')
         self.assertEqual(email, 'valid@mail.com')
         self.assertEqual(password, 'pass123456')
         self.assertEqual(port, 80)
         self.assertEqual(ip, '192.168.1.1')
 
-    def test_delete_username_missing(self):
+    def test_delete_user_domain_missing(self):
 
         params = {'password': 'pass123'}
 
-        errors, username, password = Validation().validate_credentials(params)
+        errors, user_domain, password = Validation().validate_credentials(params)
 
         self.assertEqual(len(errors), 1)
         self.assertEqual(password, 'pass123')
-        self.assertFalse(username)
+        self.assertFalse(user_domain)
 
     def test_delete_password_missing(self):
 
-        params = {'username': 'user'}
+        params = {'user_domain': 'user'}
 
-        errors, username, password = Validation().validate_credentials(params)
+        errors, user_domain, password = Validation().validate_credentials(params)
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(username, 'user')
+        self.assertEqual(user_domain, 'user')
         self.assertFalse(password)

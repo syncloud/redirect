@@ -17,20 +17,20 @@ class Db:
     def connect(self):
         return MySQLdb.connect(self.mysql_host, self.mysql_user, self.mysql_passwd, self.mysql_db)
 
-    def exists(self, username, email):
+    def exists(self, user_domain, email):
 
         with DbContext(self.connect()) as cursor:
             return cursor.execute("""
-                select username from user where username = %s or email = %s
-                """, (username, email)) > 0
+                select user_domain from user where user_domain = %s or email = %s
+                """, (user_domain, email)) > 0
 
-    def insert(self, username, email, password, token, ip, port):
+    def insert(self, user_domain, email, password, token, ip, port):
 
         with DbContext(self.connect()) as cursor:
             cursor.execute("""
-                        insert into user (username, email, password_hash, update_token, ip, port, active)
+                        insert into user (user_domain, email, password_hash, update_token, ip, port, active)
                         values (%s, %s, password(%s), %s, %s, %s, %s)
-                    """, (username, email, password, token, ip, port, 0))
+                    """, (user_domain, email, password, token, ip, port, 0))
 
     def update(self, token, ip, port):
 
@@ -42,29 +42,29 @@ class Db:
         with DbContext(self.connect()) as cursor:
             return cursor.execute("select update_token from user where update_token = %s and active = 1", token) > 0
 
-    def valid_user(self, username, password):
+    def valid_user(self, user_domain, password):
 
         with DbContext(self.connect()) as cursor:
             return cursor.execute(
-                "select username from user where username = %s and password_hash = password(%s) and active = 1",
-                (username, password)) > 0
+                "select user_domain from user where user_domain = %s and password_hash = password(%s) and active = 1",
+                (user_domain, password)) > 0
 
-    def delete_user(self, username, password):
+    def delete_user(self, user_domain, password):
 
         with DbContext(self.connect()) as cursor:
             return cursor.execute(
-                "delete from user where username = %s and password_hash = password(%s) and active = 1",
-                (username, password)) > 0
+                "delete from user where user_domain = %s and password_hash = password(%s) and active = 1",
+                (user_domain, password)) > 0
 
     def activate(self, token):
 
         with DbContext(self.connect()) as cursor:
             return cursor.execute("update user set active = 1 where update_token = %s", token) > 0
 
-    def get_port_by_username(self, username):
+    def get_port_by_user_domain(self, user_domain):
 
         with DbContext(self.connect()) as cursor:
-            num = cursor.execute('select port from user where username = %s and active = 1', username)
+            num = cursor.execute('select port from user where user_domain = %s and active = 1', user_domain)
             if num == 1:
                 return cursor.fetchone()[0]
             else:
@@ -73,29 +73,29 @@ class Db:
     def get_user_info_by_token(self, token):
 
         with DbContext(self.connect()) as cursor:
-            num = cursor.execute('select username, ip, port from user where update_token = %s', token)
+            num = cursor.execute('select user_domain, ip, port from user where update_token = %s', token)
             if num == 1:
                 return cursor.fetchone()
             else:
                 return None
 
-    def get_user_info_by_password(self, username, password):
+    def get_user_info_by_password(self, user_domain, password):
 
         with DbContext(self.connect()) as cursor:
             num = cursor.execute(
-                'select username, ip, port from user where username = %s and password_hash = password(%s) and active=1',
-                (username, password))
+                'select user_domain, ip, port from user where user_domain = %s and password_hash = password(%s) and active=1',
+                (user_domain, password))
             if num == 1:
                 return cursor.fetchone()
             else:
                 return None
 
-    def get_token_by_password(self, username, password):
+    def get_token_by_password(self, user_domain, password):
 
         with DbContext(self.connect()) as cursor:
             num = cursor.execute(
-                'select update_token from user where username = %s and password_hash = password(%s) and active = 1',
-                (username, password))
+                'select update_token from user where user_domain = %s and password_hash = password(%s) and active = 1',
+                (user_domain, password))
             if num == 1:
                 return cursor.fetchone()
             else:

@@ -6,22 +6,22 @@ class Validator:
         self.params = params
         self.errors = []
 
-    def new_username(self):
-        username = self.username()
-        if username is not None:
-            if not re.match("^[\w-]+$", username):
-                self.errors.append("username has invalid characters")
-            if len(username) < 5:
-                self.errors.append('username is too short (< 5)')
-            if len(username) > 50:
-                self.errors.append('username is too long (> 50)')
-        return username
+    def new_user_domain(self):
+        user_domain = self.user_domain()
+        if user_domain is not None:
+            if not re.match("^[\w-]+$", user_domain):
+                self.errors.append("user domain has invalid characters")
+            if len(user_domain) < 5:
+                self.errors.append('user domain is too short (< 5)')
+            if len(user_domain) > 50:
+                self.errors.append('user domain is too long (> 50)')
+        return user_domain
 
-    def username(self):
-        if 'username' in self.params:
-            return self.params['username']
+    def user_domain(self):
+        if 'user_domain' in self.params:
+            return self.params['user_domain']
         else:
-            self.errors.append('missing username')
+            self.errors.append('missing user domain')
         return None
 
     def email(self):
@@ -81,12 +81,12 @@ class Validator:
 
 def create(params):
     validator = Validator(params)
-    username = validator.new_username()
+    user_domain = validator.new_user_domain()
     email = validator.email()
     password = validator.new_password()
     port = validator.port()
     ip = validator.ip()
-    return validator.errors, username, email, password, port, ip
+    return validator.errors, user_domain, email, password, port, ip
 
 def update(params):
     validator = Validator(params)
@@ -97,9 +97,9 @@ def update(params):
 
 def credentials(params):
     validator = Validator(params)
-    username = validator.username()
+    user_domain = validator.user_domain()
     password = validator.password()
-    return validator.errors, username, password
+    return validator.errors, user_domain, password
 
 def token(params):
     validator = Validator(params)

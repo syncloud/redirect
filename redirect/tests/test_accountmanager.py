@@ -13,7 +13,7 @@ class TestAccountManager(unittest.TestCase):
 
     def test_redirect_url_not_registered(self):
 
-        self.db.get_port_by_username = MagicMock(return_value=None)
+        self.db.get_port_by_user_domain = MagicMock(return_value=None)
         self.db.connect = MagicMock(return_value=self.db)
         manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
 
@@ -24,7 +24,7 @@ class TestAccountManager(unittest.TestCase):
 
     def test_redirect_url_registered(self):
 
-        self.db.get_port_by_username = MagicMock(return_value=80)
+        self.db.get_port_by_user_domain = MagicMock(return_value=80)
         self.db.close = MagicMock()
         self.db.connect = MagicMock(return_value=self.db)
 

@@ -22,7 +22,7 @@ class TestIntegrationCycle(unittest.TestCase):
 
         # Create
         response = urllib.urlopen(
-            "http://{}/create?username={}&password={}&email={}&port=80"
+            "http://{}/create?user_domain={}&password={}&email={}&port=80"
             .format(test_url, user, password, email))
         self.assertEquals(response.getcode(), 200, response.read())
 
@@ -33,7 +33,7 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertFalse(self.wait_for_dns(user + '.test.com', 'CNAME'))
 
         # Check Token (not available yet)
-        response = urllib.urlopen("http://{}/token?username={}&password={}".format(test_url, user, password))
+        response = urllib.urlopen("http://{}/token?user_domain={}&password={}".format(test_url, user, password))
         self.assertNotEqual(response.getcode(), 200)
 
         # Activate
@@ -44,14 +44,14 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertTrue(self.wait_for_dns(user + '.test.com', 'CNAME'))
 
         # Check Token (available)
-        response = urllib.urlopen("http://{}/token?username={}&password={}".format(test_url, user, password))
+        response = urllib.urlopen("http://{}/token?user_domain={}&password={}".format(test_url, user, password))
         self.assertEquals(response.headers.get('Token'), token)
 
         # Change IP
         self.change_ip(token)
 
         # Remove
-        response = urllib.urlopen("http://{1}/delete?username={0}&password=pass123".format(user, test_url))
+        response = urllib.urlopen("http://{1}/delete?user_domain={0}&password=pass123".format(user, test_url))
         self.assertEquals(response.getcode(), 200, response.read())
 
         # Check DNS (nothing)
