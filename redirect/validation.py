@@ -1,6 +1,7 @@
 import re
 import socket
 
+
 class Validator:
     def __init__(self, params):
         self.params = params
@@ -88,6 +89,7 @@ def create(params):
     ip = validator.ip()
     return validator.errors, user_domain, email, password, port, ip
 
+
 def update(params):
     validator = Validator(params)
     token = validator.token()
@@ -95,17 +97,18 @@ def update(params):
     port = validator.port()
     return validator.errors, token, ip, port
 
+
 def credentials(params):
     validator = Validator(params)
     user_domain = validator.user_domain()
     password = validator.password()
     return validator.errors, user_domain, password
 
+
 def token(params):
     validator = Validator(params)
     token = validator.token()
     return validator.errors, token
-
 
 
 class Validation:

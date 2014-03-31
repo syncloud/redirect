@@ -53,7 +53,7 @@ sudo sh -c 'echo "127.0.0.1 user.test.com" >> /etc/hosts'
 ````
 cp config.cfg.dist config.cfg
 ````
-#### Setup apache site 
+#### Setup apache site (and set WSGIScriptAlias path)
 ````
 sudo cp apache/redirect.conf /etc/apache2/sites-available
 sudo a2ensite redirect
