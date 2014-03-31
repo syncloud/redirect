@@ -3,7 +3,8 @@ from email.mime.text import MIMEText
 
 
 class Mail:
-    def __init__(self, domain, email_from):
+    def __init__(self, domain, email_from, api_url):
+        self.api_url = api_url
         self.email_from = email_from
         self.domain = domain
 
@@ -16,8 +17,8 @@ class Mail:
 
         Domain name: {1}.{0}
 
-        Use the link to activate your domain: http://{0}/activate?token={2}
-        """.format(self.domain, user_domain, token))
+        Use the link to activate your domain: http://{2}/activate?token={3}
+        """.format(self.domain, user_domain, self.api_url, token))
 
         msg['Subject'] = 'Activate your domain: {0}.{1}'.format(user_domain, self.domain)
         msg['From'] = self.email_from

@@ -59,7 +59,8 @@ def manager():
         config.getboolean('redirect', 'token_by_mail'),
         Mail(
             config.get('redirect', 'domain'),
-            config.get('mail', 'from'))
+            config.get('mail', 'from'),
+            config.get('api', 'url'))
     )
 
 if __name__ == '__main__':
