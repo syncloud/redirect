@@ -39,6 +39,10 @@ and set all needed config properties
 
 ### Integration tests
 
+````
+git clone https://github.com/syncloud/redirect /var/www/redirect
+````
+
 #### Recreate db if needed
 ```
 mysqladmin -uroot -proot -f drop redirect
