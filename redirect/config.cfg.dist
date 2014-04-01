@@ -21,3 +21,7 @@ token_by_mail: True
 [mail]
 #Activation email form field
 from: noreply@example.com
+
+[api]
+
+url: [api url]

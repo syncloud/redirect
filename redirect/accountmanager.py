@@ -19,8 +19,8 @@ class AccountManager:
         if errors:
             return ", ".join(errors) + '\n', 400
 
-        if port is None:
-            port = request.remote_addr
+        if ip is None:
+            ip = request.remote_addr
 
         result = None
         status = None
@@ -106,8 +106,8 @@ class AccountManager:
         if errors:
             return ", ".join(errors) + '\n', 400
 
-        if new_port is None:
-            new_port = request.remote_addr
+        if new_ip is None:
+            new_ip = request.remote_addr
 
         try:
 

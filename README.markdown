@@ -37,5 +37,31 @@ and set all needed config properties
 
     py.test
 
+### Integration tests
+
+````
+git clone https://github.com/syncloud/redirect /var/www/redirect
+````
+
+#### Recreate db if needed
+```
+mysqladmin -uroot -proot -f drop redirect
+mysql -uroot -proot < db/init.sql
+````
+#### Add hosts (local dns)
+````
+sudo sh -c 'echo "127.0.0.1 test.com" >> /etc/hosts'
+sudo sh -c 'echo "127.0.0.1 user.test.com" >> /etc/hosts'
+````
+#### Create and edit config
+````
+cp config.cfg.dist config.cfg
+````
+#### Setup apache site (and set WSGIScriptAlias path)
+````
+sudo cp apache/redirect.conf /etc/apache2/sites-available
+sudo a2ensite redirect
+sudo service apache2 restart
+````
 
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
