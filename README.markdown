@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
 ### Install dependencies:
 
     sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb
@@ -63,5 +64,3 @@ sudo cp apache/redirect.conf /etc/apache2/sites-available
 sudo a2ensite redirect
 sudo service apache2 restart
 ````
-
-[![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
