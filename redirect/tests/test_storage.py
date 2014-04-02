@@ -18,6 +18,17 @@ class TestStorageUser(unittest.TestCase):
             self.assertEquals(expected.active, actual.active, 'Users should have the same active')
             self.assertEquals(expected.user_domain, actual.user_domain, 'Users should have the same user_domain')
             self.assertEquals(expected.update_token, actual.update_token, 'Users should have the same update_token')
+            self.assertEquals(expected.activate_token, actual.activate_token, 'Users should have the same activate_token')
+
+    def generate_user(self):
+
+        domain = uuid.uuid4().hex
+        email = domain + '@mail.com'
+        update_token = uuid.uuid4().hex
+        activate_token = uuid.uuid4().hex
+        user = User(domain, update_token, '127.0.0.1', 10001, email, 'hash1234', False, activate_token)
+        return user
+
 
     def setUp(self):
 
@@ -32,7 +43,6 @@ class TestStorageUser(unittest.TestCase):
 
         self.storage = UserStorage(mysql_host, mysql_user, mysql_password, mysql_database)
 
-
     def test_by_email_not_existing(self):
 
         user = self.storage.get_user_by_email('some_non_existing_email')
@@ -40,22 +50,14 @@ class TestStorageUser(unittest.TestCase):
 
     def test_insert(self):
 
-        unique = uuid.uuid4().hex
-        email = unique+'@mail.com'
-        update_token = uuid.uuid4().hex
-
-        expected = User(unique, email, 'hash1234', update_token, '127.0.0.1', 10001, False)
-        self.storage.insert_user(expected)
-        read = self.storage.get_user_by_email(email)
-        self.assertUser(expected, read)
+        user = self.generate_user()
+        self.storage.insert_user(user)
+        read = self.storage.get_user_by_email(user.email)
+        self.assertUser(user, read)
 
     def test_delete(self):
 
-        unique = uuid.uuid4().hex
-        email = unique+'@mail.com'
-        token = uuid.uuid4().hex
-
-        user = User(unique, email, 'hash1234', token, '127.0.0.1', 10001, False)
+        user = self.generate_user()
         self.storage.insert_user(user)
         deleted = self.storage.delete_user(user.email)
         self.assertTrue(deleted)
@@ -69,14 +71,22 @@ class TestStorageUser(unittest.TestCase):
 
     def test_by_update_token_existing(self):
 
-        unique = uuid.uuid4().hex
-        email = unique+'@mail.com'
-        update_token = uuid.uuid4().hex
+        user = self.generate_user()
+        self.storage.insert_user(user)
+        read = self.storage.get_user_by_token(user.update_token)
+        self.assertUser(user, read)
 
-        expected = User(unique, email, 'hash1234', update_token, '127.0.0.1', 10001, False)
-        self.storage.insert_user(expected)
-        read = self.storage.get_user_by_token(update_token)
-        self.assertUser(expected, read)
+    def test_by_domain_not_existing(self):
+
+        user = self.storage.get_user_by_domain('domain_not_existing')
+        self.assertUser(None, user)
+
+    def test_by_update_token_existing(self):
+
+        user = self.generate_user()
+        self.storage.insert_user(user)
+        read = self.storage.get_user_by_domain(user.user_domain)
+        self.assertUser(user, read)
 
 if __name__ == '__main__':
     unittest.run()
