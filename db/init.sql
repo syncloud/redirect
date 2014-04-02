@@ -7,5 +7,5 @@ CREATE TABLE `user` (
   `update_token` char(36) NOT NULL UNIQUE,
   `ip` varchar(15) NOT NULL,
   `port` int(11) NOT NULL,
-  `active` BIT(1) NOT NULL DEFAULT 0
+  `active` BOOLEAN NOT NULL DEFAULT 0
 );
