@@ -66,16 +66,28 @@ class TestStorageUser(unittest.TestCase):
         after_delete = self.storage.get_user_by_email(user.email)
         self.assertUser(None, after_delete)
 
-    def test_by_token_not_existing(self):
+    def test_by_update_token_not_existing(self):
 
-        user = self.storage.get_user_by_email('token_not_existing')
+        user = self.storage.get_user_by_update_token('token_not_existing')
         self.assertUser(None, user)
 
     def test_by_update_token_existing(self):
 
         user = self.generate_user()
         self.storage.insert_user(user)
-        read = self.storage.get_user_by_token(user.update_token)
+        read = self.storage.get_user_by_update_token(user.update_token)
+        self.assertUser(user, read)
+
+    def test_by_activate_token_not_existing(self):
+
+        user = self.storage.get_user_by_activate_token('token_not_existing')
+        self.assertUser(None, user)
+
+    def test_by_activate_token_existing(self):
+
+        user = self.generate_user()
+        self.storage.insert_user(user)
+        read = self.storage.get_user_by_activate_token(user.activate_token)
         self.assertUser(user, read)
 
     def test_by_domain_not_existing(self):
@@ -83,7 +95,7 @@ class TestStorageUser(unittest.TestCase):
         user = self.storage.get_user_by_domain('domain_not_existing')
         self.assertUser(None, user)
 
-    def test_by_update_token_existing(self):
+    def test_by_domain_existing(self):
 
         user = self.generate_user()
         self.storage.insert_user(user)

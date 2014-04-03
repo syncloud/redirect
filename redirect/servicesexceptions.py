@@ -13,3 +13,6 @@ def bad_request(message):
 
 def conflict(message):
     return ServiceException(message, status_code=409)
+
+def internal_server_error(message):
+    return ServiceException(message, status_code=500)

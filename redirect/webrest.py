@@ -18,11 +18,14 @@ def index():
 @app.route('/user/create', methods=["POST"])
 def create():
     user = manager().create_new_user(request.form)
-    return 'User was created', 200, {'Token': user.activate_token}
+    return 'User was created', 200
 
-@app.errorhandler(ServiceException)
-def handle_invalid_usage(error):
-    return (error.message, error.status_code)
+@app.errorhandler(Exception)
+def handle_exception(error):
+    if error is ServiceException:
+        return error.message, error.status_code
+    else:
+        return error.message, 500
 
 def manager():
     mysql_host = config.get('mysql', 'host')

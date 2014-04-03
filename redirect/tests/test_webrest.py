@@ -16,9 +16,10 @@ class TestWebRest(unittest.TestCase):
         params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
         response = self.post('user/create', params)
         self.assertTrue(response.ok)
-        token = response.headers['token']
-        self.assertIsNotNone(token)
-        self.assertNotEqual('', token)
+        self.assertEqual(200, response.status_code)
+#        token = response.headers['token']
+#        self.assertIsNotNone(token)
+#        self.assertNotEqual('', token)
 
 if __name__ == '__main__':
     unittest.run()

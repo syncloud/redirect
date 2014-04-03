@@ -18,9 +18,11 @@ class UserStorage:
     def connect(self):
         return MySQLdb.connect(self.mysql_host, self.mysql_user, self.mysql_passwd, self.mysql_db)
 
+    select_fields = 'user_domain, email, password_hash, update_token, ip, port, active, activate_token'
+
     def insert_user(self, user):
         with DbContext(self.connect()) as cursor:
-            q = 'insert into user (user_domain, email, password_hash, update_token, ip, port, active, activate_token) values (%s, %s, %s, %s, %s, %s, %s, %s)'
+            q = 'insert into user ({0}) values (%s, %s, %s, %s, %s, %s, %s, %s)'.format(self.select_fields)
             p = (user.user_domain, user.email, user.password_hash, user.update_token, user.ip, user.port, user.active, user.activate_token)
             cursor.execute(q, p)
 
@@ -44,15 +46,15 @@ class UserStorage:
 
     def get_user_by_email(self, email):
         with DbContext(self.connect()) as cursor:
-            num = cursor.execute('select user_domain, email, password_hash, update_token, ip, port, active, activate_token from user where email = %s', email)
+            num = cursor.execute('select {0} from user where email = %s'.format(self.select_fields), email)
             if num == 1:
                 return to_user(cursor.fetchone())
             else:
                 return None
 
-    def get_user_by_token(self, update_token):
+    def get_user_by_update_token(self, update_token):
         with DbContext(self.connect()) as cursor:
-            num = cursor.execute('select user_domain, email, password_hash, update_token, ip, port, active, activate_token from user where update_token = %s', update_token)
+            num = cursor.execute('select {0} from user where update_token = %s'.format(self.select_fields), update_token)
             if num == 1:
                 return to_user(cursor.fetchone())
             else:
@@ -60,7 +62,15 @@ class UserStorage:
 
     def get_user_by_domain(self, user_domain):
         with DbContext(self.connect()) as cursor:
-            num = cursor.execute('select user_domain, email, password_hash, update_token, ip, port, active, activate_token from user where user_domain = %s', user_domain)
+            num = cursor.execute('select {0} from user where user_domain = %s'.format(self.select_fields), user_domain)
+            if num == 1:
+                return to_user(cursor.fetchone())
+            else:
+                return None
+
+    def get_user_by_activate_token(self, activate_token):
+        with DbContext(self.connect()) as cursor:
+            num = cursor.execute('select {0} from user where activate_token = %s'.format(self.select_fields), activate_token)
             if num == 1:
                 return to_user(cursor.fetchone())
             else:
