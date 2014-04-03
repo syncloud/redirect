@@ -1,5 +1,5 @@
 
-class RestException(Exception):
+class ServiceException(Exception):
     status_code = 400
 
     def __init__(self, message, status_code=None):
@@ -9,7 +9,7 @@ class RestException(Exception):
             self.status_code = status_code
 
 def bad_request(message):
-    return RestException(message)
+    return ServiceException(message)
 
 def conflict(message):
-    return RestException(message, status_code=409)
+    return ServiceException(message, status_code=409)

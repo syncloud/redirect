@@ -1,13 +1,9 @@
 import unittest
 from mock import MagicMock
-from .. users import Users
-from .. storage import User
-from .. redirectutil import hash
-from .. restexceptions import RestException
-
-class Request:
-    def __init__(self, args):
-        self.args = args
+from redirect.models import User
+from .. services import Users
+from .. util import hash
+from .. servicesexceptions import ServiceException
 
 class TestCreateLogin(unittest.TestCase):
 
@@ -39,7 +35,7 @@ class TestCreateLogin(unittest.TestCase):
 
         request = {'user_domain': 'vladimir', 'email': 'valid@mail.com', 'password': 'pass123456'}
 
-        with self.assertRaises(RestException):
+        with self.assertRaises(ServiceException):
             users.create_new_user(request)
 
     def test_create_user_existing_domain(self):
@@ -51,5 +47,5 @@ class TestCreateLogin(unittest.TestCase):
 
         request = {'user_domain': 'boris', 'email': 'boris@mail.com', 'password': 'pass123456'}
 
-        with self.assertRaises(RestException):
+        with self.assertRaises(ServiceException):
             users.create_new_user(request)

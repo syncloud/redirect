@@ -1,9 +1,9 @@
 import ConfigParser
 import os
 from flask import Flask, request, redirect
-import users
+import services
 import storage
-from restexceptions import RestException
+from servicesexceptions import ServiceException
 
 app = Flask(__name__)
 
@@ -20,7 +20,7 @@ def create():
     user = manager().create_new_user(request.form)
     return 'User was created', 200, {'Token': user.activate_token}
 
-@app.errorhandler(RestException)
+@app.errorhandler(ServiceException)
 def handle_invalid_usage(error):
     return (error.message, error.status_code)
 
@@ -31,7 +31,7 @@ def manager():
     mysql_db = config.get('mysql', 'db')
 
     user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
-    users_manager = users.Users(user_storage)
+    users_manager = services.Users(user_storage)
     return users_manager
 
 if __name__ == '__main__':

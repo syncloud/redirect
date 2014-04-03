@@ -2,7 +2,8 @@ import uuid
 import unittest
 import ConfigParser
 import os
-from .. storage import User, UserStorage
+from redirect.models import User
+from .. storage import UserStorage
 
 class TestStorageUser(unittest.TestCase):
 

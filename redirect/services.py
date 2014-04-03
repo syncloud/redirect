@@ -1,8 +1,8 @@
 import uuid
-from storage import User
+from models import User
 from validation import Validator
-from redirectutil import hash
-import restexceptions
+from util import hash
+import servicesexceptions
 
 class Users:
     def __init__(self, user_storage):
@@ -18,11 +18,11 @@ class Users:
 
         by_email = self.storage.get_user_by_email(email)
         if by_email and by_email.email == email:
-            raise restexceptions.conflict('Email is already registered')
+            raise servicesexceptions.conflict('Email is already registered')
 
         by_domain = self.storage.get_user_by_domain(user_domain)
         if by_domain and by_domain.user_domain == user_domain:
-            raise restexceptions.conflict('User domain name is already in use')
+            raise servicesexceptions.conflict('User domain name is already in use')
 
         user = User(user_domain, update_token, None, None, email, hash(password), False, activate_token)
 
