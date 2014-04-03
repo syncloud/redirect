@@ -4,6 +4,7 @@ import ConfigParser
 import os
 from redirect.models import User
 from .. storage import UserStorage
+from .. util import hash
 
 class TestStorageUser(unittest.TestCase):
 
@@ -85,6 +86,14 @@ class TestStorageUser(unittest.TestCase):
     def test_by_update_token_existing(self):
 
         user = self.generate_user()
+        self.storage.insert_user(user)
+        read = self.storage.get_user_by_domain(user.user_domain)
+        self.assertUser(user, read)
+
+    def test_password_hash_fits_column(self):
+
+        user = self.generate_user()
+        user.password_hash = hash(user.password_hash)
         self.storage.insert_user(user)
         read = self.storage.get_user_by_domain(user.user_domain)
         self.assertUser(user, read)

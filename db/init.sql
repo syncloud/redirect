@@ -6,7 +6,7 @@ CREATE TABLE `user` (
   `ip` varchar(15),
   `port` int(11),
   `email` varchar(100) NOT NULL UNIQUE PRIMARY KEY,
-  `password_hash` varchar(44) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `password_hash` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `active` BOOLEAN NOT NULL DEFAULT 0,
   `activate_token` char(36) UNIQUE
 );
