@@ -3,8 +3,8 @@ import unittest
 import ConfigParser
 import os
 from redirect.models import User
-from .. storage import UserStorage
-from .. util import hash
+from redirect.storage import UserStorage
+from redirect.util import hash
 
 class TestStorageUser(unittest.TestCase):
 

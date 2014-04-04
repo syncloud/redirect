@@ -1,5 +1,5 @@
 import unittest
-from mail import Mail
+from redirect.mail import Mail
 import ConfigParser
 import os
 

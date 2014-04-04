@@ -1,4 +1,4 @@
-from .. validation import Validator, Validation
+from redirect.validation import Validator, Validation
 import unittest
 
 valid_params = {

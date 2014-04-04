@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import socket
 import urllib
 import unittest
-import dns.resolver as resolver
+import redirect.dns.resolver as resolver
 import time
 import ConfigParser
 import os

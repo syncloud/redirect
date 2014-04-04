@@ -6,4 +6,4 @@ before_script:
   - mysql < db/init.sql
   - python redirect/webrest.py &
   - sleep 3
-script: py.test
+script: py.test --cov redirect

@@ -1,5 +1,5 @@
 import unittest
-from .. util import hash
+from redirect.util import hash
 
 class TestHash(unittest.TestCase):
 

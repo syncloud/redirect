@@ -1,9 +1,9 @@
 import unittest
 from mock import MagicMock
 from redirect.models import User
-from .. services import Users
-from .. util import hash
-from .. servicesexceptions import ServiceException
+from redirect.services import Users
+from redirect.util import hash
+from redirect.servicesexceptions import ServiceException
 
 class TestCreateLogin(unittest.TestCase):
 
