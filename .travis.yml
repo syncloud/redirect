@@ -1,8 +1,13 @@
 language: python
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y -qq postfix
 install:
   - pip install -r requirements.txt
   - pip install -r dev_requirements.txt
 before_script:
+  - sudo service postfix stop
+  - smtp-sink -d "outbox/%d.%H.%M.%S" localhost:2500 1000 &
   - mysql < db/init.sql
   - python redirect/webrest.py &
   - sleep 3
