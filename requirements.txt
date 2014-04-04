@@ -4,3 +4,4 @@ boto==2.9.6
 urllib3==1.6
 requests==2.2.1
 configobj==4.7.2
+pytest-cov==1.6
