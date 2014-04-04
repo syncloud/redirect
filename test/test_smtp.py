@@ -10,7 +10,9 @@ class TestSmtp(unittest.TestCase):
     smtp_port = 2500
 
     def setUp(self):
-        shutil.rmtree(self.smtp_outbox_path)
+        if os.path.isdir(self.smtp_outbox_path):
+            shutil.rmtree(self.smtp_outbox_path)
+
 
     def test_send_goes_to_file(self):
         email_from = 'from@mail.com'
