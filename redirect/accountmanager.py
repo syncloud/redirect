@@ -3,13 +3,14 @@ from urlparse import urlparse
 
 
 class AccountManager:
-    def __init__(self, validation, database, dns, domain, token_by_mail, mail):
+    def __init__(self, validation, database, dns, domain, token_by_mail, mail, activate_url_template):
         self.mail = mail
         self.token_by_mail = token_by_mail
         self.domain = domain
         self.validation = validation
         self.database = database
         self.dns = dns
+        self.activate_url_template = activate_url_template
 
     def request_account(self, request):
 
@@ -42,7 +43,8 @@ class AccountManager:
                 result = "Created, check your mail for activation"
                 status = 200
                 if self.token_by_mail:
-                    self.mail.send(user_domain, email, token)
+                    activate_url = self.activate_url_template.format(token)
+                    self.mail.send(user_domain, email, activate_url)
                 else:
                     headers = {'Token': token}
 

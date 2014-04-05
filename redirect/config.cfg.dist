@@ -24,4 +24,4 @@ from: noreply@example.com
 
 [api]
 
-url: [api url]
+activate_url_template: [api activate url template token value should be {0}]

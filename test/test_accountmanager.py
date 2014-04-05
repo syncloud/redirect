@@ -15,7 +15,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.db.get_port_by_user_domain = MagicMock(return_value=None)
         self.db.connect = MagicMock(return_value=self.db)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         self.request.url = 'http://user.example.com'
         url = manager.redirect_url(self.request, 'example.org')
@@ -28,7 +28,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.close = MagicMock()
         self.db.connect = MagicMock(return_value=self.db)
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         self.request.url = 'http://user.example.com'
         url = manager.redirect_url(self.request, 'example.org')
@@ -39,7 +39,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.validator.validate_create = MagicMock(return_value=('errors', None, None, None, None, None))
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         manager.request_account(self.request)
 
@@ -52,7 +52,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.close = MagicMock()
         self.db.connect = MagicMock(return_value=self.db)
         self.db.exists = MagicMock(return_value=True)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code, _) = manager.request_account(self.request)
 
@@ -66,7 +66,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.close = MagicMock()
         self.db.connect = MagicMock(return_value=self.db)
         self.db.exists = MagicMock(return_value=False)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code, headers) = manager.request_account(self.request)
 
@@ -83,7 +83,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.close = MagicMock()
         self.db.connect = MagicMock(return_value=self.db)
         self.db.exists = MagicMock(return_value=False)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", True, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", True, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code, headers) = manager.request_account(self.request)
 
@@ -101,7 +101,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.connect = MagicMock(return_value=self.db)
         self.db.exists = MagicMock(return_value=False)
         self.db.insert = MagicMock(side_effect=Exception)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code, _) = manager.request_account(self.request)
 
@@ -111,7 +111,7 @@ class TestAccountManager(unittest.TestCase):
     def test_activate_no_token(self):
 
         self.validator.validate_token = MagicMock(return_value=(['no token'], None))
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.activate(self.request)
 
@@ -122,7 +122,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.validator.validate_token = MagicMock(return_value=([], '1'))
         self.db.activate = MagicMock(return_value=False)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.activate(self.request)
 
@@ -133,7 +133,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.validator.validate_token = MagicMock(return_value=([], '1'))
         self.db.activate = MagicMock(side_effect=Exception)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.activate(self.request)
 
@@ -145,7 +145,7 @@ class TestAccountManager(unittest.TestCase):
         self.validator.validate_token = MagicMock(return_value=([], '1'))
         self.db.activate = MagicMock(return_value=True)
         self.db.get_user_info_by_token = MagicMock(return_value=('user', 'ip', 'port'))
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.activate(self.request)
 
@@ -156,7 +156,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.validator.validate_update = MagicMock(return_value=(['invalid input'], '1', 'ip', 'port'))
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.update(self.request)
 
@@ -168,7 +168,7 @@ class TestAccountManager(unittest.TestCase):
         self.validator.validate_update = MagicMock(return_value=([], '1', 'ip', 'port'))
 
         self.db.existing_token = MagicMock(return_value=False)
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.update(self.request)
 
@@ -182,7 +182,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.existing_token = MagicMock(return_value=True)
         self.db.get_user_info_by_token = MagicMock(return_value=('user', 'ip', 'port'))
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.update(self.request)
 
@@ -195,7 +195,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.db.existing_token = MagicMock(side_effect=Exception)
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.update(self.request)
 
@@ -209,7 +209,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.existing_token = MagicMock(return_value=True)
         self.db.get_user_info_by_token = MagicMock(return_value=('user', 'ip', 'port'))
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.update(self.request)
 
@@ -220,7 +220,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.validator.validate_credentials = MagicMock(return_value=(['invalid input'], 'user', 'pass'))
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.delete(self.request)
 
@@ -234,7 +234,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.db.valid_user = MagicMock(return_value=False)
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.delete(self.request)
 
@@ -249,7 +249,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.valid_user = MagicMock(return_value=True)
         self.db.delete_user = MagicMock(side_effect=Exception)
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.delete(self.request)
 
@@ -262,7 +262,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.db.valid_user = MagicMock(return_value=True)
         self.db.get_user_info_by_password = MagicMock(return_value=('user', 'ip', 80))
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.delete(self.request)
 
@@ -274,7 +274,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.validator.validate_credentials = MagicMock(return_value=(['invalid input'], 'user', 'pass'))
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.token(self.request)
 
@@ -287,7 +287,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.db.valid_user = MagicMock(return_value=False)
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.token(self.request)
 
@@ -301,7 +301,7 @@ class TestAccountManager(unittest.TestCase):
         self.db.valid_user = MagicMock(return_value=True)
         self.db.get_token_by_password = MagicMock(side_effect=Exception)
 
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code) = manager.token(self.request)
 
@@ -313,7 +313,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.db.valid_user = MagicMock(return_value=True)
         self.db.get_token_by_password = MagicMock(return_value='token123')
-        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail)
+        manager = AccountManager(self.validator, self.db, self.dns, "example.com", False, self.mail, 'http://redirect.com/activate?token={0}')
 
         (text, code, headers) = manager.token(self.request)
 
