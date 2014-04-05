@@ -5,8 +5,9 @@ from util import hash
 import servicesexceptions
 
 class Users:
-    def __init__(self, user_storage):
+    def __init__(self, user_storage, mail):
         self.storage = user_storage
+        self.mail = mail
 
     def create_new_user(self, request):
         validator = Validator(request)
@@ -32,6 +33,8 @@ class Users:
         user = User(user_domain, update_token, None, None, email, hash(password), False, activate_token)
 
         self.storage.insert_user(user)
+
+        self.mail.send(user.user_domain, user.email, 'some url')
 
         return user
 
