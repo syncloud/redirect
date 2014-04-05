@@ -15,7 +15,7 @@ class TestWebRest(unittest.TestCase):
         email = user_domain+'@mail.com'
         params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
         response = self.post('user/create', params)
-        self.assertTrue(response.ok)
+        self.assertTrue(response.ok, 'Response was: '+str(response))
         self.assertEqual(200, response.status_code)
 #        token = response.headers['token']
 #        self.assertIsNotNone(token)

@@ -4,6 +4,7 @@ from flask import Flask, request, redirect
 import services
 import storage
 from servicesexceptions import ServiceException
+from mail import Mail
 
 app = Flask(__name__)
 
@@ -34,7 +35,8 @@ def manager():
     mysql_db = config.get('mysql', 'db')
 
     user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
-    users_manager = services.Users(user_storage)
+    mail = Mail('localhost', 2500, 'redirect.com', 'support@redirect.com')
+    users_manager = services.Users(user_storage, mail)
     return users_manager
 
 if __name__ == '__main__':
