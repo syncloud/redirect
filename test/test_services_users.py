@@ -14,7 +14,8 @@ class TestCreateLogin(unittest.TestCase):
         self.mail = Mail('localhost', 2500, 'redirect.com', 'support@redirect.com')
         self.smtp = FakeSmtp('outbox')
         self.smtp.clear()
-        self.users = Users(self.storage, self.mail)
+        self.activate_url_template = 'http://redirect.com?activate?token={0}'
+        self.users = Users(self.storage, self.mail, self.activate_url_template)
 
     def test_create_user_success(self):
         self.storage.get_user_by_email = MagicMock(return_value=None)
@@ -31,8 +32,12 @@ class TestCreateLogin(unittest.TestCase):
         self.assertNotEqual('pass123456', user.password_hash, 'we should not store password plainly')
         self.assertIsNotNone(user.activate_token)
         self.assertFalse(user.active)
+
+        activate_url = self.activate_url_template.format(user.activate_token)
         self.assertFalse(self.smtp.empty())
-        self.assertTrue(user.email in self.smtp.emails()[0])
+        email = self.smtp.emails()[0]
+        self.assertTrue(user.email in email)
+        self.assertTrue(activate_url in email)
 
     def test_create_user_existing_email(self):
         existing = User('boris', None, None, None, 'valid@mail.com', hash('pass123456'), True, None)

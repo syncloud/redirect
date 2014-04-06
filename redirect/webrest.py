@@ -34,9 +34,17 @@ def manager():
     mysql_password = config.get('mysql', 'passwd')
     mysql_db = config.get('mysql', 'db')
 
+    mail_host = config.get('smtp', 'host')
+    mail_port = config.get('smtp', 'port')
+
+    mail_from = config.get('mail', 'from')
+
+    redirect_domain = config.get('redirect', 'domain')
+    activate_url_template = config.get('redirect', 'activate_url_template')
+
     user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
-    mail = Mail('localhost', 2500, 'redirect.com', 'support@redirect.com')
-    users_manager = services.Users(user_storage, mail)
+    mail = Mail(mail_host, mail_port, redirect_domain, mail_from)
+    users_manager = services.Users(user_storage, mail, activate_url_template)
     return users_manager
 
 if __name__ == '__main__':
