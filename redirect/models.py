@@ -12,7 +12,7 @@ class User:
         self.active = active
         self.activate_token = activate_token
 
-        self.update_ip_port = False
+        self.updated_ip_port = False
         self.updated_active = False
 
     def check_active(self, password_plain):

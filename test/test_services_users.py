@@ -78,16 +78,12 @@ class TestCreateLogin(unittest.TestCase):
         self.storage.get_user_by_activate_token = MagicMock(return_value=user)
 
         request = {'token': 'activatetoken123'}
-        success = self.users.activate(request)
+        self.users.activate(request)
 
-        self.assertTrue(success)
         self.assertTrue(user.active)
         self.assertTrue(self.storage.update_user.called)
 
     def test_activate_missing_token(self):
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', False, 'activatetoken123')
-        self.storage.get_user_by_activate_token = MagicMock(return_value=user)
-
         request = {}
 
         with self.assertRaises(ServiceException) as context:
@@ -103,3 +99,13 @@ class TestCreateLogin(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             self.users.activate(request)
         self.assertEquals(context.exception.status_code, 400)
+
+    def test_activate_already_active(self):
+        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', True, 'activatetoken123')
+        self.storage.get_user_by_activate_token = MagicMock(return_value=user)
+
+        request = {'token': 'activatetoken123'}
+
+        with self.assertRaises(ServiceException) as context:
+            self.users.activate(request)
+        self.assertEquals(context.exception.status_code, 409)

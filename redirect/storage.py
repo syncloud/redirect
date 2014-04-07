@@ -36,9 +36,8 @@ class UserStorage:
             updates.append('active = %s' % int(user.active))
 
         if len(updates) > 0:
-            query = 'update user set ' + ', '.join(updates) + (' where email = %s' % user.email)
             with DbContext(self.connect()) as cursor:
-                cursor.execute(query)
+                cursor.execute('update user set ' + ', '.join(updates) + ' where email = %s', user.email)
 
     def delete_user(self, email):
         with DbContext(self.connect()) as cursor:

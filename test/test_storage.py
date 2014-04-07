@@ -110,5 +110,18 @@ class TestStorageUser(unittest.TestCase):
         read = self.storage.get_user_by_domain(user.user_domain)
         self.assertUser(user, read)
 
+    def test_update_active(self):
+        activate_token = uuid.uuid4().hex
+        user = self.generate_user()
+        user.active = False
+        user.activate_token = activate_token
+        self.storage.insert_user(user)
+
+        user.update_active(True)
+        self.storage.update_user(user)
+
+        read = self.storage.get_user_by_email(user.email)
+        self.assertTrue(read.active)
+
 if __name__ == '__main__':
     unittest.run()

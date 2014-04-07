@@ -18,8 +18,13 @@ def index():
 
 @app.route('/user/create', methods=["POST"])
 def create():
-    user = manager().create_new_user(request.form)
+    manager().create_new_user(request.form)
     return 'User was created', 200
+
+@app.route('/user/activate', methods=["GET"])
+def activate():
+    manager().activate(request.args)
+    return 'User was activated', 200
 
 @app.errorhandler(Exception)
 def handle_exception(error):

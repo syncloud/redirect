@@ -45,13 +45,16 @@ class Users:
         token = validator.token()
         errors = validator.errors
 
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
         user = self.storage.get_user_by_activate_token(token)
         if not user:
             raise servicesexceptions.bad_request('Invalid activation token')
 
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        if user.active:
+            raise servicesexceptions.conflict('User is active already')
 
         user.update_active(True)
         self.storage.update_user(user)
