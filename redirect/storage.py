@@ -29,7 +29,7 @@ class UserStorage:
     def update_user(self, user):
         updates = []
         if user.updated_ip_port:
-            updates.append('ip = %s' % user.ip)
+            updates.append("ip = '%s'" % user.ip)
             updates.append('port = %s' % user.port)
 
         if user.updated_active:
