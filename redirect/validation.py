@@ -53,15 +53,15 @@ class Validator:
         if 'port' not in self.params:
             self.errors.append('missing port')
             return None
-        port = self.params['port']
         try:
-            port_num = int(port)
-            if port_num < 1 or port_num > 65535:
-                self.errors.append('port should a number between 1 and 65535')
-                return None
-            return port_num
+            port_num = int(self.params['port'])
         except:
+            self.errors.append('port should be a number')
             return None
+        if port_num < 1 or port_num > 65535:
+            self.errors.append('port should be between 1 and 65535')
+            return None
+        return port_num
 
     def token(self):
         if 'token' not in self.params:

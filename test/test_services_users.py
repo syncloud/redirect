@@ -7,7 +7,7 @@ from redirect.mail import Mail
 from redirect.servicesexceptions import ServiceException
 from fakesmtp import FakeSmtp
 
-class TestCreateLogin(unittest.TestCase):
+class TestUsers(unittest.TestCase):
 
     def setUp(self):
         self.storage = MagicMock()
@@ -109,3 +109,41 @@ class TestCreateLogin(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             self.users.activate(request)
         self.assertEquals(context.exception.status_code, 409)
+
+    def test_authenticate_success(self):
+        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('pass1234'), True, None)
+        self.storage.get_user_by_email = MagicMock(return_value=user)
+
+        request = {'email': 'boris@mail.com', 'password': 'pass1234'}
+        user = self.users.authenticate(request)
+
+        self.assertIsNotNone(user)
+
+    def test_authenticate_wrong_password(self):
+        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('otherpass1234'), True, None)
+        self.storage.get_user_by_email = MagicMock(return_value=user)
+
+        request = {'email': 'boris@mail.com', 'password': 'pass1234'}
+        with self.assertRaises(ServiceException) as context:
+            self.users.authenticate(request)
+
+        self.assertEquals(context.exception.status_code, 403)
+
+    def test_authenticate_not_existing_user(self):
+        self.storage.get_user_by_email = MagicMock(return_value=None)
+
+        request = {'email': 'boris@mail.com', 'password': 'pass1234'}
+        with self.assertRaises(ServiceException) as context:
+            self.users.authenticate(request)
+
+        self.assertEquals(context.exception.status_code, 403)
+
+    def test_authenticate_missing_password(self):
+        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('otherpass1234'), True, None)
+        self.storage.get_user_by_email = MagicMock(return_value=user)
+
+        request = {'email': 'boris@mail.com'}
+        with self.assertRaises(ServiceException) as context:
+            self.users.authenticate(request)
+
+        self.assertEquals(context.exception.status_code, 400)

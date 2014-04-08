@@ -110,6 +110,11 @@ class TestValidation(unittest.TestCase):
         params = {'port': '65536'}
         self.assertPortError(params)
 
+    def test_port_non_int(self):
+
+        params = {'port': 'abc'}
+        self.assertPortError(params)
+
     def test_errors_aggregated(self):
 
         params = {}

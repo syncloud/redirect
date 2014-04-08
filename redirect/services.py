@@ -10,6 +10,9 @@ class Users:
         self.mail = mail
         self.activate_url_template = activate_url_template
 
+    def get_user(self, email):
+        return self.storage.get_user_by_email(email)
+
     def create_new_user(self, request):
         validator = Validator(request)
         email = validator.email()
@@ -21,7 +24,7 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        by_email = self.storage.get_user_by_email(email)
+        by_email = self.get_user(email)
         if by_email and by_email.email == email:
             raise servicesexceptions.conflict('Email is already registered')
 
@@ -61,9 +64,6 @@ class Users:
 
         return True
 
-    def get_user(self, email):
-        return self.storage.get_user_by_email(email)
-
     def authenticate(self, request):
         validator = Validator(request)
         email = validator.email()
@@ -74,7 +74,7 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        user = self.storage.get_user_by_email(email)
+        user = self.get_user(email)
         if not user or not user.check_active(password):
             raise servicesexceptions.forbidden('Authentication failed')
 
