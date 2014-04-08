@@ -1,6 +1,6 @@
 import ConfigParser
 import os
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, jsonify
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 import services
 import storage
@@ -54,6 +54,12 @@ def login():
 def logout():
     logout_user()
     return 'User logged out', 200
+
+@app.route("/user", methods=["POST"])
+@login_required
+def user():
+    user = current_user.user
+    return jsonify(email=user.email, user_domain=user.user_domain, ip=user.ip, port=user.port)
 
 @app.route('/user/create', methods=["POST"])
 def create():
