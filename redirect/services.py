@@ -60,3 +60,22 @@ class Users:
         self.storage.update_user(user)
 
         return True
+
+    def get_user(self, email):
+        return self.storage.get_user_by_email(email)
+
+    def authenticate(self, request):
+        validator = Validator(request)
+        email = validator.email()
+        password = validator.password()
+        errors = validator.errors
+
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
+        user = self.storage.get_user_by_email(email)
+        if not user or not user.check_active(password):
+            raise servicesexceptions.forbidden('Authentication failed')
+
+        return user

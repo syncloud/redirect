@@ -28,7 +28,7 @@ class TestStorageUser(unittest.TestCase):
         email = domain + '@mail.com'
         update_token = uuid.uuid4().hex
         activate_token = uuid.uuid4().hex
-        user = User(domain, update_token, '127.0.0.1', 10001, email, 'hash1234', False, activate_token)
+        user = User(domain, update_token, '127.0.0.1', 10001, email, hash('pass1234'), False, activate_token)
         return user
 
 
@@ -111,6 +111,7 @@ class TestStorageUser(unittest.TestCase):
         self.assertUser(user, read)
 
     def test_update_active(self):
+
         activate_token = uuid.uuid4().hex
         user = self.generate_user()
         user.active = False
@@ -124,6 +125,7 @@ class TestStorageUser(unittest.TestCase):
         self.assertTrue(read.active)
 
     def test_update_ip_port(self):
+
         user = self.generate_user()
         user.ip = '127.0.0.1'
         user.port = 10001
@@ -133,8 +135,9 @@ class TestStorageUser(unittest.TestCase):
         self.storage.update_user(user)
 
         read = self.storage.get_user_by_email(user.email)
-        self.assertEqual('127.0.0.2', user.ip)
-        self.assertEqual(10002, user.port)
+
+        self.assertEqual('127.0.0.2', read.ip)
+        self.assertEqual(10002, read.port)
 
 if __name__ == '__main__':
     unittest.run()

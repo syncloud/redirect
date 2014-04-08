@@ -1,20 +1,59 @@
 import ConfigParser
 import os
 from flask import Flask, request, redirect
+from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 import services
 import storage
 from servicesexceptions import ServiceException
 from mail import Mail
 
-app = Flask(__name__)
-
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
 
+app = Flask(__name__)
+app.config['SECRET_KEY'] = config.get('redirect', 'auth_secret_key')
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+class UserFlask:
+    def __init__(self, user):
+        self.user = user
+
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return self.user.active
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return unicode(self.user.email)
+
+@login_manager.user_loader
+def load_user(email):
+    user = (manager().get_user(email))
+    if not user:
+        return None
+    return UserFlask(user)
 
 @app.route('/')
 def index():
     return redirect(manager().redirect_url(request, config.get('redirect', 'default_url')))
+
+@app.route("/login", methods=["POST"])
+def login():
+    user = manager().authenticate(request.form)
+    user_flask = UserFlask(user)
+    login_user(user_flask, remember=False)
+    return 'User logged in', 200
+
+@app.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    logout_user()
+    return 'User logged out', 200
 
 @app.route('/user/create', methods=["POST"])
 def create():

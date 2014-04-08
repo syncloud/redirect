@@ -30,7 +30,7 @@ class TestWebRest(unittest.TestCase):
         user_domain = uuid.uuid4().hex
         email = user_domain+'@mail.com'
         params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
-        response = self.post('user/create', params)
+        response = self.post('/user/create', params)
         self.assertTrue(response.ok, 'Response was: '+str(response))
         self.assertEqual(200, response.status_code)
         self.assertFalse(self.smtp.empty())
@@ -39,13 +39,13 @@ class TestWebRest(unittest.TestCase):
         user_domain = uuid.uuid4().hex
         email = user_domain+'@mail.com'
         create_params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
-        self.post('user/create', create_params)
+        self.post('/user/create', create_params)
 
         self.assertFalse(self.smtp.empty())
         token = self.get_token(self.smtp.emails()[0])
 
         activate_params = {'token': token}
-        activate_response = self.get('user/activate', activate_params)
+        activate_response = self.get('/user/activate', activate_params)
         self.assertTrue(activate_response.ok, 'Response was: '+str(activate_response))
         self.assertEqual(200, activate_response.status_code)
 
