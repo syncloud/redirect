@@ -71,6 +71,16 @@ def activate():
     manager().activate(request.args)
     return 'User was activated', 200
 
+@app.route('/domain/token', methods=["POST"])
+def update_token():
+    user = manager().authenticate(request.form)
+    return jsonify(token=user.update_token)
+
+@app.route('/domain/update', methods=["POST"])
+def update_ip_port():
+    manager().update_ip_port(request.form)
+    return 'Domain was updated', 200
+
 @app.errorhandler(Exception)
 def handle_exception(error):
     if error is ServiceException:

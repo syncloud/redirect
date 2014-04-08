@@ -1,6 +1,7 @@
 import unittest
 import requests
 import uuid
+import json
 from urlparse import urljoin
 from fakesmtp import FakeSmtp
 from urlparse import urlparse
@@ -44,10 +45,29 @@ class TestWebRest(unittest.TestCase):
         self.assertFalse(self.smtp.empty())
         token = self.get_token(self.smtp.emails()[0])
 
-        activate_params = {'token': token}
-        activate_response = self.get('/user/activate', activate_params)
+        response = {'token': token}
+        activate_response = self.get('/user/activate', response)
         self.assertTrue(activate_response.ok, 'Response was: '+str(activate_response))
         self.assertEqual(200, activate_response.status_code)
+
+    def test_domain_update(self):
+        user_domain = uuid.uuid4().hex
+        email = user_domain+'@mail.com'
+        self.post('/user/create', {'user_domain': user_domain, 'email': email, 'password': 'pass123456'})
+        activate_token = self.get_token(self.smtp.emails()[0])
+        self.get('/user/activate', {'token': activate_token})
+
+        token_response = self.post('/domain/token', {'email': email, 'password': 'pass123456'})
+        self.assertTrue(token_response.ok, 'Response was: '+str(token_response))
+        self.assertEqual(200, token_response.status_code)
+        token_data = json.loads(token_response.content)
+
+        update_token = token_data['token']
+
+        response = self.post('/domain/update', {'token': update_token, 'ip': '127.0.0.1', 'port': '10001'})
+        self.assertTrue(response.ok, 'Response was: '+str(response))
+        self.assertEqual(200, response.status_code)
+
 
 if __name__ == '__main__':
     unittest.run()

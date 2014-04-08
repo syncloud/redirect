@@ -75,7 +75,28 @@ class Users:
             raise servicesexceptions.bad_request(message)
 
         user = self.get_user(email)
-        if not user or not user.check_active(password):
+        if not user or not user.active or not hash(password) == user.password_hash:
             raise servicesexceptions.forbidden('Authentication failed')
+
+        return user
+
+    def update_ip_port(self, request):
+        validator = Validator(request)
+        token = validator.token()
+        ip = validator.ip()
+        port = validator.port()
+        errors = validator.errors
+
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
+        user = self.storage.get_user_by_update_token(token)
+
+        if not user or not user.active:
+            raise servicesexceptions.bad_request('Unknown update token')
+
+        user.update_ip_port(ip, port)
+        self.storage.update_user(user)
 
         return user

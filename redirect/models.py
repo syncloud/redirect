@@ -15,10 +15,6 @@ class User:
         self.updated_ip_port = False
         self.updated_active = False
 
-    def check_active(self, password_plain):
-        p = hash(password_plain)
-        return self.active and self.password_hash == p
-
     def update_ip_port(self, ip, port):
         self.ip = ip
         self.port = port

@@ -138,6 +138,16 @@ class TestUsers(unittest.TestCase):
 
         self.assertEquals(context.exception.status_code, 403)
 
+    def test_authenticate_non_active_user(self):
+        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('pass1234'), False, 'token123')
+        self.storage.get_user_by_email = MagicMock(return_value=user)
+
+        request = {'email': 'boris@mail.com', 'password': 'pass1234'}
+        with self.assertRaises(ServiceException) as context:
+            self.users.authenticate(request)
+
+        self.assertEquals(context.exception.status_code, 403)
+
     def test_authenticate_missing_password(self):
         user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('otherpass1234'), True, None)
         self.storage.get_user_by_email = MagicMock(return_value=user)
@@ -145,5 +155,49 @@ class TestUsers(unittest.TestCase):
         request = {'email': 'boris@mail.com'}
         with self.assertRaises(ServiceException) as context:
             self.users.authenticate(request)
+
+        self.assertEquals(context.exception.status_code, 400)
+
+    def test_update_success(self):
+        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', True, None)
+        self.storage.get_user_by_update_token = MagicMock(return_value=user)
+
+        request = {'token': 'updatetoken123', 'ip': '127.0.0.1', 'port': '10001'}
+        user = self.users.update_ip_port(request)
+
+        self.assertEquals('127.0.0.1', user.ip)
+        self.assertEquals(10001, user.port)
+        self.assertTrue(self.storage.update_user.called)
+
+    def test_update_wrong_token(self):
+        self.storage.get_user_by_update_token = MagicMock(return_value=None)
+
+        request = {'token': 'updatetoken123', 'ip': '127.0.0.1', 'port': '10001'}
+
+        with self.assertRaises(ServiceException) as context:
+            self.users.update_ip_port(request)
+
+        self.assertEquals(context.exception.status_code, 400)
+
+    def test_update_missing_port(self):
+        self.storage.get_user_by_update_token = MagicMock(return_value=None)
+
+        request = {'token': 'updatetoken123', 'ip': '127.0.0.1'}
+
+        with self.assertRaises(ServiceException) as context:
+            self.users.update_ip_port(request)
+
+        self.assertEquals(context.exception.status_code, 400)
+        self.assertGreater(len(context.exception.message), 0)
+
+
+    def test_update_non_active_user(self):
+        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', False, 'token1234')
+        self.storage.get_user_by_update_token = MagicMock(return_value=user)
+
+        request = {'token': 'updatetoken123', 'ip': '127.0.0.1', 'port': '10001'}
+
+        with self.assertRaises(ServiceException) as context:
+            self.users.update_ip_port(request)
 
         self.assertEquals(context.exception.status_code, 400)
