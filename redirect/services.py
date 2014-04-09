@@ -5,10 +5,12 @@ from util import hash
 import servicesexceptions
 
 class Users:
-    def __init__(self, user_storage, mail, activate_url_template):
+    def __init__(self, user_storage, mail, activate_url_template, dns, domain):
         self.storage = user_storage
         self.mail = mail
         self.activate_url_template = activate_url_template
+        self.dns = dns
+        self.domain = domain
 
     def get_user(self, email):
         return self.storage.get_user_by_email(email)
@@ -80,6 +82,22 @@ class Users:
 
         return user
 
+    def get_update_token(self, request):
+        user = self.authenticate(request)
+
+        validator = Validator(request)
+        user_domain = validator.user_domain()
+        errors = validator.errors
+
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
+        if not user_domain == user.user_domain:
+            raise servicesexceptions.forbidden('Authentication failed')
+
+        return user.update_token
+
     def update_ip_port(self, request):
         validator = Validator(request)
         token = validator.token()
@@ -95,6 +113,11 @@ class Users:
 
         if not user or not user.active:
             raise servicesexceptions.bad_request('Unknown update token')
+
+        if user.ip:
+            self.dns.update_records(user.user_domain, ip, port, self.domain)
+        else:
+            self.dns.create_records(user.user_domain, ip, port, self.domain)
 
         user.update_ip_port(ip, port)
         self.storage.update_user(user)

@@ -6,6 +6,8 @@ import services
 import storage
 from servicesexceptions import ServiceException
 from mail import Mail
+from dns import Dns
+from mock import MagicMock
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
@@ -73,8 +75,8 @@ def activate():
 
 @app.route('/domain/token', methods=["POST"])
 def update_token():
-    user = manager().authenticate(request.form)
-    return jsonify(token=user.update_token)
+    update_token = manager().get_update_token(request.form)
+    return jsonify(token=update_token)
 
 @app.route('/domain/update', methods=["POST"])
 def update_ip_port():
@@ -83,7 +85,7 @@ def update_ip_port():
 
 @app.errorhandler(Exception)
 def handle_exception(error):
-    if error is ServiceException:
+    if isinstance(error, ServiceException):
         return error.message, error.status_code
     else:
         return error.message, 500
@@ -101,10 +103,20 @@ def manager():
 
     redirect_domain = config.get('redirect', 'domain')
     activate_url_template = config.get('redirect', 'activate_url_template')
+    mock_dns = bool(config.get('redirect', 'mock_dns'))
+
+    if mock_dns:
+        dns = MagicMock()
+    else:
+        dns = Dns(
+            config.get('aws', 'access_key_id'),
+            config.get('aws', 'secret_access_key'),
+            config.get('aws', 'hosted_zone_id'))
+
 
     user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
     mail = Mail(mail_host, mail_port, redirect_domain, mail_from)
-    users_manager = services.Users(user_storage, mail, activate_url_template)
+    users_manager = services.Users(user_storage, mail, activate_url_template, dns, redirect_domain)
     return users_manager
 
 if __name__ == '__main__':

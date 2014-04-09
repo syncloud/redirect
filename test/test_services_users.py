@@ -11,11 +11,13 @@ class TestUsers(unittest.TestCase):
 
     def setUp(self):
         self.storage = MagicMock()
-        self.mail = Mail('localhost', 2500, 'redirect.com', 'support@redirect.com')
+        domain = 'redirect.com'
+        self.mail = Mail('localhost', 2500, domain, 'support@redirect.com')
         self.smtp = FakeSmtp('outbox')
         self.smtp.clear()
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
-        self.users = Users(self.storage, self.mail, self.activate_url_template)
+        self.dns = MagicMock()
+        self.users = Users(self.storage, self.mail, self.activate_url_template, self.dns, domain)
 
     def test_create_user_success(self):
         self.storage.get_user_by_email = MagicMock(return_value=None)
@@ -158,7 +160,7 @@ class TestUsers(unittest.TestCase):
 
         self.assertEquals(context.exception.status_code, 400)
 
-    def test_update_success(self):
+    def test_update_success_new_ip(self):
         user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', True, None)
         self.storage.get_user_by_update_token = MagicMock(return_value=user)
 
@@ -168,6 +170,19 @@ class TestUsers(unittest.TestCase):
         self.assertEquals('127.0.0.1', user.ip)
         self.assertEquals(10001, user.port)
         self.assertTrue(self.storage.update_user.called)
+        self.assertTrue(self.dns.create_records.called)
+
+    def test_update_success_update_ip(self):
+        user = User('boris', 'updatetoken123', '127.0.0.1', 10001, 'boris@mail.com', 'hash123', True, None)
+        self.storage.get_user_by_update_token = MagicMock(return_value=user)
+
+        request = {'token': 'updatetoken123', 'ip': '127.0.0.2', 'port': '10002'}
+        user = self.users.update_ip_port(request)
+
+        self.assertEquals('127.0.0.2', user.ip)
+        self.assertEquals(10002, user.port)
+        self.assertTrue(self.storage.update_user.called)
+        self.assertTrue(self.dns.update_records.called)
 
     def test_update_wrong_token(self):
         self.storage.get_user_by_update_token = MagicMock(return_value=None)
