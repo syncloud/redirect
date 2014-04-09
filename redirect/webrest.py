@@ -1,6 +1,6 @@
 import ConfigParser
 import os
-from flask import Flask, request, redirect, jsonify
+from flask import Flask, request, redirect, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 import services
 import storage
@@ -16,6 +16,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = config.get('redirect', 'auth_secret_key')
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+# This is to host static html - should be done on proper web server in prod
+@app.route('/<path:filename>')
+def static_file(filename):
+    return send_from_directory('../www/_site', filename)
 
 class UserFlask:
     def __init__(self, user):
@@ -42,7 +47,7 @@ def load_user(email):
 
 @app.route('/')
 def index():
-    return redirect(manager().redirect_url(request, config.get('redirect', 'default_url')))
+    return static_file('index.html')
 
 @app.route("/login", methods=["POST"])
 def login():
