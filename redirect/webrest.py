@@ -87,8 +87,8 @@ def activate():
 
 @app.route('/domain/token', methods=["POST"])
 def update_token():
-    update_token = manager().get_update_token(request.form)
-    return jsonify(token=update_token)
+    user = manager().authenticate(request.form)
+    return jsonify(token=user.update_token)
 
 @app.route('/domain/update', methods=["POST"])
 def update_ip_port():
@@ -114,6 +114,7 @@ def manager():
     mail_from = config.get('mail', 'from')
 
     redirect_domain = config.get('redirect', 'domain')
+    redirect_activate_by_email = bool(config.get('redirect', 'activate_by_email'))
     activate_url_template = config.get('redirect', 'activate_url_template')
     mock_dns = bool(config.get('redirect', 'mock_dns'))
 
@@ -128,7 +129,7 @@ def manager():
 
     user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
     mail = Mail(mail_host, mail_port, redirect_domain, mail_from)
-    users_manager = services.Users(user_storage, mail, activate_url_template, dns, redirect_domain)
+    users_manager = services.Users(user_storage, redirect_activate_by_email, mail, activate_url_template, dns, redirect_domain)
     return users_manager
 
 if __name__ == '__main__':

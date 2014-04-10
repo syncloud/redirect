@@ -3,12 +3,12 @@ from models import User
 from validation import Validator
 from util import hash
 import servicesexceptions
-from urlparse import urlparse
 import util
 
 class Users:
-    def __init__(self, user_storage, mail, activate_url_template, dns, domain):
+    def __init__(self, user_storage, activate_by_email, mail, activate_url_template, dns, domain):
         self.storage = user_storage
+        self.activate_by_email = activate_by_email
         self.mail = mail
         self.activate_url_template = activate_url_template
         self.dns = dns
@@ -37,13 +37,18 @@ class Users:
             raise servicesexceptions.conflict('User domain name is already in use')
 
         update_token = uuid.uuid4().hex
-        activate_token = uuid.uuid4().hex
-        user = User(user_domain, update_token, None, None, email, hash(password), False, activate_token)
+        activate_token = None
+        active = True
+        if self.activate_by_email:
+            active = False
+            activate_token = uuid.uuid4().hex
+        user = User(user_domain, update_token, None, None, email, hash(password), active, activate_token)
 
         self.storage.insert_user(user)
 
-        activate_url = self.activate_url_template.format(user.activate_token)
-        self.mail.send(user.user_domain, user.email, activate_url)
+        if self.activate_by_email:
+            activate_url = self.activate_url_template.format(user.activate_token)
+            self.mail.send(user.user_domain, user.email, activate_url)
 
         return user
 
@@ -83,22 +88,6 @@ class Users:
             raise servicesexceptions.forbidden('Authentication failed')
 
         return user
-
-    def get_update_token(self, request):
-        user = self.authenticate(request)
-
-        validator = Validator(request)
-        user_domain = validator.user_domain()
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
-
-        if not user_domain == user.user_domain:
-            raise servicesexceptions.forbidden('Authentication failed')
-
-        return user.update_token
 
     def update_ip_port(self, request):
         validator = Validator(request)
