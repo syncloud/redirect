@@ -1,6 +1,5 @@
 import uuid
-from urlparse import urlparse
-
+import util
 
 class AccountManager:
     def __init__(self, validation, database, dns, domain, token_by_mail, mail, activate_url_template):
@@ -56,10 +55,11 @@ class AccountManager:
 
     def redirect_url(self, request, default_url):
 
-        addr = urlparse(request.url).netloc
+        request_url = request.url
+
+        user_domain = util.get_second_level_domain(request_url, self.domain)
 
         url = default_url
-        user_domain = addr[:-(len(self.domain) + 1)]
 
         try:
             port = self.database.get_port_by_user_domain(user_domain)

@@ -16,3 +16,6 @@ def conflict(message):
 
 def forbidden(message):
     return ServiceException(message, status_code=403)
+
+def not_found(message):
+    return ServiceException(message, status_code=404)

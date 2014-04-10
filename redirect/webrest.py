@@ -18,9 +18,16 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # This is to host static html - should be done on proper web server in prod
-@app.route('/<path:filename>')
-def static_file(filename):
-    return send_from_directory('../www/_site', filename)
+
+host_static_files = config.has_option('redirect', 'static_files_path')
+if host_static_files:
+    static_files_path = config.get('redirect', 'static_files_path')
+
+    @app.route('/<path:filename>')
+    def static_file(filename):
+        return send_from_directory(static_files_path, filename)
+
+# End of hosting static html
 
 class UserFlask:
     def __init__(self, user):
@@ -47,7 +54,7 @@ def load_user(email):
 
 @app.route('/')
 def index():
-    return static_file('index.html')
+    return redirect(manager().redirect_url(request.url))
 
 @app.route("/login", methods=["POST"])
 def login():

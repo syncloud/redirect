@@ -3,6 +3,8 @@ from models import User
 from validation import Validator
 from util import hash
 import servicesexceptions
+from urlparse import urlparse
+import util
 
 class Users:
     def __init__(self, user_storage, mail, activate_url_template, dns, domain):
@@ -123,3 +125,17 @@ class Users:
         self.storage.update_user(user)
 
         return user
+
+    def redirect_url(self, request_url):
+
+        user_domain = util.get_second_level_domain(request_url, self.domain)
+
+        if not user_domain:
+            raise servicesexceptions.bad_request('Second level domain should be specified')
+
+        user = self.storage.get_user_by_domain(user_domain)
+
+        if not user:
+            raise servicesexceptions.not_found('The second level domain is not registered')
+
+        return 'http://device.{0}.{1}:{2}/owncloud'.format(user_domain, self.domain, user.port)
