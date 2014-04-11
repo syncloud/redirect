@@ -18,4 +18,5 @@ class TestIntegrationMail(unittest.TestCase):
     def test_send(self):
 
         mail = Mail(domain, mail_from)
-        mail.send(user_domain, user_email, token)
+        full_domain = '{0}.{1}'.format(user_domain, domain)
+        mail.send_activate(full_domain, user_email, token)

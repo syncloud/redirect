@@ -60,7 +60,6 @@ def manager():
         Mail(
             'localhost',
             25,
-            config.get('redirect', 'domain'),
             config.get('mail', 'from')),
         config('api', 'activate_url_template')
     )

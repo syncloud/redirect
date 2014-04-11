@@ -48,7 +48,8 @@ class Users:
 
         if self.activate_by_email:
             activate_url = self.activate_url_template.format(user.activate_token)
-            self.mail.send(user.user_domain, user.email, activate_url)
+            full_domain = '{0}.{1}'.format(user.user_domain, self.domain)
+            self.mail.send_activate(full_domain, user.email, activate_url)
 
         return user
 

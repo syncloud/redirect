@@ -128,7 +128,7 @@ def manager():
 
 
     user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
-    mail = Mail(mail_host, mail_port, redirect_domain, mail_from)
+    mail = Mail(mail_host, mail_port, mail_from)
     users_manager = services.Users(user_storage, redirect_activate_by_email, mail, activate_url_template, dns, redirect_domain)
     return users_manager
 

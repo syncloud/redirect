@@ -34,8 +34,8 @@ class TestSmtp(unittest.TestCase):
 
     def test_mail_send(self):
         activate_url = 'http://redirect.com/activate?token=t123456'
-        mail = Mail(self.smtp_host, self.smtp_port, 'redirect.com', 'support@redirect.com')
-        mail.send('boris', 'boris@email.com', activate_url)
+        mail = Mail(self.smtp_host, self.smtp_port, 'support@redirect.com')
+        mail.send_activate('boris.redirect.com', 'boris@email.com', activate_url)
 
         self.assertFalse(self.smtp.empty())
         sent_mails = self.smtp.emails()

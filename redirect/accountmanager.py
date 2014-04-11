@@ -43,7 +43,8 @@ class AccountManager:
                 status = 200
                 if self.token_by_mail:
                     activate_url = self.activate_url_template.format(token)
-                    self.mail.send(user_domain, email, activate_url)
+                    full_domain = '{0}.{1}'.format(user_domain, self.domain)
+                    self.mail.send_activate(full_domain, email, activate_url)
                 else:
                     headers = {'Token': token}
 

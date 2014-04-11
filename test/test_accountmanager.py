@@ -72,7 +72,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.assertTrue(self.db.insert.called)
         self.assertFalse(self.dns.create_records.called)
-        self.assertFalse(self.mail.send.called)
+        self.assertFalse(self.mail.send_activate.called)
         self.assertTrue(headers)
         self.assertEquals(code, 200)
 
@@ -89,7 +89,7 @@ class TestAccountManager(unittest.TestCase):
 
         self.assertTrue(self.db.insert.called)
         self.assertFalse(self.dns.create_records.called)
-        self.assertTrue(self.mail.send.called)
+        self.assertTrue(self.mail.send_activate.called)
         self.assertFalse(headers)
         self.assertEquals(code, 200)
 

@@ -11,15 +11,14 @@ class TestUsers(unittest.TestCase):
 
     def setUp(self):
         self.storage = MagicMock()
-        self.domain = 'redirect.com'
-        self.mail = Mail('localhost', 2500, self.domain, 'support@redirect.com')
+        self.mail = Mail('localhost', 2500, 'support@redirect.com')
         self.smtp = FakeSmtp('outbox')
         self.smtp.clear()
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
         self.dns = MagicMock()
 
     def get_users_service(self, activate_by_email=True):
-        return Users(self.storage, activate_by_email, self.mail, self.activate_url_template, self.dns, self.domain)
+        return Users(self.storage, activate_by_email, self.mail, self.activate_url_template, self.dns, 'redirect.com')
 
     def test_create_user_success(self):
         users = self.get_users_service()
