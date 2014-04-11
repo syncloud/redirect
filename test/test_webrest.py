@@ -57,12 +57,12 @@ class TestWebRest(unittest.TestCase):
         activate_token = self.get_token(self.smtp.emails()[0])
         self.get('/user/activate', {'token': activate_token})
 
-        token_response = self.post('/domain/token', {'email': email, 'password': 'pass123456'})
-        self.assertTrue(token_response.ok, 'Response with code: %s, Content: %s' % (token_response.status_code, token_response.content))
+        token_response = self.get('/user/get', {'email': email, 'password': 'pass123456'})
+        self.assertTrue(token_response.ok, 'Response with code: {0}, Content: {1}'.format(token_response.status_code, token_response.content))
         self.assertEqual(200, token_response.status_code)
-        token_data = json.loads(token_response.content)
+        user_data = json.loads(token_response.content)
 
-        update_token = token_data['token']
+        update_token = user_data['update_token']
 
         response = self.post('/domain/update', {'token': update_token, 'ip': '127.0.0.1', 'port': '10001'})
         self.assertTrue(response.ok, 'Response was: '+str(response))

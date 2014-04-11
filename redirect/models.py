@@ -4,11 +4,11 @@ class User:
 
     def __init__(self, user_domain, update_token, ip, port, email, password_hash, active, activate_token):
         self.user_domain = user_domain
-        self.email = email
-        self.password_hash = password_hash
         self.update_token = update_token
         self.ip = ip
         self.port = port
+        self.email = email
+        self.password_hash = password_hash
         self.active = active
         self.activate_token = activate_token
 

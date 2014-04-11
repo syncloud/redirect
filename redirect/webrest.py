@@ -69,26 +69,26 @@ def logout():
     logout_user()
     return 'User logged out', 200
 
-@app.route("/user", methods=["POST"])
+@app.route("/user", methods=["GET"])
 @login_required
 def user():
     user = current_user.user
     return jsonify(email=user.email, user_domain=user.user_domain, ip=user.ip, port=user.port)
 
 @app.route('/user/create', methods=["POST"])
-def create():
+def user_create():
     manager().create_new_user(request.form)
     return 'User was created', 200
 
 @app.route('/user/activate', methods=["GET"])
-def activate():
+def user_activate():
     manager().activate(request.args)
     return 'User was activated', 200
 
-@app.route('/domain/token', methods=["POST"])
-def update_token():
-    user = manager().authenticate(request.form)
-    return jsonify(token=user.update_token)
+@app.route('/user/get', methods=["GET"])
+def user_get():
+    user = manager().authenticate(request.args)
+    return jsonify(user_domain=user.user_domain, update_token=user.update_token, ip=user.ip, port=user.port, email=user.email, active=user.active)
 
 @app.route('/domain/update', methods=["POST"])
 def update_ip_port():
