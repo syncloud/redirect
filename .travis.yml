@@ -9,6 +9,6 @@ before_script:
   - sudo service postfix stop
   - smtp-sink -d "outbox/%d.%H.%M.%S" localhost:2500 1000 &
   - mysql < db/init.sql
-  - python redirect/webrest.py &
+  - python redirect/newrest.py &
   - sleep 3
 script: py.test --cov redirect

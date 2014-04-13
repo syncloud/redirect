@@ -10,13 +10,20 @@ title: User
 
 <script type="text/javascript">
 $( document ).ready(function() {
-    var url = redirect.rest( "user" )
-    var getting = $.get( url )
-        .done( function( data ) {
+    $.ajax({
+        url: redirect.web( "user" ),
+        type: "get",
+        async: true,
+        crossDomain: true,
+        beforeSend: function(xhr){
+            xhr.withCredentials = true;
+        },
+        success: function( data ) {
             $("#placeholder").text(data.email);            
-        })
-        .fail( function(xhr, textStatus, errorThrown) {
+        },
+        error: function( xhr ) {
             alert( "user get fail" );
-        });
+        }
+    });
 });
 </script>

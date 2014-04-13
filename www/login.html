@@ -41,14 +41,24 @@ $( document ).ready(function() {
         event.preventDefault();
 
         var values = $("#form-login").serializeArray();
-        var url = redirect.rest("login")
-        var posting = $.post( url, values )
-            .done( function(data) {
+        
+        $.ajax({
+            url: redirect.web( "login" ),
+            data: values,
+            type: "post",
+            async: true,
+            crossDomain: true,
+            beforeSend: function( xhr ) {
+                xhr.withCredentials = true;
+            },
+            success: function( data ) {
                 window.location.href = "user.html";
-            })
-            .fail( function(xhr, textStatus, errorThrown) {
-                alert( "user create fail" );
-            });
+            },
+            error: function( xhr ) {
+                alert( "user login fail" );
+            }
+        });
+            
     });
 });
 </script>
