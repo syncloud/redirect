@@ -1,0 +1,22 @@
+---
+layout: default
+title: User
+---
+
+<div>
+  <h2>User</h2>
+  <div id="placeholder"></div>
+</div>
+
+<script type="text/javascript">
+$( document ).ready(function() {
+    var url = redirect.rest( "user" )
+    var getting = $.get( url )
+        .done( function( data ) {
+            $("#placeholder").text(data.email);            
+        })
+        .fail( function(xhr, textStatus, errorThrown) {
+            alert( "user get fail" );
+        });
+});
+</script>

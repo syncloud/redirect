@@ -5,6 +5,10 @@
   font-size: 32px;
 }
 
+.navbar-inverse .navbar-brand {
+  color: #fff;
+}
+
 .navbar-brand span {
   padding-left: 10px;
 }

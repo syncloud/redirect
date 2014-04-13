@@ -9,6 +9,8 @@ from mail import Mail
 from dns import Dns
 from mock import MagicMock
 
+from flaskutil import crossdomain
+
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
 
@@ -57,6 +59,7 @@ def index():
     return redirect(manager().redirect_url(request.url))
 
 @app.route("/login", methods=["POST"])
+@crossdomain(origin='*')
 def login():
     user = manager().authenticate(request.form)
     user_flask = UserFlask(user)
@@ -70,12 +73,14 @@ def logout():
     return 'User logged out', 200
 
 @app.route("/user", methods=["GET"])
+@crossdomain(origin='*')
 @login_required
 def user():
     user = current_user.user
     return jsonify(email=user.email, user_domain=user.user_domain, ip=user.ip, port=user.port)
 
 @app.route('/user/create', methods=["POST"])
+@crossdomain(origin='*')
 def user_create():
     manager().create_new_user(request.form)
     return 'User was created', 200
@@ -96,11 +101,17 @@ def update_ip_port():
     return 'Domain was updated', 200
 
 @app.errorhandler(Exception)
+@crossdomain(origin='*')
 def handle_exception(error):
     if isinstance(error, ServiceException):
         return error.message, error.status_code
     else:
         return error.message, 500
+
+@app.errorhandler(401)
+@crossdomain(origin='*')
+def handle_401(e):
+        return e, 401
 
 def manager():
     mysql_host = config.get('mysql', 'host')
@@ -114,7 +125,7 @@ def manager():
     mail_from = config.get('mail', 'from')
 
     redirect_domain = config.get('redirect', 'domain')
-    redirect_activate_by_email = bool(config.get('redirect', 'activate_by_email'))
+    redirect_activate_by_email = config.get('redirect', 'activate_by_email').lower() != 'false'
     activate_url_template = config.get('redirect', 'activate_url_template')
     mock_dns = bool(config.get('redirect', 'mock_dns'))
 
