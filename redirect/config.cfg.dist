@@ -3,7 +3,12 @@
 host: localhost
 user: [mysql db user]
 passwd: [mysql db password]
-db: [db name]
+db: redirect
+
+[smtp]
+
+host: localhost
+port: 25
 
 [aws]
 
@@ -11,17 +16,18 @@ access_key_id: [amazon access key]
 secret_access_key: [amazon secret access]
 hosted_zone_id: [amazon hosted zone id]
 
+[mail]
+
+#Activation email form field
+from: support@example.com
+
 [redirect]
 
 domain: [domain for dynamic dns]
-default_url: [default url to redirect if user not found]
 #Send activation token by email (True) or return as Token header (False)
-token_by_mail: True
+activate_by_email: true
+activate_url_template: http://redirect.com/user/activate?token={0}
+auth_secret_key: 123456790
 
-[mail]
-#Activation email form field
-from: noreply@example.com
-
-[api]
-
-activate_url_template: [api activate url template token value should be {0}]
+# use mock only for testing
+mock_dns: false
