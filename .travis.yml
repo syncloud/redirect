@@ -6,6 +6,7 @@ install:
   - pip install -r requirements.txt
   - pip install -r dev_requirements.txt
 before_script:
+  - cp redirect/config.cfg.test redirect/config.cfg
   - sudo service postfix stop
   - smtp-sink -d "outbox/%d.%H.%M.%S" localhost:2500 1000 &
   - mysql < db/init.sql
