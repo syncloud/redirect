@@ -76,9 +76,9 @@ def manager():
     mail_from = config.get('mail', 'from')
 
     redirect_domain = config.get('redirect', 'domain')
-    redirect_activate_by_email = config.get('redirect', 'activate_by_email').lower() != 'false'
+    redirect_activate_by_email = config.getboolean('redirect', 'activate_by_email')
     activate_url_template = config.get('redirect', 'activate_url_template')
-    mock_dns = bool(config.get('redirect', 'mock_dns'))
+    mock_dns = config.getboolean('redirect', 'mock_dns')
 
     if mock_dns:
         dns = MagicMock()

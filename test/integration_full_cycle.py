@@ -12,7 +12,7 @@ config = ConfigParser.ConfigParser()
 config.read(os.path.dirname(__file__) + '/test_config.cfg')
 
 test_url = config.get('full_cycle', 'test_url')
-user = 'user1'
+user = 'user6'
 password = 'pass123'
 email = user + '@example.com'
 
@@ -45,7 +45,7 @@ class TestIntegrationCycle(unittest.TestCase):
 
         #  Validate DNS (one)
         self.assertEquals(
-            self.wait_for_dns('device.{0}.test.com'.format(user), 'A', lambda v: v.address == '192.168.0.1').address,
+            self.wait_for_dns('device.{0}.test.com'.format(user), 'A', lambda v: v and v.address == '192.168.0.1').address,
             '192.168.0.1')
         srv = self.wait_for_dns('_owncloud._http._tcp.{0}.test.com'.format(user), 'SRV')
         self.assertEquals(srv.port, 80)
@@ -59,7 +59,7 @@ class TestIntegrationCycle(unittest.TestCase):
 
         #  Validate DNS (two)
         self.assertEquals(
-            self.wait_for_dns('device.{0}.test.com'.format(user), 'A', lambda v: v.address == '192.168.0.2').address,
+            self.wait_for_dns('device.{0}.test.com'.format(user), 'A', lambda v: v and v.address == '192.168.0.2').address,
             '192.168.0.2')
         srv = self.wait_for_dns('_owncloud._http._tcp.{0}.test.com'.format(user), 'SRV')
         self.assertEquals(srv.port, 81)
