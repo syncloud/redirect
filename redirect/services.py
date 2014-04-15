@@ -5,6 +5,7 @@ from util import hash
 import servicesexceptions
 import util
 
+
 class Users:
     def __init__(self, user_storage, activate_by_email, mail, activate_url_template, dns, domain):
         self.storage = user_storage
@@ -129,3 +130,25 @@ class Users:
             raise servicesexceptions.not_found('The second level domain is not registered')
 
         return 'http://device.{0}.{1}:{2}/owncloud'.format(user_domain, self.domain, user.port)
+
+    def delete_user(self, request):
+        validator = Validator(request)
+        email = validator.email()
+        password = validator.password()
+        errors = validator.errors
+
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
+        user = self.get_user(email)
+        if not user or not user.active or not hash(password) == user.password_hash:
+            raise servicesexceptions.forbidden('Authentication failed')
+
+        deleted = self.storage.delete_user(email)
+        if not deleted:
+            raise servicesexceptions.conflict('Unable to delete user')
+
+        self.dns.delete_records(user.user_domain, user.ip, user.port, self.domain)
+
+        return True

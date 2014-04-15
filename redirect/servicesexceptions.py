@@ -8,14 +8,18 @@ class ServiceException(Exception):
         if status_code is not None:
             self.status_code = status_code
 
+
 def bad_request(message):
     return ServiceException(message)
+
 
 def conflict(message):
     return ServiceException(message, status_code=409)
 
+
 def forbidden(message):
     return ServiceException(message, status_code=403)
+
 
 def not_found(message):
     return ServiceException(message, status_code=404)
