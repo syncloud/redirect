@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import socket
-import urllib
+import requests
 import unittest
 import dns.resolver as resolver
 import time
@@ -21,16 +21,16 @@ class TestIntegrationCycle(unittest.TestCase):
     def test_full_cycle(self):
 
         # Create (auto activate)
-        response = urllib.urlopen(
-            "http://{}/user/create?user_domain={}&password={}&email={}"
-            .format(test_url, user, password, email))
-        self.assertEquals(response.getcode(), 200, response.read())
+        response = requests.post(
+            "http://{}/user/create".format(test_url),
+            {'user_domain': user, 'password': password, 'email': email})
+        self.assertEquals(response.status_code, 200, response.content)
 
         # Get token
-        response = urllib.urlopen(
-            "http://{}/user/get?email={}&password={}"
-            .format(test_url, email, password))
-        user_data = json.loads(response.read())
+        response = requests.get(
+            "http://{}/user/get".format(test_url),
+            params={'email': email, 'password': password})
+        user_data = json.loads(response.content)
         token = user_data['update_token']
         self.assertTrue(token is not None, token)
 
@@ -38,8 +38,10 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertFalse(self.wait_for_dns(user + '.test.com', 'CNAME'))
 
         # Change IP/port (one)
-        response = urllib.urlopen("http://{1}/domain/update?token={0}&ip=192.168.0.1&port=80".format(token, test_url))
-        self.assertEquals(response.getcode(), 200, response.read())
+        response = requests.post(
+            "http://{}/domain/update".format(test_url),
+            {'token': token, 'ip': '192.168.0.1', 'port': 80})
+        self.assertEquals(response.status_code, 200, response.content)
 
         #  Validate DNS (one)
         self.assertEquals(
@@ -50,8 +52,10 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertEquals(srv.target.to_text(True), 'device.{0}.test.com'.format(user))
 
         # Change IP/port (two)
-        response = urllib.urlopen("http://{1}/domain/update?token={0}&ip=192.168.0.2&port=81".format(token, test_url))
-        self.assertEquals(response.getcode(), 200, response.read())
+        response = requests.post(
+            "http://{}/domain/update".format(test_url),
+            {'token': token, 'ip': '192.168.0.2', 'port': 81})
+        self.assertEquals(response.status_code, 200, response.content)
 
         #  Validate DNS (two)
         self.assertEquals(
@@ -62,8 +66,10 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertEquals(srv.target.to_text(True), 'device.{0}.test.com'.format(user))
 
         # Remove
-        response = urllib.urlopen("http://{1}/user/delete?email={0}&password={}".format(email, password, test_url))
-        self.assertEquals(response.getcode(), 200, response.read())
+        response = requests.post(
+            "http://{0}/user/delete".format(test_url),
+            {'email': email, 'password': password})
+        self.assertEquals(response.status_code, 200, response.content)
 
         # Check DNS (nothing)
         self.assertFalse(self.wait_for_dns(user + '.test.com', 'CNAME', lambda v: not v))

@@ -6,6 +6,7 @@ from urlparse import urljoin
 from fakesmtp import FakeSmtp
 from urlparse import urlparse
 
+
 class TestWebRest(unittest.TestCase):
 
     base_url = r'http://127.0.0.1:5000'
