@@ -59,9 +59,9 @@ def user_delete():
 @cross_origin()
 def handle_exception(error):
     if isinstance(error, ServiceException):
-        return error.message, error.status_code
+        return jsonify(message=error.message), error.status_code
     else:
-        return error.message, 500
+        return jsonify(message=error.message), 500
 
 
 def manager():
