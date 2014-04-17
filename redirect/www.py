@@ -77,7 +77,7 @@ def logout():
 @login_required
 def user():
     user = current_user.user
-    return jsonify(email=user.email, user_domain=user.user_domain, ip=user.ip, port=user.port)
+    return jsonify(email=user.email, user_domain=user.user_domain, ip=user.ip, port=user.port, update_token=user.update_token)
 
 @app.errorhandler(Exception)
 @cross_origin()

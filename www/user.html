@@ -3,10 +3,33 @@ layout: default
 title: User
 ---
 
-<div>
-  <h2>User</h2>
-  <div id="placeholder"></div>
+<div class="container">
+  <h2>User boris@redirect.com</h2>
+  <br/>
+  <div class="row">
+    <div class="col-md-6" id="domains">
+      </div>
+  </div>
+
 </div>
+
+<script type="text/html" id="domain_template">
+<![CDATA[
+  <div class="panel panel-default">
+    <div class="panel-heading">Your domain: <a href="<%= this.full_domain %>"><%= this.full_domain %></a></div>
+    <div class="panel-body">
+      Address:
+      <% if (this.full_address !== null) { %>
+        <a href="<%= this.full_address %>"><%= this.full_address %></a>
+      <% } else { %>
+        not mapped
+      <% } %>
+      <br/>
+      Update token: <%= this.update_token %>
+    </div>
+  </div>
+]]>
+</script>
 
 <script type="text/javascript">
 $( document ).ready(function() {
@@ -19,7 +42,19 @@ $( document ).ready(function() {
             xhr.withCredentials = true;
         },
         success: function( data ) {
-            $("#placeholder").text(data.email);            
+            var user = data;
+
+            var full_address = null;
+            if (user.ip !== null)
+                full_address = user.ip + ':' + user.port;
+
+            var domain = {
+                full_domain: user.user_domain + '.redirect.com',
+                full_address: full_address,
+                update_token: user.update_token,
+            };
+
+            $('#domains').append($('#domain_template').jqote(domain));
         },
         error: function( xhr ) {
             alert( "user get fail" );
