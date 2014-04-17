@@ -12,6 +12,10 @@
     sudo useradd -m redirect
     sudo service apache2 restart
 
+#### Apache multiple-instances
+
+sh /usr/share/doc/apache2/examples/setup-instance xxx
+
 ### Configure mail server
 
     sudo apt-get install exim4
