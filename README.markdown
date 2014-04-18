@@ -68,3 +68,34 @@ sudo cp apache/redirect.conf /etc/apache2/sites-available
 sudo a2ensite redirect
 sudo service apache2 restart
 ````
+### Test environment deployment
+
+#### Add redirect user and test site dir
+
+````
+sudo useradd redirect
+sudo mkdir /var/www/redirect-test
+sudo chown redirect. /var/www/redirect-test
+sudo su redirect
+cd /var/www/redirect-test
+````
+#### Clone repo to test www dir
+
+````
+git clone https://github.com/syncloud/redirect .
+````
+#### Add crontab entry
+````
+crontab -e
+````
+````
+*/1 * * * * /var/www/redirect-test/deploy.sh > /var/www/redirect-test/deploy.log
+````
+
+#### Add apache restart to sudoers
+````
+sudo visudo -f /etc/sudoers.d/apache
+````
+````
+redirect ALL = (root) NOPASSWD: /usr/bin/service apache2-test restart
+````
