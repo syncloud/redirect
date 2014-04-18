@@ -1,4 +1,4 @@
-from redirect.validation import Validator, Validation
+from redirect.validation import Validator
 import unittest
 
 valid_params = {
@@ -130,34 +130,3 @@ class TestValidation(unittest.TestCase):
         validator.user_domain()
         validator.password()
         self.assertEquals(2, len(validator.errors))
-
-    def test_all_valid(self):
-
-        errors, user_domain, email, password, port, ip = Validation().validate_create(valid_params)
-
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(user_domain, 'username')
-        self.assertEqual(email, 'valid@mail.com')
-        self.assertEqual(password, 'pass123456')
-        self.assertEqual(port, 80)
-        self.assertEqual(ip, '192.168.1.1')
-
-    def test_delete_user_domain_missing(self):
-
-        params = {'password': 'pass123'}
-
-        errors, user_domain, password = Validation().validate_credentials(params)
-
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(password, 'pass123')
-        self.assertFalse(user_domain)
-
-    def test_delete_password_missing(self):
-
-        params = {'user_domain': 'user'}
-
-        errors, user_domain, password = Validation().validate_credentials(params)
-
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(user_domain, 'user')
-        self.assertFalse(password)
