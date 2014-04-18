@@ -76,10 +76,14 @@ class Validator:
             return None
         return self.params['token']
 
-    def ip(self):
-        if 'ip' not in self.params:
+    def ip(self, default_ip=None):
+
+        ip = default_ip
+        if 'ip' in self.params:
+            ip = self.params['ip']
+        if not ip:
             return None
-        ip = self.params['ip']
+
         try:
             socket.inet_aton(ip)
         except socket.error:

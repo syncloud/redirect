@@ -25,7 +25,7 @@ from: support@example.com
 
 domain: [domain for dynamic dns]
 #Send activation token by email (True) or return as Token header (False)
-activate_by_email: true
+activate_by_email: false
 activate_url_template: http://redirect.com/user/activate?token={0}
 auth_secret_key: 123456790
 

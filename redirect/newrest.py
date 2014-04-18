@@ -49,11 +49,20 @@ def update_ip_port():
     return 'Domain was updated', 200
 
 
+#TODO: Backward compatibility
+@app.route('/update', methods=["GET"])
+@cross_origin()
+def update_ip_port_old():
+    manager().update_ip_port(request.args, request.remote_addr)
+    return 'Domain was updated', 200
+
+
 @app.route('/user/delete', methods=["POST"])
 @cross_origin()
 def user_delete():
     manager().delete_user(request.form)
     return 'User deleted', 200
+
 
 @app.errorhandler(Exception)
 @cross_origin()
