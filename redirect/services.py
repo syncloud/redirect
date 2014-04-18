@@ -91,10 +91,10 @@ class Users:
 
         return user
 
-    def update_ip_port(self, request):
+    def update_ip_port(self, request, request_ip=None):
         validator = Validator(request)
         token = validator.token()
-        ip = validator.ip()
+        ip = validator.ip(request_ip)
         port = validator.port()
         errors = validator.errors
 

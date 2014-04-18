@@ -53,7 +53,7 @@ def update_ip_port():
 @app.route('/update', methods=["GET"])
 @cross_origin()
 def update_ip_port_old():
-    manager().update_ip_port(request.args)
+    manager().update_ip_port(request.args, request.remote_addr)
     return 'Domain was updated', 200
 
 

@@ -88,6 +88,14 @@ class TestValidation(unittest.TestCase):
         self.assertIsNone(ip)
         self.assertEquals(0, len(validator.errors))
 
+    def test_ip_default(self):
+
+        params = {}
+        validator = Validator(params)
+        ip = validator.ip('192.168.0.1')
+        self.assertEquals(ip, '192.168.0.1')
+        self.assertEquals(0, len(validator.errors))
+
     def test_ip_invalid(self):
 
         params = {'ip': '256.256.256.256'}

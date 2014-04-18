@@ -13,7 +13,6 @@ fi
 if [ -f ${REV_FILE} ]; then
   CURRENT_REV=$(<${REV_FILE})
   if [ "$CURRENT_REV" == "$LATEST_REV" ]; then
-    echo "No changes since last check"
     exit 1
   fi
 fi
