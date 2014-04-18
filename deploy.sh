@@ -19,6 +19,10 @@ fi
 echo "$LATEST_REV" > ${REV_FILE}
 
 git pull
+./restart.sh
 cp ${REV_FILE} www/${REV_FILE}
 cd www
 jekyll
+
+cd ..
+cp deploy.log deploy.log.last
