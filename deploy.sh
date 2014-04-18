@@ -3,7 +3,7 @@
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 GIT_URL=https://github.com/syncloud/redirect
-REV_FILE=.revision
+REV_FILE=revision
 LATEST_REV=$(git ls-remote ${GIT_URL} refs/heads/master | cut -f1)
 if [ "$LATEST_REV" == "" ]; then
   echo "Unable to get latest version"
