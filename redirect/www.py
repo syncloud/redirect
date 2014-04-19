@@ -2,7 +2,6 @@ import ConfigParser
 import os
 from flask import Flask, request, redirect, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
-from flask_cors import cross_origin
 import services
 import storage
 from servicesexceptions import ServiceException
@@ -58,7 +57,6 @@ def index():
     return redirect(manager().redirect_url(request.url))
 
 @app.route("/login", methods=["POST"])
-@cross_origin()
 def login():
     user = manager().authenticate(request.form)
     user_flask = UserFlask(user)
@@ -66,31 +64,23 @@ def login():
     return 'User logged in', 200
 
 @app.route("/logout", methods=["POST"])
-@cross_origin()
 @login_required
 def logout():
     logout_user()
     return 'User logged out', 200
 
 @app.route("/user", methods=["GET"])
-@cross_origin()
 @login_required
 def user():
     user = current_user.user
     return jsonify(email=user.email, user_domain=user.user_domain, ip=user.ip, port=user.port, update_token=user.update_token)
 
 @app.errorhandler(Exception)
-@cross_origin()
 def handle_exception(error):
     if isinstance(error, ServiceException):
-        return error.message, error.status_code
+        return jsonify(message=error.message), error.status_code
     else:
-        return error.message, 500
-
-@app.errorhandler(401)
-@cross_origin()
-def handle_401(e):
-        return e, 401
+        return jsonify(message=error.message), 500
 
 def manager():
     mysql_host = config.get('mysql', 'host')
