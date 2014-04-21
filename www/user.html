@@ -1,10 +1,12 @@
 ---
 layout: default
 title: User
+
+main_menu_item: menu_user
 ---
 
 <div class="container">
-  <h2>User boris@redirect.com</h2>
+  <h2>User <span id="header_user_name"></span></h2>
   <br/>
   <div class="row">
     <div class="col-md-6" id="domains">
@@ -51,9 +53,15 @@ $( document ).ready(function() {
             };
 
             $('#domains').append($('#domain_template').jqote(domain));
+
+            $('#header_user_name').text(user.email);
         })
         .fail( function(xhr, textStatus, errorThrown) {
-            alert( "user get fail" );
+            if (xhr.status === 401) {
+                window.location.href = "login.html";
+            } else {
+                window.location.href = "error.html";
+            }
         });
 });
 </script>

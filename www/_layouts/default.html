@@ -3,11 +3,16 @@
 
 <head>
 {% include header.html %}
-  
+
+{% include 3rdparties.html %}
+
   <link href="css/main-menu.css" rel="stylesheet">
-  <link href="css/register.css" rel="stylesheet">
-  
-{% include scripts.html %}
+
+{% if page.styles %}
+  <link href="{{ page.styles }}" rel="stylesheet">
+{% endif %}
+
+{% include global-code.html %}
 </head>
 
 <body>
@@ -15,6 +20,8 @@
 {% include main-menu.html %}
 
 {{ content }}
+
+{% include main-menu-ready.html %}
 
 </body>
 </html>

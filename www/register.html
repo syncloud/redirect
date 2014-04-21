@@ -1,6 +1,9 @@
 ---
 layout: default
 title: Register
+
+styles: css/form-center.css
+main_menu_item: menu_register
 ---
 
 <form class="form-horizontal" id="form-register" method="post">
@@ -77,9 +80,6 @@ $( document ).ready(function() {
                 $('#errors_placeholder').append($('#error_template').jqote(error));
             });
     });
-
-    $("#menu_register").addClass("active");
-
 });
 </script>
 

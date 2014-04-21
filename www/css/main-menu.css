@@ -21,6 +21,21 @@
     font-size: 18px;
 }
 
+.navbar-nav li p {
+    line-height: 80px;
+    height: 80px;
+    padding-top: 0px;
+    font-size: 18px;
+    margin-top: 0px;
+}
+
+.navbar-nav li {
+    line-height: 80px;
+    height: 80px;
+    padding-top: 0px;
+    font-size: 18px;
+}
+
 @media (max-width: 767px) {
   .navbar-nav > li > a {
     line-height: 24px;
