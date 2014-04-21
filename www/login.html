@@ -54,27 +54,15 @@ $( document ).ready(function() {
         event.preventDefault();
 
         var values = $("#form-login").serializeArray();
-
         $('#errors_placeholder').empty();
-        $.ajax({
-            url: redirect.web( "login" ),
-            data: values,
-            type: "post",
-            async: true,
-            crossDomain: true,
-            beforeSend: function( xhr ) {
-                xhr.withCredentials = true;
-            },
-            success: function( data ) {
+        var posting = $.post( redirect.web( "login" ), values )
+            .done( function(data) {
                 window.location.href = "user.html";
-            },
-            error: function( xhr ) {
+            })
+            .fail( function(xhr, textStatus, errorThrown) {
                 var error = xhr.responseJSON;
                 $('#errors_placeholder').append($('#error_template').jqote(error));
-            }
-        });
-
-
+            });
     });
 });
 </script>

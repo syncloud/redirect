@@ -71,13 +71,24 @@ $( document ).ready(function() {
 
         $('#errors_placeholder').empty();
         var url = redirect.rest("user/create")
-        var posting = $.post( url, values )
+        $.post( url, values )
             .done( function(data) {
-                window.location.href = "login.html";
+                $.post( redirect.web( "login" ), values )
+                    .done( function(data) {
+                        window.location.href = "user.html";
+                    })
+                    .fail( function(xhr, textStatus, errorThrown) {
+                        var error = xhr.responseJSON;
+                        $('#errors_placeholder').append($('#error_template').jqote(error));
+                    });
             })
             .fail( function(xhr, textStatus, errorThrown) {
-                var error = xhr.responseJSON;
-                $('#errors_placeholder').append($('#error_template').jqote(error));
+                if (xhr.hasOwnProperty('responseJSON')) {
+                    var error = xhr.responseJSON;
+                    $('#errors_placeholder').append($('#error_template').jqote(error));
+                } else {
+                    window.location.href = "error.html";
+                }
             });
     });
 });
