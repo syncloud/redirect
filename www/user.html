@@ -33,15 +33,11 @@ title: User
 
 <script type="text/javascript">
 $( document ).ready(function() {
-    $.ajax({
-        url: redirect.web( "user" ),
-        type: "get",
-        async: true,
-        crossDomain: true,
-        beforeSend: function(xhr){
-            xhr.withCredentials = true;
-        },
-        success: function( data ) {
+
+    var url = redirect.web("user")
+
+    var getting = $.get( url )
+        .done( function(data) {
             var user = data;
 
             var full_address = null;
@@ -55,10 +51,9 @@ $( document ).ready(function() {
             };
 
             $('#domains').append($('#domain_template').jqote(domain));
-        },
-        error: function( xhr ) {
+        })
+        .fail( function(xhr, textStatus, errorThrown) {
             alert( "user get fail" );
-        }
-    });
+        });
 });
 </script>
