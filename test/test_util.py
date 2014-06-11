@@ -1,5 +1,5 @@
 import unittest
-from redirect.util import hash, get_second_level_domain
+from redirect.util import hash, create_token, get_second_level_domain
 
 class TestHash(unittest.TestCase):
 
@@ -38,6 +38,17 @@ class TestGetSecondLevelDomain(unittest.TestCase):
         second_level_domain_name = get_second_level_domain(url, domain)
         self.assertEquals('second', second_level_domain_name)
 
+class TestCreateToken(unittest.TestCase):
+
+    def test_length(self):
+        token = create_token()
+        self.assertIsNotNone(token)
+        self.assertTrue(len(token) > 10)
+
+    def test_different_every_time(self):
+        token1 = create_token()
+        token2 = create_token()
+        self.assertNotEquals(token1, token2)
 
 if __name__ == '__main__':
     unittest.run()
