@@ -1,10 +1,7 @@
-import uuid
 from models import User
 from validation import Validator
-from util import hash
 import servicesexceptions
 import util
-
 
 class Users:
     def __init__(self, user_storage, activate_by_email, mail, activate_url_template, dns, domain):
@@ -37,15 +34,16 @@ class Users:
         if by_domain and by_domain.user_domain == user_domain:
             raise servicesexceptions.conflict('User domain name is already in use')
 
-        update_token = uuid.uuid4().hex
+        update_token = util.create_token()
         activate_token = None
         active = True
         if self.activate_by_email:
             active = False
-            activate_token = uuid.uuid4().hex
-        user = User(user_domain, update_token, None, None, email, hash(password), active, activate_token)
+            activate_token = util.create_token()
+        user = User(user_domain, update_token, None, None, email, util.hash(password), active, activate_token)
 
         self.storage.insert_user(user)
+        self.storage.save()
 
         if self.activate_by_email:
             activate_url = self.activate_url_template.format(user.activate_token)
@@ -71,7 +69,7 @@ class Users:
             raise servicesexceptions.conflict('User is active already')
 
         user.update_active(True)
-        self.storage.update_user(user)
+        self.storage.save()
 
         return True
 
@@ -86,7 +84,7 @@ class Users:
             raise servicesexceptions.bad_request(message)
 
         user = self.get_user(email)
-        if not user or not user.active or not hash(password) == user.password_hash:
+        if not user or not user.active or not util.hash(password) == user.password_hash:
             raise servicesexceptions.forbidden('Authentication failed')
 
         return user
@@ -113,7 +111,7 @@ class Users:
             self.dns.create_records(user.user_domain, ip, port, self.domain)
 
         user.update_ip_port(ip, port)
-        self.storage.update_user(user)
+        self.storage.save()
 
         return user
 
@@ -142,10 +140,11 @@ class Users:
             raise servicesexceptions.bad_request(message)
 
         user = self.get_user(email)
-        if not user or not user.active or not hash(password) == user.password_hash:
+        if not user or not user.active or not util.hash(password) == user.password_hash:
             raise servicesexceptions.forbidden('Authentication failed')
 
         deleted = self.storage.delete_user(email)
+        self.storage.save()
         if not deleted:
             raise servicesexceptions.conflict('Unable to delete user')
 

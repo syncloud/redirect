@@ -1,6 +1,15 @@
-from util import hash
+from storm.locals import Bool, Int, Unicode, RawStr
 
-class User:
+class User(object):
+    __storm_table__ = "user"
+    email = Unicode(primary=True)
+    password_hash = RawStr()
+    active = Bool()
+    activate_token = Unicode()
+    user_domain = Unicode()
+    ip = Unicode()
+    update_token = Unicode()
+    port = Int()
 
     def __init__(self, user_domain, update_token, ip, port, email, password_hash, active, activate_token):
         self.user_domain = user_domain
@@ -12,14 +21,9 @@ class User:
         self.active = active
         self.activate_token = activate_token
 
-        self.updated_ip_port = False
-        self.updated_active = False
-
     def update_ip_port(self, ip, port):
         self.ip = ip
         self.port = port
-        self.updated_ip_port = True
 
     def update_active(self, active):
         self.active = active
-        self.updated_active = True

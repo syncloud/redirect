@@ -25,7 +25,7 @@ class TestUsers(unittest.TestCase):
         self.storage.get_user_by_email = MagicMock(return_value=None)
         self.storage.insert_user = MagicMock()
 
-        request = {'user_domain': 'boris', 'email': 'valid@mail.com', 'password': 'pass123456'}
+        request = {'user_domain': u'boris', 'email': u'valid@mail.com', 'password': u'pass123456'}
         user = users.create_new_user(request)
 
         self.assertTrue(self.storage.insert_user.called, 'user should be inserted in storage')
@@ -48,7 +48,7 @@ class TestUsers(unittest.TestCase):
         self.storage.get_user_by_email = MagicMock(return_value=None)
         self.storage.insert_user = MagicMock()
 
-        request = {'user_domain': 'boris', 'email': 'valid@mail.com', 'password': 'pass123456'}
+        request = {'user_domain': u'boris', 'email': u'valid@mail.com', 'password': u'pass123456'}
         user = users.create_new_user(request)
 
         self.assertTrue(self.storage.insert_user.called, 'user should be inserted in storage')
@@ -64,7 +64,7 @@ class TestUsers(unittest.TestCase):
 
     def test_create_user_existing_email(self):
         users = self.get_users_service()
-        existing = User('boris', None, None, None, 'valid@mail.com', hash('pass123456'), True, None)
+        existing = User(u'boris', None, None, None, u'valid@mail.com', hash('pass123456'), True, None)
         self.storage.get_user_by_email = MagicMock(return_value=existing)
         self.storage.insert_user = MagicMock()
 
@@ -77,7 +77,7 @@ class TestUsers(unittest.TestCase):
     def test_create_user_existing_domain(self):
         users = self.get_users_service()
         self.storage.get_user_by_email = MagicMock(return_value=None)
-        existing = User('boris', None, None, None, 'valid@mail.com', hash('pass123456'), True, None)
+        existing = User(u'boris', None, None, None, u'valid@mail.com', hash('pass123456'), True, None)
         self.storage.get_user_by_domain = MagicMock(return_value=existing)
         self.storage.insert_user = MagicMock()
 
@@ -101,14 +101,13 @@ class TestUsers(unittest.TestCase):
 
     def test_activate_success(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', False, 'activatetoken123')
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', 'hash123', False, u'activatetoken123')
         self.storage.get_user_by_activate_token = MagicMock(return_value=user)
 
-        request = {'token': 'activatetoken123'}
+        request = {'token': u'activatetoken123'}
         users.activate(request)
 
         self.assertTrue(user.active)
-        self.assertTrue(self.storage.update_user.called)
 
     def test_activate_missing_token(self):
         users = self.get_users_service()
@@ -131,7 +130,7 @@ class TestUsers(unittest.TestCase):
 
     def test_activate_already_active(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', True, 'activatetoken123')
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', 'hash123', True, u'activatetoken123')
         self.storage.get_user_by_activate_token = MagicMock(return_value=user)
 
         request = {'token': 'activatetoken123'}
@@ -142,7 +141,7 @@ class TestUsers(unittest.TestCase):
 
     def test_authenticate_success(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('pass1234'), True, None)
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', hash('pass1234'), True, None)
         self.storage.get_user_by_email = MagicMock(return_value=user)
 
         request = {'email': 'boris@mail.com', 'password': 'pass1234'}
@@ -152,7 +151,7 @@ class TestUsers(unittest.TestCase):
 
     def test_authenticate_wrong_password(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('otherpass1234'), True, None)
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', hash('otherpass1234'), True, None)
         self.storage.get_user_by_email = MagicMock(return_value=user)
 
         request = {'email': 'boris@mail.com', 'password': 'pass1234'}
@@ -173,7 +172,7 @@ class TestUsers(unittest.TestCase):
 
     def test_authenticate_non_active_user(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('pass1234'), False, 'token123')
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', hash('pass1234'), False, u'token123')
         self.storage.get_user_by_email = MagicMock(return_value=user)
 
         request = {'email': 'boris@mail.com', 'password': 'pass1234'}
@@ -184,7 +183,7 @@ class TestUsers(unittest.TestCase):
 
     def test_authenticate_missing_password(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', hash('otherpass1234'), True, None)
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', hash('otherpass1234'), True, None)
         self.storage.get_user_by_email = MagicMock(return_value=user)
 
         request = {'email': 'boris@mail.com'}
@@ -195,28 +194,26 @@ class TestUsers(unittest.TestCase):
 
     def test_update_success_new_ip(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', True, None)
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', 'hash123', True, None)
         self.storage.get_user_by_update_token = MagicMock(return_value=user)
 
-        request = {'token': 'updatetoken123', 'ip': '127.0.0.1', 'port': '10001'}
+        request = {'token': u'updatetoken123', 'ip': u'127.0.0.1', 'port': u'10001'}
         user = users.update_ip_port(request)
 
         self.assertEquals('127.0.0.1', user.ip)
         self.assertEquals(10001, user.port)
-        self.assertTrue(self.storage.update_user.called)
         self.assertTrue(self.dns.create_records.called)
 
     def test_update_success_update_ip(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', '127.0.0.1', 10001, 'boris@mail.com', 'hash123', True, None)
+        user = User(u'boris', u'updatetoken123', u'127.0.0.1', 10001, u'boris@mail.com', 'hash123', True, None)
         self.storage.get_user_by_update_token = MagicMock(return_value=user)
 
-        request = {'token': 'updatetoken123', 'ip': '127.0.0.2', 'port': '10002'}
+        request = {'token': u'updatetoken123', 'ip': u'127.0.0.2', 'port': u'10002'}
         user = users.update_ip_port(request)
 
         self.assertEquals('127.0.0.2', user.ip)
         self.assertEquals(10002, user.port)
-        self.assertTrue(self.storage.update_user.called)
         self.assertTrue(self.dns.update_records.called)
 
     def test_update_wrong_token(self):
@@ -245,7 +242,7 @@ class TestUsers(unittest.TestCase):
 
     def test_update_non_active_user(self):
         users = self.get_users_service()
-        user = User('boris', 'updatetoken123', None, None, 'boris@mail.com', 'hash123', False, 'token1234')
+        user = User(u'boris', u'updatetoken123', None, None, u'boris@mail.com', 'hash123', False, u'token1234')
         self.storage.get_user_by_update_token = MagicMock(return_value=user)
 
         request = {'token': 'updatetoken123', 'ip': '127.0.0.1', 'port': '10001'}

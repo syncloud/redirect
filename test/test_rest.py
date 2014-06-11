@@ -1,11 +1,10 @@
 import unittest
 import requests
-import uuid
 import json
 from urlparse import urljoin
 from fakesmtp import FakeSmtp
 from urlparse import urlparse
-
+from redirect.util import create_token
 
 class TestWebRest(unittest.TestCase):
 
@@ -29,7 +28,7 @@ class TestWebRest(unittest.TestCase):
         self.smtp.clear()
 
     def test_user_create_success(self):
-        user_domain = uuid.uuid4().hex
+        user_domain = create_token()
         email = user_domain+'@mail.com'
         params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
         response = self.post('/user/create', params)
@@ -38,7 +37,7 @@ class TestWebRest(unittest.TestCase):
         self.assertFalse(self.smtp.empty())
 
     def test_user_activate_success(self):
-        user_domain = uuid.uuid4().hex
+        user_domain = create_token()
         email = user_domain+'@mail.com'
         create_params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
         self.post('/user/create', create_params)
@@ -52,7 +51,7 @@ class TestWebRest(unittest.TestCase):
         self.assertEqual(200, activate_response.status_code)
 
     def test_domain_update(self):
-        user_domain = uuid.uuid4().hex
+        user_domain = create_token()
         email = user_domain+'@mail.com'
         self.post('/user/create', {'user_domain': user_domain, 'email': email, 'password': 'pass123456'})
         activate_token = self.get_token(self.smtp.emails()[0])
