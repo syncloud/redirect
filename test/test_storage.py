@@ -1,15 +1,15 @@
 import unittest
-import ConfigParser
-import os
-from redirect.models import User
-from redirect.storage import UserStorage
+
+from helpers import mysql_spec_test, generate_user, generate_domain
+
 from redirect.util import hash
-from redirect.util import create_token
+
+from redirect.session_alchemy import get_session_maker, SessionContextFactory
+from redirect.storage import Storage
 
 class TestStorageUser(unittest.TestCase):
 
     def assertUser(self, expected, actual):
-
         if expected is None:
             self.assertIsNone(actual)
         if expected is not None:
@@ -18,134 +18,167 @@ class TestStorageUser(unittest.TestCase):
             self.assertEquals(expected.email, actual.email, 'Users should have the same email')
             self.assertEquals(expected.password_hash, actual.password_hash, 'Users should have the same password_hash')
             self.assertEquals(expected.active, actual.active, 'Users should have the same active')
-            self.assertEquals(expected.user_domain, actual.user_domain, 'Users should have the same user_domain')
-            self.assertEquals(expected.update_token, actual.update_token, 'Users should have the same update_token')
             self.assertEquals(expected.activate_token, actual.activate_token, 'Users should have the same activate_token')
 
-    def generate_user(self):
-        domain = create_token()
-        email = unicode(domain + '@mail.com')
-        update_token = create_token()
-        activate_token = create_token()
-        user = User(domain, update_token, u'127.0.0.1', 10001, email, hash('pass1234'), False, activate_token)
-        return user
+    def assertDomain(self, expected, actual):
+        if expected is None:
+            self.assertIsNone(actual)
+        if expected is not None:
+            self.assertIsNotNone(actual)
+        if expected is not None and actual is not None:
+            self.assertEquals(expected.user_domain, actual.user_domain, 'Users should have the same user_domain')
+            self.assertEquals(expected.ip, actual.ip, 'Users should have the same ip')
+            self.assertEquals(expected.update_token, actual.update_token, 'Users should have the same update_token')
+            self.assertEquals(expected.user_id, actual.user_id, 'Users should have the same user_id')
 
-    def create_storage(self):
-        config = ConfigParser.ConfigParser()
-        config_path = os.path.join(os.path.dirname(__file__), 'test_config.cfg')
-        config.read(config_path)
-        mysql_host = config.get('mysql', 'host')
-        mysql_database = config.get('mysql', 'database')
-        mysql_user = config.get('mysql', 'user')
-        mysql_password = config.get('mysql', 'password')
-        storage = UserStorage(mysql_host, mysql_user, mysql_password, mysql_database)
-        return storage
 
     def setUp(self):
+        spec = mysql_spec_test()
+        maker = get_session_maker(spec)
+        self.factory = SessionContextFactory(maker)
 
-        self.storage = self.create_storage()
+    def tearDown(self):
+        with self.factory() as session:
+            Storage(session).clear()
 
     def test_by_email_not_existing(self):
-
-        user = self.storage.get_user_by_email(u'some_non_existing_email')
+        with self.factory() as session:
+            user = Storage(session).get_user_by_email(u'some_non_existing_email')
         self.assertUser(None, user)
 
-    def test_insert(self):
+    def test_user_add(self):
+        with self.factory() as session:
+            storage = Storage(session)
+            user = generate_user()
+            storage.add(user)
+            read = storage.get_user_by_email(user.email)
+            self.assertUser(user, read)
 
-        user = self.generate_user()
-        self.storage.insert_user(user)
-        read = self.storage.get_user_by_email(user.email)
-        self.assertUser(user, read)
+    def test_user_add_different_session(self):
+        user = generate_user()
+        with self.factory() as session:
+            Storage(session).add(user)
+        with self.factory() as session:
+            read = Storage(session).get_user_by_email(user.email)
+            self.assertUser(user, read)
 
-    def test_insert_before_save(self):
-
-        user = self.generate_user()
-        self.storage.insert_user(user)
-
-        storage2 = self.create_storage()
-        user2 = storage2.get_user_by_email(user.email)
-        self.assertUser(None, user2)
-
-    def test_insert_after_save(self):
-
-        user = self.generate_user()
-        self.storage.insert_user(user)
-        self.storage.save()
-        storage2 = self.create_storage()
-        user2 = storage2.get_user_by_email(user.email)
-        self.assertUser(user, user2)
-
-    def test_delete(self):
-
-        user = self.generate_user()
-        self.storage.insert_user(user)
-        deleted = self.storage.delete_user(user.email)
-        self.assertTrue(deleted)
-        after_delete = self.storage.get_user_by_email(user.email)
-        self.assertUser(None, after_delete)
-
-    def test_by_update_token_not_existing(self):
-
-        user = self.storage.get_user_by_update_token(u'token_not_existing')
-        self.assertUser(None, user)
-
-    def test_by_update_token_existing(self):
-
-        user = self.generate_user()
-        self.storage.insert_user(user)
-        read = self.storage.get_user_by_update_token(user.update_token)
-        self.assertUser(user, read)
+    def test_user_delete(self):
+        user = generate_user()
+        with self.factory() as session:
+            Storage(session).add(user)
+        with self.factory() as session:
+            storage = Storage(session)
+            deleted = storage.delete_user(user.email)
+            self.assertTrue(deleted)
+            after_delete = storage.get_user_by_email(user.email)
+            self.assertUser(None, after_delete)
 
     def test_by_activate_token_not_existing(self):
-
-        user = self.storage.get_user_by_activate_token(u'token_not_existing')
-        self.assertUser(None, user)
+        with self.factory() as session:
+            user = Storage(session).get_user_by_activate_token(u'token_not_existing')
+            self.assertUser(None, user)
 
     def test_by_activate_token_existing(self):
+        with self.factory() as session:
+            storage = Storage(session)
+            user = generate_user()
+            storage.add(user)
+            read = storage.get_user_by_activate_token(user.activate_token)
+            self.assertUser(user, read)
 
-        user = self.generate_user()
-        self.storage.insert_user(user)
-        read = self.storage.get_user_by_activate_token(user.activate_token)
-        self.assertUser(user, read)
+    def test_user_password_hash_fits_column(self):
+        with self.factory() as session:
+            storage = Storage(session)
+            user = generate_user()
+            user.password_hash = hash(user.password_hash)
+            storage.add(user)
+        with self.factory() as session:
+            read = Storage(session).get_user_by_email(user.email)
+            self.assertUser(user, read)
 
-    def test_by_domain_not_existing(self):
-
-        user = self.storage.get_user_by_domain(u'domain_not_existing')
-        self.assertUser(None, user)
-
-    def test_by_domain_existing(self):
-
-        user = self.generate_user()
-        self.storage.insert_user(user)
-        read = self.storage.get_user_by_domain(user.user_domain)
-        self.assertUser(user, read)
-
-    def test_password_hash_fits_column(self):
-
-        user = self.generate_user()
-        user.password_hash = hash(user.password_hash)
-        self.storage.insert_user(user)
-        read = self.storage.get_user_by_domain(user.user_domain)
-        self.assertUser(user, read)
-
-    def test_update(self):
-
-        user = self.generate_user()
+    def test_update_user(self):
+        user = generate_user()
         user.active = False
-        user.ip = u'127.0.0.1'
-        user.port = 10001
-        self.storage.insert_user(user)
-        self.storage.save()
+        with self.factory() as session:
+            Storage(session).add(user)
 
-        user.active = True
-        user.ip = u'127.0.0.2'
-        user.port = 10002
-        self.storage.save()
+        with self.factory() as session:
+            storage = Storage(session)
+            update = storage.get_user_by_email(user.email)
+            update.active = True
 
-        read = self.storage.get_user_by_email(user.email)
-        self.assertTrue(read.active)
-        self.assertEqual(u'127.0.0.2', read.ip)
-        self.assertEqual(10002, read.port)
+        with self.factory() as session:
+            read = Storage(session).get_user_by_email(user.email)
+            self.assertTrue(read.active)
+
+    def test_domain_by_update_token_not_existing(self):
+        with self.factory() as session:
+            domain = Storage(session).get_domain_by_update_token(u'token_not_existing')
+            self.assertDomain(None, domain)
+
+    def test_domain_by_update_token_existing(self):
+        user = generate_user()
+        domain = generate_domain()
+        domain.user = user
+        with self.factory() as session:
+            storage = Storage(session)
+            storage.add(user)
+            storage.add(domain)
+        with self.factory() as session:
+            read = Storage(session).get_domain_by_update_token(domain.update_token)
+        self.assertDomain(domain, read)
+        self.assertUser(user, read.user)
+
+    def test_domain_by_name_not_existing(self):
+        with self.factory() as session:
+            domain = Storage(session).get_domain_by_name(u'domain_not_existing')
+            self.assertUser(None, domain)
+
+    def test_domain_by_name_existing(self):
+        user = generate_user()
+        domain = generate_domain()
+        domain.user = user
+        with self.factory() as session:
+            storage = Storage(session)
+            storage.add(user)
+            storage.add(domain)
+        with self.factory() as session:
+            read = Storage(session).get_domain_by_name(domain.user_domain)
+        self.assertDomain(domain, read)
+        self.assertUser(user, read.user)
+
+    def test_domain_by_name_existing(self):
+        user = generate_user()
+        domain = generate_domain()
+        domain.user = user
+        with self.factory() as session:
+            storage = Storage(session)
+            storage.add(user)
+            storage.add(domain)
+        with self.factory() as session:
+            read = Storage(session).get_domain_by_name(domain.user_domain)
+        self.assertDomain(domain, read)
+        self.assertUser(user, read.user)
+
+    def test_clear(self):
+        user = generate_user()
+        domain = generate_domain()
+        domain.user = user
+        with self.factory() as session:
+            storage = Storage(session)
+            storage.add(user)
+            storage.add(domain)
+
+        with self.factory() as session:
+            Storage(session).clear()
+
+        with self.factory() as session:
+            storage = Storage(session)
+            read_domain = storage.get_domain_by_name(domain.user_domain)
+            read_user = storage.get_user_by_email(user.email)
+
+        self.assertUser(None, read_user)
+        self.assertDomain(None, read_domain)
 
 if __name__ == '__main__':
     unittest.run()

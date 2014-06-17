@@ -3,11 +3,11 @@ import os
 from flask import Flask, request, redirect, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 import services
-import storage
 from servicesexceptions import ServiceException
 from mail import Mail
 from dns import Dns
 from mock import MagicMock
+from session_alchemy import mysql_spec, get_session_maker, SessionContextFactory
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
@@ -106,10 +106,11 @@ def manager():
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
+    db_spec = mysql_spec(mysql_host, mysql_user, mysql_password, mysql_db)
+    factory = SessionContextFactory(get_session_maker(db_spec))
 
-    user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
     mail = Mail(mail_host, mail_port, mail_from)
-    users_manager = services.Users(user_storage, redirect_activate_by_email, mail, activate_url_template, dns, redirect_domain)
+    users_manager = services.Users(factory, redirect_activate_by_email, mail, activate_url_template, dns, redirect_domain)
     return users_manager
 
 if __name__ == '__main__':

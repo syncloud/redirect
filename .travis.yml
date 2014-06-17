@@ -9,7 +9,7 @@ before_script:
   - cp redirect/config.cfg.test redirect/config.cfg
   - sudo service postfix stop
   - smtp-sink -d "outbox/%d.%H.%M.%S" localhost:2500 1000 &
-  - mysql < db/init.sql
+  - mysql < db/ground_zero.sql
   - python redirect/rest.py &
   - sleep 3
 script: py.test --cov redirect

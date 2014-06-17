@@ -1,29 +1,57 @@
-from storm.locals import Bool, Int, Unicode, RawStr
+from sqlalchemy import Table, Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declarative_base
 
-class User(object):
-    __storm_table__ = "user"
-    email = Unicode(primary=True)
-    password_hash = RawStr()
-    active = Bool()
-    activate_token = Unicode()
-    user_domain = Unicode()
-    ip = Unicode()
-    update_token = Unicode()
-    port = Int()
+Base = declarative_base()
 
-    def __init__(self, user_domain, update_token, ip, port, email, password_hash, active, activate_token):
-        self.user_domain = user_domain
-        self.update_token = update_token
-        self.ip = ip
-        self.port = port
+class User(Base):
+    __tablename__ = "user"
+    id = Column(Integer, primary_key=True)
+    email = Column(String())
+    password_hash = Column(String())
+    active = Column(Boolean())
+    activate_token = Column(String())
+
+    domains = relationship("Domain", lazy='subquery')
+
+    def __init__(self, email, password_hash, active, activate_token):
         self.email = email
         self.password_hash = password_hash
         self.active = active
         self.activate_token = activate_token
 
-    def update_ip_port(self, ip, port):
-        self.ip = ip
-        self.port = port
-
     def update_active(self, active):
         self.active = active
+
+
+class Domain(Base):
+    __tablename__ = "domain"
+    id = Column(Integer, primary_key=True)
+    user_domain = Column(String())
+    ip = Column(String())
+    update_token = Column(String())
+
+    user_id = Column(Integer, ForeignKey('user.id'))
+    user = relationship("User", lazy='subquery')
+
+    services = relationship("Service", lazy='subquery')
+
+    def __init__(self, user_domain, ip=None, update_token=None):
+        self.user_domain = user_domain
+        self.ip = ip
+        self.update_token = update_token
+
+class Service(Base):
+    __tablename__ = "service"
+    id = Column(Integer, primary_key=True)
+    name = Column(String())
+    type = Column(String())
+    port = Column(Integer())
+
+    domain_id = Column(Integer, ForeignKey('domain.id'))
+    domain = relationship("Domain", lazy='subquery')
+
+    def __init__(self, name, type, port):
+        self.name = name
+        self.type = type
+        self.port = port

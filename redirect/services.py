@@ -1,19 +1,22 @@
-from models import User
+from models import User, Domain, Service
 from validation import Validator
 import servicesexceptions
 import util
+from storage import Storage
 
 class Users:
-    def __init__(self, user_storage, activate_by_email, mail, activate_url_template, dns, domain):
-        self.storage = user_storage
+    def __init__(self, db_session_factory, activate_by_email, mail, activate_url_template, dns, domain):
+        self.storage = None
         self.activate_by_email = activate_by_email
         self.mail = mail
         self.activate_url_template = activate_url_template
         self.dns = dns
         self.domain = domain
+        self.factory = db_session_factory
 
     def get_user(self, email):
-        return self.storage.get_user_by_email(email)
+        with self.factory() as session:
+            return Storage(session).get_user_by_email(email)
 
     def create_new_user(self, request):
         validator = Validator(request)
@@ -26,28 +29,44 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        by_email = self.get_user(email)
-        if by_email and by_email.email == email:
-            raise servicesexceptions.conflict('Email is already registered')
+        user = None
+        domain = None
+        with self.factory() as session:
+            storage = Storage(session)
 
-        by_domain = self.storage.get_user_by_domain(user_domain)
-        if by_domain and by_domain.user_domain == user_domain:
-            raise servicesexceptions.conflict('User domain name is already in use')
+            by_email = storage.get_user_by_email(email)
+            if by_email and by_email.email == email:
+                raise servicesexceptions.conflict('Email is already registered')
 
-        update_token = util.create_token()
-        activate_token = None
-        active = True
-        if self.activate_by_email:
-            active = False
-            activate_token = util.create_token()
-        user = User(user_domain, update_token, None, None, email, util.hash(password), active, activate_token)
+            by_domain = storage.get_domain_by_name(user_domain)
+            if by_domain and by_domain.user_domain == user_domain:
+                raise servicesexceptions.conflict('User domain name is already in use')
 
-        self.storage.insert_user(user)
-        self.storage.save()
+            update_token = util.create_token()
+            activate_token = None
+            active = True
+            if self.activate_by_email:
+                active = False
+                activate_token = util.create_token()
+
+            user = User(email, util.hash(password), active, activate_token)
+            domain = Domain(user_domain, None, update_token)
+
+            domain.user = user
+            user.domains.append(domain)
+
+            service = Service('owncloud', '_http._tcp', None)
+
+            service.domain = domain
+            domain.services.append(service)
+
+            storage.add(user)
+            storage.add(domain)
+            storage.add(service)
 
         if self.activate_by_email:
             activate_url = self.activate_url_template.format(user.activate_token)
-            full_domain = '{0}.{1}'.format(user.user_domain, self.domain)
+            full_domain = '{0}.{1}'.format(domain.user_domain, self.domain)
             self.mail.send_activate(full_domain, user.email, activate_url)
 
         return user
@@ -61,15 +80,17 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        user = self.storage.get_user_by_activate_token(token)
-        if not user:
-            raise servicesexceptions.bad_request('Invalid activation token')
+        with self.factory() as session:
+            storage = Storage(session)
 
-        if user.active:
-            raise servicesexceptions.conflict('User is active already')
+            user = storage.get_user_by_activate_token(token)
+            if not user:
+                raise servicesexceptions.bad_request('Invalid activation token')
 
-        user.update_active(True)
-        self.storage.save()
+            if user.active:
+                raise servicesexceptions.conflict('User is active already')
+
+            user.update_active(True)
 
         return True
 
@@ -100,20 +121,27 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        user = self.storage.get_user_by_update_token(token)
+        domain = None
 
-        if not user or not user.active:
-            raise servicesexceptions.bad_request('Unknown update token')
+        with self.factory() as session:
+            storage = Storage(session)
 
-        if user.ip:
-            self.dns.update_records(user.user_domain, ip, port, self.domain)
-        else:
-            self.dns.create_records(user.user_domain, ip, port, self.domain)
+            domain = storage.get_domain_by_update_token(token)
 
-        user.update_ip_port(ip, port)
-        self.storage.save()
+            if not domain or not domain.user.active:
+                raise servicesexceptions.bad_request('Unknown update token')
 
-        return user
+            service = domain.services[0]
+
+            if domain.ip:
+                self.dns.update_records(domain.user_domain, ip, port, self.domain)
+            else:
+                self.dns.create_records(domain.user_domain, ip, port, self.domain)
+
+            domain.ip = ip
+            service.port = port
+
+        return domain
 
     def redirect_url(self, request_url):
 

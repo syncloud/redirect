@@ -3,11 +3,11 @@ import os
 from flask import Flask, request, redirect, jsonify
 from flask_cors import cross_origin
 import services
-import storage
 from servicesexceptions import ServiceException
 from mail import Mail
 from dns import Dns
 from mock import MagicMock
+from session_alchemy import mysql_spec, get_session_maker, SessionContextFactory
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
@@ -38,8 +38,10 @@ def user_activate():
 @cross_origin()
 def user_get():
     user = manager().authenticate(request.args)
-    return jsonify(user_domain=user.user_domain, update_token=user.update_token, ip=user.ip,
-                   port=user.port, email=user.email, active=user.active)
+    domain = user.domains[0]
+    service = domain.services[0]
+    return jsonify(user_domain=domain.user_domain, update_token=domain.update_token, ip=domain.ip,
+                   port=service.port, email=user.email, active=user.active)
 
 
 @app.route('/domain/update', methods=["POST"])
@@ -97,9 +99,11 @@ def manager():
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
-    user_storage = storage.UserStorage(mysql_host, mysql_user, mysql_password, mysql_db)
+    db_spec = mysql_spec(mysql_host, mysql_user, mysql_password, mysql_db)
+    factory = SessionContextFactory(get_session_maker(db_spec))
+
     mail = Mail(mail_host, mail_port, mail_from)
-    users_manager = services.Users(user_storage, redirect_activate_by_email,
+    users_manager = services.Users(factory, redirect_activate_by_email,
                                    mail, activate_url_template, dns, redirect_domain)
     return users_manager
 
