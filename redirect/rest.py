@@ -39,9 +39,12 @@ def user_activate():
 def user_get():
     user = manager().authenticate(request.args)
     domain = user.domains[0]
-    service = domain.services[0]
+    port = None
+    if len(domain.services) == 1:
+        service = domain.services[0]
+        port = service.port
     return jsonify(user_domain=domain.user_domain, update_token=domain.update_token, ip=domain.ip,
-                   port=service.port, email=user.email, active=user.active)
+                   port=port, email=user.email, active=user.active)
 
 
 @app.route('/domain/update', methods=["POST"])

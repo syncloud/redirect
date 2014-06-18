@@ -52,12 +52,7 @@ class Users:
             domain.user = user
             user.domains.append(domain)
 
-            service = Service('owncloud', '_http._tcp', None)
-
-            service.domain = domain
-            domain.services.append(service)
-
-            storage.add(user, domain, service)
+            storage.add(user, domain)
 
         if self.activate_by_email:
             activate_url = self.activate_url_template.format(user.activate_token)
@@ -122,7 +117,13 @@ class Users:
             if not domain or not domain.user.active:
                 raise servicesexceptions.bad_request('Unknown update token')
 
-            service = domain.services[0]
+            if len(domain.services) > 0:
+                service = domain.services[0]
+                service.port = port
+            else:
+                service = Service('owncloud', '_http._tcp', port)
+                service.domain = domain
+                domain.services.append(service)
 
             if domain.ip:
                 self.dns.update_records(domain.user_domain, ip, port, self.domain)
@@ -130,7 +131,6 @@ class Users:
                 self.dns.create_records(domain.user_domain, ip, port, self.domain)
 
             domain.ip = ip
-            service.port = port
 
         return domain
 

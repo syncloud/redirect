@@ -46,6 +46,7 @@ class Service(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String())
     type = Column(String())
+    url = Column(String())
     port = Column(Integer())
 
     domain_id = Column(Integer, ForeignKey('domain.id'))
