@@ -33,8 +33,9 @@ class Storage:
         domain = self.session.query(Domain).filter(Domain.user_domain == user_domain).first()
         return domain
 
-    def add(self, obj):
-        self.session.add(obj)
+    def add(self, *args):
+        for obj in args:
+            self.session.add(obj)
 
     def clear(self):
         self.session.query(Service).delete()
@@ -48,7 +49,7 @@ class SessionContext:
         self.session = session
 
     def __enter__(self):
-        return self.session
+        return Storage(self.session)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:

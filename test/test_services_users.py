@@ -9,7 +9,6 @@ from redirect.mail import Mail
 from redirect.services import Users
 from redirect.servicesexceptions import ServiceException
 
-from redirect.storage import Storage
 
 class TestUsers(unittest.TestCase):
 
@@ -22,18 +21,15 @@ class TestUsers(unittest.TestCase):
         self.create_storage = get_storage_creator()
 
     def tearDown(self):
-        with self.create_storage() as session:
-            storage = Storage(session)
+        with self.create_storage() as storage:
             storage.clear()
 
     def add_user(self, user):
-        with self.create_storage() as session:
-            storage = Storage(session)
+        with self.create_storage() as storage:
             storage.add(user)
 
     def get_user(self, email):
-        with self.create_storage() as session:
-            storage = Storage(session)
+        with self.create_storage() as storage:
             return storage.get_user_by_email(email)
 
     def get_users_service(self, activate_by_email=True):

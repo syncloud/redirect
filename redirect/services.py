@@ -2,7 +2,6 @@ from models import User, Domain, Service
 from validation import Validator
 import servicesexceptions
 import util
-from storage import Storage
 
 class Users:
     def __init__(self, create_storage, activate_by_email, mail, activate_url_template, dns, domain):
@@ -15,8 +14,8 @@ class Users:
         self.create_storage = create_storage
 
     def get_user(self, email):
-        with self.create_storage() as session:
-            return Storage(session).get_user_by_email(email)
+        with self.create_storage() as storage:
+            return storage.get_user_by_email(email)
 
     def create_new_user(self, request):
         validator = Validator(request)
@@ -31,9 +30,7 @@ class Users:
 
         user = None
         domain = None
-        with self.create_storage() as session:
-            storage = Storage(session)
-
+        with self.create_storage() as storage:
             by_email = storage.get_user_by_email(email)
             if by_email and by_email.email == email:
                 raise servicesexceptions.conflict('Email is already registered')
@@ -60,9 +57,7 @@ class Users:
             service.domain = domain
             domain.services.append(service)
 
-            storage.add(user)
-            storage.add(domain)
-            storage.add(service)
+            storage.add(user, domain, service)
 
         if self.activate_by_email:
             activate_url = self.activate_url_template.format(user.activate_token)
@@ -80,9 +75,7 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        with self.create_storage() as session:
-            storage = Storage(session)
-
+        with self.create_storage() as storage:
             user = storage.get_user_by_activate_token(token)
             if not user:
                 raise servicesexceptions.bad_request('Invalid activation token')
@@ -123,9 +116,7 @@ class Users:
 
         domain = None
 
-        with self.create_storage() as session:
-            storage = Storage(session)
-
+        with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
 
             if not domain or not domain.user.active:
