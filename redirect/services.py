@@ -5,17 +5,17 @@ import util
 from storage import Storage
 
 class Users:
-    def __init__(self, db_session_factory, activate_by_email, mail, activate_url_template, dns, domain):
+    def __init__(self, create_storage, activate_by_email, mail, activate_url_template, dns, domain):
         self.storage = None
         self.activate_by_email = activate_by_email
         self.mail = mail
         self.activate_url_template = activate_url_template
         self.dns = dns
         self.domain = domain
-        self.factory = db_session_factory
+        self.create_storage = create_storage
 
     def get_user(self, email):
-        with self.factory() as session:
+        with self.create_storage() as session:
             return Storage(session).get_user_by_email(email)
 
     def create_new_user(self, request):
@@ -31,7 +31,7 @@ class Users:
 
         user = None
         domain = None
-        with self.factory() as session:
+        with self.create_storage() as session:
             storage = Storage(session)
 
             by_email = storage.get_user_by_email(email)
@@ -80,7 +80,7 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        with self.factory() as session:
+        with self.create_storage() as session:
             storage = Storage(session)
 
             user = storage.get_user_by_activate_token(token)
@@ -123,7 +123,7 @@ class Users:
 
         domain = None
 
-        with self.factory() as session:
+        with self.create_storage() as session:
             storage = Storage(session)
 
             domain = storage.get_domain_by_update_token(token)

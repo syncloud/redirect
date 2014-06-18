@@ -1,36 +1,31 @@
 import os
 import ConfigParser
-from redirect.util import create_token
-from redirect.session_alchemy import mysql_spec
+from redirect.util import create_token, hash
 from redirect.models import User, Domain, Service
+from redirect.storage import get_session_maker, SessionContextFactory, mysql_spec_config
 
-from redirect.util import hash
 
-def mysql_spec_test():
+def get_storage_creator():
+    config = get_test_config()
+    spec = mysql_spec_config(config)
+    maker = get_session_maker(spec)
+    create_storage = SessionContextFactory(maker)
+    return create_storage
+
+
+def get_test_config():
     config = ConfigParser.ConfigParser()
     config_path = os.path.join(os.path.dirname(__file__), 'test_config.cfg')
     config.read(config_path)
-    mysql_host = config.get('mysql', 'host')
-    mysql_database = config.get('mysql', 'database')
-    mysql_user = config.get('mysql', 'user')
-    mysql_password = config.get('mysql', 'password')
-    return mysql_spec(mysql_host, mysql_user, mysql_password, mysql_database)
+    return config
 
-
-def email():
-    return unicode(create_token() + '@mail.com')
-
-def domain():
-    return create_token()
-
-def token():
-    return create_token()
 
 def generate_user():
-    uemail = email()
+    email = unicode(create_token() + '@mail.com')
     activate_token = create_token()
-    user = User(uemail, hash('pass1234'), False, activate_token)
+    user = User(email, hash('pass1234'), False, activate_token)
     return user
+
 
 def generate_domain():
     domain = create_token()

@@ -1,53 +1,43 @@
 import unittest
 from mock import MagicMock
+from fakesmtp import FakeSmtp
+from helpers import get_storage_creator
+
 from redirect.models import User
-from redirect.services import Users
 from redirect.util import hash
 from redirect.mail import Mail
+from redirect.services import Users
 from redirect.servicesexceptions import ServiceException
-from fakesmtp import FakeSmtp
-from redirect.session_alchemy import get_session_maker, SessionContextFactory
-from helpers import mysql_spec_test
 
 from redirect.storage import Storage
 
 class TestUsers(unittest.TestCase):
 
     def setUp(self):
-        self.storage = MagicMock()
         self.mail = Mail('localhost', 2500, 'support@redirect.com')
         self.smtp = FakeSmtp('outbox')
         self.smtp.clear()
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
         self.dns = MagicMock()
+        self.create_storage = get_storage_creator()
 
     def tearDown(self):
-        factory = self.session_factory()
-        with factory() as session:
+        with self.create_storage() as session:
             storage = Storage(session)
             storage.clear()
 
-    def session_factory(self):
-        spec = mysql_spec_test()
-        maker = get_session_maker(spec)
-        factory = SessionContextFactory(maker)
-        return factory
-
-    def get_users_service(self, activate_by_email=True):
-        factory = self.session_factory()
-        return Users(factory, activate_by_email, self.mail, self.activate_url_template, self.dns, 'redirect.com')
-
     def add_user(self, user):
-        factory = self.session_factory()
-        with factory() as session:
+        with self.create_storage() as session:
             storage = Storage(session)
             storage.add(user)
 
     def get_user(self, email):
-        factory = self.session_factory()
-        with factory() as session:
+        with self.create_storage() as session:
             storage = Storage(session)
             return storage.get_user_by_email(email)
+
+    def get_users_service(self, activate_by_email=True):
+        return Users(self.create_storage, activate_by_email, self.mail, self.activate_url_template, self.dns, 'redirect.com')
 
     def test_user_create_success(self):
         users = self.get_users_service()

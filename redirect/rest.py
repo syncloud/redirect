@@ -7,7 +7,7 @@ from servicesexceptions import ServiceException
 from mail import Mail
 from dns import Dns
 from mock import MagicMock
-from session_alchemy import mysql_spec, get_session_maker, SessionContextFactory
+from storage import mysql_spec_config, get_session_maker, SessionContextFactory
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
@@ -76,11 +76,6 @@ def handle_exception(error):
 
 
 def manager():
-    mysql_host = config.get('mysql', 'host')
-    mysql_user = config.get('mysql', 'user')
-    mysql_password = config.get('mysql', 'passwd')
-    mysql_db = config.get('mysql', 'db')
-
     mail_host = config.get('smtp', 'host')
     mail_port = config.get('smtp', 'port')
 
@@ -99,11 +94,11 @@ def manager():
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
-    db_spec = mysql_spec(mysql_host, mysql_user, mysql_password, mysql_db)
-    factory = SessionContextFactory(get_session_maker(db_spec))
+    db_spec = mysql_spec_config(config)
+    create_storage = SessionContextFactory(get_session_maker(db_spec))
 
     mail = Mail(mail_host, mail_port, mail_from)
-    users_manager = services.Users(factory, redirect_activate_by_email,
+    users_manager = services.Users(create_storage, redirect_activate_by_email,
                                    mail, activate_url_template, dns, redirect_domain)
     return users_manager
 
