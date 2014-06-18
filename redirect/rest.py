@@ -24,14 +24,14 @@ def index():
 @cross_origin()
 def user_create():
     manager().create_new_user(request.form)
-    return 'User was created', 200
+    return jsonify(message='User was created'), 200
 
 
 @app.route('/user/activate', methods=["GET"])
 @cross_origin()
 def user_activate():
     manager().activate(request.args)
-    return 'User was activated', 200
+    return jsonify(message='User was activated'), 200
 
 
 @app.route('/user/get', methods=["GET"])
@@ -44,14 +44,14 @@ def user_get():
         service = domain.services[0]
         port = service.port
     return jsonify(user_domain=domain.user_domain, update_token=domain.update_token, ip=domain.ip,
-                   port=port, email=user.email, active=user.active)
+                   port=port, email=user.email, active=user.active), 200
 
 
 @app.route('/domain/update', methods=["POST"])
 @cross_origin()
 def update_ip_port():
     manager().update_ip_port(request.form)
-    return 'Domain was updated', 200
+    return jsonify(message='Domain was updated'), 200
 
 
 #TODO: Backward compatibility
@@ -59,14 +59,14 @@ def update_ip_port():
 @cross_origin()
 def update_ip_port_old():
     manager().update_ip_port(request.args, request.remote_addr)
-    return 'Domain was updated', 200
+    return jsonify(message='Domain was updated'), 200
 
 
 @app.route('/user/delete', methods=["POST"])
 @cross_origin()
 def user_delete():
     manager().delete_user(request.form)
-    return 'User deleted', 200
+    return jsonify(message='User deleted'), 200
 
 
 @app.errorhandler(Exception)
