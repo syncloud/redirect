@@ -38,6 +38,18 @@ class TestGetSecondLevelDomain(unittest.TestCase):
         second_level_domain_name = get_second_level_domain(url, domain)
         self.assertEquals('second', second_level_domain_name)
 
+    def test_wrong_domain(self):
+        domain = 'other.com'
+        url = 'http://second.syncloud.com'
+        second_level_domain_name = get_second_level_domain(url, domain)
+        self.assertIsNone(second_level_domain_name)
+
+    def test_no_second_level_domain(self):
+        domain = 'syncloud.com'
+        url = 'http://syncloud.com'
+        second_level_domain_name = get_second_level_domain(url, domain)
+        self.assertIsNone(second_level_domain_name)
+
 class TestCreateToken(unittest.TestCase):
 
     def test_length(self):
