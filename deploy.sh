@@ -2,6 +2,12 @@
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 env"
+    exit 1
+fi
+
+ENV=$1
 GIT_URL=https://github.com/syncloud/redirect
 REV_FILE=revision
 LATEST_REV=$(git ls-remote ${GIT_URL} refs/heads/master | cut -f1)
@@ -19,7 +25,10 @@ fi
 echo "$LATEST_REV" > ${REV_FILE}
 
 git pull
-./restart.sh
+
+sudo pip install -r requirements.txt
+sudo service apache2-${ENV} restart
+
 cp ${REV_FILE} www/${REV_FILE}
 cd www
 jekyll
