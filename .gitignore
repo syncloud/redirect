@@ -5,3 +5,6 @@ config.cfg
 _config.yml
 revision
 deploy.log
+deploy.log.last
+.revision
+_site

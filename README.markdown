@@ -94,8 +94,9 @@ crontab -e
 
 #### Add apache restart to sudoers
 ````
-sudo visudo -f /etc/sudoers.d/apache
+sudo visudo -f /etc/sudoers.d/redirect
 ````
 ````
 redirect ALL = (root) NOPASSWD: /usr/bin/service apache2-test restart
+redirect ALL = (root) NOPASSWD: /usr/bin/pip install -r requirements.txt
 ````
