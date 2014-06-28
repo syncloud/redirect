@@ -1,6 +1,7 @@
 #!/bin/bash
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
+cd ..
 
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 env"
