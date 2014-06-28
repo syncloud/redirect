@@ -8,5 +8,5 @@ config.read(os.path.join(os.path.dirname(__file__), '../redirect/config.cfg'))
 
 print check_output("mysqldump -h {0} -u {1} -p{2} --compact redirect > /home/redirect/redirect.backup".format(
     config.get('mysql', 'host'),
-    config.get('mysql', 'login'),
+    config.get('mysql', 'user'),
     config.get('mysql', 'passwd')), shell=True)
