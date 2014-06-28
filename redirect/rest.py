@@ -54,6 +54,13 @@ def update_ip_port():
     return jsonify(message='Domain was updated'), 200
 
 
+@app.route('/domain/acquire', methods=["POST"])
+@cross_origin()
+def domain_acquire():
+    domain = manager().domain_acquire(request.form)
+    return jsonify(user_domain=domain.user_domain, update_token=domain.update_token), 200
+
+
 #TODO: Backward compatibility
 @app.route('/update', methods=["GET"])
 @cross_origin()

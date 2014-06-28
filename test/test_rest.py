@@ -7,7 +7,7 @@ from redirect.util import create_token
 from fakesmtp import FakeSmtp
 from urlparse import urlparse
 
-class FlaskrTestCase(unittest.TestCase):
+class TestFlask(unittest.TestCase):
 
     def setUp(self):
         redirect.rest.app.config['TESTING'] = True
@@ -25,6 +25,18 @@ class FlaskrTestCase(unittest.TestCase):
         parts = urlparse(link)
         token = parts.query.replace('token=', '')
         return token
+
+    def create_active_user(self):
+        self.smtp.clear()
+        email = create_token()+'@mail.com'
+        password = 'pass123456'
+        self.app.post('/user/create', data={'user_domain': create_token(), 'email': email, 'password': password})
+        activate_token = self.get_token(self.smtp.emails()[0])
+        self.app.get('/user/activate', query_string={'token': activate_token})
+        return email, password
+
+
+class TestUser(TestFlask):
 
     def test_user_create_success(self):
         user_domain = create_token()
@@ -47,18 +59,43 @@ class FlaskrTestCase(unittest.TestCase):
         activate_response = self.app.get('/user/activate', query_string=params)
         self.assertEqual(200, activate_response.status_code)
 
-    def test_domain_update(self):
+
+class TestDomain(TestFlask):
+
+    def test_acquire_new(self):
+        email, password = self.create_active_user()
+
         user_domain = create_token()
-        email = user_domain+'@mail.com'
-        self.app.post('/user/create', data={'user_domain': user_domain, 'email': email, 'password': 'pass123456'})
-        activate_token = self.get_token(self.smtp.emails()[0])
-        self.app.get('/user/activate', query_string={'token': activate_token})
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
 
-        token_response = self.app.get('/user/get', query_string={'email': email, 'password': 'pass123456'})
-        self.assertEqual(200, token_response.status_code)
-        user_data = json.loads(token_response.data)
-
-        update_token = user_data['update_token']
-
-        response = self.app.post('/domain/update', data={'token': update_token, 'ip': '127.0.0.1', 'port': '10001'})
         self.assertEqual(200, response.status_code)
+        domain_data = json.loads(response.data)
+
+        update_token = domain_data['update_token']
+        self.assertIsNotNone(update_token)
+
+    def test_acquire_existing(self):
+        user_domain = create_token()
+
+        other_email, other_password = self.create_active_user()
+        self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=other_email, password=other_password))
+
+        email, password = self.create_active_user()
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+
+        self.assertEqual(409, response.status_code)
+
+    def test_acquire_twice(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        domain_data = json.loads(response.data)
+        update_token1 = domain_data['update_token']
+
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        self.assertEqual(200, response.status_code)
+        domain_data = json.loads(response.data)
+        update_token2 = domain_data['update_token']
+
+        self.assertNotEquals(update_token1, update_token2)

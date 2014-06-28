@@ -98,6 +98,28 @@ class Users:
 
         return user
 
+    def domain_acquire(self, request):
+        user = self.authenticate(request)
+
+        validator = Validator(request)
+        user_domain = validator.new_user_domain()
+
+        with self.create_storage() as storage:
+            domain = storage.get_domain_by_name(user_domain)
+            if domain and domain.user_id != user.id:
+                raise servicesexceptions.conflict('User domain name is already in use')
+
+            update_token = util.create_token()
+            if not domain:
+                domain = Domain(user_domain, None, update_token)
+                domain.user = user
+                storage.add(domain)
+            else:
+                domain.update_token = update_token
+
+            return domain
+
+
     def update_ip_port(self, request, request_ip=None):
         validator = Validator(request)
         token = validator.token()
