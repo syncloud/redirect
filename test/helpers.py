@@ -6,7 +6,7 @@ from redirect.models import User, Domain
 
 
 def get_test_storage_creator():
-    get_storage_creator(get_test_config())
+    return get_storage_creator(get_test_config())
 
 
 def get_test_config():
