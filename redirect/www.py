@@ -2,7 +2,8 @@ import ConfigParser
 import os
 from flask import Flask, request, redirect, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
-from redirect.db_helper import get_storage_creator
+from redirect import db_helper
+import db_helper
 import services
 from servicesexceptions import ServiceException
 from mail import Mail
@@ -101,7 +102,7 @@ def manager():
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
-    create_storage = get_storage_creator(config)
+    create_storage = db_helper.get_storage_creator(config)
 
     mail = Mail(mail_host, mail_port, mail_from)
     users_manager = services.Users(create_storage, redirect_activate_by_email, mail, activate_url_template, dns, redirect_domain)
