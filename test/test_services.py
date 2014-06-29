@@ -1,13 +1,12 @@
 import unittest
 from mock import MagicMock
 from fakesmtp import FakeSmtp
-from helpers import get_storage_creator
-
 from redirect.models import User
 from redirect.util import hash
 from redirect.mail import Mail
 from redirect.services import Users
 from redirect.servicesexceptions import ServiceException
+from test.helpers import get_test_storage_creator
 
 
 class TestUsers(unittest.TestCase):
@@ -18,7 +17,7 @@ class TestUsers(unittest.TestCase):
         self.smtp.clear()
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
         self.dns = MagicMock()
-        self.create_storage = get_storage_creator()
+        self.create_storage = get_test_storage_creator()
 
     def tearDown(self):
         with self.create_storage() as storage:

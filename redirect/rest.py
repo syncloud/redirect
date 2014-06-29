@@ -2,6 +2,7 @@ import ConfigParser
 import os
 from flask import Flask, request, redirect, jsonify
 from flask_cors import cross_origin
+from redirect.db_helper import get_storage_creator
 import services
 from servicesexceptions import ServiceException
 from mail import Mail
@@ -104,8 +105,7 @@ def manager():
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
-    db_spec = mysql_spec_config(config)
-    create_storage = SessionContextFactory(get_session_maker(db_spec))
+    create_storage = get_storage_creator(config)
 
     mail = Mail(mail_host, mail_port, mail_from)
     users_manager = services.Users(create_storage, redirect_activate_by_email,

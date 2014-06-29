@@ -1,16 +1,12 @@
 import os
 import ConfigParser
+from redirect.db_helper import get_storage_creator
 from redirect.util import create_token, hash
-from redirect.models import User, Domain, Service
-from redirect.storage import get_session_maker, SessionContextFactory, mysql_spec_config
+from redirect.models import User, Domain
 
 
-def get_storage_creator():
-    config = get_test_config()
-    spec = mysql_spec_config(config)
-    maker = get_session_maker(spec)
-    create_storage = SessionContextFactory(maker)
-    return create_storage
+def get_test_storage_creator():
+    get_storage_creator(get_test_config())
 
 
 def get_test_config():
