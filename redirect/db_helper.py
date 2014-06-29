@@ -1,8 +1,8 @@
-from redirect.storage import mysql_spec_config, get_session_maker, SessionContextFactory
+import storage
 
 
 def get_storage_creator(config):
-    spec = mysql_spec_config(config)
-    maker = get_session_maker(spec)
-    create_storage = SessionContextFactory(maker)
+    spec = storage.mysql_spec_config(config)
+    maker = storage.get_session_maker(spec)
+    create_storage = storage.SessionContextFactory(maker)
     return create_storage
