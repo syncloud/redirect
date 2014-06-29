@@ -61,14 +61,6 @@ def domain_acquire():
     return jsonify(user_domain=domain.user_domain, update_token=domain.update_token), 200
 
 
-#TODO: Backward compatibility
-@app.route('/update', methods=["GET"])
-@cross_origin()
-def update_ip_port_old():
-    manager().update_ip_port(request.args, request.remote_addr)
-    return jsonify(message='Domain was updated'), 200
-
-
 @app.route('/user/delete', methods=["POST"])
 @cross_origin()
 def user_delete():
