@@ -14,8 +14,8 @@ class Validator:
             self.fields_errors[field] = []
         self.fields_errors[field].append(error)
 
-    def new_user_domain(self):
-        user_domain = self.user_domain()
+    def new_user_domain(self, error_if_missing=True):
+        user_domain = self.user_domain(error_if_missing)
         if user_domain is not None:
             if not re.match("^[\w-]+$", user_domain):
                 self.add_field_error("user_domain", "invalid characters")
@@ -25,11 +25,12 @@ class Validator:
                 self.add_field_error("user_domain", "too long (> 50)")
         return user_domain
 
-    def user_domain(self):
+    def user_domain(self, error_if_missing=True):
         if 'user_domain' in self.params:
             return self.params['user_domain']
         else:
-            self.add_field_error("user_domain", "missing")
+            if error_if_missing:
+                self.add_field_error("user_domain", "missing")
         return None
 
     def email(self):

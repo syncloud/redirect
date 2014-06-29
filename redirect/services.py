@@ -21,7 +21,7 @@ class Users:
         validator = Validator(request)
         email = validator.email()
         password = validator.password()
-        user_domain = validator.new_user_domain()
+        user_domain = validator.new_user_domain(error_if_missing=False)
         errors = validator.errors
 
         if errors:
@@ -35,9 +35,10 @@ class Users:
             if by_email and by_email.email == email:
                 raise servicesexceptions.conflict('Email is already registered')
 
-            by_domain = storage.get_domain_by_name(user_domain)
-            if by_domain and by_domain.user_domain == user_domain:
-                raise servicesexceptions.conflict('User domain name is already in use')
+            if user_domain:
+                by_domain = storage.get_domain_by_name(user_domain)
+                if by_domain and by_domain.user_domain == user_domain:
+                    raise servicesexceptions.conflict('User domain name is already in use')
 
             update_token = util.create_token()
             activate_token = None
@@ -47,17 +48,18 @@ class Users:
                 activate_token = util.create_token()
 
             user = User(email, util.hash(password), active, activate_token)
-            domain = Domain(user_domain, None, update_token)
 
-            domain.user = user
-            user.domains.append(domain)
+            if user_domain:
+                domain = Domain(user_domain, None, update_token)
+                domain.user = user
+                user.domains.append(domain)
+                storage.add(domain)
 
-            storage.add(user, domain)
+            storage.add(user)
 
         if self.activate_by_email:
             activate_url = self.activate_url_template.format(user.activate_token)
-            full_domain = '{0}.{1}'.format(domain.user_domain, self.domain)
-            self.mail.send_activate(full_domain, user.email, activate_url)
+            self.mail.send_activate(user_domain, self.domain, user.email, activate_url)
 
         return user
 

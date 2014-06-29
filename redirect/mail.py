@@ -8,19 +8,31 @@ class Mail:
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
 
-    def send_activate(self, full_domain, email_to, activate_url):
+    def send_activate(self, user_domain, domain, email_to, activate_url):
 
-        msg = MIMEText("""
-        Hello
+        if user_domain:
+            full_domain = '{0}.{1}'.format(user_domain, domain)
 
-        You recently registered domain name {0}, if this information is correct use the  link to activate it.
+            msg = MIMEText("""
+            Hello,
 
-        Domain name: {0}
+            You recently registered domain name {0}, if this information is correct use the  link to activate it.
 
-        Use the link to activate your domain: {1}
-        """.format(full_domain, activate_url))
+            Domain name: {0}
 
-        msg['Subject'] = 'Activate your domain: {0}'.format(full_domain)
+            Use the link to activate your account: {1}
+            """.format(full_domain, activate_url))
+        else:
+            msg = MIMEText("""
+            Hello,
+
+            You recently registered at {0}, if this information is correct use the link to activate it.
+
+            Use the link to activate your account: {1}
+            """.format(domain, activate_url))
+
+
+        msg['Subject'] = 'Activate your account'
         msg['From'] = self.email_from
         msg['To'] = email_to
 

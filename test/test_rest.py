@@ -30,7 +30,7 @@ class TestFlask(unittest.TestCase):
         self.smtp.clear()
         email = create_token()+'@mail.com'
         password = 'pass123456'
-        self.app.post('/user/create', data={'user_domain': create_token(), 'email': email, 'password': password})
+        self.app.post('/user/create', data={'email': email, 'password': password})
         activate_token = self.get_token(self.smtp.emails()[0])
         self.app.get('/user/activate', query_string={'token': activate_token})
         return email, password
@@ -41,22 +41,19 @@ class TestUser(TestFlask):
     def test_user_create_success(self):
         user_domain = create_token()
         email = user_domain+'@mail.com'
-        params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
-        response = self.app.post('/user/create', data=params)
+        response = self.app.post('/user/create', data={'email': email, 'password': 'pass123456'})
         self.assertEqual(200, response.status_code)
         self.assertFalse(self.smtp.empty())
 
     def test_user_activate_success(self):
         user_domain = create_token()
         email = user_domain+'@mail.com'
-        create_params = {'user_domain': user_domain, 'email': email, 'password': 'pass123456'}
-        self.app.post('/user/create', data=create_params)
+        self.app.post('/user/create', data={'email': email, 'password': 'pass123456'})
 
         self.assertFalse(self.smtp.empty())
         token = self.get_token(self.smtp.emails()[0])
 
-        params = {'token': token}
-        activate_response = self.app.get('/user/activate', query_string=params)
+        activate_response = self.app.get('/user/activate', query_string={'token': token})
         self.assertEqual(200, activate_response.status_code)
 
 
