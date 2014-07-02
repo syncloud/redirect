@@ -10,7 +10,7 @@ class Users:
         self.mail = mail
         self.activate_url_template = activate_url_template
         self.dns = dns
-        self.domain = domain
+        self.main_domain = domain
         self.create_storage = create_storage
 
     def get_user(self, email):
@@ -59,7 +59,7 @@ class Users:
 
         if self.activate_by_email:
             activate_url = self.activate_url_template.format(user.activate_token)
-            self.mail.send_activate(user_domain, self.domain, user.email, activate_url)
+            self.mail.send_activate(user_domain, self.main_domain, user.email, activate_url)
 
         return user
 
@@ -148,26 +148,26 @@ class Users:
                 domain.services.append(service)
 
             if domain.ip:
-                self.dns.update_records(domain.user_domain, ip, port, self.domain)
+                self.dns.update_records(domain.user_domain, ip, port, self.main_domain)
             else:
-                self.dns.create_records(domain.user_domain, ip, port, self.domain)
+                self.dns.create_records(domain.user_domain, ip, port, self.main_domain)
 
             domain.ip = ip
             return domain
 
-    def get_new_services(self, request_services, existing_services):
+    def get_missing(self, lookfor, lookat, compare):
         result = []
-        for s in request_services:
+        for s in lookfor:
             existing = None
-            for x in existing_services:
-                if x.port == s.port:
+            for x in lookat:
+                if compare(x, s):
                     existing = x
             if not existing:
                 result.append(s)
         return result
 
     # def get_new_services(self, services, existing_services):
-    #     return [s for s in services if not next(x for x in existing_services if x.port == s.port)]
+    #     return [s for s in services if not next(x for x in iter(existing_services) if x.port == s.port)]
 
     def update2(self, request, request_ip=None):
         validator = Validator(request)
@@ -179,6 +179,8 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
+        service_compare = lambda a, b: (a.port == b.port)
+
         with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
 
@@ -186,7 +188,8 @@ class Users:
                 raise servicesexceptions.bad_request('Unknown update token')
 
             request_services = [new_service_fromdict(s) for s in request['services']]
-            new_services = self.get_new_services(request_services, domain.services)
+            new_services = self.get_missing(request_services, domain.services, service_compare)
+            removed_services = self.get_missing(domain.services, request_services, service_compare)
 
             for s in new_services:
                 s.domain = domain
@@ -197,15 +200,15 @@ class Users:
             domain.ip = ip
 
             if is_new_dmain:
-                self.dns.new_domain(domain, self.domain)
+                self.dns.new_domain(self.main_domain, domain)
             else:
-                pass
+                self.dns.update_domain(self.main_domain, domain, update_ip=True, created=new_services, changed=[], removed=removed_services)
 
             return domain
 
     def redirect_url(self, request_url):
 
-        user_domain = util.get_second_level_domain(request_url, self.domain)
+        user_domain = util.get_second_level_domain(request_url, self.main_domain)
 
         if not user_domain:
             raise servicesexceptions.bad_request('Second level domain should be specified')
@@ -215,7 +218,7 @@ class Users:
         if not user:
             raise servicesexceptions.not_found('The second level domain is not registered')
 
-        return 'http://device.{0}.{1}:{2}/owncloud'.format(user_domain, self.domain, user.port)
+        return 'http://device.{0}.{1}:{2}/owncloud'.format(user_domain, self.main_domain, user.port)
 
     def delete_user(self, request):
         validator = Validator(request)
@@ -236,6 +239,6 @@ class Users:
         if not deleted:
             raise servicesexceptions.conflict('Unable to delete user')
 
-        self.dns.delete_records(user.user_domain, user.ip, user.port, self.domain)
+        self.dns.delete_records(user.user_domain, user.ip, user.port, self.main_domain)
 
         return True

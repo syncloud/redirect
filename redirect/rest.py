@@ -9,7 +9,10 @@ from dns import Dns
 from mock import MagicMock
 from storage import mysql_spec_config, get_session_maker, SessionContextFactory
 
+import models
+
 import json
+import jsonpickle
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
@@ -53,8 +56,9 @@ def user_get():
 @cross_origin()
 def domain_update2():
     request_data = json.loads(request.data)
-    manager().update2(request_data)
-    return jsonify(message='Domain was updated'), 200
+    domain = manager().update2(request_data)
+    domain_data = models.to_dict(domain)
+    return jsonify(message='Domain was updated', data=domain_data), 200
 
 
 @app.route('/domain/update', methods=["POST"])
