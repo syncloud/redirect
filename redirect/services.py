@@ -1,4 +1,4 @@
-from models import User, Domain, Service
+from models import User, Domain, Service, new_service, new_service_fromdict
 from validation import Validator
 import servicesexceptions
 import util
@@ -133,8 +133,6 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        domain = None
-
         with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
 
@@ -145,7 +143,7 @@ class Users:
                 service = domain.services[0]
                 service.port = port
             else:
-                service = Service('owncloud', '_http._tcp', port)
+                service = new_service('owncloud', '_http._tcp', port)
                 service.domain = domain
                 domain.services.append(service)
 
@@ -155,8 +153,55 @@ class Users:
                 self.dns.create_records(domain.user_domain, ip, port, self.domain)
 
             domain.ip = ip
+            return domain
 
-        return domain
+    def get_new_services(self, request_services, existing_services):
+        result = []
+        for s in request_services:
+            existing = None
+            for x in existing_services:
+                if x.port == s.port:
+                    existing = x
+            if not existing:
+                result.append(s)
+        return result
+
+    # def get_new_services(self, services, existing_services):
+    #     return [s for s in services if not next(x for x in existing_services if x.port == s.port)]
+
+    def update2(self, request, request_ip=None):
+        validator = Validator(request)
+        token = validator.token()
+        ip = validator.ip(request_ip)
+        errors = validator.errors
+
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
+        with self.create_storage() as storage:
+            domain = storage.get_domain_by_update_token(token)
+
+            if not domain or not domain.user.active:
+                raise servicesexceptions.bad_request('Unknown update token')
+
+            request_services = [new_service_fromdict(s) for s in request['services']]
+            new_services = self.get_new_services(request_services, domain.services)
+
+            for s in new_services:
+                s.domain = domain
+                domain.services.append(s)
+                storage.add(s)
+
+            is_new_dmain = domain.ip is None
+            domain.ip = ip
+
+            if is_new_dmain:
+                self.dns.new_domain(domain, self.domain)
+            else:
+                pass
+
+            return domain
 
     def redirect_url(self, request_url):
 

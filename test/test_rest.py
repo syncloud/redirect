@@ -96,3 +96,18 @@ class TestDomain(TestFlask):
         update_token2 = domain_data['update_token']
 
         self.assertNotEquals(update_token1, update_token2)
+
+    def test_domain_update_one_new_service(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+
+        domain_data = json.loads(response.data)
+        update_token = domain_data['update_token']
+
+        update_data = {'token': update_token, 'ip': '127.0.0.1',
+                       'services': [{"name": "ownCloud", "type": "_http._tcp", "port": 10000}]}
+
+        response = self.app.post('/domain/update2', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)

@@ -4,6 +4,13 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+def fromdict(self, values):
+    for c in self.__table__.columns:
+        if c.name in values:
+            setattr(self, c.name, values[c.name])
+
+Base.fromdict = fromdict
+
 class User(Base):
     __tablename__ = "user"
     id = Column(Integer, primary_key=True)
@@ -52,7 +59,16 @@ class Service(Base):
     domain_id = Column(Integer, ForeignKey('domain.id'))
     domain = relationship("Domain", lazy='subquery')
 
-    def __init__(self, name, type, port):
-        self.name = name
-        self.type = type
-        self.port = port
+
+def new_service(name, type, port):
+    s = Service()
+    s.name = name
+    s.type = type
+    s.port = port
+    return s
+
+
+def new_service_fromdict(dictionary):
+    s = Service()
+    s.fromdict(dictionary)
+    return s

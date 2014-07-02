@@ -9,6 +9,8 @@ from dns import Dns
 from mock import MagicMock
 from storage import mysql_spec_config, get_session_maker, SessionContextFactory
 
+import json
+
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
 
@@ -45,6 +47,14 @@ def user_get():
         port = service.port
     return jsonify(user_domain=domain.user_domain, update_token=domain.update_token, ip=domain.ip,
                    port=port, email=user.email, active=user.active), 200
+
+
+@app.route('/domain/update2', methods=["POST"])
+@cross_origin()
+def domain_update2():
+    request_data = json.loads(request.data)
+    manager().update2(request_data)
+    return jsonify(message='Domain was updated'), 200
 
 
 @app.route('/domain/update', methods=["POST"])
