@@ -9,21 +9,23 @@ class Dns:
         self.aws_secret_access_key = aws_secret_access_key
         self.hosted_zone_id = hosted_zone_id
 
-    def service_record(self, changes, main_domain, user_domain, record_type, s):
-            service_change = '{0}.{1}.{2}.'.format(s.type, user_domain, main_domain)
-            change = changes.add_change(record_type, service_change, 'SRV')
-            change.add_value('0 0 {0} device.{1}.{2}.'.format(s.port, user_domain, main_domain))
+    def service_change(self, changes, main_domain, user_domain, change_type, service):
+            service_change = '{0}.{1}.{2}.'.format(service.type, user_domain, main_domain)
+            service_value = '0 0 {0} device.{1}.{2}.'.format(service.port, user_domain, main_domain)
+            change = changes.add_change(change_type, service_change, 'SRV')
+            change.add_value(service_value)
 
-    def ip_and_services(self, changes, main_domain, domain, update_ip, created, changed, removed):
-        if update_ip:
-            change = changes.add_change('UPSERT', 'device.{0}.{1}.'.format(domain.user_domain, main_domain), 'A')
+    def services_change(self, changes, main_domain, domain, change_type, services):
+        for s in services:
+            self.service_change(changes, main_domain, domain.user_domain, change_type, s)
+
+    def a_change(self, changes, main_domain, domain, change_type):
+            change = changes.add_change(change_type, 'device.{0}.{1}.'.format(domain.user_domain, main_domain), 'A')
             change.add_value(domain.ip)
-        for s in removed:
-            self.service_record(changes, main_domain, domain.user_domain, 'DELETE', s)
-        for s in created:
-            self.service_record(changes, main_domain, domain.user_domain, 'CREATE', s)
-        for s in changed:
-            self.service_record(changes, main_domain, domain.user_domain, 'UPSERT', s)
+
+    def cname_change(self, changes, main_domain, domain, change_type):
+        change = changes.add_change(change_type, '{0}.{1}.'.format(domain.user_domain, main_domain), 'CNAME')
+        change.add_value(main_domain)
 
     def new_domain(self, main_domain, domain):
 
@@ -33,45 +35,31 @@ class Dns:
         change = changes.add_change('CREATE', '{0}.{1}.'.format(domain.user_domain, main_domain), 'CNAME')
         change.add_value(main_domain)
 
-        self.ip_and_services(changes, main_domain, domain, update_ip=True, created=domain.services)
+        self.cname_change(changes, main_domain, domain, 'CREATE')
+        self.a_change(changes, main_domain, domain, 'CREATE')
+        self.services_change(changes, main_domain, domain, 'CREATE', domain.services)
 
         changes.commit()
 
 
-    def update_domain(self, main_domain, domain, update_ip=False, created=[], changed=[], removed=[]):
+    def update_domain(self, main_domain, domain, update_ip=False, added=[], removed=[]):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
-        self.ip_and_services(changes, main_domain, domain, update_ip, created, changed, removed)
+        if update_ip:
+            self.a_change(changes, main_domain, domain, 'UPSERT')
+        self.services_change(changes, main_domain, domain, 'DELETE', removed)
+        self.services_change(changes, main_domain, domain, 'UPSERT', added)
 
         changes.commit()
 
-    def create_records(self, user_domain, ip, port, domain):
-
+    def delete_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
-        change = changes.add_change('CREATE', '{0}.{1}.'.format(user_domain, domain), 'CNAME')
-        change.add_value(domain)
-
-        change = changes.add_change('CREATE', 'device.{0}.{1}.'.format(user_domain, domain), 'A')
-        change.add_value(ip)
-
-        change = changes.add_change('CREATE', '_owncloud._http._tcp.{0}.{1}.'.format(user_domain, domain), 'SRV')
-        change.add_value('0 0 {0} device.{1}.{2}.'.format(port, user_domain, domain))
-
-        changes.commit()
-
-    def update_records(self, user_domain, ip, port, domain):
-
-        conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
-        changes = ResourceRecordSets(conn, self.hosted_zone_id)
-
-        change = changes.add_change('UPSERT', 'device.{0}.{1}.'.format(user_domain, domain), 'A')
-        change.add_value(ip)
-
-        change = changes.add_change('UPSERT', '_owncloud._http._tcp.{0}.{1}.'.format(user_domain, domain), 'SRV')
-        change.add_value('0 0 {0} device.{1}.{2}.'.format(port, user_domain, domain))
+        self.cname_change(changes, main_domain, domain, 'DELETE')
+        self.a_change(changes, main_domain, domain, 'DELETE')
+        self.services_change(changes, main_domain, domain, 'DELETE', domain.services)
 
         changes.commit()
 

@@ -71,11 +71,11 @@ class Validator:
             return None
         return port_num
 
-    def token(self):
-        if 'token' not in self.params:
-            self.add_field_error('token', 'missing')
+    def token(self, token='token'):
+        if token not in self.params:
+            self.add_field_error(token, 'missing')
             return None
-        return self.params['token']
+        return self.params[token]
 
     def ip(self, default_ip=None):
 

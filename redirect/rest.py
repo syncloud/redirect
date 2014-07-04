@@ -52,27 +52,28 @@ def user_get():
                    port=port, email=user.email, active=user.active), 200
 
 
-@app.route('/domain/update2', methods=["POST"])
-@cross_origin()
-def domain_update2():
-    request_data = json.loads(request.data)
-    domain = manager().update2(request_data)
-    domain_data = models.to_dict(domain)
-    return jsonify(message='Domain was updated', data=domain_data), 200
-
-
-@app.route('/domain/update', methods=["POST"])
-@cross_origin()
-def update_ip_port():
-    manager().update_ip_port(request.form)
-    return jsonify(message='Domain was updated'), 200
-
-
 @app.route('/domain/acquire', methods=["POST"])
 @cross_origin()
 def domain_acquire():
     domain = manager().domain_acquire(request.form)
     return jsonify(user_domain=domain.user_domain, update_token=domain.update_token), 200
+
+
+@app.route('/domain/get', methods=["GET"])
+@cross_origin()
+def domain_get():
+    domain = manager().get_domain(request.args)
+    domain_data = models.to_dict(domain)
+    return jsonify(message='Domain retrieved', data=domain_data), 200
+
+
+@app.route('/domain/update', methods=["POST"])
+@cross_origin()
+def domain_update2():
+    request_data = json.loads(request.data)
+    domain = manager().domain_update(request_data)
+    domain_data = models.to_dict(domain)
+    return jsonify(message='Domain was updated', data=domain_data), 200
 
 
 @app.route('/user/delete', methods=["POST"])

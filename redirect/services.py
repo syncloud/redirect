@@ -29,7 +29,6 @@ class Users:
             raise servicesexceptions.bad_request(message)
 
         user = None
-        domain = None
         with self.create_storage() as storage:
             by_email = storage.get_user_by_email(email)
             if by_email and by_email.email == email:
@@ -122,54 +121,28 @@ class Users:
             return domain
 
 
-    def update_ip_port(self, request, request_ip=None):
-        validator = Validator(request)
-        token = validator.token()
-        ip = validator.ip(request_ip)
-        port = validator.port()
-        errors = validator.errors
+    def service_compare(self, a, b):
+        return a.port == b.port
 
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
-
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_update_token(token)
-
-            if not domain or not domain.user.active:
-                raise servicesexceptions.bad_request('Unknown update token')
-
-            if len(domain.services) > 0:
-                service = domain.services[0]
-                service.port = port
-            else:
-                service = new_service('owncloud', '_http._tcp', port)
-                service.domain = domain
-                domain.services.append(service)
-
-            if domain.ip:
-                self.dns.update_records(domain.user_domain, ip, port, self.main_domain)
-            else:
-                self.dns.create_records(domain.user_domain, ip, port, self.main_domain)
-
-            domain.ip = ip
-            return domain
-
-    def get_missing(self, lookfor, lookat, compare):
+    def get_missing(self, lookfor, lookat):
         result = []
         for s in lookfor:
             existing = None
             for x in lookat:
-                if compare(x, s):
+                if self.service_compare(x, s):
                     existing = x
             if not existing:
                 result.append(s)
         return result
 
-    # def get_new_services(self, services, existing_services):
-    #     return [s for s in services if not next(x for x in iter(existing_services) if x.port == s.port)]
+    def validate_service(self, data):
+        validator = Validator(data)
+        validator.port()
+        if validator.errors:
+            message = ", ".join(validator.errors)
+            raise servicesexceptions.bad_request(message)
 
-    def update2(self, request, request_ip=None):
+    def domain_update(self, request, request_ip=None):
         validator = Validator(request)
         token = validator.token()
         ip = validator.ip(request_ip)
@@ -179,31 +152,44 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        service_compare = lambda a, b: (a.port == b.port)
-
         with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
 
             if not domain or not domain.user.active:
-                raise servicesexceptions.bad_request('Unknown update token')
+                raise servicesexceptions.bad_request('Unknown domain update token')
+
+            map(self.validate_service, request['services'])
 
             request_services = [new_service_fromdict(s) for s in request['services']]
-            new_services = self.get_missing(request_services, domain.services, service_compare)
-            removed_services = self.get_missing(domain.services, request_services, service_compare)
+            added_services = self.get_missing(request_services, domain.services)
+            removed_services = self.get_missing(domain.services, request_services)
 
-            for s in new_services:
+            for s in added_services:
                 s.domain = domain
                 domain.services.append(s)
-                storage.add(s)
+
+            storage.add(added_services)
+
+            storage.delete(removed_services)
 
             is_new_dmain = domain.ip is None
+            update_ip = domain.ip != ip
             domain.ip = ip
 
             if is_new_dmain:
                 self.dns.new_domain(self.main_domain, domain)
             else:
-                self.dns.update_domain(self.main_domain, domain, update_ip=True, created=new_services, changed=[], removed=removed_services)
+                self.dns.update_domain(self.main_domain, domain, update_ip=update_ip, added=added_services, removed=removed_services)
 
+            return domain
+
+    def get_domain(self, request):
+        validator = Validator(request)
+        token = validator.token()
+        with self.create_storage() as storage:
+            domain = storage.get_domain_by_update_token(token)
+            if not domain or not domain.user.active:
+                raise servicesexceptions.bad_request('Unknown domain update token')
             return domain
 
     def redirect_url(self, request_url):

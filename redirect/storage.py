@@ -34,8 +34,16 @@ class Storage:
         return domain
 
     def add(self, *args):
+        if len(args) > 0 and isinstance(args[0], list):
+            args = args[0]
         for obj in args:
             self.session.add(obj)
+
+    def delete(self, *args):
+        if len(args) > 0 and isinstance(args[0], list):
+            args = args[0]
+        for obj in args:
+            self.session.delete(obj)
 
     def clear(self):
         self.session.query(Service).delete()
