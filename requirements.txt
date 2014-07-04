@@ -8,3 +8,4 @@ urllib3==1.7.1
 requests==2.2.1
 configobj==4.7.2
 mock==1.0.1
+jsonpickle==0.7.1
