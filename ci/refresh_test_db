@@ -5,18 +5,17 @@ from subprocess import check_output
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), '../redirect/config.cfg'))
+host = config.get('mysql', 'host')
+user = config.get('mysql', 'user')
+passwd = config.get('mysql', 'passwd')
 
-print check_output("mysql -h {0} -u {1} -p{2} -e \"drop database redirect_test\"".format(
-    config.get('mysql', 'host'),
-    config.get('mysql', 'user'),
-    config.get('mysql', 'passwd')), shell=True)
 
-print check_output("mysql -h {0} -u {1} -p{2} -e \"create database redirect_test\"".format(
-    config.get('mysql', 'host'),
-    config.get('mysql', 'user'),
-    config.get('mysql', 'passwd')), shell=True)
+def mysql(query):
+    print check_output("mysql -h {0} -u {1} -p{2} {3}".format(host, user, passwd, query), shell=True)
 
-print check_output("mysql -h {0} -u {1} -p{2} redirect_test < /home/redirect/redirect.backup".format(
-    config.get('mysql', 'host'),
-    config.get('mysql', 'user'),
-    config.get('mysql', 'passwd')), shell=True)
+mysql("-e \"drop database if exists redirect_test\"")
+mysql("-e \"create database redirect_test\"")
+
+mysql("-e \"drop database if exists redirect_backup\"")
+mysql("-e \"create database redirect_backup\"")
+mysql("redirect_backup < /home/redirect/redirect.backup")

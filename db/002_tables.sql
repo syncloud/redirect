@@ -1,5 +1,3 @@
-create database redirect;
-use redirect;
 CREATE TABLE `user` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `email` varchar(100) NOT NULL UNIQUE,
@@ -43,3 +41,5 @@ CREATE TABLE `action` (
   FOREIGN KEY (action_type_id) REFERENCES action_type(id),
   FOREIGN KEY (user_id) REFERENCES `user`(id)
 );
+
+update db_version set version = '002';

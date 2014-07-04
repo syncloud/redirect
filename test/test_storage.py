@@ -1,14 +1,15 @@
 import unittest
 
-from helpers import generate_user, generate_domain, get_storage_creator, ModelsAssertionsMixin
+from helpers import generate_user, generate_domain, ModelsAssertionsMixin
 
 from redirect.util import hash
+from test.helpers import get_test_storage_creator
 
 
 class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
 
     def setUp(self):
-        self.create_storage = get_storage_creator()
+        self.create_storage = get_test_storage_creator()
 
     def tearDown(self):
         with self.create_storage() as storage:
