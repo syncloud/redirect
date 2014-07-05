@@ -18,8 +18,8 @@ def get_test_config():
 
 def generate_user():
     email = unicode(create_token() + '@mail.com')
-    activate_token = create_token()
-    user = User(email, hash('pass1234'), False, activate_token)
+    user = User(email, hash('pass1234'), False)
+    user.set_activate_token(create_token())
     return user
 
 
@@ -41,7 +41,7 @@ class ModelsAssertionsMixin:
             self.assertEquals(expected.email, actual.email, 'Users should have the same email')
             self.assertEquals(expected.password_hash, actual.password_hash, 'Users should have the same password_hash')
             self.assertEquals(expected.active, actual.active, 'Users should have the same active')
-            self.assertEquals(expected.activate_token, actual.activate_token, 'Users should have the same activate_token')
+            self.assertEquals(expected.activate_token(), actual.activate_token(), 'Users should have the same activate_token')
 
     def assertDomain(self, expected, actual):
         if expected is None:

@@ -2,6 +2,7 @@
 import ConfigParser
 import os
 from subprocess import check_output
+import sys
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), '../redirect/config.cfg'))
@@ -9,12 +10,18 @@ host = config.get('mysql', 'host')
 user = config.get('mysql', 'user')
 passwd = config.get('mysql', 'passwd')
 
+if len(sys.argv) < 2:
+    sys.exit('Usage: %s database-name' % sys.argv[0])
+
+db = sys.argv[1]
+
 
 def mysql(query):
+    print "running {}".format(query)
     print check_output("mysql -h {0} -u {1} -p{2} {3}".format(host, user, passwd, query), shell=True)
 
-mysql("-e \"drop database if exists redirect_test\"")
-mysql("-e \"create database redirect_test\"")
+mysql("-e \"drop database if exists {0}\"".format(db))
+mysql("-e \"create database {0}\"".format(db))
 
 mysql("-e \"drop database if exists redirect_backup\"")
 mysql("-e \"create database redirect_backup\"")

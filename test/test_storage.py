@@ -54,7 +54,7 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
         with self.create_storage() as storage:
             user = generate_user()
             storage.add(user)
-            read = storage.get_user_by_activate_token(user.activate_token)
+            read = storage.get_user_by_activate_token(user.activate_token())
             self.assertUser(user, read)
 
     def test_user_password_hash_fits_column(self):

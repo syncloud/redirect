@@ -1,7 +1,7 @@
 import unittest
 from mock import MagicMock
 from fakesmtp import FakeSmtp
-from redirect.models import User
+from redirect.models import User, Action, ActionType
 from redirect.util import hash
 from redirect.mail import Mail
 from redirect.services import Users
@@ -43,13 +43,13 @@ class TestUsers(unittest.TestCase):
         self.assertIsNotNone(user)
         self.assertEqual('valid@mail.com', user.email)
         self.assertNotEqual('pass123456', user.password_hash, 'we should not store password plainly')
-        self.assertIsNotNone(user.activate_token)
+        self.assertIsNotNone(user.activate_token())
         self.assertFalse(user.active)
 
         self.assertEquals(1, len(user.domains))
         self.assertEqual('boris', user.domains[0].user_domain)
 
-        activate_url = self.activate_url_template.format(user.activate_token)
+        activate_url = self.activate_url_template.format(user.activate_token())
         self.assertFalse(self.smtp.empty())
         email = self.smtp.emails()[0]
         self.assertTrue(user.email in email)
@@ -64,7 +64,7 @@ class TestUsers(unittest.TestCase):
         self.assertIsNotNone(user)
         self.assertEqual('valid@mail.com', user.email)
         self.assertNotEqual('pass123456', user.password_hash, 'we should not store password plainly')
-        self.assertIsNone(user.activate_token)
+        self.assertIsNone(user.activate_token())
         self.assertTrue(user.active)
 
         self.assertEquals(1, len(user.domains))
@@ -74,8 +74,7 @@ class TestUsers(unittest.TestCase):
 
     def test_user_create_existing_email(self):
         users = self.get_users_service()
-        existing = User(u'valid@mail.com', hash('pass123456'), True, None)
-
+        existing = User(u'valid@mail.com', hash('pass123456'), True)
         self.add_user(existing)
 
         request = {'user_domain': 'vladimir', 'email': 'valid@mail.com', 'password': 'pass123456'}
@@ -107,8 +106,8 @@ class TestUsers(unittest.TestCase):
 
     def test_user_activate_success(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', 'hash123', False, u'activatetoken123')
-
+        user = User(u'boris@mail.com', 'hash123', False)
+        user.set_activate_token(u'activatetoken123')
         self.add_user(user)
 
         request = {'token': u'activatetoken123'}
@@ -137,7 +136,8 @@ class TestUsers(unittest.TestCase):
 
     def test_user_activate_already_active(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', 'hash123', True, u'activatetoken123')
+        user = User(u'boris@mail.com', 'hash123', True)
+        user.set_activate_token(u'activatetoken123')
         self.add_user(user)
 
         request = {'token': u'activatetoken123'}
@@ -148,7 +148,7 @@ class TestUsers(unittest.TestCase):
 
     def test_user_authenticate_success(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', hash('pass1234'), True, None)
+        user = User(u'boris@mail.com', hash('pass1234'), True)
         self.add_user(user)
 
         request = {'email': u'boris@mail.com', 'password': u'pass1234'}
@@ -158,7 +158,7 @@ class TestUsers(unittest.TestCase):
 
     def test_user_authenticate_wrong_password(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', hash('otherpass1234'), True, None)
+        user = User(u'boris@mail.com', hash('otherpass1234'), True)
         self.add_user(user)
 
         request = {'email': 'boris@mail.com', 'password': 'pass1234'}
@@ -178,7 +178,8 @@ class TestUsers(unittest.TestCase):
 
     def test_user_authenticate_non_active(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', hash('pass1234'), False, u'token123')
+        user = User(u'boris@mail.com', hash('pass1234'), False)
+        user.set_activate_token('token123')
         self.add_user(user)
 
         request = {'email': 'boris@mail.com', 'password': 'pass1234'}
@@ -189,7 +190,7 @@ class TestUsers(unittest.TestCase):
 
     def test_user_authenticate_missing_password(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', hash('otherpass1234'), True, None)
+        user = User(u'boris@mail.com', hash('otherpass1234'), True)
         self.add_user(user)
 
         request = {'email': 'boris@mail.com'}

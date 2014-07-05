@@ -1,4 +1,4 @@
-from models import User, Domain, Service, new_service, new_service_fromdict
+from models import User, Domain, Service, new_service, new_service_fromdict, Action, ActionType
 from validation import Validator
 import servicesexceptions
 import util
@@ -29,6 +29,7 @@ class Users:
             raise servicesexceptions.bad_request(message)
 
         user = None
+        activate_token = None
         with self.create_storage() as storage:
             by_email = storage.get_user_by_email(email)
             if by_email and by_email.email == email:
@@ -46,7 +47,7 @@ class Users:
                 active = False
                 activate_token = util.create_token()
 
-            user = User(email, util.hash(password), active, activate_token)
+            user = User(email, util.hash(password), active)
 
             if user_domain:
                 domain = Domain(user_domain, None, update_token)
@@ -54,10 +55,13 @@ class Users:
                 user.domains.append(domain)
                 storage.add(domain)
 
+            if self.activate_by_email:
+                user.set_activate_token(activate_token)
+
             storage.add(user)
 
         if self.activate_by_email:
-            activate_url = self.activate_url_template.format(user.activate_token)
+            activate_url = self.activate_url_template.format(user.activate_token())
             self.mail.send_activate(user_domain, self.main_domain, user.email, activate_url)
 
         return user

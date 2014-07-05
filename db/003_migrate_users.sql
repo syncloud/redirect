@@ -12,4 +12,7 @@ from redirect_backup.user bu
 inner join user u on bu.email = u.email
 inner join domain d on u.id = d.user_id;
 
+insert into action_type (id, name) values (1, 'activate');
+insert into action_type (id, name) values (2, 'password');
+
 update db_version set version = '003';

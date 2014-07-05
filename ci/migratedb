@@ -8,15 +8,20 @@ from subprocess import check_output
 
 script_base = os.path.join(os.path.dirname(__file__), '../db')
 
+if len(sys.argv) < 2:
+    sys.exit('Usage: %s database-name' % sys.argv[0])
+
+db = sys.argv[1]
+
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), '../redirect/config.cfg'))
 host = config.get('mysql', 'host')
 user = config.get('mysql', 'user')
 passwd = config.get('mysql', 'passwd')
-db = 'redirect_test'
 
 
 def upgrade(script):
+    print "running {}".format(script)
     print check_output("mysql -h {0} -u {1} -p{2} {3} < {4}/{5}".format(
         host, user, passwd, db, script_base, script), shell=True)
 

@@ -43,3 +43,13 @@ CREATE TABLE `action` (
   FOREIGN KEY (action_type_id) REFERENCES action_type(id),
   FOREIGN KEY (user_id) REFERENCES `user`(id)
 );
+
+insert into action_type (id, name) values (1, 'activate');
+insert into action_type (id, name) values (2, 'password');
+
+create table db_version (
+    version varchar(10) not null,
+    last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+insert into db_version (version) values ('003');

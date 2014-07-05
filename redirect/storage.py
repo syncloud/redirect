@@ -2,7 +2,7 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from models import User, Domain, Service, Base
+from models import User, Domain, Service, Base, Action, ActionType
 
 
 class Storage:
@@ -22,7 +22,11 @@ class Storage:
         return user
 
     def get_user_by_activate_token(self, activate_token):
-        user = self.session.query(User).filter(User.activate_token == activate_token).first()
+        user = self.session\
+            .query(User)\
+            .join(Action)\
+            .filter(Action.action_type_id == ActionType.ACTIVATE)\
+            .filter(Action.token == activate_token).first()
         return user
 
     def get_domain_by_update_token(self, update_token):
@@ -48,6 +52,7 @@ class Storage:
     def clear(self):
         self.session.query(Service).delete()
         self.session.query(Domain).delete()
+        self.session.query(Action).delete()
         self.session.query(User).delete()
 
 
