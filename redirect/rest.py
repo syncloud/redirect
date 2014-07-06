@@ -12,7 +12,6 @@ from mock import MagicMock
 import models
 
 import json
-import jsonpickle
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
@@ -43,12 +42,19 @@ def user_activate():
 @cross_origin()
 def user_get():
     user = manager().authenticate(request.args)
-    domain = user.domains[0]
+    user_domain = None
+    update_token = None
+    ip = None
     port = None
-    if len(domain.services) == 1:
-        service = domain.services[0]
-        port = service.port
-    return jsonify(user_domain=domain.user_domain, update_token=domain.update_token, ip=domain.ip,
+    if len(user.domains) > 0:
+        domain = user.domains[0]
+        user_domain = domain.user_domain
+        update_token = domain.update_token
+        ip = domain.ip
+        if len(domain.services) == 1:
+            service = domain.services[0]
+            port = service.port
+    return jsonify(user_domain=user_domain, update_token=update_token, ip=ip,
                    port=port, email=user.email, active=user.active), 200
 
 

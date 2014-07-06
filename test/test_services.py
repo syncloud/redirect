@@ -57,6 +57,16 @@ class TestUsers(unittest.TestCase):
         self.assertTrue(user.email in email)
         self.assertTrue(activate_url in email)
 
+    def test_user_create_no_domain(self):
+        users = self.get_users_service(activate_by_email=False)
+
+        request = {'email': u'valid@mail.com', 'password': u'pass123456'}
+        users.create_new_user(request)
+        user = users.get_user(u'valid@mail.com')
+
+        self.assertIsNotNone(user)
+        self.assertEquals(0, len(user.domains))
+
     def test_user_create_no_activation(self):
         users = self.get_users_service(activate_by_email=False)
 
@@ -84,7 +94,6 @@ class TestUsers(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             users.create_new_user(request)
         self.assertEquals(context.exception.status_code, 409)
-
 
     def test_user_create_existing_domain(self):
         users = self.get_users_service()

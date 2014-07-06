@@ -45,6 +45,13 @@ class TestUser(TestFlask):
         self.assertEqual(200, response.status_code)
         self.assertFalse(self.smtp.empty())
 
+    def test_user_get_success(self):
+
+        email, password = self.create_active_user()
+
+        response = self.app.get('/user/get', query_string={'email': email, 'password': password})
+        self.assertEqual(200, response.status_code, response.data)
+
     def test_user_activate_success(self):
         user_domain = create_token()
         email = user_domain+'@mail.com'

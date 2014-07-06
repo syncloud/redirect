@@ -41,7 +41,6 @@ class Users:
                     raise servicesexceptions.conflict('User domain name is already in use')
 
             update_token = util.create_token()
-            activate_token = None
             active = True
             if self.activate_by_email:
                 active = False

@@ -1,6 +1,7 @@
 import shutil
 import os
 
+
 class FakeSmtp:
 
     def __init__(self, smtp_outbox_path):
