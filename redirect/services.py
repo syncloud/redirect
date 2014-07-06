@@ -61,7 +61,7 @@ class Users:
             storage.add(user)
 
         if self.activate_by_email:
-            activate_url = self.activate_url_template.format(user.activate_token())
+            activate_url = self.activate_url_template.format(activate_token)
             self.mail.send_activate(user_domain, self.main_domain, user.email, activate_url)
 
         return user
