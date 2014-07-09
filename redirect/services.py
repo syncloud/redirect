@@ -219,15 +219,17 @@ class Users:
             message = ", ".join(errors)
             raise servicesexceptions.bad_request(message)
 
-        user = self.get_user(email)
-        if not user or not user.active or not util.hash(password) == user.password_hash:
-            raise servicesexceptions.forbidden('Authentication failed')
+        with self.create_storage() as storage:
+            user = storage.get_user_by_email(email)
 
-        deleted = self.storage.delete_user(email)
-        self.storage.save()
-        if not deleted:
-            raise servicesexceptions.conflict('Unable to delete user')
+            if not user or not user.active or not util.hash(password) == user.password_hash:
+                raise servicesexceptions.forbidden('Authentication failed')
 
-        self.dns.delete_records(user.user_domain, user.ip, user.port, self.main_domain)
+            for domain in user.domains:
+                self.dns.delete_domain(self.main_domain, domain)
 
-        return True
+            for domain in user.domains:
+                for service in domain.services:
+                    storage.delete(service)
+                storage.delete(domain)
+            storage.delete(user)

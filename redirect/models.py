@@ -38,6 +38,8 @@ Base.fromdict = fromdict
 
 class User(Base):
     __tablename__ = "user"
+    __public__ = ['email', 'active', 'domains']
+
     id = Column(Integer, primary_key=True)
     email = Column(String())
     password_hash = Column(String())

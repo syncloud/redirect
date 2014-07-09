@@ -28,7 +28,6 @@ class Dns:
         change.add_value(main_domain)
 
     def new_domain(self, main_domain, domain):
-
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
@@ -40,7 +39,6 @@ class Dns:
         self.services_change(changes, main_domain, domain, 'CREATE', domain.services)
 
         changes.commit()
-
 
     def update_domain(self, main_domain, domain, update_ip=False, added=[], removed=[]):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
@@ -60,19 +58,5 @@ class Dns:
         self.cname_change(changes, main_domain, domain, 'DELETE')
         self.a_change(changes, main_domain, domain, 'DELETE')
         self.services_change(changes, main_domain, domain, 'DELETE', domain.services)
-
-        changes.commit()
-
-    def delete_records(self, user_domain, ip, port, domain):
-
-        conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
-        changes = ResourceRecordSets(conn, self.hosted_zone_id)
-
-        change = changes.add_change('DELETE', '{0}.{1}.'.format(user_domain, domain), 'CNAME')
-        change.add_value(domain)
-        change = changes.add_change('DELETE', 'device.{0}.{1}.'.format(user_domain, domain), 'A')
-        change.add_value(ip)
-        change = changes.add_change('DELETE', '_owncloud._http._tcp.{0}.{1}.'.format(user_domain, domain), 'SRV')
-        change.add_value('0 0 {0} device.{1}.{2}.'.format(port, user_domain, domain))
 
         changes.commit()

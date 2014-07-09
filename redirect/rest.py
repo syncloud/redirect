@@ -42,20 +42,8 @@ def user_activate():
 @cross_origin()
 def user_get():
     user = manager().authenticate(request.args)
-    user_domain = None
-    update_token = None
-    ip = None
-    port = None
-    if len(user.domains) > 0:
-        domain = user.domains[0]
-        user_domain = domain.user_domain
-        update_token = domain.update_token
-        ip = domain.ip
-        if len(domain.services) == 1:
-            service = domain.services[0]
-            port = service.port
-    return jsonify(user_domain=user_domain, update_token=update_token, ip=ip,
-                   port=port, email=user.email, active=user.active), 200
+    user_data = models.to_dict(user)
+    return jsonify(message='User provided', data=user_data), 200
 
 
 @app.route('/domain/acquire', methods=["POST"])
@@ -75,7 +63,7 @@ def domain_get():
 
 @app.route('/domain/update', methods=["POST"])
 @cross_origin()
-def domain_update2():
+def domain_update():
     request_data = json.loads(request.data)
     domain = manager().domain_update(request_data)
     domain_data = models.to_dict(domain)

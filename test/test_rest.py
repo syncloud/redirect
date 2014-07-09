@@ -35,6 +35,11 @@ class TestFlask(unittest.TestCase):
         self.app.get('/user/activate', query_string={'token': activate_token})
         return email, password
 
+    def acquire_domain(self, email, password, user_domain):
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        domain_data = json.loads(response.data)
+        update_token = domain_data['update_token']
+        return update_token
 
 class TestUser(TestFlask):
 
@@ -46,7 +51,6 @@ class TestUser(TestFlask):
         self.assertFalse(self.smtp.empty())
 
     def test_user_get_success(self):
-
         email, password = self.create_active_user()
 
         response = self.app.get('/user/get', query_string={'email': email, 'password': password})
@@ -62,6 +66,56 @@ class TestUser(TestFlask):
 
         activate_response = self.app.get('/user/activate', query_string={'token': token})
         self.assertEqual(200, activate_response.status_code)
+
+    def test_get_user_data(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        update_token = self.acquire_domain(email, password, user_domain)
+
+        service_data = {u'name': u'ownCloud', u'type': u'_http._tcp', u'port': 10000, u'url': None}
+        update_data = {u'token': update_token, u'ip': u'127.0.0.1', u'services': [service_data]}
+        self.app.post('/domain/update', data=json.dumps(update_data))
+
+        response = self.app.get('/user/get', query_string={'email': email, 'password': password})
+
+        response_data = json.loads(response.data)
+        user_data = response_data['data']
+
+        expected = {
+            "active": True,
+            "email": email,
+            "domains": [{
+                "user_domain": user_domain,
+                "ip": "127.0.0.1",
+                "services": [{
+                    "name": "ownCloud",
+                    "port": 10000,
+                    "type": "_http._tcp",
+                    "url": None
+                }],
+            }]
+        }
+
+        self.assertEquals(expected, user_data)
+
+    def test_user_delete(self):
+        email, password = self.create_active_user()
+
+        user_domain_1 = create_token()
+        update_token_1 = self.acquire_domain(email, password, user_domain_1)
+
+        user_domain_2 = create_token()
+        update_token_2 = self.acquire_domain(email, password, user_domain_2)
+
+        response = self.app.post('/user/delete', data={'email': email, 'password': password})
+        self.assertEquals(200, response.status_code)
+
+        response = self.app.get('/domain/get', query_string={'token': update_token_1})
+        self.assertEqual(400, response.status_code)
+
+        response = self.app.get('/domain/get', query_string={'token': update_token_2})
+        self.assertEqual(400, response.status_code)
 
 
 class TestDomain(TestFlask):
