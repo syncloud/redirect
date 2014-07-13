@@ -4,36 +4,12 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-
-def limit(dictionary, keys):
-    filtered = [key for key in dictionary.keys() if key not in keys]
-    for key in filtered:
-        dictionary.pop(key, None)
-
-def to_dict(value):
-    if isinstance(value, list):
-        return [to_dict(item) for item in value]
-    if isinstance(value, dict):
-        cloned = value.copy()
-        for key, value in cloned.items():
-            cloned[key] = to_dict(value)
-        return cloned
-    if value is None or isinstance(value, (bool, basestring, str, unicode, int, long, float)):
-        return value
-    result = value.__dict__.copy()
-    if hasattr(value, '__public__'):
-        limit(result, value.__public__)
-    for member, mvalue in result.items():
-        result[member] = to_dict(mvalue)
-    return result
-
-
-def fromdict(self, values):
+def from_dict(self, values):
     for c in self.__table__.columns:
         if c.name in values:
             setattr(self, c.name, values[c.name])
 
-Base.fromdict = fromdict
+Base.from_dict = from_dict
 
 
 class User(Base):
@@ -146,7 +122,7 @@ def new_service(name, type, port):
     return s
 
 
-def new_service_fromdict(dictionary):
+def new_service_from_dict(dictionary):
     s = Service()
-    s.fromdict(dictionary)
+    s.from_dict(dictionary)
     return s

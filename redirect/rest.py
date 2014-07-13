@@ -9,9 +9,8 @@ from mail import Mail
 from dns import Dns
 from mock import MagicMock
 
-import models
-
 import json
+import convertible
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
@@ -42,7 +41,7 @@ def user_activate():
 @cross_origin()
 def user_get():
     user = manager().authenticate(request.args)
-    user_data = models.to_dict(user)
+    user_data = convertible.to_dict(user)
     return jsonify(message='User provided', data=user_data), 200
 
 
@@ -57,7 +56,7 @@ def domain_acquire():
 @cross_origin()
 def domain_get():
     domain = manager().get_domain(request.args)
-    domain_data = models.to_dict(domain)
+    domain_data = convertible.to_dict(domain)
     return jsonify(message='Domain retrieved', data=domain_data), 200
 
 
@@ -66,7 +65,7 @@ def domain_get():
 def domain_update():
     request_data = json.loads(request.data)
     domain = manager().domain_update(request_data)
-    domain_data = models.to_dict(domain)
+    domain_data = convertible.to_dict(domain)
     return jsonify(message='Domain was updated', data=domain_data), 200
 
 

@@ -40,8 +40,8 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
         with self.create_storage() as storage:
             storage.add(user)
         with self.create_storage() as storage:
-            deleted = storage.delete_user(user.email)
-            self.assertTrue(deleted)
+            user = storage.get_user_by_email(user.email)
+            storage.delete_user(user)
             after_delete = storage.get_user_by_email(user.email)
             self.assertUser(None, after_delete)
 

@@ -10,12 +10,12 @@ class Storage:
     def __init__(self, session):
         self.session = session
 
-    def delete_user(self, email):
-        user = self.get_user_by_email(email)
-        if user is not None:
-            self.session.delete(user)
-            return True
-        return False
+    def delete_user(self, user):
+        for domain in user.domains:
+            for service in domain.services:
+                self.delete(service)
+            self.delete(domain)
+        self.delete(user)
 
     def get_user_by_email(self, email):
         user = self.session.query(User).filter(User.email == email).first()

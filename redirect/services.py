@@ -1,4 +1,4 @@
-from models import User, Domain, Service, new_service, new_service_fromdict, Action, ActionType
+from models import User, Domain, Service, new_service, new_service_from_dict, Action, ActionType
 from validation import Validator
 import servicesexceptions
 import util
@@ -163,7 +163,7 @@ class Users:
 
             map(self.validate_service, request['services'])
 
-            request_services = [new_service_fromdict(s) for s in request['services']]
+            request_services = [new_service_from_dict(s) for s in request['services']]
             added_services = self.get_missing(request_services, domain.services)
             removed_services = self.get_missing(domain.services, request_services)
 
@@ -196,7 +196,6 @@ class Users:
             return domain
 
     def redirect_url(self, request_url):
-
         user_domain = util.get_second_level_domain(request_url, self.main_domain)
 
         if not user_domain:
@@ -228,8 +227,4 @@ class Users:
             for domain in user.domains:
                 self.dns.delete_domain(self.main_domain, domain)
 
-            for domain in user.domains:
-                for service in domain.services:
-                    storage.delete(service)
-                storage.delete(domain)
-            storage.delete(user)
+            storage.delete_user(user)
