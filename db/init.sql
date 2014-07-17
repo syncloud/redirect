@@ -22,6 +22,7 @@ CREATE TABLE `domain` (
 CREATE TABLE `service` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
+  `protocol` varchar(20) NOT NULL,
   `type` varchar(100) NOT NULL,
   `url` varchar(100),
   `port` int(11) NOT NULL,

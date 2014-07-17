@@ -102,10 +102,11 @@ class Domain(Base):
 
 class Service(Base):
     __tablename__ = "service"
-    __public__ = ['name', 'type', 'port', 'url']
+    __public__ = ['name', 'protocol', 'type', 'port', 'url']
 
     id = Column(Integer, primary_key=True)
     name = Column(String())
+    protocol = Column(String())
     type = Column(String())
     url = Column(String())
     port = Column(Integer())
