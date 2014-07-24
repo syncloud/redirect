@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, String, Boolean, ForeignKey, DateTime
+from sqlalchemy import Table, Column, Integer, String, Boolean, ForeignKey, DateTime, TIMESTAMP
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -82,12 +82,13 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'services']
+    __public__ = ['user_domain', 'ip', 'services', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
     ip = Column(String())
     update_token = Column(String())
+    last_update = Column(TIMESTAMP)
 
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", lazy='subquery')

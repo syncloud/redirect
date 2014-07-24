@@ -1,5 +1,6 @@
 import redirect.rest
 import unittest
+import datetime
 
 import json
 
@@ -82,12 +83,16 @@ class TestUser(TestFlask):
         response_data = json.loads(response.data)
         user_data = response_data['data']
 
+        # This is hack. We do not know last_update value - it is set by server.
+        last_update = user_data["domains"][0]["last_update"]
+
         expected = {
             "active": True,
             "email": email,
             "domains": [{
                 "user_domain": user_domain,
                 "ip": "127.0.0.1",
+                "last_update": last_update,
                 "services": [{
                     "name": "ownCloud",
                     "protocol": "http",
@@ -121,13 +126,19 @@ class TestUser(TestFlask):
 
 class TestDomain(TestFlask):
 
+    def assertDomain(self, expected, actual):
+        for key, expected_value in expected.items():
+            actual_value = actual[key]
+            self.assertEquals(expected_value, actual_value)
+
     def check_domain(self, update_token, expected_data):
         response = self.app.get('/domain/get', query_string={'token': update_token})
         self.assertEqual(200, response.status_code)
         self.assertIsNotNone(response.data)
         response_data = json.loads(response.data)
         domain_data = response_data['data']
-        self.assertEquals(expected_data, domain_data)
+        self.assertDomain(expected_data, domain_data)
+        return domain_data
 
     def test_acquire_new(self):
         email, password = self.create_active_user()

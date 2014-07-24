@@ -1,6 +1,7 @@
 import ConfigParser
 import os
 from flask import Flask, request, redirect, jsonify
+from flask.json import JSONEncoder
 from flask_cors import cross_origin
 import db_helper
 import services
@@ -8,6 +9,7 @@ from servicesexceptions import ServiceException
 from mail import Mail
 from dns import Dns
 from mock import MagicMock
+import datetime
 
 import json
 import convertible
@@ -15,8 +17,22 @@ import convertible
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
 
-app = Flask(__name__)
+class CustomJSONEncoder(JSONEncoder):
 
+    def default(self, obj):
+        try:
+            if isinstance(obj, datetime.datetime):
+                return str(obj)
+            iterable = iter(obj)
+        except TypeError, e:
+            pass
+        else:
+            return list(iterable)
+        return JSONEncoder.default(self, obj)
+
+
+app = Flask(__name__)
+app.json_encoder = CustomJSONEncoder
 
 @app.route('/')
 def index():
