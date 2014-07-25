@@ -2,18 +2,22 @@ import ConfigParser
 import os
 from flask import Flask, request, redirect, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
-from redirect import db_helper
 import db_helper
 import services
 from servicesexceptions import ServiceException
 from mail import Mail
 from dns import Dns
 from mock import MagicMock
+import traceback
+import convertible
+import json_helpers
+
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
 
 app = Flask(__name__)
+# app.json_encoder = json_helpers.CustomJSONEncoder
 app.config['SECRET_KEY'] = config.get('redirect', 'auth_secret_key')
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -74,14 +78,16 @@ def logout():
 @login_required
 def user():
     user = current_user.user
-    return jsonify(email=user.email, user_domain=user.user_domain, ip=user.ip, port=user.port, update_token=user.update_token)
+    user_data = convertible.to_dict(user)
+    return jsonify(user_data), 200
 
 @app.errorhandler(Exception)
 def handle_exception(error):
     if isinstance(error, ServiceException):
         return jsonify(message=error.message), error.status_code
     else:
-        return jsonify(message=error.message), 500
+        tb = traceback.format_exc()
+        return jsonify(message=tb), 500
 
 def manager():
     mail_host = config.get('smtp', 'host')

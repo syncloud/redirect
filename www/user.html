@@ -6,7 +6,7 @@ main_menu_item: menu_user
 ---
 
 <div class="container">
-  <h2>User <span id="header_user_name"></span></h2>
+  <h2>Domains</h2>
   <br/>
   <div class="row">
     <div class="col-md-6" id="domains">
@@ -17,23 +17,56 @@ main_menu_item: menu_user
 
 <script type="text/html" id="domain_template">
 <![CDATA[
+  <% for(d=0; d<this.domains.length; d++) {
+       var domain = this.domains[d];
+  %>
   <div class="panel panel-default">
-    <div class="panel-heading">Your domain: <a href="<%= this.full_domain %>"><%= this.full_domain %></a></div>
-    <div class="panel-body">
-      Address:
-      <% if (this.full_address !== null) { %>
-        <a href="<%= this.full_address %>"><%= this.full_address %></a>
-      <% } else { %>
-        not mapped
-      <% } %>
-      <br/>
-      Update token: <%= this.update_token %>
+    <div class="panel-heading">
+      <div class="panel-title">
+        <h3 style="margin-top: 5px; margin-bottom: 5px">
+          <a href="http://<%= this.domains[d].user_domain %>.syncloud.it"><%= domain.user_domain %>.syncloud.it</a>
+        </h3>
+      </div>
     </div>
+    <ul class="list-group">
+      <li class="list-group-item">
+        <span>Address: <%=domain.nice_ip%></span>
+        <span class="pull-right">Updated: <%= domain.nice_last_update %></span>
+      </li>
+      <li class="list-group-item">
+      </li>
+    </ul>
   </div>
+  <% } %>
 ]]>
 </script>
 
 <script type="text/javascript">
+
+function sameDay(date1, date2) {
+    var isSameDay = (date1.getDate() == date2.getDate()
+                     && date1.getMonth() == date2.getMonth()
+                     && date1.getFullYear() == date2.getFullYear());
+    return isSameDay;
+}
+
+function niceTimestamp(d) {
+    var today = new Date();
+    var isSameDay = sameDay(today, d);
+    var date_format = "MMM d, yyyy";
+    if (isSameDay) {
+        date_format = "'Today' hh:mm";
+    }
+    return $.format.date(d, date_format);
+}
+
+function niceIp(ip) {
+    if (ip === null) {
+      return "not mapped";
+    }
+    return ip;
+}
+
 $( document ).ready(function() {
 
     var url = redirect.web("user")
@@ -42,19 +75,14 @@ $( document ).ready(function() {
         .done( function(data) {
             var user = data;
 
-            var full_address = null;
-            if (user.ip !== null)
-                full_address = user.ip + ':' + user.port;
+            for (index = 0; index < user.domains.length; ++index) {
+                var domain = user.domains[index];
+                var last_update_date = new Date(Date.parse(domain.last_update));
+                domain.nice_last_update = niceTimestamp(last_update_date);
+                domain.nice_ip = niceIp(domain.ip);
+            }
 
-            var domain = {
-                full_domain: user.user_domain + '.syncloud.it',
-                full_address: full_address,
-                update_token: user.update_token,
-            };
-
-            $('#domains').append($('#domain_template').jqote(domain));
-
-            $('#header_user_name').text(user.email);
+            $('#domains').append($('#domain_template').jqote(user));
         })
         .fail( function(xhr, textStatus, errorThrown) {
             if (xhr.status === 401) {
