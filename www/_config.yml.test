@@ -2,3 +2,5 @@ markdown: rdiscount
 
 rest_api_url: http://localhost:5000/
 web_api_url: http://localhost:5001/
+
+main_domain: syncloud.it

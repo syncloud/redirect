@@ -7,6 +7,7 @@ var redirect = {
     webApiUrl: "{{ site.web_api_url }}",
     web: function ( url ) {
         return this.webApiUrl + url;
-    }
+    },
+    main_domain: "{{ site.main_domain }}"
 };
 </script>

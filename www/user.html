@@ -17,9 +17,8 @@ main_menu_item: menu_user
 
 <script type="text/html" id="domain_template">
 <![CDATA[
-  <% for(d=0; d<this.domains.length; d++) {
-       var domain = this.domains[d];
-  %>
+  <% for (d=0; d < this.domains.length; d++) {
+       var domain = this.domains[d]; %>
   <div class="panel panel-default">
     <div class="panel-heading">
       <div class="panel-title">
@@ -30,11 +29,25 @@ main_menu_item: menu_user
     </div>
     <ul class="list-group">
       <li class="list-group-item">
-        <span>Address: <%=domain.nice_ip%></span>
+        <span>Address: <%= domain.nice_ip %></span>
         <span class="pull-right">Updated: <%= domain.nice_last_update %></span>
       </li>
-      <li class="list-group-item">
-      </li>
+    <% if (domain.services.length === 0) { %>
+        <li class="list-group-item">
+          <span>No services available</span>
+        </li>
+    <% } else { %>
+      <% for (s=0; s < domain.services.length; s++) {
+           var service = domain.services[s]; %>
+          <li class="list-group-item" style="overflow: hidden">
+            <div style="float: left">
+              <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
+            </div>
+            <h4><%= service.name %></h4>
+            <span><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
+          </li>
+      <% } %>
+    <% } %>
     </ul>
   </div>
   <% } %>
@@ -67,6 +80,25 @@ function niceIp(ip) {
     return ip;
 }
 
+function serviceImage(name) {
+    switch (name) {
+        case "ownCloud":
+            return "images/owncloud-64.png"
+            break;
+        case "SSH":
+            return "images/ssh-64.png"
+            break;
+        default:
+            return null;
+            break;
+    }
+}
+
+function fullUrl(domain, service) {
+    var url = service.protocol+"://"+domain.user_domain+"."+redirect.main_domain+":"+service.port+"/"+service.url;
+    return url;
+}
+
 $( document ).ready(function() {
 
     var url = redirect.web("user")
@@ -75,11 +107,16 @@ $( document ).ready(function() {
         .done( function(data) {
             var user = data;
 
-            for (index = 0; index < user.domains.length; ++index) {
-                var domain = user.domains[index];
+            for (di = 0; di < user.domains.length; ++di) {
+                var domain = user.domains[di];
                 var last_update_date = new Date(Date.parse(domain.last_update));
                 domain.nice_last_update = niceTimestamp(last_update_date);
                 domain.nice_ip = niceIp(domain.ip);
+                for (si = 0; si < domain.services.length; ++si) {
+                    var service = domain.services[si];
+                    service.image = serviceImage(service.name);
+                    service.full_url = fullUrl(domain, service);
+                }
             }
 
             $('#domains').append($('#domain_template').jqote(user));
