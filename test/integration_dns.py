@@ -23,7 +23,7 @@ class TestDns(unittest.TestCase):
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
-        dns.create_records(user_domain, '192.168.0.1', '80', domain)
+        dns.new_domain(user_domain, '192.168.0.1', '80', domain)
         self.validate_dns('192.168.0.1', 80)
 
         dns.update_records(user_domain, '192.168.0.2', '81', domain)
