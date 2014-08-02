@@ -8,7 +8,7 @@ from servicesexceptions import ServiceException
 from mail import Mail
 from dns import Dns
 from mock import MagicMock
-
+import sys, traceback
 import json
 import convertible
 
@@ -81,6 +81,11 @@ def user_delete():
 @app.errorhandler(Exception)
 @cross_origin()
 def handle_exception(error):
+
+    print '-'*60
+    traceback.print_exc(file=sys.stdout)
+    print '-'*60
+
     if isinstance(error, ServiceException):
         return jsonify(message=error.message), error.status_code
     else:
