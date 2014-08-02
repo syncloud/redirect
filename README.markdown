@@ -100,3 +100,12 @@ sudo visudo -f /etc/sudoers.d/redirect
 redirect ALL = (root) NOPASSWD: /usr/bin/service apache2-test restart
 redirect ALL = (root) NOPASSWD: /usr/bin/pip install -r requirements.txt
 ````
+
+#### Upgrade test db from release to master
+
+````
+sudo su redirect
+cd /var/www/redirect-test
+./ci/refresh_test_db redirect-test
+./ci/migratedb redirect_test
+````
