@@ -11,10 +11,11 @@ import json
 config = ConfigParser.ConfigParser()
 config.read(os.path.dirname(__file__) + '/test_config.cfg')
 
-test_url = config.get('full_cycle', 'test_url')
-user = 'user6'
+domain = config.get('full_cycle', 'domain')
+test_url = 'api.{0}'.format(domain)
+user_domain = 'user8'
 password = 'pass123'
-email = user + '@example.com'
+email = user_domain + '@example.com'
 
 
 class TestIntegrationCycle(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestIntegrationCycle(unittest.TestCase):
         # Create (auto activate)
         response = requests.post(
             "http://{}/user/create".format(test_url),
-            {'user_domain': user, 'password': password, 'email': email})
+            {'user_domain': user_domain, 'password': password, 'email': email})
         self.assertEquals(response.status_code, 200, response.content)
 
         # Get token
@@ -35,7 +36,7 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertTrue(token is not None, token)
 
         # Check DNS (not available yet)
-        self.assertFalse(self.wait_for_dns(user + '.test.com', 'CNAME'))
+        self.assertFalse(self.wait_for_dns('{0}.{1}'.format(user_domain, domain), 'CNAME'))
 
         # Change IP/port (one)
         response = requests.post(
@@ -44,12 +45,7 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertEquals(response.status_code, 200, response.content)
 
         #  Validate DNS (one)
-        self.assertEquals(
-            self.wait_for_dns('device.{0}.test.com'.format(user), 'A', lambda v: v and v.address == '192.168.0.1').address,
-            '192.168.0.1')
-        srv = self.wait_for_dns('_owncloud._http._tcp.{0}.test.com'.format(user), 'SRV')
-        self.assertEquals(srv.port, 80)
-        self.assertEquals(srv.target.to_text(True), 'device.{0}.test.com'.format(user))
+        self.validate_dns('192.168.0.1', 80)
 
         # Change IP/port (two)
         response = requests.post(
@@ -58,12 +54,7 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertEquals(response.status_code, 200, response.content)
 
         #  Validate DNS (two)
-        self.assertEquals(
-            self.wait_for_dns('device.{0}.test.com'.format(user), 'A', lambda v: v and v.address == '192.168.0.2').address,
-            '192.168.0.2')
-        srv = self.wait_for_dns('_owncloud._http._tcp.{0}.test.com'.format(user), 'SRV')
-        self.assertEquals(srv.port, 81)
-        self.assertEquals(srv.target.to_text(True), 'device.{0}.test.com'.format(user))
+        self.validate_dns('192.168.0.2', 81)
 
         # Remove
         response = requests.post(
@@ -72,7 +63,18 @@ class TestIntegrationCycle(unittest.TestCase):
         self.assertEquals(response.status_code, 200, response.content)
 
         # Check DNS (nothing)
-        self.assertFalse(self.wait_for_dns(user + '.test.com', 'CNAME', lambda v: not v))
+        self.assertFalse(self.wait_for_dns(user_domain + '.test.com', 'CNAME', lambda v: not v))
+
+    def validate_dns(self, ip, port):
+        self.assertEquals(
+            self.wait_for_dns(
+                'device.{0}.{1}'.format(user_domain, domain),
+                'A',
+                lambda v: v and v.address == ip).address,
+            ip)
+        srv = self.wait_for_dns('_owncloud._http._tcp.{0}.{1}'.format(user_domain, domain), 'SRV')
+        self.assertEquals(srv.port, port)
+        self.assertEquals(srv.target.to_text(True), 'device.{0}.{1}'.format(user_domain, domain))
 
     def wait_for_dns(self, name, name_type, condition=lambda v: v):
 
