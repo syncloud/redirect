@@ -81,14 +81,12 @@ def user_delete():
 @app.errorhandler(Exception)
 @cross_origin()
 def handle_exception(error):
-
-    print '-'*60
-    traceback.print_exc(file=sys.stdout)
-    print '-'*60
-
     if isinstance(error, ServiceException):
         return jsonify(message=error.message), error.status_code
     else:
+        print '-'*60
+        traceback.print_exc(file=sys.stdout)
+        print '-'*60
         return jsonify(message=error.message), 500
 
 
