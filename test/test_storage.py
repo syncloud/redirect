@@ -1,6 +1,7 @@
 import unittest
 
 from helpers import generate_user, generate_domain, ModelsAssertionsMixin
+from redirect.models import ActionType
 
 from redirect.util import hash
 from test.helpers import get_test_storage_creator
@@ -54,7 +55,7 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
         with self.create_storage() as storage:
             user = generate_user()
             storage.add(user)
-            read = storage.get_user_by_activate_token(user.activate_token())
+            read = storage.get_user_by_activate_token(user.token(ActionType.ACTIVATE))
             self.assertUser(user, read)
 
     def test_user_password_hash_fits_column(self):

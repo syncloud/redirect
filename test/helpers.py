@@ -2,7 +2,7 @@ import os
 import ConfigParser
 from redirect.db_helper import get_storage_creator
 from redirect.util import create_token, hash
-from redirect.models import User, Domain
+from redirect.models import User, Domain, ActionType
 
 
 def get_test_storage_creator():
@@ -19,7 +19,7 @@ def get_test_config():
 def generate_user():
     email = unicode(create_token() + '@mail.com')
     user = User(email, hash('pass1234'), False)
-    user.set_activate_token(create_token())
+    user.enable_action(ActionType.ACTIVATE)
     return user
 
 
@@ -41,7 +41,8 @@ class ModelsAssertionsMixin:
             self.assertEquals(expected.email, actual.email, 'Users should have the same email')
             self.assertEquals(expected.password_hash, actual.password_hash, 'Users should have the same password_hash')
             self.assertEquals(expected.active, actual.active, 'Users should have the same active')
-            self.assertEquals(expected.activate_token(), actual.activate_token(), 'Users should have the same activate_token')
+            self.assertEquals(expected.token(ActionType.ACTIVATE), actual.token(ActionType.ACTIVATE), 'Users should have the same activation token')
+            self.assertEquals(expected.token(ActionType.PASSWORD), actual.token(ActionType.PASSWORD), 'Users should have the same reset password token')
 
     def assertDomain(self, expected, actual):
         if expected is None:

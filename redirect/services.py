@@ -30,7 +30,7 @@ class Users:
             raise servicesexceptions.bad_request(message)
 
         user = None
-        activate_token = None
+        action = None
         with self.create_storage() as storage:
             by_email = storage.get_user_by_email(email)
             if by_email and by_email.email == email:
@@ -42,12 +42,8 @@ class Users:
                     raise servicesexceptions.conflict('User domain name is already in use')
 
             update_token = util.create_token()
-            active = True
-            if self.activate_by_email:
-                active = False
-                activate_token = util.create_token()
 
-            user = User(email, util.hash(password), active)
+            user = User(email, util.hash(password), not self.activate_by_email)
 
             if user_domain:
                 domain = Domain(user_domain, None, update_token)
@@ -56,12 +52,12 @@ class Users:
                 storage.add(domain)
 
             if self.activate_by_email:
-                user.set_activate_token(activate_token)
+                action = user.enable_action(ActionType.ACTIVATE)
 
             storage.add(user)
 
         if self.activate_by_email:
-            activate_url = self.activate_url_template.format(activate_token)
+            activate_url = self.activate_url_template.format(action.token)
             self.mail.send_activate(user_domain, self.main_domain, user.email, activate_url)
 
         return user
@@ -83,7 +79,7 @@ class Users:
             if user.active:
                 raise servicesexceptions.conflict('User is active already')
 
-            user.update_active(True)
+            user.active = True
 
         return True
 

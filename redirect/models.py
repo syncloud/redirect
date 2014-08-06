@@ -2,6 +2,8 @@ from sqlalchemy import Table, Column, Integer, String, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
+import util
+
 Base = declarative_base()
 
 def from_dict(self, values):
@@ -30,23 +32,14 @@ class User(Base):
         self.password_hash = password_hash
         self.active = active
 
-    def update_active(self, active):
-        self.active = active
+    def enable_action(self, type):
+        token = util.create_token()
+        action = Action(token, type)
+        self.actions.append(action)
+        return action
 
-    def set_activate_token(self, token):
-        self.actions.append(Action(token, ActionType.ACTIVATE))
-
-    def set_password_token(self, token):
-        self.actions.append(Action(token, ActionType.ACTIVATE))
-
-    def activate_token(self):
-        return self.get_action_token(ActionType.ACTIVATE)
-
-    def password_token(self):
-        return self.get_action_token(ActionType.PASSWORD)
-
-    def get_action_token(self, type):
-        action = next(action for action in self.actions if action.action_type_id == type)
+    def token(self, type):
+        action = next((action for action in self.actions if action.action_type_id == type), None)
         if action:
             return action.token
 

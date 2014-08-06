@@ -45,13 +45,13 @@ class TestUsers(unittest.TestCase):
         self.assertIsNotNone(user)
         self.assertEqual('valid@mail.com', user.email)
         self.assertNotEqual('pass123456', user.password_hash, 'we should not store password plainly')
-        self.assertIsNotNone(user.activate_token())
+        self.assertIsNotNone(user.token(ActionType.ACTIVATE))
         self.assertFalse(user.active)
 
         self.assertEquals(1, len(user.domains))
         self.assertEqual('boris', user.domains[0].user_domain)
 
-        activate_url = self.activate_url_template.format(user.activate_token())
+        activate_url = self.activate_url_template.format(user.token(ActionType.ACTIVATE))
         self.assertFalse(self.smtp.empty())
         email = self.smtp.emails()[0]
         self.assertTrue(user.email in email)
@@ -118,11 +118,11 @@ class TestUsers(unittest.TestCase):
 
     def test_user_activate_success(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', 'hash123', False)
-        user.set_activate_token(u'activatetoken123')
+        user = User(u'boris@mail.com', 'hash123', active=False)
+        activate = user.enable_action(ActionType.ACTIVATE)
         self.add_user(user)
 
-        request = {'token': u'activatetoken123'}
+        request = {'token': activate.token}
         users.activate(request)
 
         user = self.get_user(user.email)
@@ -148,11 +148,11 @@ class TestUsers(unittest.TestCase):
 
     def test_user_activate_already_active(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', 'hash123', True)
-        user.set_activate_token(u'activatetoken123')
+        user = User(u'boris@mail.com', 'hash123', active=True)
+        activate = user.enable_action(ActionType.ACTIVATE)
         self.add_user(user)
 
-        request = {'token': u'activatetoken123'}
+        request = {'token': activate.token}
 
         with self.assertRaises(ServiceException) as context:
             users.activate(request)
@@ -190,8 +190,8 @@ class TestUsers(unittest.TestCase):
 
     def test_user_authenticate_non_active(self):
         users = self.get_users_service()
-        user = User(u'boris@mail.com', hash('pass1234'), False)
-        user.set_activate_token('token123')
+        user = User(u'boris@mail.com', hash('pass1234'), active=False)
+        user.enable_action(ActionType.ACTIVATE)
         self.add_user(user)
 
         request = {'email': 'boris@mail.com', 'password': 'pass1234'}
