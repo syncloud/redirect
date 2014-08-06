@@ -1,6 +1,7 @@
 import redirect.rest
 import unittest
 import datetime
+import time
 
 import json
 
@@ -131,12 +132,15 @@ class TestDomain(TestFlask):
             actual_value = actual[key]
             self.assertEquals(expected_value, actual_value)
 
-    def check_domain(self, update_token, expected_data):
+    def get_domain(self, update_token):
         response = self.app.get('/domain/get', query_string={'token': update_token})
         self.assertEqual(200, response.status_code)
         self.assertIsNotNone(response.data)
         response_data = json.loads(response.data)
-        domain_data = response_data['data']
+        return response_data['data']
+
+    def check_domain(self, update_token, expected_data):
+        domain_data = self.get_domain(update_token)
         self.assertDomain(expected_data, domain_data)
         return domain_data
 
@@ -202,6 +206,29 @@ class TestDomain(TestFlask):
         self.assertEqual(200, response.status_code)
 
         self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': [service_data]})
+
+    def test_domain_update_date(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+
+        domain_data = json.loads(response.data)
+        update_token = domain_data['update_token']
+
+        update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': []}
+
+        self.app.post('/domain/update', data=json.dumps(update_data))
+        domain = self.get_domain(update_token)
+        last_updated1 = domain['last_update']
+
+        time.sleep(1)
+
+        self.app.post('/domain/update', data=json.dumps(update_data))
+        domain = self.get_domain(update_token)
+        last_updated2 = domain['last_update']
+
+        self.assertGreater(last_updated2, last_updated1)
 
     def test_domain_update_wrong_token(self):
         service_data = {'name': 'ownCloud', 'type': '_http._tcp', 'port': 10000, 'url': None}

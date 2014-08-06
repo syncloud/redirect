@@ -2,6 +2,7 @@ from models import User, Domain, Service, new_service, new_service_from_dict, Ac
 from validation import Validator
 import servicesexceptions
 import util
+from datetime import datetime
 
 class Users:
     def __init__(self, create_storage, activate_by_email, mail, activate_url_template, dns, domain):
@@ -184,6 +185,7 @@ class Users:
             else:
                 self.dns.update_domain(self.main_domain, domain, update_ip=update_ip, added=added_services, removed=removed_services)
 
+            domain.last_update = datetime.now()
             return domain
 
     def get_domain(self, request):

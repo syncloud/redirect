@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, String, Boolean, ForeignKey, DateTime, TIMESTAMP
+from sqlalchemy import Table, Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -88,7 +88,7 @@ class Domain(Base):
     user_domain = Column(String())
     ip = Column(String())
     update_token = Column(String())
-    last_update = Column(TIMESTAMP)
+    last_update = Column(DateTime)
 
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", lazy='subquery')
