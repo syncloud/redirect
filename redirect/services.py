@@ -5,11 +5,10 @@ import util
 from datetime import datetime
 
 class Users:
-    def __init__(self, create_storage, activate_by_email, mail, activate_url_template, dns, domain):
+    def __init__(self, create_storage, activate_by_email, mail, dns, domain):
         self.storage = None
         self.activate_by_email = activate_by_email
         self.mail = mail
-        self.activate_url_template = activate_url_template
         self.dns = dns
         self.main_domain = domain
         self.create_storage = create_storage
@@ -57,8 +56,7 @@ class Users:
             storage.add(user)
 
         if self.activate_by_email:
-            activate_url = self.activate_url_template.format(action.token)
-            self.mail.send_activate(user_domain, self.main_domain, user.email, activate_url)
+            self.mail.send_activate(user_domain, self.main_domain, user.email, action.token)
 
         return user
 
@@ -226,3 +224,20 @@ class Users:
                 self.dns.delete_domain(self.main_domain, domain)
 
             storage.delete_user(user)
+
+    def user_reset_password(self, request):
+        validator = Validator(request)
+        email = validator.email()
+        errors = validator.errors
+
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
+        with self.create_storage() as storage:
+            user = storage.get_user_by_email(email)
+
+            if user and user.active:
+                action = user.enable_action(ActionType.PASSWORD)
+
+                self.mail.send_reset_password(user.email, action.token)

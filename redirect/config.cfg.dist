@@ -20,13 +20,14 @@ hosted_zone_id: [amazon hosted zone id]
 
 #Activation email form field
 from: support@example.com
+activate_url_template: http://redirect.com/user/activate?token={0}
+password_url_template: http://redirect.com/user/password?token={0}
 
 [redirect]
 
 domain: [domain for dynamic dns]
 #Send activation token by email (True) or return as Token header (False)
 activate_by_email: false
-activate_url_template: http://redirect.com/user/activate?token={0}
 auth_secret_key: 123456790
 
 # use mock only for testing

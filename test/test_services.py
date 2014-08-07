@@ -12,10 +12,10 @@ from test.helpers import get_test_storage_creator
 class TestUsers(unittest.TestCase):
 
     def setUp(self):
-        self.mail = Mail('localhost', 2500, 'support@redirect.com')
+        self.activate_url_template = 'http://redirect.com?activate?token={0}'
+        self.mail = Mail('localhost', 2500, 'support@redirect.com', self.activate_url_template, None)
         self.smtp = FakeSmtp('outbox')
         self.smtp.clear()
-        self.activate_url_template = 'http://redirect.com?activate?token={0}'
         self.dns = MagicMock()
         self.create_storage = get_test_storage_creator()
         with self.create_storage() as storage:
@@ -34,7 +34,7 @@ class TestUsers(unittest.TestCase):
             return storage.get_user_by_email(email)
 
     def get_users_service(self, activate_by_email=True):
-        return Users(self.create_storage, activate_by_email, self.mail, self.activate_url_template, self.dns, 'redirect.com')
+        return Users(self.create_storage, activate_by_email, self.mail, self.dns, 'redirect.com')
 
     def test_user_create_success(self):
         users = self.get_users_service()

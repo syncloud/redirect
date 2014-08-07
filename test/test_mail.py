@@ -4,13 +4,16 @@ from fakesmtp import FakeSmtp
 from email.mime.text import MIMEText
 from redirect.mail import Mail
 
-class TestSmtp(unittest.TestCase):
+class TestMail(unittest.TestCase):
     smtp_outbox_path = 'outbox'
     smtp_host = 'localhost'
     smtp_port = 2500
 
     def setUp(self):
         self.smtp = FakeSmtp(self.smtp_outbox_path)
+        self.smtp.clear()
+
+    def tearDown(self):
         self.smtp.clear()
 
     def test_send_goes_to_file(self):
@@ -32,10 +35,24 @@ class TestSmtp(unittest.TestCase):
         sent_mails = self.smtp.emails()
         self.assertEquals(1, len(sent_mails))
 
-    def test_mail_send(self):
-        activate_url = 'http://redirect.com/activate?token=t123456'
-        mail = Mail(self.smtp_host, self.smtp_port, 'support@redirect.com')
-        mail.send_activate('boris', 'redirect.com', 'boris@email.com', activate_url)
+    def test_send_activate_mail_send(self):
+        url_template = 'http://redirect.com/activate?token={0}'
+        token = 't123456'
+        activate_url = url_template.format(token)
+        mail = Mail(self.smtp_host, self.smtp_port, 'support@redirect.com', url_template, None)
+        mail.send_activate('boris', 'redirect.com', 'boris@email.com', token)
+
+        self.assertFalse(self.smtp.empty())
+        sent_mails = self.smtp.emails()
+        self.assertEquals(1, len(sent_mails))
+        self.assertTrue(activate_url in sent_mails[0])
+
+    def test_send_reset_password_mail_send(self):
+        url_template = 'http://redirect.com/reset?token={0}'
+        token = 't123456'
+        activate_url = url_template.format(token)
+        mail = Mail(self.smtp_host, self.smtp_port, 'support@redirect.com', None, url_template)
+        mail.send_reset_password('boris@email.com', token)
 
         self.assertFalse(self.smtp.empty())
         sent_mails = self.smtp.emails()

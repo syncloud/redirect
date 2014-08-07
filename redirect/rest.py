@@ -77,6 +77,13 @@ def user_delete():
     manager().delete_user(request.form)
     return jsonify(message='User deleted'), 200
 
+@app.route('/user/reset_password', methods=["POST"])
+@cross_origin()
+def user_reset_password():
+    request_data = json.loads(request.data)
+    manager().user_reset_password(request_data)
+    return jsonify(message='Reset password requested'), 200
+
 
 @app.errorhandler(Exception)
 @cross_origin()
@@ -95,10 +102,11 @@ def manager():
     mail_port = config.get('smtp', 'port')
 
     mail_from = config.get('mail', 'from')
+    activate_url_template = config.get('mail', 'activate_url_template')
+    password_url_template = config.get('mail', 'password_url_template')
 
     redirect_domain = config.get('redirect', 'domain')
     redirect_activate_by_email = config.getboolean('redirect', 'activate_by_email')
-    activate_url_template = config.get('redirect', 'activate_url_template')
     mock_dns = config.getboolean('redirect', 'mock_dns')
 
     if mock_dns:
@@ -111,9 +119,8 @@ def manager():
 
     create_storage = db_helper.get_storage_creator(config)
 
-    mail = Mail(mail_host, mail_port, mail_from)
-    users_manager = services.Users(create_storage, redirect_activate_by_email,
-                                   mail, activate_url_template, dns, redirect_domain)
+    mail = Mail(mail_host, mail_port, mail_from, activate_url_template, password_url_template)
+    users_manager = services.Users(create_storage, redirect_activate_by_email, mail, dns, redirect_domain)
     return users_manager
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ class TestFlask(unittest.TestCase):
         self.smtp.clear()
 
     def tearDown(self):
-        pass
+        self.smtp.clear()
 
     def get_token(self, email):
         link_index = email.find('http://')
@@ -38,10 +38,11 @@ class TestFlask(unittest.TestCase):
         return email, password
 
     def acquire_domain(self, email, password, user_domain):
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        response = self.app.post('/domain/acquire', data={'user_domain': user_domain, 'email': email, 'password': password})
         domain_data = json.loads(response.data)
         update_token = domain_data['update_token']
         return update_token
+
 
 class TestUser(TestFlask):
 
@@ -68,6 +69,19 @@ class TestUser(TestFlask):
 
         activate_response = self.app.get('/user/activate', query_string={'token': token})
         self.assertEqual(200, activate_response.status_code)
+
+    def test_user_reset_password_sent_mail(self):
+        email, password = self.create_active_user()
+
+        self.smtp.clear()
+
+        response = self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        self.assertEqual(200, response.status_code)
+
+        self.assertFalse(self.smtp.empty())
+        token = self.get_token(self.smtp.emails()[0])
+
+        self.assertIsNotNone(token)
 
     def test_get_user_data(self):
         email, password = self.create_active_user()
