@@ -34,15 +34,21 @@ class User(Base):
 
     def enable_action(self, type):
         token = util.create_token()
-        action = Action(token, type)
-        self.actions.append(action)
+        action = self.action(type)
+        if action:
+            action.token = token
+        else:
+            action = Action(token, type)
+            self.actions.append(action)
         return action
 
     def token(self, type):
-        action = next((action for action in self.actions if action.action_type_id == type), None)
+        action = self.action(type)
         if action:
             return action.token
 
+    def action(self, type):
+        return next((action for action in self.actions if action.action_type_id == type), None)
 
 class Action(Base):
     __tablename__ = "action"

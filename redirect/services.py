@@ -241,3 +241,23 @@ class Users:
                 action = user.enable_action(ActionType.PASSWORD)
 
                 self.mail.send_reset_password(user.email, action.token)
+
+    def user_set_password(self, request):
+        validator = Validator(request)
+        token = validator.token()
+        password = validator.new_password()
+        errors = validator.errors
+
+        if errors:
+            message = ", ".join(errors)
+            raise servicesexceptions.bad_request(message)
+
+        with self.create_storage() as storage:
+            user = storage.get_user_by_token(ActionType.PASSWORD, token)
+
+            if not user:
+                raise servicesexceptions.bad_request('Invalid password token')
+
+            user.password_hash = util.hash(password)
+
+            self.mail.send_set_password(user.email)

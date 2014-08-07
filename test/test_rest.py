@@ -43,7 +43,6 @@ class TestFlask(unittest.TestCase):
         update_token = domain_data['update_token']
         return update_token
 
-
 class TestUser(TestFlask):
 
     def test_user_create_success(self):
@@ -69,19 +68,6 @@ class TestUser(TestFlask):
 
         activate_response = self.app.get('/user/activate', query_string={'token': token})
         self.assertEqual(200, activate_response.status_code)
-
-    def test_user_reset_password_sent_mail(self):
-        email, password = self.create_active_user()
-
-        self.smtp.clear()
-
-        response = self.app.post('/user/reset_password', data=json.dumps({'email': email}))
-        self.assertEqual(200, response.status_code)
-
-        self.assertFalse(self.smtp.empty())
-        token = self.get_token(self.smtp.emails()[0])
-
-        self.assertIsNotNone(token)
 
     def test_get_user_data(self):
         email, password = self.create_active_user()
@@ -138,6 +124,59 @@ class TestUser(TestFlask):
         response = self.app.get('/domain/get', query_string={'token': update_token_2})
         self.assertEqual(400, response.status_code)
 
+
+class TestUserPassword(TestFlask):
+
+    def test_user_reset_password_sent_mail(self):
+        email, password = self.create_active_user()
+
+        self.smtp.clear()
+
+        response = self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        self.assertEqual(200, response.status_code)
+
+        self.assertFalse(self.smtp.empty(), msg='Server should send email with link to reset password')
+        token = self.get_token(self.smtp.emails()[0])
+
+        self.assertIsNotNone(token)
+
+    def test_user_reset_password_set_new(self):
+        email, password = self.create_active_user()
+
+        self.smtp.clear()
+
+        self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        token = self.get_token(self.smtp.emails()[0])
+
+        self.smtp.clear()
+
+        new_password = 'new_password'
+        response = self.app.post('/user/set_password', data=json.dumps({'token': token, 'password': new_password}))
+        self.assertEqual(200, response.status_code, response.data)
+
+        self.assertFalse(self.smtp.empty(), msg='Server should send email when setting new password')
+
+        response = self.app.get('/user/get', query_string={'email': email, 'password': new_password})
+        self.assertEqual(200, response.status_code, response.data)
+
+    def test_user_reset_password_set_with_old_token(self):
+        email, password = self.create_active_user()
+
+        self.smtp.clear()
+
+        self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        token_old = self.get_token(self.smtp.emails()[0])
+
+        self.smtp.clear()
+
+        self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        token = self.get_token(self.smtp.emails()[0])
+
+        self.smtp.clear()
+
+        new_password = 'new_password'
+        response = self.app.post('/user/set_password', data=json.dumps({'token': token_old, 'password': new_password}))
+        self.assertEqual(400, response.status_code, response.data)
 
 class TestDomain(TestFlask):
 

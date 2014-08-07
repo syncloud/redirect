@@ -61,3 +61,18 @@ class Mail:
         s = smtplib.SMTP(self.smtp_host, self.smtp_port)
         s.sendmail(self.email_from, [email_to], msg.as_string())
         s.quit()
+
+    def send_set_password(self, email_to):
+        msg = MIMEText("""
+        Hello,
+
+        Your password has been reset.
+        """)
+
+        msg['Subject'] = 'Reset password'
+        msg['From'] = self.email_from
+        msg['To'] = email_to
+
+        s = smtplib.SMTP(self.smtp_host, self.smtp_port)
+        s.sendmail(self.email_from, [email_to], msg.as_string())
+        s.quit()

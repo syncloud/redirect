@@ -22,11 +22,14 @@ class Storage:
         return user
 
     def get_user_by_activate_token(self, activate_token):
+        return self.get_user_by_token(ActionType.ACTIVATE, activate_token)
+
+    def get_user_by_token(self, type, token):
         user = self.session\
             .query(User)\
             .join(Action)\
-            .filter(Action.action_type_id == ActionType.ACTIVATE)\
-            .filter(Action.token == activate_token).first()
+            .filter(Action.action_type_id == type)\
+            .filter(Action.token == token).first()
         return user
 
     def get_domain_by_update_token(self, update_token):
