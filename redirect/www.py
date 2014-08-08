@@ -5,19 +5,14 @@ from flask.ext.login import LoginManager, login_user, logout_user, current_user,
 import db_helper
 import services
 from servicesexceptions import ServiceException
-from mail import Mail
-from dns import Dns
-from mock import MagicMock
 import traceback
 import convertible
-import json_helpers
 
 
 config = ConfigParser.ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
 
 app = Flask(__name__)
-# app.json_encoder = json_helpers.CustomJSONEncoder
 app.config['SECRET_KEY'] = config.get('redirect', 'auth_secret_key')
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -90,28 +85,9 @@ def handle_exception(error):
         return jsonify(message=tb), 500
 
 def manager():
-    mail_host = config.get('smtp', 'host')
-    mail_port = config.get('smtp', 'port')
-
-    mail_from = config.get('mail', 'from')
-
     redirect_domain = config.get('redirect', 'domain')
-    redirect_activate_by_email = bool(config.get('redirect', 'activate_by_email'))
-    activate_url_template = config.get('redirect', 'activate_url_template')
-    mock_dns = bool(config.get('redirect', 'mock_dns'))
-
-    if mock_dns:
-        dns = MagicMock()
-    else:
-        dns = Dns(
-            config.get('aws', 'access_key_id'),
-            config.get('aws', 'secret_access_key'),
-            config.get('aws', 'hosted_zone_id'))
-
     create_storage = db_helper.get_storage_creator(config)
-
-    mail = Mail(mail_host, mail_port, mail_from)
-    users_manager = services.Users(create_storage, redirect_activate_by_email, mail, activate_url_template, dns, redirect_domain)
+    users_manager = services.UsersRead(create_storage, redirect_domain)
     return users_manager
 
 if __name__ == '__main__':
