@@ -12,7 +12,7 @@ config = ConfigParser.ConfigParser()
 config.read(os.path.dirname(__file__) + '/config.cfg')
 
 main_domain = config.get('full_cycle', 'domain')
-user_domain = 'user9'
+user_domain = 'user10'
 
 
 class TestDns(unittest.TestCase):
@@ -27,27 +27,28 @@ class TestDns(unittest.TestCase):
         domain = Domain(user_domain, '192.168.0.1')
         dns.new_domain(main_domain, domain)
 
-        service_80 = new_service('web', '_http._tcp', 80)
+        ssh_type = '_ssh._tcp'
+        service_80 = new_service('ssh', ssh_type, 80)
 
         dns.update_domain(main_domain, domain, None, [service_80], [])
-        self.validate_dns('192.168.0.1', 80)
+        self.validate_dns('192.168.0.1', 80, ssh_type)
 
         domain.ip = '192.168.0.2'
-        service_81 = new_service('web', '_http._tcp', 81)
+        service_81 = new_service('web', ssh_type, 81)
         dns.update_domain(main_domain, domain, True, [service_81], [service_80])
-        self.validate_dns('192.168.0.2', 81)
+        self.validate_dns('192.168.0.2', 81, ssh_type)
 
         dns.delete_domain(main_domain, domain)
         self.assertFalse(self.wait_for_dns('{0}.{1}'.format(main_domain, domain), 'CNAME', lambda v: not v))
 
-    def validate_dns(self, ip, port):
+    def validate_dns(self, ip, port, srv_type):
         self.assertEquals(
             self.wait_for_dns(
                 'device.{0}.{1}'.format(user_domain, main_domain),
                 'A',
                 lambda v: v and v.address == ip).address,
             ip)
-        srv = self.wait_for_dns('_http._tcp.{0}.{1}'.format(user_domain, main_domain), 'SRV')
+        srv = self.wait_for_dns('{0}.{1}.{2}'.format(srv_type, user_domain, main_domain), 'SRV')
         self.assertEquals(srv.port, port)
         self.assertEquals(srv.target.to_text(True), 'device.{0}.{1}'.format(user_domain, main_domain))
 
