@@ -9,7 +9,7 @@ from redirect.dns import Dns
 from redirect.models import Domain, Service, new_service
 
 config = ConfigParser.ConfigParser()
-config.read(os.path.dirname(__file__) + '/test.config.cfg')
+config.read(os.path.dirname(__file__) + '/config.cfg')
 
 main_domain = config.get('full_cycle', 'domain')
 user_domain = 'user9'
