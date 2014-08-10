@@ -31,9 +31,6 @@ class Dns:
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
-        change = changes.add_change('CREATE', '{0}.{1}.'.format(domain.user_domain, main_domain), 'CNAME')
-        change.add_value(main_domain)
-
         self.cname_change(changes, main_domain, domain, 'CREATE')
         self.a_change(changes, main_domain, domain, 'CREATE')
         self.services_change(changes, main_domain, domain, 'CREATE', domain.services)

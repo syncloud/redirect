@@ -6,12 +6,13 @@ import time
 import ConfigParser
 import os
 from redirect.dns import Dns
+from redirect.models import Domain, Service, new_service
 
 config = ConfigParser.ConfigParser()
-config.read(os.path.dirname(__file__) + '/test_config.cfg')
+config.read(os.path.dirname(__file__) + '/test.config.cfg')
 
-domain = config.get('full_cycle', 'domain')
-user_domain = 'user7'
+main_domain = config.get('full_cycle', 'domain')
+user_domain = 'user9'
 
 
 class TestDns(unittest.TestCase):
@@ -23,25 +24,32 @@ class TestDns(unittest.TestCase):
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
-        dns.new_domain(user_domain, '192.168.0.1', '80', domain)
+        domain = Domain(user_domain, '192.168.0.1')
+        dns.new_domain(main_domain, domain)
+
+        service_80 = new_service('web', '_http._tcp', 80)
+
+        dns.update_domain(main_domain, domain, None, [service_80], [])
         self.validate_dns('192.168.0.1', 80)
 
-        dns.update_records(user_domain, '192.168.0.2', '81', domain)
+        domain.ip = '192.168.0.2'
+        service_81 = new_service('web', '_http._tcp', 81)
+        dns.update_domain(main_domain, domain, True, [service_81], [service_80])
         self.validate_dns('192.168.0.2', 81)
 
-        dns.delete_records(user_domain, '192.168.0.2', '81', domain)
-        self.assertFalse(self.wait_for_dns('{0}.{1}'.format(user_domain, domain), 'CNAME', lambda v: not v))
+        dns.delete_domain(main_domain, domain)
+        self.assertFalse(self.wait_for_dns('{0}.{1}'.format(main_domain, domain), 'CNAME', lambda v: not v))
 
     def validate_dns(self, ip, port):
         self.assertEquals(
             self.wait_for_dns(
-                'device.{0}.{1}'.format(user_domain, domain),
+                'device.{0}.{1}'.format(user_domain, main_domain),
                 'A',
                 lambda v: v and v.address == ip).address,
             ip)
-        srv = self.wait_for_dns('_owncloud._http._tcp.{0}.{1}'.format(user_domain, domain), 'SRV')
+        srv = self.wait_for_dns('_http._tcp.{0}.{1}'.format(user_domain, main_domain), 'SRV')
         self.assertEquals(srv.port, port)
-        self.assertEquals(srv.target.to_text(True), 'device.{0}.{1}'.format(user_domain, domain))
+        self.assertEquals(srv.target.to_text(True), 'device.{0}.{1}'.format(user_domain, main_domain))
 
     def wait_for_dns(self, name, name_type, condition=lambda v: v):
 
