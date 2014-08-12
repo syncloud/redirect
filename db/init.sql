@@ -28,7 +28,8 @@ CREATE TABLE `service` (
   `url` varchar(100),
   `port` int(11) NOT NULL,
   `domain_id` integer NOT NULL,
-  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY (domain_id, port)
 );
 
 CREATE TABLE `action_type` (
