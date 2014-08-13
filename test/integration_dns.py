@@ -12,7 +12,7 @@ config = ConfigParser.ConfigParser()
 config.read(os.path.dirname(__file__) + '/config.cfg')
 
 main_domain = config.get('full_cycle', 'domain')
-user_domain = 'user10'
+user_domain = 'user11'
 
 
 class TestDns(unittest.TestCase):
@@ -27,16 +27,21 @@ class TestDns(unittest.TestCase):
         domain = Domain(user_domain, '192.168.0.1')
         dns.new_domain(main_domain, domain)
 
-        ssh_type = '_ssh._tcp'
-        service_80 = new_service('ssh', ssh_type, 80)
+        service_80 = new_service('ssh', '_ssh._tcp', 80)
 
         dns.update_domain(main_domain, domain, None, [service_80], [])
-        self.validate_dns('192.168.0.1', 80, ssh_type)
+        self.validate_dns('192.168.0.1', 80, '_ssh._tcp')
 
         domain.ip = '192.168.0.2'
-        service_81 = new_service('web', ssh_type, 81)
+        service_81 = new_service('web', '_www._tcp', 81)
         dns.update_domain(main_domain, domain, True, [service_81], [service_80])
-        self.validate_dns('192.168.0.2', 81, ssh_type)
+        self.validate_dns('192.168.0.2', 81, '_www._tcp')
+
+
+        domain.ip = '192.168.0.3'
+        service_82 = new_service('web1', '_www1._tcp', 82)
+        dns.update_domain(main_domain, domain, True, [service_82], [])
+        self.validate_dns('192.168.0.3', 82, '_www1._tcp')
 
         dns.delete_domain(main_domain, domain)
         self.assertFalse(self.wait_for_dns('{0}.{1}'.format(main_domain, domain), 'CNAME', lambda v: not v))
