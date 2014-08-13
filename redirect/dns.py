@@ -1,3 +1,4 @@
+import logging
 from boto.route53.record import ResourceRecordSets
 import boto.route53
 
@@ -46,7 +47,12 @@ class Dns:
         self.services_change(changes, main_domain, domain, 'DELETE', removed)
         self.services_change(changes, main_domain, domain, 'UPSERT', added)
 
-        changes.commit()
+        try:
+            changes.commit()
+        except Exception, e:
+            logging.error("added: {}".format(added))
+            logging.error("removed: {}".format(removed))
+            raise e
 
     def delete_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
