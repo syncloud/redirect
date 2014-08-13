@@ -1,3 +1,4 @@
+import logging
 from models import User, Domain, Service, new_service, new_service_from_dict, Action, ActionType
 from validation import Validator
 import servicesexceptions
@@ -220,8 +221,10 @@ class Users(UsersRead):
                 s.domain = domain
                 domain.services.append(s)
 
+            logging.info("adding: {}".format(added_services))
             storage.add(added_services)
 
+            logging.info("removing: {}".format(removed_services))
             storage.delete(removed_services)
 
             is_new_dmain = domain.ip is None
