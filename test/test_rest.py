@@ -132,7 +132,7 @@ class TestUserPassword(TestFlask):
 
         self.smtp.clear()
 
-        response = self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        response = self.app.post('/user/reset_password', data={'email': email})
         self.assertEqual(200, response.status_code)
 
         self.assertFalse(self.smtp.empty(), msg='Server should send email with link to reset password')
@@ -145,13 +145,13 @@ class TestUserPassword(TestFlask):
 
         self.smtp.clear()
 
-        self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        self.app.post('/user/reset_password', data={'email': email})
         token = self.get_token(self.smtp.emails()[0])
 
         self.smtp.clear()
 
         new_password = 'new_password'
-        response = self.app.post('/user/set_password', data=json.dumps({'token': token, 'password': new_password}))
+        response = self.app.post('/user/set_password', data={'token': token, 'password': new_password})
         self.assertEqual(200, response.status_code, response.data)
 
         self.assertFalse(self.smtp.empty(), msg='Server should send email when setting new password')
@@ -164,18 +164,18 @@ class TestUserPassword(TestFlask):
 
         self.smtp.clear()
 
-        self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        self.app.post('/user/reset_password', data={'email': email})
         token_old = self.get_token(self.smtp.emails()[0])
 
         self.smtp.clear()
 
-        self.app.post('/user/reset_password', data=json.dumps({'email': email}))
+        self.app.post('/user/reset_password', data={'email': email})
         token = self.get_token(self.smtp.emails()[0])
 
         self.smtp.clear()
 
         new_password = 'new_password'
-        response = self.app.post('/user/set_password', data=json.dumps({'token': token_old, 'password': new_password}))
+        response = self.app.post('/user/set_password', data={'token': token_old, 'password': new_password})
         self.assertEqual(400, response.status_code, response.data)
 
 class TestDomain(TestFlask):

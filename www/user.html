@@ -63,7 +63,11 @@ function sameDay(date1, date2) {
     return isSameDay;
 }
 
-function niceTimestamp(d) {
+function niceTimestamp(ds) {
+    if (ds === null) {
+      return "never";
+    }
+    var d = new Date(Date.parse(ds));
     var today = new Date();
     var isSameDay = sameDay(today, d);
     var date_format = "MMM d, yyyy";
@@ -109,8 +113,7 @@ $( document ).ready(function() {
 
             for (di = 0; di < user.domains.length; ++di) {
                 var domain = user.domains[di];
-                var last_update_date = new Date(Date.parse(domain.last_update));
-                domain.nice_last_update = niceTimestamp(last_update_date);
+                domain.nice_last_update = niceTimestamp(domain.last_update);
                 domain.nice_ip = niceIp(domain.ip);
                 for (si = 0; si < domain.services.length; ++si) {
                     var service = domain.services[si];

@@ -81,16 +81,14 @@ def user_delete():
 @app.route('/user/reset_password', methods=["POST"])
 @cross_origin()
 def user_reset_password():
-    request_data = json.loads(request.data)
-    manager().user_reset_password(request_data)
+    manager().user_reset_password(request.form)
     return jsonify(message='Reset password requested'), 200
 
 
 @app.route('/user/set_password', methods=["POST"])
 @cross_origin()
 def user_set_password():
-    request_data = json.loads(request.data)
-    manager().user_set_password(request_data)
+    manager().user_set_password(request.form)
     return jsonify(message='Password was set successfully'), 200
 
 
