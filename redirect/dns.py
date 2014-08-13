@@ -39,6 +39,10 @@ class Dns:
         changes.commit()
 
     def update_domain(self, main_domain, domain, update_ip=False, added=[], removed=[]):
+
+        if not update_ip and len(added) == 0 and len(removed) == 0:
+            return
+
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
