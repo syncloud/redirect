@@ -1,8 +1,5 @@
 .idea
 *.pyc
-test.config.cfg
-config.cfg
-_config.yml
 revision
 deploy.log
 deploy.log.last

@@ -1,0 +1,6 @@
+markdown: rdiscount
+
+rest_api_url: http://api.syncloud.info:81/
+web_api_url: /api/
+
+main_domain: syncloud.info
