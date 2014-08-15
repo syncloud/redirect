@@ -99,6 +99,11 @@ class Domain(Base):
         self.ip = ip
         self.update_token = update_token
 
+    def dns_device_name(self, main_domain):
+        return 'device.{0}.{1}.'.format(self.user_domain, main_domain)
+
+    def dns_name(self, main_domain):
+        return '{0}.{1}.'.format(self.user_domain, main_domain)
 
 class Service(Base):
     __tablename__ = "service"
@@ -113,6 +118,12 @@ class Service(Base):
 
     domain_id = Column(Integer, ForeignKey('domain.id'))
     domain = relationship("Domain", lazy='subquery')
+
+    def dns_name(self, main_domain):
+        return '{0}.{1}.{2}.'.format(self.type, self.domain.user_domain, main_domain)
+
+    def dns_value(self, main_domain):
+        return '0 0 {0} device.{1}.{2}.'.format(self.port, self.domain.user_domain, main_domain)
 
 
 def new_service(name, type, port):

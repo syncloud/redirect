@@ -1,9 +1,11 @@
 import logging
-from models import User, Domain, Service, new_service, new_service_from_dict, Action, ActionType
+from datetime import datetime
+
+from models import User, Domain, new_service_from_dict, ActionType
 from validation import Validator
 import servicesexceptions
 import util
-from datetime import datetime
+
 
 class UsersRead:
 

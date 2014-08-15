@@ -10,22 +10,20 @@ class Dns:
         self.aws_secret_access_key = aws_secret_access_key
         self.hosted_zone_id = hosted_zone_id
 
-    def service_change(self, changes, main_domain, user_domain, change_type, service):
-            service_change = '{0}.{1}.{2}.'.format(service.type, user_domain, main_domain)
-            service_value = '0 0 {0} device.{1}.{2}.'.format(service.port, user_domain, main_domain)
-            change = changes.add_change(change_type, service_change, 'SRV')
-            change.add_value(service_value)
+    def service_change(self, changes, main_domain, change_type, service):
+            change = changes.add_change(change_type, service.dns_name(main_domain), 'SRV')
+            change.add_value(service.dns_value(main_domain))
 
-    def services_change(self, changes, main_domain, domain, change_type, services):
+    def services_change(self, changes, main_domain, change_type, services):
         for s in services:
-            self.service_change(changes, main_domain, domain.user_domain, change_type, s)
+            self.service_change(changes, main_domain, change_type, s)
 
     def a_change(self, changes, main_domain, domain, change_type):
-            change = changes.add_change(change_type, 'device.{0}.{1}.'.format(domain.user_domain, main_domain), 'A')
-            change.add_value(domain.ip)
+        change = changes.add_change(change_type, domain.dns_device_name(main_domain), 'A')
+        change.add_value(domain.ip)
 
     def cname_change(self, changes, main_domain, domain, change_type):
-        change = changes.add_change(change_type, '{0}.{1}.'.format(domain.user_domain, main_domain), 'CNAME')
+        change = changes.add_change(change_type, domain.dns_name(main_domain), 'CNAME')
         change.add_value(main_domain)
 
     def new_domain(self, main_domain, domain):
@@ -34,7 +32,7 @@ class Dns:
 
         self.cname_change(changes, main_domain, domain, 'UPSERT')
         self.a_change(changes, main_domain, domain, 'UPSERT')
-        self.services_change(changes, main_domain, domain, 'UPSERT', domain.services)
+        self.services_change(changes, main_domain, 'UPSERT', domain.services)
 
         changes.commit()
 
@@ -44,12 +42,16 @@ class Dns:
             return
 
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
+        zone = conn.get_zone(main_domain)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
         if update_ip:
             self.a_change(changes, main_domain, domain, 'UPSERT')
-        self.services_change(changes, main_domain, domain, 'DELETE', removed)
-        self.services_change(changes, main_domain, domain, 'UPSERT', added)
+
+        existing = [s for s in removed if zone.find_records(s.dns_name(main_domain), 'SRV')]
+        self.services_change(changes, main_domain, 'DELETE', existing)
+
+        self.services_change(changes, main_domain, 'UPSERT', added)
 
         try:
             changes.commit()
@@ -61,9 +63,15 @@ class Dns:
     def delete_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
+        zone = conn.get_zone(main_domain)
 
-        self.cname_change(changes, main_domain, domain, 'DELETE')
-        self.a_change(changes, main_domain, domain, 'DELETE')
-        self.services_change(changes, main_domain, domain, 'DELETE', domain.services)
+        if zone.find_records(domain.dns_name(main_domain)):
+            self.cname_change(changes, main_domain, domain, 'DELETE')
+
+        if zone.find_records(domain.dns_device_name(main_domain)):
+            self.a_change(changes, main_domain, domain, 'DELETE')
+
+        existing = [s for s in domain.services if zone.find_records(s.dns_name(main_domain), 'SRV')]
+        self.services_change(changes, main_domain, 'DELETE', existing)
 
         changes.commit()
