@@ -1,5 +1,3 @@
-import ConfigParser
-import os
 from flask import Flask, request, redirect, jsonify
 from flask_cors import cross_origin
 import db_helper
@@ -11,14 +9,11 @@ from mock import MagicMock
 import sys, traceback
 import json
 import convertible
+import config
 
-import json_helpers
-
-config = ConfigParser.ConfigParser()
-config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
+config = config.read_redirect_configs()
 
 app = Flask(__name__)
-# app.json_encoder = json_helpers.CustomJSONEncoder
 
 @app.route('/')
 def index():

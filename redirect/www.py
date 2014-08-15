@@ -1,5 +1,3 @@
-import ConfigParser
-import os
 from flask import Flask, request, redirect, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 import db_helper
@@ -7,10 +5,9 @@ import services
 from servicesexceptions import ServiceException
 import traceback
 import convertible
+import config
 
-
-config = ConfigParser.ConfigParser()
-config.read(os.path.join(os.path.dirname(__file__), 'config.cfg'))
+config = config.read_redirect_configs()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = config.get('redirect', 'auth_secret_key')
