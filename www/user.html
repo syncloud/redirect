@@ -23,7 +23,16 @@ main_menu_item: menu_user
     <div class="panel-heading">
       <div class="panel-title">
         <h3 style="margin-top: 5px; margin-bottom: 5px">
-            <%= domain.user_domain %>.<%= domain.main_domain %>
+            <span>
+                <%= domain.user_domain %>.<%= domain.main_domain %>
+            </span>
+            <span class="pull-right">
+                <% if (domain.online) { %>
+                    Online <span class="glyphicon glyphicon-ok-sign" style="color: green; top: 3px;"></span>
+                <% } else { %>
+                    Offline <span class="glyphicon glyphicon-remove-sign" style="color: red; top: 3px;"></span>
+                <% } %>
+            </span>
         </h3>
       </div>
     </div>
@@ -61,6 +70,17 @@ function sameDay(date1, date2) {
                      && date1.getMonth() == date2.getMonth()
                      && date1.getFullYear() == date2.getFullYear());
     return isSameDay;
+}
+
+function online(ds) {
+    if (ds === null) {
+      return false;
+    }
+
+    var diff = new Date() - new Date(Date.parse(ds));
+    var minutes = Math.floor((diff/1000)/60);
+
+    return minutes < 10;
 }
 
 function niceTimestamp(ds) {
@@ -116,6 +136,7 @@ $( document ).ready(function() {
                 domain.nice_last_update = niceTimestamp(domain.last_update);
                 domain.nice_ip = niceIp(domain.ip);
                 domain.main_domain = redirect.main_domain;
+                domain.online = online(domain.last_update);
                 for (si = 0; si < domain.services.length; ++si) {
                     var service = domain.services[si];
                     service.image = serviceImage(service.name);
