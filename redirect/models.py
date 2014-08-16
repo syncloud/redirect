@@ -50,6 +50,7 @@ class User(Base):
     def action(self, type):
         return next((action for action in self.actions if action.action_type_id == type), None)
 
+
 class Action(Base):
     __tablename__ = "action"
     id = Column(Integer, primary_key=True)
@@ -104,6 +105,7 @@ class Domain(Base):
 
     def dns_name(self, main_domain):
         return '{0}.{1}.'.format(self.user_domain, main_domain)
+
 
 class Service(Base):
     __tablename__ = "service"
