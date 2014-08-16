@@ -50,10 +50,12 @@ main_menu_item: menu_user
            var service = domain.services[s]; %>
           <li class="list-group-item" style="overflow: hidden">
             <div style="float: left">
-              <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
+              <a href="<%= service.full_url %>">
+                  <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
+              </a>
             </div>
             <h4><%= service.name %></h4>
-            <span><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
+            <span class="hidden-xs" ><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
           </li>
       <% } %>
     <% } %>
