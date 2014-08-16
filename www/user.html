@@ -85,11 +85,11 @@ function niceIp(ip) {
 }
 
 function serviceImage(name) {
-    switch (name) {
-        case "ownCloud":
+    switch (name.toLowerCase()) {
+        case "owncloud":
             return "images/owncloud-64.png"
             break;
-        case "SSH":
+        case "ssh":
             return "images/ssh-64.png"
             break;
         default:
