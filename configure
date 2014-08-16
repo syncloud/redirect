@@ -10,11 +10,11 @@ if __name__ == '__main__':
 
     configuration = args.configuration
 
-    look_for = '_'+configuration+'.'
+    look_for = '._'+configuration
 
     for dirpath, dnames, fnames in os.walk("."):
         for f in fnames:
-            if f.startswith(look_for):
+            if f.endswith(look_for):
                 src = os.path.join(dirpath, f)
                 dst = os.path.join(dirpath, f.replace(look_for, ''))
                 print('Copying configuration file {} to {}'.format(src, dst))
