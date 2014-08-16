@@ -23,7 +23,7 @@ main_menu_item: menu_user
     <div class="panel-heading">
       <div class="panel-title">
         <h3 style="margin-top: 5px; margin-bottom: 5px">
-          <a href="http://<%= this.domains[d].user_domain %>.syncloud.it"><%= domain.user_domain %>.syncloud.it</a>
+          <a href="http://<%= this.domains[d].user_domain %>.syncloud.it"><%= domain.user_domain %>.<%= domain.main_domain %></a>
         </h3>
       </div>
     </div>
@@ -115,6 +115,7 @@ $( document ).ready(function() {
                 var domain = user.domains[di];
                 domain.nice_last_update = niceTimestamp(domain.last_update);
                 domain.nice_ip = niceIp(domain.ip);
+                domain.main_domain = redirect.main_domain;
                 for (si = 0; si < domain.services.length; ++si) {
                     var service = domain.services[si];
                     service.image = serviceImage(service.name);
