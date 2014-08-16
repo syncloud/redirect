@@ -99,7 +99,7 @@ function serviceImage(name) {
 }
 
 function fullUrl(domain, service) {
-    var url = service.protocol+"://"+domain.user_domain+"."+redirect.main_domain+":"+service.port+"/"+service.url;
+    var url = service.protocol+"://device."+domain.user_domain+"."+redirect.main_domain+":"+service.port+"/"+service.url;
     return url;
 }
 
