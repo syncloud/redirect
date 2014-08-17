@@ -3,6 +3,16 @@ import os
 import shutil
 import argparse
 
+def copydir(source, dest, indent = 0):
+    """Copy a directory structure overwriting existing files"""
+    for root, dirs, files in os.walk(source):
+        if not os.path.isdir(root):
+            os.makedirs(root)
+        for each_file in files:
+            rel_path = root.replace(source, '').lstrip(os.sep)
+            dest_path = os.path.join(dest, rel_path, each_file)
+            shutil.copyfile(os.path.join(root, each_file), dest_path)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='This is redirect configuration tool')
     parser.add_argument('--configuration', dest='configuration')
@@ -10,12 +20,6 @@ if __name__ == '__main__':
 
     configuration = args.configuration
 
-    look_for = '._'+configuration
+    configuration_path = os.path.join('config', configuration)
 
-    for dirpath, dnames, fnames in os.walk("."):
-        for f in fnames:
-            if f.endswith(look_for):
-                src = os.path.join(dirpath, f)
-                dst = os.path.join(dirpath, f.replace(look_for, ''))
-                print('Copying configuration file {} to {}'.format(src, dst))
-                shutil.copyfile(src, dst)
+    copydir(configuration_path, '.')
