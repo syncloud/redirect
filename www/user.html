@@ -9,7 +9,7 @@ main_menu_item: menu_user
   <h2>Domains</h2>
   <br/>
   <div class="row">
-    <div class="col-md-6" id="domains">
+    <div id="domains">
       </div>
   </div>
 
@@ -23,7 +23,16 @@ main_menu_item: menu_user
     <div class="panel-heading">
       <div class="panel-title">
         <h3 style="margin-top: 5px; margin-bottom: 5px">
-          <a href="http://<%= this.domains[d].user_domain %>.syncloud.it"><%= domain.user_domain %>.syncloud.it</a>
+            <span>
+                <%= domain.user_domain %>.<%= domain.main_domain %>
+            </span>
+            <span class="pull-right">
+                <% if (domain.online) { %>
+                    <span class="hidden-xs">Online</span> <span class="glyphicon glyphicon-ok-sign" style="color: green; top: 3px;"></span>
+                <% } else { %>
+                    <span class="hidden-xs">Offline</span> <span class="glyphicon glyphicon-remove-sign" style="color: red; top: 3px;"></span>
+                <% } %>
+            </span>
         </h3>
       </div>
     </div>
@@ -41,10 +50,12 @@ main_menu_item: menu_user
            var service = domain.services[s]; %>
           <li class="list-group-item" style="overflow: hidden">
             <div style="float: left">
-              <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
+              <a href="<%= service.full_url %>">
+                  <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
+              </a>
             </div>
             <h4><%= service.name %></h4>
-            <span><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
+            <span class="hidden-xs" ><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
           </li>
       <% } %>
     <% } %>
@@ -61,6 +72,17 @@ function sameDay(date1, date2) {
                      && date1.getMonth() == date2.getMonth()
                      && date1.getFullYear() == date2.getFullYear());
     return isSameDay;
+}
+
+function online(ds) {
+    if (ds === null) {
+      return false;
+    }
+
+    var diff = new Date() - new Date(Date.parse(ds));
+    var minutes = Math.floor((diff/1000)/60);
+
+    return minutes < 10;
 }
 
 function niceTimestamp(ds) {
@@ -85,21 +107,21 @@ function niceIp(ip) {
 }
 
 function serviceImage(name) {
-    switch (name) {
-        case "ownCloud":
+    switch (name.toLowerCase()) {
+        case "owncloud":
             return "images/owncloud-64.png"
             break;
-        case "SSH":
+        case "ssh":
             return "images/ssh-64.png"
             break;
         default:
-            return null;
+            return "images/unknown-64.png";
             break;
     }
 }
 
 function fullUrl(domain, service) {
-    var url = service.protocol+"://"+domain.user_domain+"."+redirect.main_domain+":"+service.port+"/"+service.url;
+    var url = service.protocol+"://device."+domain.user_domain+"."+redirect.main_domain+":"+service.port+"/"+service.url;
     return url;
 }
 
@@ -115,6 +137,8 @@ $( document ).ready(function() {
                 var domain = user.domains[di];
                 domain.nice_last_update = niceTimestamp(domain.last_update);
                 domain.nice_ip = niceIp(domain.ip);
+                domain.main_domain = redirect.main_domain;
+                domain.online = online(domain.last_update);
                 for (si = 0; si < domain.services.length; ++si) {
                     var service = domain.services[si];
                     service.image = serviceImage(service.name);

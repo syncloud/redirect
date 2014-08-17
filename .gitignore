@@ -6,3 +6,4 @@ deploy.log.last
 .revision
 _site
 .coverage
+secret.cfg

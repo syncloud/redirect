@@ -26,6 +26,7 @@ if host_static_files:
 
 # End of hosting static html
 
+
 class UserFlask:
     def __init__(self, user):
         self.user = user
@@ -76,6 +77,7 @@ def handle_exception(error):
     else:
         tb = traceback.format_exc()
         return jsonify(message=tb), 500
+
 
 def manager():
     redirect_domain = config.get('redirect', 'domain')
