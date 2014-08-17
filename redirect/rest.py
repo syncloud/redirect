@@ -15,11 +15,6 @@ config = config.read_redirect_configs()
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return redirect(manager().redirect_url(request.url))
-
-
 @app.route('/user/create', methods=["POST"])
 @cross_origin()
 def user_create():

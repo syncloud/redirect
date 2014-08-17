@@ -49,10 +49,6 @@ def load_user(email):
         return None
     return UserFlask(user)
 
-@app.route('/')
-def index():
-    return redirect(manager().redirect_url(request.url))
-
 @app.route("/login", methods=["POST"])
 def login():
     user = manager().authenticate(request.form)

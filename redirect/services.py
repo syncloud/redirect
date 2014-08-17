@@ -77,19 +77,6 @@ class Users(UsersRead):
 
         return user
 
-    def redirect_url(self, request_url):
-        user_domain = util.get_second_level_domain(request_url, self.main_domain)
-
-        if not user_domain:
-            raise servicesexceptions.bad_request('Second level domain should be specified')
-
-        user = self.storage.get_user_by_domain(user_domain)
-
-        if not user:
-            raise servicesexceptions.not_found('The second level domain is not registered')
-
-        return 'http://device.{0}.{1}:{2}/owncloud'.format(user_domain, self.main_domain, user.port)
-
     def create_new_user(self, request):
         validator = Validator(request)
         email = validator.email()
