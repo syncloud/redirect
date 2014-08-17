@@ -51,6 +51,7 @@ class Storage:
             args = args[0]
         for obj in args:
             self.session.delete(obj)
+            self.session.flush()
 
     def clear(self):
         self.session.query(Service).delete()

@@ -205,12 +205,13 @@ class Users(UsersRead):
             added_services = self.get_missing(request_services, domain.services)
             removed_services = self.get_missing(domain.services, request_services)
 
+            storage.delete(removed_services)
+
             for s in added_services:
                 s.domain = domain
                 domain.services.append(s)
 
             storage.add(added_services)
-            storage.delete(removed_services)
 
             is_new_dmain = domain.ip is None
             update_ip = domain.ip != ip
