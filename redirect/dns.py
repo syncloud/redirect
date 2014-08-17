@@ -42,13 +42,12 @@ class Dns:
             return
 
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
-        zone = conn.get_zone(main_domain)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
         if update_ip:
             self.a_change(changes, main_domain, domain, 'UPSERT')
 
-        existing = [s for s in removed if zone.find_records(s.dns_name(main_domain), 'SRV')]
+        existing = [s for s in removed if self.service_exists(conn, s, main_domain)]
         self.services_change(changes, main_domain, 'DELETE', existing)
 
         self.services_change(changes, main_domain, 'UPSERT', added)
@@ -59,6 +58,15 @@ class Dns:
             logging.error("added: {}".format(added))
             logging.error("removed: {}".format(removed))
             raise e
+
+    def service_exists(self, conn, service, main_domain):
+        zone = conn.get_zone(main_domain)
+        found = zone.find_records(service.dns_name(main_domain), 'SRV')
+        if len(found.resource_records) > 0:
+            return found.resource_records[0] == service.dns_value(main_domain)
+        else:
+            return False
+
 
     def delete_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
