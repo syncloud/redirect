@@ -3,7 +3,7 @@ from mock import MagicMock
 from fakesmtp import FakeSmtp
 from redirect.models import User, Action, ActionType
 from redirect.util import hash
-from redirect.mail import Mail
+from redirect.mail import Smtp, Mail
 from redirect.services import Users
 from redirect.servicesexceptions import ServiceException
 from test.helpers import get_test_storage_creator
@@ -13,7 +13,8 @@ class TestUsers(unittest.TestCase):
 
     def setUp(self):
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
-        self.mail = Mail('localhost', 2500, 'support@redirect.com', self.activate_url_template, None)
+
+        self.mail = Mail(Smtp('localhost', 2500), 'support@redirect.com', self.activate_url_template, None)
         self.smtp = FakeSmtp('outbox')
         self.smtp.clear()
         self.dns = MagicMock()

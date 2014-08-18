@@ -3,7 +3,7 @@ from flask_cors import cross_origin
 import db_helper
 import services
 from servicesexceptions import ServiceException
-from mail import Mail
+from mail import Smtp, Mail
 from dns import Dns
 from mock import MagicMock
 import sys, traceback
@@ -96,7 +96,16 @@ def handle_exception(error):
 
 def manager():
     mail_host = config.get('smtp', 'host')
-    mail_port = config.get('smtp', 'port')
+    mail_port = config.getint('smtp', 'port')
+    use_tls = False
+    smtp_login = None
+    smtp_password = None
+    if config.has_option('smtp', 'use_tls'):
+        use_tls =  config.getboolean('smtp', 'use_tls')
+    if config.has_option('smtp', 'login'):
+        smtp_login =  config.get('smtp', 'login')
+    if config.has_option('smtp', 'password'):
+       smtp_password = config.get('smtp', 'password')
 
     mail_from = config.get('mail', 'from')
     activate_url_template = config.get('mail', 'activate_url_template')
@@ -116,7 +125,8 @@ def manager():
 
     create_storage = db_helper.get_storage_creator(config)
 
-    mail = Mail(mail_host, mail_port, mail_from, activate_url_template, password_url_template)
+    smtp = Smtp(mail_host, mail_port, use_tls, smtp_login, smtp_password)
+    mail = Mail(smtp, mail_from, activate_url_template, password_url_template)
     users_manager = services.Users(create_storage, redirect_activate_by_email, mail, dns, redirect_domain)
     return users_manager
 

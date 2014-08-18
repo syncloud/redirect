@@ -5,6 +5,7 @@ def read_configs(filenames):
     missing_filenames = [f for f in filenames if not exists(f)]
     if missing_filenames:
         print('Missing configuration files: '+str(missing_filenames))
+
     config = ConfigParser.ConfigParser()
     config.read(filenames)
     return config

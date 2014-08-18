@@ -2,10 +2,28 @@ import smtplib
 from email.mime.text import MIMEText
 
 
-class Mail:
-    def __init__(self, smtp_host, smtp_port, email_from, activate_url_template, password_url_template):
+class Smtp:
+    def __init__(self, smtp_host, smtp_port, use_tls=False, login=None, password=None):
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
+        self.use_tls = use_tls
+        self.login = login
+        self.password = password
+
+    def send(self, email_from, email_to, msg_string):
+        s = smtplib.SMTP(self.smtp_host, self.smtp_port)
+        s.set_debuglevel(1)
+        if self.use_tls:
+            s.starttls()
+        if self.login:
+            s.login(self.login, self.password)
+        s.sendmail(email_from, [email_to], msg_string)
+        s.quit()
+
+
+class Mail:
+    def __init__(self, smtp, email_from, activate_url_template, password_url_template):
+        self.smtp = smtp
         self.email_from = email_from
         self.activate_url_template = activate_url_template
         self.password_url_template = password_url_template
@@ -39,9 +57,7 @@ class Mail:
         msg['From'] = self.email_from
         msg['To'] = email_to
 
-        s = smtplib.SMTP(self.smtp_host, self.smtp_port)
-        s.sendmail(self.email_from, [email_to], msg.as_string())
-        s.quit()
+        self.smtp.send(self.email_from, email_to, msg.as_string())
 
     def send_reset_password(self, email_to, token):
         url = self.password_url_template.format(token)
@@ -58,9 +74,7 @@ class Mail:
         msg['From'] = self.email_from
         msg['To'] = email_to
 
-        s = smtplib.SMTP(self.smtp_host, self.smtp_port)
-        s.sendmail(self.email_from, [email_to], msg.as_string())
-        s.quit()
+        self.smtp.send(self.email_from, email_to, msg.as_string())
 
     def send_set_password(self, email_to):
         msg = MIMEText("""
@@ -73,6 +87,4 @@ class Mail:
         msg['From'] = self.email_from
         msg['To'] = email_to
 
-        s = smtplib.SMTP(self.smtp_host, self.smtp_port)
-        s.sendmail(self.email_from, [email_to], msg.as_string())
-        s.quit()
+        self.smtp.send(self.email_from, email_to, msg.as_string())

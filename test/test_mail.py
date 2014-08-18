@@ -2,7 +2,7 @@ import unittest
 import smtplib
 from fakesmtp import FakeSmtp
 from email.mime.text import MIMEText
-from redirect.mail import Mail
+from redirect.mail import Smtp, Mail
 
 class TestMail(unittest.TestCase):
     smtp_outbox_path = 'outbox'
@@ -39,7 +39,7 @@ class TestMail(unittest.TestCase):
         url_template = 'http://redirect.com/activate?token={0}'
         token = 't123456'
         activate_url = url_template.format(token)
-        mail = Mail(self.smtp_host, self.smtp_port, 'support@redirect.com', url_template, None)
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', url_template, None)
         mail.send_activate('boris', 'redirect.com', 'boris@email.com', token)
 
         self.assertFalse(self.smtp.empty())
@@ -51,7 +51,7 @@ class TestMail(unittest.TestCase):
         url_template = 'http://redirect.com/reset?token={0}'
         token = 't123456'
         activate_url = url_template.format(token)
-        mail = Mail(self.smtp_host, self.smtp_port, 'support@redirect.com', None, url_template)
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, url_template)
         mail.send_reset_password('boris@email.com', token)
 
         self.assertFalse(self.smtp.empty())
