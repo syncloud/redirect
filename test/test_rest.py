@@ -323,6 +323,31 @@ class TestDomain(TestFlask):
 
         self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
 
+    def test_domain_update_services_change_ports(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+
+        domain_data = json.loads(response.data)
+        update_token = domain_data['update_token']
+
+
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_tcp', 'port': 10002, 'url': None}]
+        update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
+        # self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
+
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10002, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_tcp', 'port': 10001, 'url': None}]
+        update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
+
+        # self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
+
     def test_domain_update_service_removed(self):
         email, password = self.create_active_user()
 

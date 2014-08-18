@@ -21,8 +21,7 @@ class TestDns(unittest.TestCase):
         zone = conn.get_zone('syncloud.info')
         # status = zone.get_a('device.ribalkin.syncloud.info.')
 
-        domains = ['device.ribalkin.syncloud.info', 'device.ribalkin1.syncloud.info', 'device.ribalkin.syncloud.info1']
+        found = zone.find_records('_ssh._tcp.testdomain1.syncloud.info', 'SRV')
+        found.resource_records[0]
 
-        found = [d for d in domains if zone.find_records(d, 'A')]
-
-        print found
+        print found.resource_records[0]

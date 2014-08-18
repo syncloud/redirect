@@ -113,17 +113,6 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
         self.assertDomain(domain, read)
         self.assertUser(user, read.user)
 
-    def test_domain_by_name_existing(self):
-        user = generate_user()
-        domain = generate_domain()
-        domain.user = user
-        with self.create_storage() as storage:
-            storage.add(user, domain)
-        with self.create_storage() as storage:
-            read = storage.get_domain_by_name(domain.user_domain)
-        self.assertDomain(domain, read)
-        self.assertUser(user, read.user)
-
     def test_clear(self):
         user = generate_user()
         domain = generate_domain()
