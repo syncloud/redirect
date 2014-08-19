@@ -11,8 +11,9 @@ class Smtp:
         self.password = password
 
     def send(self, email_from, email_to, msg_string):
-        s = smtplib.SMTP(self.smtp_host, self.smtp_port)
-        s.set_debuglevel(1)
+        s = smtplib.SMTP()
+        s.connect(self.smtp_host, self.smtp_port)
+        s.ehlo()
         if self.use_tls:
             s.starttls()
         if self.login:
