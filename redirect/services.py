@@ -116,7 +116,7 @@ class Users(UsersRead):
             storage.add(user)
 
         if self.activate_by_email:
-            self.mail.send_activate(user_domain, self.main_domain, user.email, action.token)
+            self.mail.send_activate(self.main_domain, user.email, action.token)
 
         return user
 

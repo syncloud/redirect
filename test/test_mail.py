@@ -1,8 +1,10 @@
 import unittest
 import smtplib
+import tempfile
+import os
 from fakesmtp import FakeSmtp
 from email.mime.text import MIMEText
-from redirect.mail import Smtp, Mail
+from redirect.mail import Smtp, Mail, read_letter
 
 class TestMail(unittest.TestCase):
     smtp_outbox_path = 'outbox'
@@ -40,7 +42,7 @@ class TestMail(unittest.TestCase):
         token = 't123456'
         activate_url = url_template.format(token)
         mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', url_template, None)
-        mail.send_activate('boris', 'redirect.com', 'boris@email.com', token)
+        mail.send_activate('redirect.com', 'boris@email.com', token)
 
         self.assertFalse(self.smtp.empty())
         sent_mails = self.smtp.emails()
@@ -58,3 +60,20 @@ class TestMail(unittest.TestCase):
         sent_mails = self.smtp.emails()
         self.assertEquals(1, len(sent_mails))
         self.assertTrue(activate_url in sent_mails[0])
+
+def temp_file(text=''):
+    fd, filename = tempfile.mkstemp()
+    f = os.fdopen(fd, 'w')
+    f.write(text)
+    f.close()
+    return filename
+
+class TestReadLetter(unittest.TestCase):
+
+    def test_simple(self):
+        letter = """Subject: My Subject
+Some letter content"""
+        filename = temp_file(letter)
+        subject, content = read_letter(filename)
+        self.assertEquals('My Subject', subject)
+        self.assertEquals('Some letter content', content)

@@ -1,3 +1,4 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
 
@@ -22,39 +23,35 @@ class Smtp:
         s.quit()
 
 
+def read_letter(filepath):
+    f = open(filepath, 'r')
+    subject_line = f.readline()
+    subject = subject_line.replace('Subject:', '')
+    subject = subject.strip()
+    text = f.read()
+    f.close()
+    return subject, text
+
+
 class Mail:
     def __init__(self, smtp, email_from, activate_url_template, password_url_template):
         self.smtp = smtp
         self.email_from = email_from
         self.activate_url_template = activate_url_template
         self.password_url_template = password_url_template
+        self.path = 'emails'
 
-    def send_activate(self, user_domain, domain, email_to, token):
+    def email_path(self, filename):
+        return os.path.join(self.path, filename)
+
+    def send_activate(self, main_domain, email_to, token):
         url = self.activate_url_template.format(token)
 
-        if user_domain:
-            full_domain = '{0}.{1}'.format(user_domain, domain)
+        subject, letter = read_letter(self.email_path('activate.txt'))
 
-            msg = MIMEText("""
-            Hello,
+        msg = MIMEText(letter.format(main_domain=main_domain, url=url))
 
-            You recently registered domain name {0}, if this information is correct use the  link to activate it.
-
-            Domain name: {0}
-
-            Use the link to activate your account: {1}
-            """.format(full_domain, url))
-        else:
-            msg = MIMEText("""
-            Hello,
-
-            You recently registered at {0}, if this information is correct use the link to activate it.
-
-            Use the link to activate your account: {1}
-            """.format(domain, url))
-
-
-        msg['Subject'] = 'Activate account'
+        msg['Subject'] = subject
         msg['From'] = self.email_from
         msg['To'] = email_to
 
@@ -63,28 +60,22 @@ class Mail:
     def send_reset_password(self, email_to, token):
         url = self.password_url_template.format(token)
 
-        msg = MIMEText("""
-        Hello,
+        subject, letter = read_letter(self.email_path('reset_password.txt'))
 
-        The request to change your password was recently made.
+        msg = MIMEText(letter.format(url=url))
 
-        Use this link to reset your password: {0}
-        """.format(url))
-
-        msg['Subject'] = 'Reset password'
+        msg['Subject'] = subject
         msg['From'] = self.email_from
         msg['To'] = email_to
 
         self.smtp.send(self.email_from, email_to, msg.as_string())
 
     def send_set_password(self, email_to):
-        msg = MIMEText("""
-        Hello,
+        subject, letter = read_letter(self.email_path('set_password.txt'))
 
-        Your password has been reset.
-        """)
+        msg = MIMEText(letter)
 
-        msg['Subject'] = 'Reset password'
+        msg['Subject'] = subject
         msg['From'] = self.email_from
         msg['To'] = email_to
 
