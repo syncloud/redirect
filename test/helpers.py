@@ -11,7 +11,7 @@ def get_test_storage_creator():
 
 def get_test_config():
     config = ConfigParser.ConfigParser()
-    config_path = os.path.join(os.path.dirname(__file__), 'test_config.cfg')
+    config_path = os.path.join(os.path.dirname(__file__), 'config.cfg')
     config.read(config_path)
     return config
 
