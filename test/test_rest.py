@@ -178,6 +178,7 @@ class TestUserPassword(TestFlask):
         response = self.app.post('/user/set_password', data={'token': token_old, 'password': new_password})
         self.assertEqual(400, response.status_code, response.data)
 
+
 class TestDomain(TestFlask):
 
     def assertDomain(self, expected, actual):
@@ -196,6 +197,9 @@ class TestDomain(TestFlask):
         domain_data = self.get_domain(update_token)
         self.assertDomain(expected_data, domain_data)
         return domain_data
+
+
+class TestDomainAcquire(TestDomain):
 
     def test_acquire_new(self):
         email, password = self.create_active_user()
@@ -242,6 +246,9 @@ class TestDomain(TestFlask):
         self.assertNotEquals(update_token1, update_token2)
 
         self.check_domain(update_token2, {'ip': None, 'user_domain': user_domain, 'services': []})
+
+
+class TestDomainUpdate(TestDomain):
 
     def test_domain_update_one_new_service(self):
         email, password = self.create_active_user()
