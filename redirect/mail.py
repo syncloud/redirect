@@ -23,6 +23,22 @@ class Smtp:
         s.quit()
 
 
+def get_smtp(config):
+    smtp_host = config.get('smtp', 'host')
+    smtp_port = config.getint('smtp', 'port')
+    smtp_use_tls = False
+    smtp_login = None
+    smtp_password = None
+    if config.has_option('smtp', 'use_tls'):
+        smtp_use_tls = config.getboolean('smtp', 'use_tls')
+    if config.has_option('smtp', 'login'):
+        smtp_login = config.get('smtp', 'login')
+    if config.has_option('smtp', 'password'):
+       smtp_password = config.get('smtp', 'password')
+    smtp = Smtp(smtp_host, smtp_port, smtp_use_tls, smtp_login, smtp_password)
+    return smtp
+
+
 def read_letter(filepath):
     f = open(filepath, 'r')
     subject_line = f.readline()
@@ -31,6 +47,14 @@ def read_letter(filepath):
     text = f.read()
     f.close()
     return subject, text
+
+def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
+        subject, letter = read_letter(full_email_path)
+        msg = MIMEText(letter.format(**substitutions))
+        msg['Subject'] = subject
+        msg['From'] = email_from
+        msg['To'] = email_to
+        smtp.send(email_from, email_to, msg.as_string())
 
 
 class Mail:
@@ -44,39 +68,19 @@ class Mail:
     def email_path(self, filename):
         return os.path.join(self.path, filename)
 
+    def send_letter(self, email_to, full_email_path, substitutions={}):
+        send_letter(self.smtp, self.email_from, email_to, full_email_path, substitutions)
+
     def send_activate(self, main_domain, email_to, token):
         url = self.activate_url_template.format(token)
-
-        subject, letter = read_letter(self.email_path('activate.txt'))
-
-        msg = MIMEText(letter.format(main_domain=main_domain, url=url))
-
-        msg['Subject'] = subject
-        msg['From'] = self.email_from
-        msg['To'] = email_to
-
-        self.smtp.send(self.email_from, email_to, msg.as_string())
+        full_email_path = self.email_path('activate.txt')
+        self.send_letter(email_to, full_email_path, dict(main_domain=main_domain, url=url))
 
     def send_reset_password(self, email_to, token):
         url = self.password_url_template.format(token)
-
-        subject, letter = read_letter(self.email_path('reset_password.txt'))
-
-        msg = MIMEText(letter.format(url=url))
-
-        msg['Subject'] = subject
-        msg['From'] = self.email_from
-        msg['To'] = email_to
-
-        self.smtp.send(self.email_from, email_to, msg.as_string())
+        full_email_path = self.email_path('reset_password.txt')
+        self.send_letter(email_to, full_email_path, dict(url=url))
 
     def send_set_password(self, email_to):
-        subject, letter = read_letter(self.email_path('set_password.txt'))
-
-        msg = MIMEText(letter)
-
-        msg['Subject'] = subject
-        msg['From'] = self.email_from
-        msg['To'] = email_to
-
-        self.smtp.send(self.email_from, email_to, msg.as_string())
+        full_email_path = self.email_path('set_password.txt')
+        self.send_letter(email_to, full_email_path)
