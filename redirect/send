@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+import os
+import db_helper
+import mail
+import config
+import argparse
+import traceback
+
+
+def send(smtp, email_from, email_to, filepath):
+    global e
+    try:
+        mail.send_letter(smtp, email_from, email_to, filepath)
+    except Exception as e:
+        print("Failed to send letter to {}".format(user.email))
+        traceback.print_exc()
+
+
+if __name__=='__main__':
+    parser = argparse.ArgumentParser(description='This is redirect email sending tool', usage='%(prog)s [options]')
+    parser.add_argument('filepath', help='path to file with email content')
+    parser.add_argument('email', help='recipient, specify ALL to send to all users from database')
+    args = parser.parse_args()
+
+    filepath = args.filepath
+    email_to = args.email
+
+    if not os.path.exists(filepath):
+        print("Can't find letter file {}".format(filepath))
+        exit(1)
+
+    try:
+        the_config = config.read_redirect_configs()
+        email_from = the_config.get('mail', 'from')
+
+        create_storage = db_helper.get_storage_creator(the_config)
+        smtp = mail.get_smtp(the_config)
+
+        if email_to == 'ALL':
+            with create_storage() as storage:
+                for user in storage.users_iterate():
+                    send(smtp, email_from, user.email, filepath)
+        else:
+            send(smtp, email_from, email_to, filepath)
+
+    except Exception as e:
+        print("Error happened while sending emails")
+        traceback.print_exc()
+        exit(1)
