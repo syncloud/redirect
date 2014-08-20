@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/syncloud/redirect.png?label=ready&title=Ready)](https://waffle.io/syncloud/redirect)
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
 ### Install dependencies:
 
