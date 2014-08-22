@@ -8,7 +8,6 @@ import traceback
 
 
 def send(smtp, email_from, email_to, filepath):
-    global e
     try:
         mail.send_letter(smtp, email_from, email_to, filepath)
     except Exception as e:
