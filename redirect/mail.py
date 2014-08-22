@@ -1,6 +1,7 @@
 import os
 import smtplib
 from email.mime.text import MIMEText
+from os.path import dirname, join
 
 
 class Smtp:
@@ -63,7 +64,7 @@ class Mail:
         self.email_from = email_from
         self.activate_url_template = activate_url_template
         self.password_url_template = password_url_template
-        self.path = 'emails'
+        self.path = join(dirname(__file__), '..', 'emails')
 
     def email_path(self, filename):
         return os.path.join(self.path, filename)
