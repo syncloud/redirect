@@ -1,25 +1,18 @@
 #!/usr/bin/env python
 import os
-import shutil
 import argparse
+from os.path import join, dirname
 
-def copydir(source, dest, indent = 0):
-    """Copy a directory structure overwriting existing files"""
-    for root, dirs, files in os.walk(source):
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        for each_file in files:
-            rel_path = root.replace(source, '').lstrip(os.sep)
-            dest_path = os.path.join(dest, rel_path, each_file)
-            shutil.copyfile(os.path.join(root, each_file), dest_path)
+def copydir(source, dest):
+    cmd = 'cp -rf {source}/* {dest}'.format(source=source, dest=dest)
+    os.system(cmd)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='This is redirect configuration tool')
-    parser.add_argument('--configuration', dest='configuration')
+    parser.add_argument('configuration', help='Name of configuration: test, local, uat or prod')
     args = parser.parse_args()
 
-    configuration = args.configuration
+    src = join('config', args.configuration)
+    dst = dirname(__file__)
 
-    configuration_path = os.path.join('config', configuration)
-
-    copydir(configuration_path, '.')
+    copydir(src, dst)
