@@ -12,11 +12,10 @@ class TestMail(unittest.TestCase):
     smtp_port = 2500
 
     def setUp(self):
-        self.smtp = FakeSmtp(self.smtp_outbox_path)
-        self.smtp.clear()
+        self.smtp = FakeSmtp(self.smtp_outbox_path, self.smtp_host, self.smtp_port)
 
     def tearDown(self):
-        self.smtp.clear()
+        self.smtp.stop()
 
     def test_send_goes_to_file(self):
         self.assertTrue(self.smtp.empty())

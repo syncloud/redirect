@@ -15,11 +15,10 @@ class TestFlask(unittest.TestCase):
         redirect.rest.app.config['TESTING'] = True
         self.app = redirect.rest.app.test_client()
 
-        self.smtp = FakeSmtp('outbox')
-        self.smtp.clear()
+        self.smtp = FakeSmtp('outbox', 'localhost', 2500)
 
     def tearDown(self):
-        self.smtp.clear()
+        self.smtp.stop()
 
     def get_token(self, email):
         link_index = email.find('http://')
