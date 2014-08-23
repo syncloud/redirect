@@ -34,6 +34,7 @@ class TestFlask(unittest.TestCase):
         self.app.post('/user/create', data={'email': email, 'password': password})
         activate_token = self.get_token(self.smtp.emails()[0])
         self.app.get('/user/activate', query_string={'token': activate_token})
+        self.smtp.clear()
         return email, password
 
     def acquire_domain(self, email, password, user_domain):
@@ -129,8 +130,6 @@ class TestUserPassword(TestFlask):
     def test_user_reset_password_sent_mail(self):
         email, password = self.create_active_user()
 
-        self.smtp.clear()
-
         response = self.app.post('/user/reset_password', data={'email': email})
         self.assertEqual(200, response.status_code)
 
@@ -141,8 +140,6 @@ class TestUserPassword(TestFlask):
 
     def test_user_reset_password_set_new(self):
         email, password = self.create_active_user()
-
-        self.smtp.clear()
 
         self.app.post('/user/reset_password', data={'email': email})
         token = self.get_token(self.smtp.emails()[0])
@@ -160,8 +157,6 @@ class TestUserPassword(TestFlask):
 
     def test_user_reset_password_set_with_old_token(self):
         email, password = self.create_active_user()
-
-        self.smtp.clear()
 
         self.app.post('/user/reset_password', data={'email': email})
         token_old = self.get_token(self.smtp.emails()[0])
