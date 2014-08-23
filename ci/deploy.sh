@@ -28,7 +28,7 @@ echo "$LATEST_REV" > ${REV_FILE}
 git pull
 
 sudo pip install -r requirements.txt
-sudo configure --configuration uat
+./configure --configuration uat
 sudo service apache2-${ENV} restart
 
 cp ${REV_FILE} www/${REV_FILE}
