@@ -19,18 +19,21 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='This is redirect email sending tool', usage='%(prog)s [options]')
     parser.add_argument('filepath', help='path to file with email content')
     parser.add_argument('email', help='recipient, specify ALL to send to all users from database')
+    parser.add_argument('--from', dest='from_email', help='email to send from, will be taken from redirect config if not provided')
     args = parser.parse_args()
 
     filepath = args.filepath
+    email_from = args.from_email
+
     email_to = args.email
 
-    if not os.path.exists(filepath):
-        print("Can't find letter file {}".format(filepath))
-        exit(1)
-
     try:
+        if not os.path.exists(filepath):
+            raise Exception("Can't find letter file {}".format(filepath))
+
         the_config = config.read_redirect_configs()
-        email_from = the_config.get('mail', 'from')
+        if not email_from:
+            email_from = the_config.get('mail', 'from')
 
         create_storage = db_helper.get_storage_creator(the_config)
         smtp = mail.get_smtp(the_config)
