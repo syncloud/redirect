@@ -11,7 +11,7 @@ def send(smtp, email_from, email_to, filepath):
     try:
         mail.send_letter(smtp, email_from, email_to, filepath)
     except Exception as e:
-        print("Failed to send letter to {}".format(user.email))
+        print("Failed to send letter to {}".format(email_to))
         traceback.print_exc()
 
 
