@@ -170,7 +170,7 @@ class TestUserPassword(TestFlask):
 
         new_password = 'new_password'
         response = self.app.post('/user/set_password', data={'token': token_old, 'password': new_password})
-        self.assertEqual(400, response.status_code, response.data)
+        self.assertEqual(403, response.status_code, response.data)
 
 
 class TestDomain(TestFlask):
