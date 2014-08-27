@@ -44,6 +44,9 @@ class Storage:
         for user in self.session.query(User).yield_per(10):
             yield user
 
+    def get_action(self, token):
+        return self.session.query(Action).filter(Action.token == token).first()
+
     def add(self, *args):
         if len(args) > 0 and isinstance(args[0], list):
             args = args[0]

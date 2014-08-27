@@ -172,6 +172,22 @@ class TestUserPassword(TestFlask):
         response = self.app.post('/user/set_password', data={'token': token_old, 'password': new_password})
         self.assertEqual(403, response.status_code, response.data)
 
+    def test_user_reset_password_set_twice(self):
+        email, password = self.create_active_user()
+
+        self.app.post('/user/reset_password', data={'email': email})
+        token = self.get_token(self.smtp.emails()[0])
+
+        self.smtp.clear()
+
+        new_password = 'new_password'
+        response = self.app.post('/user/set_password', data={'token': token, 'password': new_password})
+        self.assertEqual(200, response.status_code, response.data)
+
+        new_password = 'new_password2'
+        response = self.app.post('/user/set_password', data={'token': token, 'password': new_password})
+        self.assertEqual(403, response.status_code, response.data)
+
 
 class TestDomain(TestFlask):
 

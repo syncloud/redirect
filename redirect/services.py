@@ -291,3 +291,6 @@ class Users(UsersRead):
             user.password_hash = util.hash(password)
 
             self.mail.send_set_password(user.email)
+
+            action = storage.get_action(token)
+            storage.delete(action)
