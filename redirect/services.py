@@ -286,7 +286,7 @@ class Users(UsersRead):
             user = storage.get_user_by_token(ActionType.PASSWORD, token)
 
             if not user:
-                raise servicesexceptions.bad_request('Invalid password token')
+                raise servicesexceptions.forbidden('Invalid password token')
 
             user.password_hash = util.hash(password)
 
