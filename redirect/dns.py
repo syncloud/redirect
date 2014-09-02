@@ -62,6 +62,8 @@ class Dns:
     def service_exists(self, conn, service, main_domain):
         zone = conn.get_zone(main_domain)
         found = zone.find_records(service.dns_name(main_domain), 'SRV')
+        if not found:
+            return False
         if len(found.resource_records) > 0:
             return found.resource_records[0] == service.dns_value(main_domain)
         else:
