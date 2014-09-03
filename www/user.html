@@ -19,48 +19,59 @@ main_menu_item: menu_user
 <![CDATA[
   <% for (d=0; d < this.domains.length; d++) {
        var domain = this.domains[d]; %>
-  <div class="panel panel-default col-6 col-md-6 col-sm-6 col-lg-6">
-    <div class="panel-heading">
-      <div class="panel-title">
-        <h3 style="margin-top: 5px; margin-bottom: 5px">
-            <span>
-                <%= domain.user_domain %>.<%= domain.main_domain %>
-            </span>
-            <span class="pull-right">
-                <% if (domain.online) { %>
-                    <span class="hidden-xs">Online</span> <span class="glyphicon glyphicon-ok-sign" style="color: green; top: 3px;"></span>
-                <% } else { %>
-                    <span class="hidden-xs">Offline</span> <span class="glyphicon glyphicon-remove-sign" style="color: red; top: 3px;"></span>
-                <% } %>
-            </span>
-        </h3>
+
+  <% if (d % 2 == 0) { %>
+  <div class="row">
+  <% } %>
+
+    <div class="col-6 col-md-6 col-sm-6 col-lg-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">
+            <h3 style="margin-top: 5px; margin-bottom: 5px">
+                <span>
+                    <%= domain.user_domain %>.<%= domain.main_domain %>
+                </span>
+                <span class="pull-right">
+                    <% if (domain.online) { %>
+                        <span class="hidden-xs">Online</span> <span class="glyphicon glyphicon-ok-sign" style="color: green; top: 3px;"></span>
+                    <% } else { %>
+                        <span class="hidden-xs">Offline</span> <span class="glyphicon glyphicon-remove-sign" style="color: red; top: 3px;"></span>
+                    <% } %>
+                </span>
+            </h3>
+          </div>
+        </div>
+        <ul class="list-group">
+          <li class="list-group-item">
+            <span>Address: <%= domain.nice_ip %></span>
+            <span class="pull-right">Updated: <%= domain.nice_last_update %></span>
+          </li>
+        <% if (domain.services.length === 0) { %>
+            <li class="list-group-item">
+              <span>No services available</span>
+            </li>
+        <% } else { %>
+          <% for (s=0; s < domain.services.length; s++) {
+               var service = domain.services[s]; %>
+              <li class="list-group-item" style="overflow: hidden">
+                <div style="float: left">
+                  <a href="<%= service.full_url %>">
+                      <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
+                  </a>
+                </div>
+                <h4><%= service.name %></h4>
+                <span class="hidden-xs" ><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
+              </li>
+          <% } %>
+        <% } %>
+        </ul>
       </div>
     </div>
-    <ul class="list-group">
-      <li class="list-group-item">
-        <span>Address: <%= domain.nice_ip %></span>
-        <span class="pull-right">Updated: <%= domain.nice_last_update %></span>
-      </li>
-    <% if (domain.services.length === 0) { %>
-        <li class="list-group-item">
-          <span>No services available</span>
-        </li>
-    <% } else { %>
-      <% for (s=0; s < domain.services.length; s++) {
-           var service = domain.services[s]; %>
-          <li class="list-group-item" style="overflow: hidden">
-            <div style="float: left">
-              <a href="<%= service.full_url %>">
-                  <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
-              </a>
-            </div>
-            <h4><%= service.name %></h4>
-            <span class="hidden-xs" ><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
-          </li>
-      <% } %>
-    <% } %>
-    </ul>
+
+  <% if (d % 2 == 0) { %>
   </div>
+  <% } %>
   <% } %>
 ]]>
 </script>
