@@ -5,6 +5,8 @@ import mail
 import config
 import argparse
 import traceback
+from datetime import datetime
+import time
 
 
 def send(smtp, email_from, email_to, filepath):
@@ -14,6 +16,19 @@ def send(smtp, email_from, email_to, filepath):
         print("Failed to send letter to {}".format(email_to))
         traceback.print_exc()
 
+
+def items_per_second(limit, items, f):
+    counter = 0
+    start = datetime.now()
+    for item in items:
+        if counter == limit:
+            elapsed = (datetime.now() - start).total_seconds()
+            if elapsed < 1:
+                time.sleep(1 - elapsed)
+            start = datetime.now()
+            counter = 0
+        f(item)
+        counter += 1
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='This is redirect email sending tool', usage='%(prog)s [options]')
@@ -40,8 +55,8 @@ if __name__=='__main__':
 
         if email_to == 'ALL':
             with create_storage() as storage:
-                for user in storage.users_iterate():
-                    send(smtp, email_from, user.email, filepath)
+                items_per_second(5, storage.users_iterate(), lambda user: send(smtp, email_from, user.email, filepath))
+
         else:
             send(smtp, email_from, email_to, filepath)
 
