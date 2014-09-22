@@ -178,11 +178,7 @@ $( document ).ready(function() {
                 $('#no_domains').hide();
 
                 prepareUserData(user);
-
-                for (di = 0; di < user.domains.length; ++di) {
-                    var domain = user.domains[di];
-                    $('#domains').append($('#domain_template').jqote(user));
-                }
+                $('#domains').append($('#domain_template').jqote(user));
             } else {
                 $('#has_domains').hide();
                 $('#no_domains').show();
