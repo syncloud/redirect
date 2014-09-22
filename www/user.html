@@ -6,9 +6,26 @@ main_menu_item: menu_user
 ---
 
 <div class="container">
-  <h2>Domains</h2>
-  <br/>
-  <div id="domains">
+  <div id="has_domains" style="display: none;">
+    <h2>Domains</h2>
+    <br/>
+    <div id="domains">
+    </div>
+  </div>
+  <div id="no_domains" style="display: none;">
+    <div class="row">
+      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span/></div>
+      <div class="col-8 col-md-8 col-sm-8 col-lg-8">
+        <div class="jumbotron" style="margin: 40px">
+          <h1>Get Domain!</h1>
+          <p>You do not have domains registered yet. You can register one by building your own Syncloud server and linking it to your account.</p>
+          <p style="text-align:center;">
+            <a class="btn btn-primary btn-lg" href="http://syncloud.org" role="button">Learn more</a>
+          </p>
+        </div>
+      </div>
+      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span/></div>
+    </div>
   </div>
 </div>
 
@@ -133,6 +150,21 @@ function fullUrl(domain, service) {
     return url;
 }
 
+function prepareUserData(user) {
+    for (di = 0; di < user.domains.length; ++di) {
+        var domain = user.domains[di];
+        domain.nice_last_update = niceTimestamp(domain.last_update);
+        domain.nice_ip = niceIp(domain.ip);
+        domain.main_domain = redirect.main_domain;
+        domain.online = online(domain.last_update);
+        for (si = 0; si < domain.services.length; ++si) {
+            var service = domain.services[si];
+            service.image = serviceImage(service.name);
+            service.full_url = fullUrl(domain, service);
+        }
+    }
+}
+
 $( document ).ready(function() {
 
     var url = redirect.web("user")
@@ -141,20 +173,20 @@ $( document ).ready(function() {
         .done( function(data) {
             var user = data;
 
-            for (di = 0; di < user.domains.length; ++di) {
-                var domain = user.domains[di];
-                domain.nice_last_update = niceTimestamp(domain.last_update);
-                domain.nice_ip = niceIp(domain.ip);
-                domain.main_domain = redirect.main_domain;
-                domain.online = online(domain.last_update);
-                for (si = 0; si < domain.services.length; ++si) {
-                    var service = domain.services[si];
-                    service.image = serviceImage(service.name);
-                    service.full_url = fullUrl(domain, service);
-                }
-            }
+            if (user.domains.length > 0) {
+                $('#has_domains').show();
+                $('#no_domains').hide();
 
-            $('#domains').append($('#domain_template').jqote(user));
+                prepareUserData(user);
+
+                for (di = 0; di < user.domains.length; ++di) {
+                    var domain = user.domains[di];
+                    $('#domains').append($('#domain_template').jqote(user));
+                }
+            } else {
+                $('#has_domains').hide();
+                $('#no_domains').show();
+            }
         })
         .fail( function(xhr, textStatus, errorThrown) {
             if (xhr.status === 401) {
