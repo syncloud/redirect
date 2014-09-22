@@ -13,34 +13,23 @@
   padding-left: 10px;
 }
 
+.navbar-nav > li > span {
+  padding-left: 15px;
+}
 
-.navbar-nav li a {
-    line-height: 80px;
-    height: 80px;
+.navbar-nav li, .navbar-nav li a {
     padding-top: 0px;
     font-size: 18px;
 }
 
-.navbar-nav li p {
+.navbar-nav li, .navbar-nav li a {
     line-height: 80px;
     height: 80px;
-    padding-top: 0px;
-    font-size: 18px;
-    margin-top: 0px;
-}
-
-.navbar-nav li {
-    line-height: 80px;
-    height: 80px;
-    padding-top: 0px;
-    font-size: 18px;
 }
 
 @media (max-width: 767px) {
-  .navbar-nav > li > a {
-    line-height: 24px;
-    height: 24px;
-    padding-top: 0px;
-    font-size: 14px;
+  .navbar-nav li, .navbar-nav li a {
+    line-height: 30px;
+    height: 30px;
   }
 }
