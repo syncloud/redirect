@@ -2,7 +2,7 @@ from flask import Flask, request, redirect, jsonify
 from flask_cors import cross_origin
 import db_helper
 import services
-from servicesexceptions import ServiceException
+from servicesexceptions import ServiceException, ParametersException
 from dns import Dns
 from mock import MagicMock
 import sys, traceback
@@ -85,6 +85,9 @@ def user_set_password():
 @app.errorhandler(Exception)
 @cross_origin()
 def handle_exception(error):
+    if isinstance(error, ParametersException):
+        parameters_messages = [{'parameter': k, 'messages': v} for k, v in error.parameters_errors.items()]
+        return jsonify(message=error.message, parameters_messages=parameters_messages), error.status_code
     if isinstance(error, ServiceException):
         return jsonify(message=error.message), error.status_code
     else:

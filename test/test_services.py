@@ -114,8 +114,11 @@ class TestUsers(unittest.TestCase):
 
         with self.assertRaises(ServiceException) as context:
             users.create_new_user(request)
-        self.assertEquals(context.exception.status_code, 400)
-        self.assertGreater(len(context.exception.message), 0)
+        ex = context.exception
+        self.assertEquals(ex.status_code, 400)
+        self.assertGreater(len(ex.message), 0)
+        self.assertEquals(len(ex.parameters_errors), 1)
+        self.assertGreater(ex.parameters_errors['email'], 0)
 
     def test_user_activate_success(self):
         users = self.get_users_service()
@@ -135,8 +138,12 @@ class TestUsers(unittest.TestCase):
 
         with self.assertRaises(ServiceException) as context:
             users.activate(request)
-        self.assertEquals(context.exception.status_code, 400)
-        self.assertGreater(len(context.exception.message), 0)
+
+        exc = context.exception
+        self.assertEquals(exc.status_code, 400)
+        self.assertGreater(len(exc.message), 0)
+        self.assertEquals(len(exc.parameters_errors), 1)
+        self.assertGreater(len(exc.parameters_errors['token']), 0)
 
     def test_user_activate_wrong_token(self):
         users = self.get_users_service()
@@ -210,4 +217,8 @@ class TestUsers(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             users.authenticate(request)
 
-        self.assertEquals(context.exception.status_code, 400)
+        exc = context.exception
+        self.assertEquals(exc.status_code, 400)
+        self.assertGreater(len(exc.message), 0)
+        self.assertEquals(len(exc.parameters_errors), 1)
+        self.assertGreater(len(exc.parameters_errors['password']), 0)

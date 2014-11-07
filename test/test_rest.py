@@ -322,6 +322,7 @@ class TestDomainUpdate(TestDomain):
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(400, response.status_code)
 
+
     def test_domain_update_two_new_services(self):
         email, password = self.create_active_user()
 
