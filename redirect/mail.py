@@ -1,7 +1,7 @@
 import os
 import smtplib
 from email.mime.text import MIMEText
-from os.path import dirname, join
+from os.path import dirname, join, splitext
 
 
 class Smtp:
@@ -43,20 +43,25 @@ def get_smtp(config):
 def read_letter(filepath):
     f = open(filepath, 'r')
     subject_line = f.readline()
+    subject_line = subject_line.replace('<!--', '').replace('-->', '')
     subject = subject_line.replace('Subject:', '')
     subject = subject.strip()
-    text = f.read()
+    content = f.read()
     f.close()
-    return subject, text
+    return subject, content
 
 def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
-        subject, letter = read_letter(full_email_path)
-        msg = MIMEText(letter.format(**substitutions))
-        msg['Subject'] = subject
-        msg['From'] = email_from
-        msg['To'] = email_to
-        smtp.send(email_from, email_to, msg.as_string())
-
+    format = 'plain'
+    _, extension = splitext(full_email_path)
+    if extension == '.html':
+        format = 'html'
+    subject, letter = read_letter(full_email_path)
+    content = letter.format(**substitutions)
+    msg = MIMEText(content, format)
+    msg['Subject'] = subject
+    msg['From'] = email_from
+    msg['To'] = email_to
+    smtp.send(email_from, email_to, msg.as_string())
 
 class Mail:
     def __init__(self, smtp, email_from, activate_url_template, password_url_template):

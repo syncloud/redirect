@@ -8,6 +8,9 @@ class Validator:
         self.errors = []
         self.fields_errors = {}
 
+    def has_errors(self):
+        return len(self.fields_errors) > 0
+
     def add_field_error(self, field, error):
         self.errors.append("{0} {1}".format(field, error))
         if field not in self.fields_errors:
@@ -18,11 +21,11 @@ class Validator:
         user_domain = self.user_domain(error_if_missing)
         if user_domain is not None:
             if not re.match("^[\w-]+$", user_domain):
-                self.add_field_error("user_domain", "invalid characters")
+                self.add_field_error("user_domain", "Invalid characters")
             if len(user_domain) < 5:
-                self.add_field_error("user_domain", "too short (< 5)")
+                self.add_field_error("user_domain", "Too short (< 5)")
             if len(user_domain) > 50:
-                self.add_field_error("user_domain", "too long (> 50)")
+                self.add_field_error("user_domain", "Too long (> 50)")
         return user_domain
 
     def user_domain(self, error_if_missing=True):
@@ -30,50 +33,50 @@ class Validator:
             return self.params['user_domain']
         else:
             if error_if_missing:
-                self.add_field_error("user_domain", "missing")
+                self.add_field_error("user_domain", "Missing")
         return None
 
     def email(self):
         if 'email' in self.params:
             email = self.params['email']
             if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-                self.add_field_error('email', 'not valid email')
+                self.add_field_error('email', 'Not valid email')
             else:
                 return email
         else:
-            self.add_field_error('email', 'missing email')
+            self.add_field_error('email', 'Missing')
         return None
 
     def new_password(self):
         password = self.password()
         if password is not None:
             if len(password) < 7:
-                self.add_field_error('password', 'should be 7 or more characters')
+                self.add_field_error('password', 'Should be 7 or more characters')
         return password
 
     def password(self):
         if 'password' not in self.params:
-            self.add_field_error('password', 'missing')
+            self.add_field_error('password', 'Missing')
             return None
         return self.params['password']
 
     def port(self):
         if 'port' not in self.params:
-            self.add_field_error('port', 'missing')
+            self.add_field_error('port', 'Missing')
             return None
         try:
             port_num = int(self.params['port'])
         except:
-            self.add_field_error('port', 'should be a number')
+            self.add_field_error('port', 'Should be a number')
             return None
         if port_num < 1 or port_num > 65535:
-            self.add_field_error('port', 'should be between 1 and 65535')
+            self.add_field_error('port', 'Should be between 1 and 65535')
             return None
         return port_num
 
     def token(self, token='token'):
         if token not in self.params:
-            self.add_field_error(token, 'missing')
+            self.add_field_error(token, 'Missing')
             return None
         return self.params[token]
 
@@ -88,5 +91,5 @@ class Validator:
         try:
             socket.inet_aton(ip)
         except socket.error:
-            self.add_field_error('ip', 'invalid ip')
+            self.add_field_error('ip', 'Invalid IP address')
         return ip

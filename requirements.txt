@@ -9,4 +9,4 @@ requests==2.2.1
 configobj==4.7.2
 mock==1.0.1
 jsonpickle==0.7.1
-convertible==0.1
+convertible==0.8

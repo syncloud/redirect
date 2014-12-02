@@ -9,25 +9,28 @@ main_menu_item: menu_login
 <form class="form-horizontal" id="form-login">
   <h2>Log in</h2>
   <br/>
+
   <fieldset>
 
     <div id="errors_placeholder"></div>
 
-    <div class="form-group">
+    <div id="group-email" class="form-group">
       <div class="col-3 col-md-3 col-sm-3 col-lg-3">
         <label class="control-label" for="email">Email</label>
       </div>
       <div class="col-9 col-md-9 col-sm-9 col-lg-9">
         <input id="email" name="email" type="text" placeholder="user@mail.com" class="form-control input-md" required="">
+        <span id="help-email" class="help-block"></span>
       </div>
     </div>
 
-    <div class="form-group">
+    <div id="group-password" class="form-group">
       <div class="col-3 col-md-3 col-sm-3 col-lg-3">
         <label class="control-label" for="password">Password</label>
       </div>
       <div class="col-9 col-md-9 col-sm-9 col-lg-9">
         <input id="password" name="password" type="password" placeholder="" class="form-control input-md" required="">
+        <span id="help-password" class="help-block"></span>
       </div>
     </div>
 
@@ -39,6 +42,7 @@ main_menu_item: menu_login
     </div>
 
   </fieldset>
+
 </form>
 
 <script type="text/html" id="error_template">
@@ -50,19 +54,47 @@ main_menu_item: menu_login
 </script>
 
 <script type="text/javascript">
+
+function reset_error() {
+    $('#errors_placeholder').empty();
+    $('#group-email').removeClass('has-error');
+    $('#help-email').text('');
+    $('#group-password').removeClass('has-error');
+    $('#help-password').text('');
+}
+
+function show_error(error) {
+    if ('parameters_messages' in error) {
+        for (var i = 0; i < error.parameters_messages.length; i++) {
+            var pm = error.parameters_messages[i];
+            var group_id = '#group-'+pm.parameter;
+            $(group_id).addClass('has-error');
+            var hint_id = '#help-'+pm.parameter;
+            var message_text = pm.messages.join('\n');
+            $(hint_id).text(message_text);
+        }
+    } else {
+        $('#errors_placeholder').append($('#error_template').jqote(error));
+    }
+}
+
 $( document ).ready(function() {
     $( "#form-login" ).submit(function( event ) {
         event.preventDefault();
 
         var values = $("#form-login").serializeArray();
-        $('#errors_placeholder').empty();
+        reset_error()
         var posting = $.post( redirect.web( "login" ), values )
             .done( function(data) {
                 window.location.href = "user.html";
             })
             .fail( function(xhr, textStatus, errorThrown) {
-                var error = xhr.responseJSON;
-                $('#errors_placeholder').append($('#error_template').jqote(error));
+                if (xhr.hasOwnProperty('responseJSON')) {
+                    var error = xhr.responseJSON;
+                    show_error(error);
+                } else {
+                    window.location.href = "error.html";
+                }
             });
     });
 });

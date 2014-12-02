@@ -7,6 +7,11 @@ import servicesexceptions
 import util
 
 
+def check_validator(validator):
+    if validator.has_errors():
+        raise servicesexceptions.parameters_error(validator.fields_errors)
+
+
 class UsersRead:
 
     def __init__(self, create_storage, domain):
@@ -21,11 +26,7 @@ class UsersRead:
         validator = Validator(request)
         email = validator.email()
         password = validator.password()
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         user = self.get_user(email)
         if not user or not user.active or not util.hash(password) == user.password_hash:
@@ -65,11 +66,7 @@ class Users(UsersRead):
         validator = Validator(request)
         email = validator.email()
         password = validator.password()
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         user = self.get_user(email)
         if not user or not user.active or not util.hash(password) == user.password_hash:
@@ -80,13 +77,9 @@ class Users(UsersRead):
     def create_new_user(self, request):
         validator = Validator(request)
         email = validator.email()
-        password = validator.password()
+        password = validator.new_password()
         user_domain = validator.new_user_domain(error_if_missing=False)
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         user = None
         action = None
@@ -123,11 +116,7 @@ class Users(UsersRead):
     def activate(self, request):
         validator = Validator(request)
         token = validator.token()
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         with self.create_storage() as storage:
             user = storage.get_user_by_activate_token(token)
@@ -179,19 +168,13 @@ class Users(UsersRead):
     def validate_service(self, data):
         validator = Validator(data)
         validator.port()
-        if validator.errors:
-            message = ", ".join(validator.errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
     def domain_update(self, request, request_ip=None):
         validator = Validator(request)
         token = validator.token()
         ip = validator.ip(request_ip)
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
@@ -238,11 +221,7 @@ class Users(UsersRead):
         validator = Validator(request)
         email = validator.email()
         password = validator.password()
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         with self.create_storage() as storage:
             user = storage.get_user_by_email(email)
@@ -258,11 +237,7 @@ class Users(UsersRead):
     def user_reset_password(self, request):
         validator = Validator(request)
         email = validator.email()
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         with self.create_storage() as storage:
             user = storage.get_user_by_email(email)
@@ -276,11 +251,7 @@ class Users(UsersRead):
         validator = Validator(request)
         token = validator.token()
         password = validator.new_password()
-        errors = validator.errors
-
-        if errors:
-            message = ", ".join(errors)
-            raise servicesexceptions.bad_request(message)
+        check_validator(validator)
 
         with self.create_storage() as storage:
             user = storage.get_user_by_token(ActionType.PASSWORD, token)

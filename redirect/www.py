@@ -2,7 +2,7 @@ from flask import Flask, request, redirect, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 import db_helper
 import services
-from servicesexceptions import ServiceException
+from servicesexceptions import ServiceException, ParametersException
 import traceback
 import convertible
 import config
@@ -72,6 +72,9 @@ def user():
 
 @app.errorhandler(Exception)
 def handle_exception(error):
+    if isinstance(error, ParametersException):
+        parameters_messages = [{'parameter': k, 'messages': v} for k, v in error.parameters_errors.items()]
+        return jsonify(message=error.message, parameters_messages=parameters_messages), error.status_code
     if isinstance(error, ServiceException):
         return jsonify(message=error.message), error.status_code
     else:
