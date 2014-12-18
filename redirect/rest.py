@@ -56,7 +56,7 @@ def domain_get():
 @cross_origin()
 def domain_update():
     request_data = json.loads(request.data)
-    domain = manager().domain_update(request_data)
+    domain = manager().domain_update(request_data, request.remote_addr)
     domain_data = convertible.to_dict(domain)
     return jsonify(message='Domain was updated', data=domain_data), 200
 
