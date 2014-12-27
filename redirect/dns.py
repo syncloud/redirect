@@ -19,7 +19,7 @@ class Dns:
             self.service_change(changes, main_domain, change_type, s)
 
     def a_change(self, changes, main_domain, domain, change_type):
-        change = changes.add_change(change_type, domain.dns_device_name(main_domain), 'A')
+        change = changes.add_change(change_type, domain.dns_name(main_domain), 'A')
         change.add_value(domain.ip)
 
     def cname_change(self, changes, main_domain, domain, change_type):
@@ -78,7 +78,7 @@ class Dns:
         if zone.find_records(domain.dns_name(main_domain)):
             self.cname_change(changes, main_domain, domain, 'DELETE')
 
-        if zone.find_records(domain.dns_device_name(main_domain)):
+        if zone.find_records(domain.dns_name(main_domain)):
             self.a_change(changes, main_domain, domain, 'DELETE')
 
         existing = [s for s in domain.services if zone.find_records(s.dns_name(main_domain), 'SRV')]

@@ -146,7 +146,7 @@ function serviceImage(name) {
 }
 
 function fullUrl(domain, service) {
-    var url = service.protocol+"://device."+domain.user_domain+"."+redirect.main_domain;
+    var url = '{0}://{1}.{2}'.format(service.protocol, domain.user_domain, redirect.main_domain)
     if (service.port !== 80)
         url = url+":"+service.port;
     if (service.url !== null)
