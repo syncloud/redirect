@@ -20,6 +20,9 @@ if __name__=='__main__':
 
     with create_storage() as storage:
         for domain in storage.domains_iterate():
+            print(domain.user_domain)
+            if not domain.ip:
+                continue
             aws_access_key_id = the_config.get('aws', 'access_key_id')
             aws_secret_access_key = the_config.get('aws', 'secret_access_key')
             hosted_zone_id = the_config.get('aws', 'hosted_zone_id')
@@ -27,16 +30,12 @@ if __name__=='__main__':
             conn = boto.connect_route53(aws_access_key_id, aws_secret_access_key)
             changes = ResourceRecordSets(conn, hosted_zone_id)
 
-            old_cname = '{0}.{1}.'.format(domain.user_domain, main_domain)
-            changes.add_change('DELETE', old_cname, 'CNAME')
+            user_domain = '{0}.{1}.'.format(domain.user_domain, main_domain)
+            change = changes.add_change('UPSERT', user_domain, 'A')
+            change.add_value(domain.ip)
 
-            old_a_record = 'device.{0}.{1}.'.format(domain.user_domain, main_domain)
-            changes.add_change('DELETE', old_a_record, 'A')
-
-            changes.add_change('UPSERT', old_cname, 'A')
-
-            print('Removing CNAME {}'.format(old_cname))
-            print('Removing A {}'.format(old_a_record))
-            print('Adding A {}'.format(old_cname))
+            for service in domain.services:
+                change = changes.add_change('UPSERT', service.dns_name(main_domain), 'SRV')
+                change.add_value(service.dns_value(main_domain))
 
             changes.commit()
