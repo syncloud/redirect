@@ -11,8 +11,8 @@ class Dns:
         self.hosted_zone_id = hosted_zone_id
 
     def service_change(self, changes, main_domain, change_type, service):
-            change = changes.add_change(change_type, service.dns_name(main_domain), 'SRV')
-            change.add_value(service.dns_value(main_domain))
+        change = changes.add_change(change_type, service.dns_name(main_domain), 'SRV')
+        change.add_value(service.dns_value(main_domain))
 
     def services_change(self, changes, main_domain, change_type, services):
         for s in services:

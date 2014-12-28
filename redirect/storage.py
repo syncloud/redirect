@@ -40,6 +40,10 @@ class Storage:
         domain = self.session.query(Domain).filter(Domain.user_domain == user_domain).first()
         return domain
 
+    def domains_iterate(self):
+        for domain in self.session.query(Domain).yield_per(10):
+            yield domain
+
     def users_iterate(self):
         for user in self.session.query(User).yield_per(10):
             yield user
