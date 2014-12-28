@@ -80,7 +80,7 @@ class Dns:
         # if zone.find_records(domain.dns_name(main_domain)):
         #     self.cname_change(changes, main_domain, domain, 'DELETE')
 
-        if zone.find_records(domain.dns_name(main_domain)):
+        if zone.find_records(domain.dns_name(main_domain), 'CNAME'):
             self.a_change(changes, main_domain, domain, 'DELETE')
 
         existing = [s for s in domain.services if zone.find_records(s.dns_name(main_domain), 'SRV')]
