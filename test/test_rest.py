@@ -215,7 +215,7 @@ class TestDomain(TestFlask):
 
 class TestDomainAcquire(TestDomain):
 
-    def test_acquire_new(self):
+    def test_new(self):
         email, password = self.create_active_user()
 
         user_domain = create_token()
@@ -242,7 +242,7 @@ class TestDomainAcquire(TestDomain):
             'device_title': 'My Super Board',
             'services': []})
 
-    def test_acquire_existing(self):
+    def test_existing(self):
         user_domain = create_token()
 
         other_email, other_password = self.create_active_user()
@@ -277,7 +277,7 @@ class TestDomainAcquire(TestDomain):
             'device_title': 'My Super Board',
             'services': []})
 
-    def test_acquire_twice(self):
+    def test_twice(self):
         email, password = self.create_active_user()
 
         user_domain = create_token()
@@ -313,6 +313,21 @@ class TestDomainAcquire(TestDomain):
             'device_name': 'my-super-board-2',
             'device_title': 'My Super Board 2',
             'services': []})
+
+    def test_wrong_mac_address_format(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        acquire_data = dict(
+            user_domain=user_domain,
+            device_mac_address='wrong_format',
+            device_name='my-super-board',
+            device_title='My Super Board',
+            email=email,
+            password=password)
+        response = self.app.post('/domain/acquire', data=acquire_data)
+
+        self.assertEqual(400, response.status_code)
 
 class TestDomainUpdate(TestDomain):
 

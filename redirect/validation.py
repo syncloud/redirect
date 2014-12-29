@@ -113,7 +113,11 @@ class Validator:
         if mac_address not in self.params:
             self.add_field_error(mac_address, 'Missing')
             return None
-        return self.params[mac_address]
+        mac_address_value = self.params[mac_address]
+        if not re.match('[0-9a-f]{2}([-:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address_value):
+            self.add_field_error(mac_address, 'MAC address has wrong format')
+            return None
+        return mac_address_value
 
     def string(self, parameter):
         if parameter not in self.params:
