@@ -13,8 +13,12 @@ CREATE TABLE `domain` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `user_domain` varchar(100) NOT NULL UNIQUE,
   `ip` varchar(15),
+  `local_ip` varchar(15),
   `update_token` char(36) NOT NULL UNIQUE,
   `user_id` integer NOT NULL,
+  `device_mac_address` varchar(20) NOT NULL,
+  `device_name` varchar(50),
+  `device_title` varchar(50),
   `last_update` DATETIME NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user(id)
@@ -27,6 +31,7 @@ CREATE TABLE `service` (
   `type` varchar(100) NOT NULL,
   `url` varchar(100),
   `port` int(11) NOT NULL,
+  `local_port` int(11),
   `domain_id` integer NOT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY (domain_id, port)
@@ -55,4 +60,4 @@ create table db_version (
     `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('003');
+insert into db_version (version) values ('004');

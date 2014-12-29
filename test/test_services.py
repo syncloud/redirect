@@ -40,7 +40,7 @@ class TestUsers(unittest.TestCase):
     def test_user_create_success(self):
         users = self.get_users_service()
 
-        request = {'user_domain': u'boris', 'email': u'valid@mail.com', 'password': u'pass123456'}
+        request = {'email': u'valid@mail.com', 'password': u'pass123456'}
         user = users.create_new_user(request)
 
         self.assertIsNotNone(user)
@@ -49,29 +49,16 @@ class TestUsers(unittest.TestCase):
         self.assertIsNotNone(user.token(ActionType.ACTIVATE))
         self.assertFalse(user.active)
 
-        self.assertEquals(1, len(user.domains))
-        self.assertEqual('boris', user.domains[0].user_domain)
-
         activate_url = self.activate_url_template.format(user.token(ActionType.ACTIVATE))
         self.assertFalse(self.smtp.empty())
         email = self.smtp.emails()[0]
         self.assertTrue(user.email in email)
         self.assertTrue(activate_url in email)
 
-    def test_user_create_no_domain(self):
-        users = self.get_users_service(activate_by_email=False)
-
-        request = {'email': u'valid@mail.com', 'password': u'pass123456'}
-        users.create_new_user(request)
-        user = users.get_user(u'valid@mail.com')
-
-        self.assertIsNotNone(user)
-        self.assertEquals(0, len(user.domains))
-
     def test_user_create_no_activation(self):
         users = self.get_users_service(activate_by_email=False)
 
-        request = {'user_domain': u'boris', 'email': u'valid@mail.com', 'password': u'pass123456'}
+        request = {'email': u'valid@mail.com', 'password': u'pass123456'}
         user = users.create_new_user(request)
 
         self.assertIsNotNone(user)
@@ -80,9 +67,6 @@ class TestUsers(unittest.TestCase):
         # self.assertIsNone(user.activate_token())
         self.assertTrue(user.active)
 
-        self.assertEquals(1, len(user.domains))
-        self.assertEqual('boris', user.domains[0].user_domain)
-
         self.assertTrue(self.smtp.empty())
 
     def test_user_create_existing_email(self):
@@ -90,18 +74,7 @@ class TestUsers(unittest.TestCase):
         existing = User(u'valid@mail.com', hash('pass123456'), True)
         self.add_user(existing)
 
-        request = {'user_domain': 'vladimir', 'email': 'valid@mail.com', 'password': 'pass123456'}
-
-        with self.assertRaises(ServiceException) as context:
-            users.create_new_user(request)
-        self.assertEquals(context.exception.status_code, 409)
-
-    def test_user_create_existing_domain(self):
-        users = self.get_users_service()
-
-        request = {'user_domain': 'boris', 'email': 'boris@mail.com', 'password': 'pass123456'}
-
-        users.create_new_user(request)
+        request = {'email': 'valid@mail.com', 'password': 'pass123456'}
 
         with self.assertRaises(ServiceException) as context:
             users.create_new_user(request)

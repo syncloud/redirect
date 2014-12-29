@@ -26,7 +26,7 @@ def generate_user():
 def generate_domain():
     domain = create_token()
     update_token = create_token()
-    domain = Domain(domain, None, update_token)
+    domain = Domain(domain, '00:00:00:00:00:00', None, update_token)
     return domain
 
 
@@ -50,7 +50,11 @@ class ModelsAssertionsMixin:
         if expected is not None:
             self.assertIsNotNone(actual)
         if expected is not None and actual is not None:
-            self.assertEquals(expected.user_domain, actual.user_domain, 'Users should have the same user_domain')
-            self.assertEquals(expected.ip, actual.ip, 'Users should have the same ip')
-            self.assertEquals(expected.update_token, actual.update_token, 'Users should have the same update_token')
-            self.assertEquals(expected.user_id, actual.user_id, 'Users should have the same user_id')
+            self.assertEquals(expected.user_domain, actual.user_domain, 'Domains should have the same user_domain')
+            self.assertEquals(expected.ip, actual.ip, 'Domains should have the same ip')
+            self.assertEquals(expected.local_ip, actual.local_ip, 'Domains should have the same local_ip')
+            self.assertEquals(expected.update_token, actual.update_token, 'Domains should have the same update_token')
+            self.assertEquals(expected.user_id, actual.user_id, 'Domains should have the same user_id')
+            self.assertEquals(expected.device_mac_address, actual.device_mac_address, 'Domains should have the same device_mac_address')
+            self.assertEquals(expected.device_name, actual.device_name, 'Domains should have the same device_name')
+            self.assertEquals(expected.device_title, actual.device_title, 'Domains should have the same device_title')

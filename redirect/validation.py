@@ -80,16 +80,42 @@ class Validator:
             return None
         return self.params[token]
 
-    def ip(self, default_ip=None):
+    def __check_ip_address(self, name, ip):
+        try:
+            socket.inet_aton(ip)
+        except socket.error:
+            self.add_field_error(name, 'Invalid IP address')
 
+    def ip(self, default_ip=None):
         ip = default_ip
         if 'ip' in self.params:
             ip = self.params['ip']
         if not ip:
             return None
 
-        try:
-            socket.inet_aton(ip)
-        except socket.error:
-            self.add_field_error('ip', 'Invalid IP address')
+        self.__check_ip_address('ip', ip)
+
         return ip
+
+    def local_ip(self, default_ip=None):
+        ip = default_ip
+        if 'local_ip' in self.params:
+            ip = self.params['local_ip']
+        if not ip:
+            return None
+
+        self.__check_ip_address('local_ip', ip)
+
+        return ip
+
+    def device_mac_address(self):
+        mac_address = 'device_mac_address'
+        if mac_address not in self.params:
+            self.add_field_error(mac_address, 'Missing')
+            return None
+        return self.params[mac_address]
+
+    def string(self, parameter):
+        if parameter not in self.params:
+            return None
+        return self.params[parameter]

@@ -64,7 +64,8 @@ class Users(UsersRead):
         validator = Validator(request)
         email = validator.email()
         password = validator.new_password()
-        user_domain = validator.new_user_domain(error_if_missing=False)
+        # user_domain = validator.new_user_domain(error_if_missing=False)
+        user_domain = None
         check_validator(validator)
 
         user = None
@@ -84,7 +85,7 @@ class Users(UsersRead):
             user = User(email, util.hash(password), not self.activate_by_email)
 
             if user_domain:
-                domain = Domain(user_domain, None, update_token)
+                domain = Domain(user_domain, None, None, update_token)
                 domain.user = user
                 user.domains.append(domain)
                 storage.add(domain)
@@ -121,6 +122,10 @@ class Users(UsersRead):
 
         validator = Validator(request)
         user_domain = validator.new_user_domain()
+        device_mac_address = validator.device_mac_address()
+        device_name = validator.string('device_name')
+        device_title = validator.string('device_title')
+        check_validator(validator)
 
         with self.create_storage() as storage:
             domain = storage.get_domain_by_name(user_domain)
@@ -129,11 +134,14 @@ class Users(UsersRead):
 
             update_token = util.create_token()
             if not domain:
-                domain = Domain(user_domain, None, update_token)
+                domain = Domain(user_domain, device_mac_address, None, update_token)
                 domain.user = user
                 storage.add(domain)
             else:
                 domain.update_token = update_token
+                domain.device_mac_address = device_mac_address
+            domain.device_name = device_name
+            domain.device_title = device_title
 
             return domain
 
@@ -160,6 +168,7 @@ class Users(UsersRead):
         validator = Validator(request)
         token = validator.token()
         ip = validator.ip(request_ip)
+        local_ip = validator.local_ip()
         check_validator(validator)
 
         with self.create_storage() as storage:
@@ -185,6 +194,7 @@ class Users(UsersRead):
             is_new_dmain = domain.ip is None
             update_ip = domain.ip != ip
             domain.ip = ip
+            domain.local_ip = local_ip
 
             if is_new_dmain:
                 self.dns.new_domain(self.main_domain, domain)

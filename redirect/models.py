@@ -82,23 +82,27 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'services', 'last_update']
+    __public__ = ['user_domain', 'ip', 'local_ip', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
     ip = Column(String())
+    local_ip = Column(String())
     update_token = Column(String())
     last_update = Column(DateTime)
-
+    device_mac_address = Column(String())
+    device_name = Column(String())
+    device_title = Column(String())
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", lazy='subquery')
 
     services = relationship("Service", lazy='subquery')
 
-    def __init__(self, user_domain, ip=None, update_token=None):
+    def __init__(self, user_domain, device_mac_address, ip=None, update_token=None):
         self.user_domain = user_domain
         self.ip = ip
         self.update_token = update_token
+        self.device_mac_address = device_mac_address
 
     def dns_name(self, main_domain):
         return '{0}.{1}.'.format(self.user_domain, main_domain)
@@ -114,6 +118,7 @@ class Service(Base):
     type = Column(String())
     url = Column(String())
     port = Column(Integer())
+    local_port = Column(Integer())
 
     domain_id = Column(Integer, ForeignKey('domain.id'))
     domain = relationship("Domain", lazy='subquery')
