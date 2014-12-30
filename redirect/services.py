@@ -146,7 +146,7 @@ class Users(UsersRead):
             return domain
 
     def service_compare(self, a, b):
-        return a.port == b.port and a.type == b.type
+        return a.port == b.port and a.local_port == b.local_port and a.type == b.type and a.protocol == b.protocol and a.name == b.name
 
     def get_missing(self, lookfor, lookat):
         result = []

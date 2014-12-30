@@ -110,7 +110,7 @@ class Domain(Base):
 
 class Service(Base):
     __tablename__ = "service"
-    __public__ = ['name', 'protocol', 'type', 'port', 'url']
+    __public__ = ['name', 'protocol', 'type', 'port', 'local_port', 'url']
 
     id = Column(Integer, primary_key=True)
     name = Column(String())

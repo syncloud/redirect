@@ -102,6 +102,7 @@ class TestUser(TestFlask):
                     'name': 'ownCloud',
                     'protocol': 'http',
                     'port': 10000,
+                    'local_port': None,
                     'type': '_http._tcp',
                     'url': None
                 }],
@@ -337,7 +338,7 @@ class TestDomainUpdate(TestDomain):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        service_data = {'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10000, 'url': None}
+        service_data = {'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10000, 'local_port': None, 'url': None}
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': [service_data]}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -391,8 +392,8 @@ class TestDomainUpdate(TestDomain):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -428,14 +429,14 @@ class TestDomainUpdate(TestDomain):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(200, response.status_code)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -450,15 +451,15 @@ class TestDomainUpdate(TestDomain):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'local_port': 81, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(200, response.status_code)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10003, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10003, 'local_port': 82, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -473,13 +474,13 @@ class TestDomainUpdate(TestDomain):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(200, response.status_code)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.2', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -494,13 +495,13 @@ class TestDomainUpdate(TestDomain):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'local_ip': '192.168.1.5', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(200, response.status_code)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.2', 'local_ip': '192.168.1.6', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -515,7 +516,7 @@ class TestDomainUpdate(TestDomain):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': None, 'url': None}]
         update_data = {'token': update_token, 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data), environ_base={'REMOTE_ADDR': '127.0.0.1'})
