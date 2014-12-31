@@ -26,24 +26,24 @@ class TestDns(unittest.TestCase):
             config.get('aws', 'secret_access_key'),
             config.get('aws', 'hosted_zone_id'))
 
-        domain = Domain(user_domain, '00:00:00:00:00:00', '192.168.0.1')
+        domain = Domain(user_domain, '00:00:00:00:00:00', 'some-device', 'Some Device', '192.168.0.1')
         dns.new_domain(main_domain, domain)
 
         service_80 = new_service('ssh', '_ssh._tcp', 80)
-        service_80.domain = Domain(user_domain, '00:00:00:00:00:00')
+        service_80.domain = Domain(user_domain, '00:00:00:00:00:00', 'some-device', 'Some Device')
 
         dns.update_domain(main_domain, domain, None, [service_80], [])
         self.validate_dns('192.168.0.1', 80, '_ssh._tcp')
 
         domain.ip = '192.168.0.2'
         service_81 = new_service('web', '_www._tcp', 81)
-        service_81.domain = Domain(user_domain, '00:00:00:00:00:00')
+        service_81.domain = Domain(user_domain, '00:00:00:00:00:00', 'some-device', 'Some Device')
         dns.update_domain(main_domain, domain, True, [service_81], [service_80])
         self.validate_dns('192.168.0.2', 81, '_www._tcp')
 
         domain.ip = '192.168.0.3'
         service_82 = new_service('web1', '_www1._tcp', 82)
-        service_82.domain = Domain(user_domain, '00:00:00:00:00:00')
+        service_82.domain = Domain(user_domain, '00:00:00:00:00:00', 'some-device', 'Some Device')
         dns.update_domain(main_domain, domain, True, [service_82], [])
         self.validate_dns('192.168.0.3', 82, '_www1._tcp')
 

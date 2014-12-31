@@ -38,7 +38,16 @@ class TestFlask(unittest.TestCase):
         return email, password
 
     def acquire_domain(self, email, password, user_domain):
-        response = self.app.post('/domain/acquire', data={'user_domain': user_domain, 'device_mac_address': '00:00:00:00:00:00', 'email': email, 'password': password})
+        self.maxDiff = None
+        acquire_data = {
+            'user_domain': user_domain,
+            'email': email,
+            'password': password,
+            'device_mac_address': '00:00:00:00:00:00',
+            'device_name': 'some-device',
+            'device_title': 'Some Device',
+        }
+        response = self.app.post('/domain/acquire', data=acquire_data)
         domain_data = json.loads(response.data)
         update_token = domain_data['update_token']
         return update_token
@@ -95,8 +104,8 @@ class TestUser(TestFlask):
                 'ip': '127.0.0.1',
                 'local_ip': None,
                 'device_mac_address': '00:00:00:00:00:00',
-                'device_name': None,
-                'device_title': None,
+                'device_name': 'some-device',
+                'device_title': 'Some Device',
                 'last_update': last_update,
                 'services': [{
                     'name': 'ownCloud',

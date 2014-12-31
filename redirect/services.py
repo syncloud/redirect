@@ -64,8 +64,6 @@ class Users(UsersRead):
         validator = Validator(request)
         email = validator.email()
         password = validator.new_password()
-        # user_domain = validator.new_user_domain(error_if_missing=False)
-        user_domain = None
         check_validator(validator)
 
         user = None
@@ -75,20 +73,7 @@ class Users(UsersRead):
             if by_email and by_email.email == email:
                 raise servicesexceptions.conflict('Email is already registered')
 
-            if user_domain:
-                by_domain = storage.get_domain_by_name(user_domain)
-                if by_domain and by_domain.user_domain == user_domain:
-                    raise servicesexceptions.conflict('User domain name is already in use')
-
-            update_token = util.create_token()
-
             user = User(email, util.hash(password), not self.activate_by_email)
-
-            if user_domain:
-                domain = Domain(user_domain, None, None, update_token)
-                domain.user = user
-                user.domains.append(domain)
-                storage.add(domain)
 
             if self.activate_by_email:
                 action = user.enable_action(ActionType.ACTIVATE)
@@ -123,8 +108,8 @@ class Users(UsersRead):
         validator = Validator(request)
         user_domain = validator.new_user_domain()
         device_mac_address = validator.device_mac_address()
-        device_name = validator.string('device_name')
-        device_title = validator.string('device_title')
+        device_name = validator.string('device_name', required=True)
+        device_title = validator.string('device_title', required=True)
         check_validator(validator)
 
         with self.create_storage() as storage:
@@ -134,14 +119,14 @@ class Users(UsersRead):
 
             update_token = util.create_token()
             if not domain:
-                domain = Domain(user_domain, device_mac_address, None, update_token)
+                domain = Domain(user_domain, device_mac_address, device_name, device_title, ip=None, update_token=update_token)
                 domain.user = user
                 storage.add(domain)
             else:
                 domain.update_token = update_token
                 domain.device_mac_address = device_mac_address
-            domain.device_name = device_name
-            domain.device_title = device_title
+                domain.device_name = device_name
+                domain.device_title = device_title
 
             return domain
 

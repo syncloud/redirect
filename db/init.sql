@@ -17,8 +17,8 @@ CREATE TABLE `domain` (
   `update_token` char(36) NOT NULL UNIQUE,
   `user_id` integer NOT NULL,
   `device_mac_address` varchar(20) NOT NULL,
-  `device_name` varchar(50),
-  `device_title` varchar(50),
+  `device_name` varchar(100) NOT NULL,
+  `device_title` varchar(100) NOT NULL,
   `last_update` DATETIME NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user(id)

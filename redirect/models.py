@@ -98,11 +98,13 @@ class Domain(Base):
 
     services = relationship("Service", lazy='subquery')
 
-    def __init__(self, user_domain, device_mac_address, ip=None, update_token=None):
+    def __init__(self, user_domain, device_mac_address, device_name, device_title, ip=None, update_token=None):
         self.user_domain = user_domain
         self.ip = ip
         self.update_token = update_token
         self.device_mac_address = device_mac_address
+        self.device_name = device_name
+        self.device_title = device_title
 
     def dns_name(self, main_domain):
         return '{0}.{1}.'.format(self.user_domain, main_domain)

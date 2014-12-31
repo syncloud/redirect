@@ -119,7 +119,9 @@ class Validator:
             return None
         return mac_address_value
 
-    def string(self, parameter):
+    def string(self, parameter, required=False):
         if parameter not in self.params:
+            if required:
+                self.add_field_error(parameter, 'Missing')
             return None
         return self.params[parameter]
