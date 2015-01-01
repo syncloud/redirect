@@ -25,7 +25,14 @@ def upgrade(script):
     print check_output("mysql -h {0} -u {1} -p{2} {3} < {4}/{5}".format(
         host, user, passwd, db, script_base, script), shell=True)
 
+def mysql(query):
+    print "running {}".format(query)
+    print check_output("mysql -h {0} -u {1} -p{2} {3}".format(host, user, passwd, query), shell=True)
+
 print check_output('./backupdb', shell=True)
 print check_output('./restoredb {}'.format('redirect_backup'), shell=True)
+
+mysql('-e "SET GLOBAL FOREIGN_KEY_CHECKS=0"')
 upgrade('init.sql')
 upgrade('004.sql')
+mysql('-e "SET GLOBAL FOREIGN_KEY_CHECKS=1"')
