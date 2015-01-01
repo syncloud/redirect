@@ -20,11 +20,12 @@ user = config.get('mysql', 'user')
 passwd = config.get('mysql', 'passwd')
 
 
-def upgrade(script):
+def upgrade(script, database_name):
     print "running {}".format(script)
     print check_output("mysql -h {0} -u {1} -p{2} {3} < {4}/{5}".format(
         host, user, passwd, db, script_base, script), shell=True)
 
-upgrade('001_init_version.sql')
-upgrade('002_tables.sql')
-upgrade('003_migrate_users.sql')
+print check_output('./backupdb', shell=True)
+print check_output('./restoredb {}'.format('redirect_backup'), shell=True)
+upgrade('init.sql')
+upgrade('004.sql')
