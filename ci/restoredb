@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import ConfigParser
 import os
 from subprocess import check_output
@@ -15,14 +16,13 @@ if len(sys.argv) < 2:
 
 db = sys.argv[1]
 
-
 def mysql(query):
     print "running {}".format(query)
     print check_output("mysql -h {0} -u {1} -p{2} {3}".format(host, user, passwd, query), shell=True)
 
-mysql("-e \"drop database if exists {0}\"".format(db))
-mysql("-e \"create database {0}\"".format(db))
+def restore_backup(database_name):
+    mysql('-e "drop database if exists {0}"'.format(database_name))
+    mysql('-e "create database {0}"'.format(database_name))
+    mysql('{0} < /home/redirect/redirect.backup'.format(database_name))
 
-mysql("-e \"drop database if exists redirect_backup\"")
-mysql("-e \"create database redirect_backup\"")
-mysql("redirect_backup < /home/redirect/redirect.backup")
+restore_backup(db)
