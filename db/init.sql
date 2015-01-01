@@ -1,5 +1,3 @@
-create database redirect;
-use redirect;
 CREATE TABLE `user` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `email` varchar(100) NOT NULL UNIQUE,

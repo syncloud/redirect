@@ -7,5 +7,6 @@ install:
   - pip install -r dev_requirements.txt
 before_script:
   - ./configure test
-  - mysql < db/init.sql
+  - cd ci
+  - ./createdb redirect
 script: py.test --cov redirect
