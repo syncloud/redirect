@@ -23,6 +23,8 @@ def mysql(query):
 def restore_backup(database_name):
     mysql('-e "drop database if exists {0}"'.format(database_name))
     mysql('-e "create database {0}"'.format(database_name))
+    mysql('-e "SET GLOBAL FOREIGN_KEY_CHECKS=0"')
     mysql('{0} < /home/redirect/redirect.backup'.format(database_name))
+    mysql('-e "SET GLOBAL FOREIGN_KEY_CHECKS=1"')
 
 restore_backup(db)
