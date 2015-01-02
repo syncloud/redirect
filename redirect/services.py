@@ -146,7 +146,8 @@ class Users(UsersRead):
 
     def validate_service(self, data):
         validator = Validator(data)
-        validator.port()
+        validator.port('port')
+        validator.port('local_port')
         check_validator(validator)
 
     def domain_update(self, request, request_ip=None):

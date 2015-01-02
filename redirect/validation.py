@@ -60,17 +60,17 @@ class Validator:
             return None
         return self.params['password']
 
-    def port(self):
+    def port(self, port_parameter):
         if 'port' not in self.params:
-            self.add_field_error('port', 'Missing')
+            self.add_field_error(port_parameter, 'Missing')
             return None
         try:
-            port_num = int(self.params['port'])
+            port_num = int(self.params[port_parameter])
         except:
-            self.add_field_error('port', 'Should be a number')
+            self.add_field_error(port_parameter, 'Should be a number')
             return None
         if port_num < 1 or port_num > 65535:
-            self.add_field_error('port', 'Should be between 1 and 65535')
+            self.add_field_error(port_parameter, 'Should be between 1 and 65535')
             return None
         return port_num
 

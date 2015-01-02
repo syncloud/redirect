@@ -35,7 +35,7 @@ class TestValidation(unittest.TestCase):
     def assertPortError(self, params):
 
         validator = Validator(params)
-        value = validator.port()
+        value = validator.port('port')
         self.assertEqual(len(validator.errors), 1)
         return value
 

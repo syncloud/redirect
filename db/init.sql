@@ -29,7 +29,7 @@ CREATE TABLE `service` (
   `type` varchar(100) NOT NULL,
   `url` varchar(100),
   `port` int(11) NOT NULL,
-  `local_port` int(11),
+  `local_port` int(11) NOT NULL,
   `domain_id` integer NOT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY (domain_id, port)
