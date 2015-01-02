@@ -1,30 +1,25 @@
 #!/usr/bin/env python
 
-import ConfigParser
-import os
-from subprocess import check_output
+from os.path import join, dirname
 import sys
+from ConfigParser import ConfigParser
+from database import Runner
 
-config = ConfigParser.ConfigParser()
-config.read(os.path.join(os.path.dirname(__file__), '../redirect/config.cfg'))
-host = config.get('mysql', 'host')
-user = config.get('mysql', 'user')
-passwd = config.get('mysql', 'passwd')
 
-if len(sys.argv) < 2:
-    sys.exit('Usage: %s database-name' % sys.argv[0])
+if __name__=='__main__':
+    if len(sys.argv) < 3:
+        sys.exit('Usage: %s <database name> <file name>' % sys.argv[0])
 
-db = sys.argv[1]
+    database = sys.argv[1]
+    filename = sys.argv[2]
 
-def mysql(query):
-    print "running {}".format(query)
-    print check_output("mysql -h {0} -u {1} -p{2} {3}".format(host, user, passwd, query), shell=True)
+    config = ConfigParser()
+    config.read(join(dirname(__file__), '../redirect/config.cfg'))
+    host = config.get('mysql', 'host')
+    user = config.get('mysql', 'user')
+    passwd = config.get('mysql', 'passwd')
 
-def restore_backup(database_name):
-    mysql('-e "drop database if exists {0}"'.format(database_name))
-    mysql('-e "create database {0}"'.format(database_name))
-    mysql('-e "SET GLOBAL FOREIGN_KEY_CHECKS=0"')
-    mysql('{0} < /home/redirect/redirect.backup'.format(database_name))
-    mysql('-e "SET GLOBAL FOREIGN_KEY_CHECKS=1"')
+    script_base = join(dirname(__file__), '../db')
 
-restore_backup(db)
+    runner = Runner(host, user, passwd)
+    runner.restore(database, filename)
