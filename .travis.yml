@@ -8,5 +8,9 @@ install:
 before_script:
   - ./configure test
   - cd ci
-  - ./createdb redirect
+  - ./redirectdb create redirect
 script: py.test --cov redirect
+after_script:
+  - cd ci
+  - ./redirectdb migrate redirect redirect 004.sql
+  - py.test --cov redirect
