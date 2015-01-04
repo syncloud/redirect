@@ -11,6 +11,8 @@ import convertible
 import config
 import mail
 
+import logging
+
 the_config = config.read_redirect_configs()
 
 app = Flask(__name__)
@@ -85,16 +87,25 @@ def user_set_password():
 @app.errorhandler(Exception)
 @cross_origin()
 def handle_exception(error):
+    response = None
+    status_code = 500
     if isinstance(error, ParametersException):
         parameters_messages = [{'parameter': k, 'messages': v} for k, v in error.parameters_errors.items()]
-        return jsonify(message=error.message, parameters_messages=parameters_messages), error.status_code
+        response = jsonify(message=error.message, parameters_messages=parameters_messages)
+        status_code = error.status_code
     if isinstance(error, ServiceException):
-        return jsonify(message=error.message), error.status_code
+        response = jsonify(message=error.message)
+        status_code = error.status_code
     else:
         print '-'*60
         traceback.print_exc(file=sys.stdout)
         print '-'*60
-        return jsonify(message=error.message), 500
+        response = jsonify(message=error.message)
+        status_code = 500
+    logging.error(traceback.format_exc())
+    logging.error(response.data)
+    return response, status_code
+
 
 
 def manager():
