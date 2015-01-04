@@ -81,15 +81,16 @@ class SessionContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
-            if exc_val is None:
-                self.session.commit()
-            else:
-                logging.error('exception happened', exc_info=(exc_type, exc_val, exc_tb))
+            if exc_val is not None:
+                logging.error('exception happened during commit', exc_info=(exc_type, exc_val, exc_tb))
                 raise exc_val
-        except Exception, e:
-            logging.exception('unable to commit transaction')
-            self.session.rollback()
-            raise e
+            else:
+                try:
+                    self.session.commit()
+                except Exception, e:
+                    logging.exception('unable to commit transaction')
+                    self.session.rollback()
+                    raise e
         finally:
             self.session.expunge_all()
             self.session.close()
