@@ -82,7 +82,7 @@ class SessionContext:
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             if exc_val is not None:
-                logging.error('exception happened during commit', exc_info=(exc_type, exc_val, exc_tb))
+                logging.error('exception happened', exc_info=(exc_type, exc_val, exc_tb))
                 raise exc_val
             else:
                 try:
