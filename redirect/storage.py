@@ -87,7 +87,7 @@ class SessionContext:
                 logging.error('exception happened', exc_info=(exc_type, exc_val, exc_tb))
                 raise exc_val
         except Exception, e:
-            logging.exception('unable to commit transaction', e)
+            logging.exception('unable to commit transaction')
             self.session.rollback()
             raise e
         finally:
