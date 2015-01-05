@@ -93,7 +93,7 @@ def handle_exception(error):
         parameters_messages = [{'parameter': k, 'messages': v} for k, v in error.parameters_errors.items()]
         response = jsonify(message=error.message, parameters_messages=parameters_messages)
         status_code = error.status_code
-    if isinstance(error, ServiceException):
+    elif isinstance(error, ServiceException):
         response = jsonify(message=error.message)
         status_code = error.status_code
     else:
