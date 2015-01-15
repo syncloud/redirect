@@ -7,7 +7,7 @@ install:
   - pip install -r dev_requirements.txt
 before_script:
   - ./configure test
-  - ./rci/edirectdb create redirect
+  - ./ci/edirectdb create redirect
 script: py.test --cov redirect
 after_script:
   - ./ci/redirectdb migrate redirect redirect 004.sql
