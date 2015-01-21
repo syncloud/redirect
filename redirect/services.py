@@ -102,6 +102,30 @@ class Users(UsersRead):
 
         return True
 
+    def drop_device(self, request):
+        user = self.authenticate(request)
+        validator = Validator(request)
+        user_domain = validator.new_user_domain()
+        check_validator(validator)
+
+        with self.create_storage() as storage:
+            domain = storage.get_domain_by_name(user_domain)
+
+            if not domain or not domain.user.active:
+                raise servicesexceptions.bad_request('Unknown domain')
+
+            domain.update_token = None
+            domain.device_mac_address = None
+            domain.device_name = None
+            domain.device_title = None
+            domain.ip = None
+            domain.local_ip = None
+
+            self.dns.delete_domain(self.main_domain, domain)
+
+            return domain
+
+
     def domain_acquire(self, request):
         user = self.authenticate(request)
 

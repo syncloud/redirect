@@ -46,6 +46,14 @@ def domain_acquire():
     return jsonify(user_domain=domain.user_domain, update_token=domain.update_token), 200
 
 
+@app.route('/domain/drop_device', methods=["POST"])
+@cross_origin()
+def drop_device():
+    domain = manager().drop_device(request.form)
+    domain_data = convertible.to_dict(domain)
+    return jsonify(message='Device was dropped', data=domain_data), 200
+
+
 @app.route('/domain/get', methods=["GET"])
 @cross_origin()
 def domain_get():
