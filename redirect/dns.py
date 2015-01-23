@@ -30,8 +30,6 @@ class Dns:
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
-        # we don't need CNAME for subdomains anymore
-        # self.cname_change(changes, main_domain, domain, 'UPSERT')
         self.a_change(changes, main_domain, domain, 'UPSERT')
         self.services_change(changes, main_domain, 'UPSERT', domain.services)
 
@@ -76,11 +74,7 @@ class Dns:
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
         zone = conn.get_zone(main_domain)
 
-        # we don't need CNAME for subdomains anymore
-        # if zone.find_records(domain.dns_name(main_domain)):
-        #     self.cname_change(changes, main_domain, domain, 'DELETE')
-
-        if zone.find_records(domain.dns_name(main_domain), 'CNAME'):
+        if zone.find_records(domain.dns_name(main_domain), 'A'):
             self.a_change(changes, main_domain, domain, 'DELETE')
 
         existing = [s for s in domain.services if zone.find_records(s.dns_name(main_domain), 'SRV')]
