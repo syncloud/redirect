@@ -74,10 +74,11 @@ class Dns:
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
         zone = conn.get_zone(main_domain)
 
-        if zone.find_records(domain.dns_name(main_domain), 'A'):
-            self.a_change(changes, main_domain, domain, 'DELETE')
-
         existing = [s for s in domain.services if zone.find_records(s.dns_name(main_domain), 'SRV')]
         self.services_change(changes, main_domain, 'DELETE', existing)
+
+        dns_name = domain.dns_name(main_domain)
+        if zone.find_records(dns_name, 'A'):
+            zone.delete_a(dns_name)
 
         changes.commit()
