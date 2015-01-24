@@ -71,14 +71,13 @@ class Dns:
 
     def delete_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
-        changes = ResourceRecordSets(conn, self.hosted_zone_id)
         zone = conn.get_zone(main_domain)
 
-        existing = [s for s in domain.services if zone.find_records(s.dns_name(main_domain), 'SRV')]
-        self.services_change(changes, main_domain, 'DELETE', existing)
+        for service in domain.services:
+            found = zone.find_records(service.dns_name(main_domain), 'SRV')
+            if found:
+                zone.delete_record(found)
 
         dns_name = domain.dns_name(main_domain)
         if zone.find_records(dns_name, 'A'):
             zone.delete_a(dns_name)
-
-        changes.commit()

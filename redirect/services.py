@@ -123,6 +123,8 @@ class Users(UsersRead):
 
             self.dns.delete_domain(self.main_domain, domain)
 
+            storage.delete(domain.services)
+
             return domain
 
 
