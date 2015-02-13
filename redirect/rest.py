@@ -20,8 +20,9 @@ app = Flask(__name__)
 @app.route('/user/create', methods=["POST"])
 @cross_origin()
 def user_create():
-    manager().create_new_user(request.form)
-    return jsonify(message='User was created'), 200
+    user = manager().create_new_user(request.form)
+    user_data = convertible.to_dict(user)
+    return jsonify(message='User was created', data=user_data), 200
 
 
 @app.route('/user/activate', methods=["GET"])
