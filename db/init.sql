@@ -32,7 +32,7 @@ CREATE TABLE `service` (
   `local_port` int(11) NOT NULL,
   `domain_id` integer NOT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY (domain_id, port)
+  UNIQUE KEY (domain_id, name, port)
 );
 
 CREATE TABLE `action_type` (
