@@ -132,9 +132,10 @@ class Service(Base):
         return '0 0 {0} {1}.{2}.'.format(self.port, self.domain.user_domain, main_domain)
 
     def __str__(self):
-        return ", ".join(
-            ["{0}: {1}".format(field, getattr(self, field)) for field in self.__public__ if getattr(self, field)]
-        )
+        return "{ " + ", ".join(["{0}: {1}".format(f, getattr(self, f)) for f in self.fields_str()]) + " }"
+
+    def fields_str(self):
+        return [field for field in self.__public__ if getattr(self, field)]
 
     def __repr__(self):
         return self.__str__()
