@@ -31,3 +31,6 @@ def not_found(message):
 
 def parameters_error(parameters_errors, message="There's a error in parameters"):
     return ParametersException(message, parameters_errors)
+
+def parameter_error(parameter, error, message="There's a error in parameters"):
+    return ParametersException(message, {parameter: [error]})

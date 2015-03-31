@@ -78,7 +78,7 @@ class TestUsers(unittest.TestCase):
 
         with self.assertRaises(ServiceException) as context:
             users.create_new_user(request)
-        self.assertEquals(context.exception.status_code, 409)
+        self.assertEquals(context.exception.status_code, 400)
 
     def test_user_create_missing_email(self):
         users = self.get_users_service()

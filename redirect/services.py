@@ -71,7 +71,7 @@ class Users(UsersRead):
         with self.create_storage() as storage:
             by_email = storage.get_user_by_email(email)
             if by_email and by_email.email == email:
-                raise servicesexceptions.conflict('Email is already registered')
+                raise servicesexceptions.parameter_error('email', 'Email is already registered')
 
             user = User(email, util.hash(password), not self.activate_by_email)
 
