@@ -61,6 +61,13 @@ class TestUser(TestFlask):
         self.assertEqual(200, response.status_code)
         self.assertFalse(self.smtp.empty())
 
+    def test_user_create_special_symbols_in_password(self):
+        user_domain = create_token()
+        email = user_domain+'@mail.com'
+        response = self.app.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(self.smtp.empty())
+
     def test_user_get_success(self):
         email, password = self.create_active_user()
 
