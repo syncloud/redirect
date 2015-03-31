@@ -287,7 +287,7 @@ class TestDomainAcquire(TestDomain):
             password=password)
         response = self.app.post('/domain/acquire', data=acquire_data)
 
-        self.assertEqual(409, response.status_code)
+        self.assertEqual(400, response.status_code)
 
         self.check_domain(update_token, {
             'ip': None,

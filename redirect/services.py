@@ -141,7 +141,7 @@ class Users(UsersRead):
         with self.create_storage() as storage:
             domain = storage.get_domain_by_name(user_domain)
             if domain and domain.user_id != user.id:
-                raise servicesexceptions.conflict('User domain name is already in use')
+                raise servicesexceptions.parameter_error('user_domain', 'User domain name is already in use')
 
             update_token = util.create_token()
             if not domain:
