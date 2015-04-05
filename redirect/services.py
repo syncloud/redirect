@@ -30,7 +30,7 @@ class UsersRead:
 
         user = self.get_user(email)
         if not user or not user.active or not util.hash(password) == user.password_hash:
-            raise servicesexceptions.forbidden('Authentication failed')
+            raise servicesexceptions.bad_request('Authentication failed')
 
         return user
 
@@ -56,7 +56,7 @@ class Users(UsersRead):
 
         user = self.get_user(email)
         if not user or not user.active or not util.hash(password) == user.password_hash:
-            raise servicesexceptions.forbidden('Authentication failed')
+            raise servicesexceptions.bad_request('Authentication failed')
 
         return user
 
@@ -96,7 +96,7 @@ class Users(UsersRead):
                 raise servicesexceptions.bad_request('Invalid activation token')
 
             if user.active:
-                raise servicesexceptions.conflict('User is active already')
+                raise servicesexceptions.bad_request('User is active already')
 
             user.active = True
 
@@ -235,7 +235,7 @@ class Users(UsersRead):
             user = storage.get_user_by_email(email)
 
             if not user or not user.active or not util.hash(password) == user.password_hash:
-                raise servicesexceptions.forbidden('Authentication failed')
+                raise servicesexceptions.bad_request('Authentication failed')
 
             for domain in user.domains:
                 self.dns.delete_domain(self.main_domain, domain)
@@ -265,7 +265,7 @@ class Users(UsersRead):
             user = storage.get_user_by_token(ActionType.PASSWORD, token)
 
             if not user:
-                raise servicesexceptions.forbidden('Invalid password token')
+                raise servicesexceptions.bad_request('Invalid password token')
 
             user.password_hash = util.hash(password)
 

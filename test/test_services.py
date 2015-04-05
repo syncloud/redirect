@@ -137,7 +137,7 @@ class TestUsers(unittest.TestCase):
 
         with self.assertRaises(ServiceException) as context:
             users.activate(request)
-        self.assertEquals(context.exception.status_code, 409)
+        self.assertEquals(context.exception.status_code, 400)
 
     def test_user_authenticate_success(self):
         users = self.get_users_service()
@@ -158,7 +158,7 @@ class TestUsers(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             users.authenticate(request)
 
-        self.assertEquals(context.exception.status_code, 403)
+        self.assertEquals(context.exception.status_code, 400)
 
     def test_user_authenticate_not_existing(self):
         users = self.get_users_service()
@@ -167,7 +167,7 @@ class TestUsers(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             users.authenticate(request)
 
-        self.assertEquals(context.exception.status_code, 403)
+        self.assertEquals(context.exception.status_code, 400)
 
     def test_user_authenticate_non_active(self):
         users = self.get_users_service()
@@ -179,7 +179,7 @@ class TestUsers(unittest.TestCase):
         with self.assertRaises(ServiceException) as context:
             users.authenticate(request)
 
-        self.assertEquals(context.exception.status_code, 403)
+        self.assertEquals(context.exception.status_code, 400)
 
     def test_user_authenticate_missing_password(self):
         users = self.get_users_service()

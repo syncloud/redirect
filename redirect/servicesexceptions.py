@@ -17,18 +17,6 @@ def bad_request(message):
     return ServiceException(message)
 
 
-def conflict(message):
-    return ServiceException(message, status_code=409)
-
-
-def forbidden(message):
-    return ServiceException(message, status_code=403)
-
-
-def not_found(message):
-    return ServiceException(message, status_code=404)
-
-
 def parameters_error(parameters_errors, message="There's a error in parameters"):
     return ParametersException(message, parameters_errors)
 
