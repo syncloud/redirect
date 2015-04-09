@@ -82,26 +82,29 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'services', 'last_update']
+    __public__ = ['user_domain', 'ip', 'local_ip', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
     ip = Column(String())
+    local_ip = Column(String())
     update_token = Column(String())
     last_update = Column(DateTime)
-
+    device_mac_address = Column(String())
+    device_name = Column(String())
+    device_title = Column(String())
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", lazy='subquery')
 
     services = relationship("Service", lazy='subquery')
 
-    def __init__(self, user_domain, ip=None, update_token=None):
+    def __init__(self, user_domain, device_mac_address, device_name, device_title, ip=None, update_token=None):
         self.user_domain = user_domain
         self.ip = ip
         self.update_token = update_token
-
-    def dns_device_name(self, main_domain):
-        return 'device.{0}.{1}.'.format(self.user_domain, main_domain)
+        self.device_mac_address = device_mac_address
+        self.device_name = device_name
+        self.device_title = device_title
 
     def dns_name(self, main_domain):
         return '{0}.{1}.'.format(self.user_domain, main_domain)
@@ -109,7 +112,7 @@ class Domain(Base):
 
 class Service(Base):
     __tablename__ = "service"
-    __public__ = ['name', 'protocol', 'type', 'port', 'url']
+    __public__ = ['name', 'protocol', 'type', 'port', 'local_port', 'url']
 
     id = Column(Integer, primary_key=True)
     name = Column(String())
@@ -117,6 +120,7 @@ class Service(Base):
     type = Column(String())
     url = Column(String())
     port = Column(Integer())
+    local_port = Column(Integer())
 
     domain_id = Column(Integer, ForeignKey('domain.id'))
     domain = relationship("Domain", lazy='subquery')
@@ -125,8 +129,16 @@ class Service(Base):
         return '{0}.{1}.{2}.'.format(self.type, self.domain.user_domain, main_domain)
 
     def dns_value(self, main_domain):
-        return '0 0 {0} device.{1}.{2}.'.format(self.port, self.domain.user_domain, main_domain)
+        return '0 0 {0} {1}.{2}.'.format(self.port, self.domain.user_domain, main_domain)
 
+    def __str__(self):
+        return "{ " + ", ".join(["{0}: {1}".format(f, getattr(self, f)) for f in self.fields_str()]) + " }"
+
+    def fields_str(self):
+        return [field for field in self.__public__ if getattr(self, field)]
+
+    def __repr__(self):
+        return self.__str__()
 
 def new_service(name, type, port):
     s = Service()

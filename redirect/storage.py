@@ -40,6 +40,10 @@ class Storage:
         domain = self.session.query(Domain).filter(Domain.user_domain == user_domain).first()
         return domain
 
+    def domains_iterate(self):
+        for domain in self.session.query(Domain).yield_per(10):
+            yield domain
+
     def users_iterate(self):
         for user in self.session.query(User).yield_per(10):
             yield user
@@ -77,15 +81,16 @@ class SessionContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
-            if exc_val is None:
-                self.session.commit()
-            else:
+            if exc_val is not None:
                 logging.error('exception happened', exc_info=(exc_type, exc_val, exc_tb))
                 raise exc_val
-        except Exception, e:
-            logging.exception('unable to commit transaction', e)
-            self.session.rollback()
-            raise e
+            else:
+                try:
+                    self.session.commit()
+                except Exception, e:
+                    logging.exception('unable to commit transaction')
+                    self.session.rollback()
+                    raise e
         finally:
             self.session.expunge_all()
             self.session.close()

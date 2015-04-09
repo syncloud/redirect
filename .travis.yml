@@ -7,5 +7,8 @@ install:
   - pip install -r dev_requirements.txt
 before_script:
   - ./configure test
-  - mysql < db/init.sql
+  - ./ci/redirectdb create redirect
 script: py.test --cov redirect
+after_script:
+  - ./ci/redirectdb migrate redirect redirect 004.sql
+  - py.test --cov redirect

@@ -60,17 +60,17 @@ class Validator:
             return None
         return self.params['password']
 
-    def port(self):
+    def port(self, port_parameter):
         if 'port' not in self.params:
-            self.add_field_error('port', 'Missing')
+            self.add_field_error(port_parameter, 'Missing')
             return None
         try:
-            port_num = int(self.params['port'])
+            port_num = int(self.params[port_parameter])
         except:
-            self.add_field_error('port', 'Should be a number')
+            self.add_field_error(port_parameter, 'Should be a number')
             return None
         if port_num < 1 or port_num > 65535:
-            self.add_field_error('port', 'Should be between 1 and 65535')
+            self.add_field_error(port_parameter, 'Should be between 1 and 65535')
             return None
         return port_num
 
@@ -80,16 +80,48 @@ class Validator:
             return None
         return self.params[token]
 
-    def ip(self, default_ip=None):
+    def __check_ip_address(self, name, ip):
+        try:
+            socket.inet_aton(ip)
+        except socket.error:
+            self.add_field_error(name, 'Invalid IP address')
 
+    def ip(self, default_ip=None):
         ip = default_ip
         if 'ip' in self.params:
             ip = self.params['ip']
         if not ip:
             return None
 
-        try:
-            socket.inet_aton(ip)
-        except socket.error:
-            self.add_field_error('ip', 'Invalid IP address')
+        self.__check_ip_address('ip', ip)
+
         return ip
+
+    def local_ip(self, default_ip=None):
+        ip = default_ip
+        if 'local_ip' in self.params:
+            ip = self.params['local_ip']
+        if not ip:
+            return None
+
+        self.__check_ip_address('local_ip', ip)
+
+        return ip
+
+    def device_mac_address(self):
+        mac_address = 'device_mac_address'
+        if mac_address not in self.params:
+            self.add_field_error(mac_address, 'Missing')
+            return None
+        mac_address_value = self.params[mac_address]
+        if not re.match('[0-9a-f]{2}([-:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address_value):
+            self.add_field_error(mac_address, 'MAC address has wrong format')
+            return None
+        return mac_address_value
+
+    def string(self, parameter, required=False):
+        if parameter not in self.params:
+            if required:
+                self.add_field_error(parameter, 'Missing')
+            return None
+        return self.params[parameter]

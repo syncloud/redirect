@@ -139,6 +139,12 @@ function serviceImage(name) {
         case "ssh":
             return "images/ssh-64.png"
             break;
+        case "image-ci":
+            return "images/image-ci-64.png"
+            break;
+        case "server":
+            return "images/server-64.png"
+            break;
         default:
             return "images/unknown-64.png";
             break;
@@ -146,7 +152,11 @@ function serviceImage(name) {
 }
 
 function fullUrl(domain, service) {
-    var url = service.protocol+"://device."+domain.user_domain+"."+redirect.main_domain+":"+service.port+"/"+service.url;
+    var url = service.protocol+"://"+domain.user_domain+"."+redirect.main_domain;
+    if (service.port !== 80)
+        url = url+":"+service.port;
+    if (service.url !== null)
+        url = url+"/"+service.url;
     return url;
 }
 

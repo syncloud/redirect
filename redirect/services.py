@@ -30,23 +30,9 @@ class UsersRead:
 
         user = self.get_user(email)
         if not user or not user.active or not util.hash(password) == user.password_hash:
-            raise servicesexceptions.forbidden('Authentication failed')
+            raise servicesexceptions.bad_request('Authentication failed')
 
         return user
-
-    def redirect_url(self, request_url):
-        user_domain = util.get_second_level_domain(request_url, self.main_domain)
-
-        if not user_domain:
-            raise servicesexceptions.bad_request('Second level domain should be specified')
-
-        user = self.storage.get_user_by_domain(user_domain)
-
-        if not user:
-            raise servicesexceptions.not_found('The second level domain is not registered')
-
-        return 'http://device.{0}.{1}:{2}/owncloud'.format(user_domain, self.main_domain, user.port)
-
 
 class Users(UsersRead):
 
@@ -70,7 +56,7 @@ class Users(UsersRead):
 
         user = self.get_user(email)
         if not user or not user.active or not util.hash(password) == user.password_hash:
-            raise servicesexceptions.forbidden('Authentication failed')
+            raise servicesexceptions.bad_request('Authentication failed')
 
         return user
 
@@ -78,7 +64,6 @@ class Users(UsersRead):
         validator = Validator(request)
         email = validator.email()
         password = validator.new_password()
-        user_domain = validator.new_user_domain(error_if_missing=False)
         check_validator(validator)
 
         user = None
@@ -86,22 +71,9 @@ class Users(UsersRead):
         with self.create_storage() as storage:
             by_email = storage.get_user_by_email(email)
             if by_email and by_email.email == email:
-                raise servicesexceptions.conflict('Email is already registered')
-
-            if user_domain:
-                by_domain = storage.get_domain_by_name(user_domain)
-                if by_domain and by_domain.user_domain == user_domain:
-                    raise servicesexceptions.conflict('User domain name is already in use')
-
-            update_token = util.create_token()
+                raise servicesexceptions.parameter_error('email', 'Email is already registered')
 
             user = User(email, util.hash(password), not self.activate_by_email)
-
-            if user_domain:
-                domain = Domain(user_domain, None, update_token)
-                domain.user = user
-                user.domains.append(domain)
-                storage.add(domain)
 
             if self.activate_by_email:
                 action = user.enable_action(ActionType.ACTIVATE)
@@ -124,35 +96,68 @@ class Users(UsersRead):
                 raise servicesexceptions.bad_request('Invalid activation token')
 
             if user.active:
-                raise servicesexceptions.conflict('User is active already')
+                raise servicesexceptions.bad_request('User is active already')
 
             user.active = True
 
         return True
+
+    def drop_device(self, request):
+        user = self.authenticate(request)
+        validator = Validator(request)
+        user_domain = validator.new_user_domain()
+        check_validator(validator)
+
+        with self.create_storage() as storage:
+            domain = storage.get_domain_by_name(user_domain)
+
+            if not domain or not domain.user.active:
+                raise servicesexceptions.bad_request('Unknown domain')
+
+            domain.update_token = None
+            domain.device_mac_address = None
+            domain.device_name = None
+            domain.device_title = None
+            domain.ip = None
+            domain.local_ip = None
+
+            self.dns.delete_domain(self.main_domain, domain)
+
+            storage.delete(domain.services)
+
+            return domain
+
 
     def domain_acquire(self, request):
         user = self.authenticate(request)
 
         validator = Validator(request)
         user_domain = validator.new_user_domain()
+        device_mac_address = validator.device_mac_address()
+        device_name = validator.string('device_name', required=True)
+        device_title = validator.string('device_title', required=True)
+        check_validator(validator)
 
         with self.create_storage() as storage:
             domain = storage.get_domain_by_name(user_domain)
             if domain and domain.user_id != user.id:
-                raise servicesexceptions.conflict('User domain name is already in use')
+                raise servicesexceptions.parameter_error('user_domain', 'User domain name is already in use')
 
             update_token = util.create_token()
             if not domain:
-                domain = Domain(user_domain, None, update_token)
+                domain = Domain(user_domain, device_mac_address, device_name, device_title, ip=None, update_token=update_token)
                 domain.user = user
                 storage.add(domain)
             else:
                 domain.update_token = update_token
+                domain.device_mac_address = device_mac_address
+                domain.device_name = device_name
+                domain.device_title = device_title
 
             return domain
 
     def service_compare(self, a, b):
-        return a.port == b.port and a.type == b.type
+        return a.port == b.port and a.local_port == b.local_port and a.type == b.type and a.protocol == b.protocol and a.name == b.name
 
     def get_missing(self, lookfor, lookat):
         result = []
@@ -167,13 +172,15 @@ class Users(UsersRead):
 
     def validate_service(self, data):
         validator = Validator(data)
-        validator.port()
+        validator.port('port')
+        validator.port('local_port')
         check_validator(validator)
 
     def domain_update(self, request, request_ip=None):
         validator = Validator(request)
         token = validator.token()
         ip = validator.ip(request_ip)
+        local_ip = validator.local_ip()
         check_validator(validator)
 
         with self.create_storage() as storage:
@@ -199,6 +206,7 @@ class Users(UsersRead):
             is_new_dmain = domain.ip is None
             update_ip = domain.ip != ip
             domain.ip = ip
+            domain.local_ip = local_ip
 
             if is_new_dmain:
                 self.dns.new_domain(self.main_domain, domain)
@@ -227,7 +235,7 @@ class Users(UsersRead):
             user = storage.get_user_by_email(email)
 
             if not user or not user.active or not util.hash(password) == user.password_hash:
-                raise servicesexceptions.forbidden('Authentication failed')
+                raise servicesexceptions.bad_request('Authentication failed')
 
             for domain in user.domains:
                 self.dns.delete_domain(self.main_domain, domain)
@@ -257,7 +265,7 @@ class Users(UsersRead):
             user = storage.get_user_by_token(ActionType.PASSWORD, token)
 
             if not user:
-                raise servicesexceptions.forbidden('Invalid password token')
+                raise servicesexceptions.bad_request('Invalid password token')
 
             user.password_hash = util.hash(password)
 

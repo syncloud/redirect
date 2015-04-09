@@ -1,0 +1,165 @@
+#!/usr/bin/env python
+
+from subprocess import check_output, STDOUT, Popen, PIPE
+
+class Runner:
+    def __init__(self, host, user, passwd):
+        self.host = host
+        self.user = user
+        self.passwd = passwd
+
+    def __mysql_command(self, executable, command):
+        cmd = '{0} --host={1} --user={2}'.format(executable, self.host, self.user)
+        if self.passwd:
+            cmd += ' --password={0}'.format(self.passwd)
+        cmd += ' '+command
+        return cmd
+
+    def _run_command(self, command):
+        print command
+        output = check_output(command, stderr=STDOUT, shell=True)
+        if output:
+            print(output)
+
+    def run_command(self, command):
+        print command
+        pipes = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
+        std_out, std_err = pipes.communicate()
+
+        if pipes.returncode != 0:
+            err_msg = "%s. Code: %s" % (std_err.strip(), pipes.returncode)
+            raise Exception(err_msg)
+        elif len(std_err):
+            print(std_err)
+
+        if std_out:
+            print(std_out)
+
+    def run(self, database, script):
+        command = self.__mysql_command('mysql', '{0} < {1}'.format(database, script))
+        self.run_command(command)
+
+    def execute(self, query):
+        command = self.__mysql_command('mysql', '--execute="{0}"'.format(query))
+        self.run_command(command)
+
+    def create(self, database):
+        self.execute('create database {0};'.format(database))
+
+    def drop(self, database):
+        self.execute('drop database if exists {0};'.format(database))
+
+    def backup(self, database, filename):
+        command = self.__mysql_command('mysqldump', '--compact {0} > {1}'.format(database, filename))
+        self.run_command(command)
+
+    def restore(self, database, filename):
+        self.drop(database)
+        self.create(database)
+        self.execute('set global foreign_key_checks=0;')
+        self.run(database, filename)
+        self.execute('set global foreign_key_checks=1;')
+
+
+from ConfigParser import ConfigParser
+from os.path import join, dirname
+
+
+def get_runner():
+    config = ConfigParser()
+    config.read(join(dirname(__file__), '../redirect/config.cfg'))
+    host = config.get('mysql', 'host')
+    user = config.get('mysql', 'user')
+    passwd = config.get('mysql', 'passwd')
+
+    runner = Runner(host, user, passwd)
+    return runner
+
+
+import argparse
+
+
+def create_args_parser():
+    parser = argparse.ArgumentParser(description='Redirect database tool')
+
+    subparsers = parser.add_subparsers(help='available commands', dest='action')
+
+    sub = subparsers.add_parser('create', help="creates redirect database")
+    sub.add_argument('dbname', help="database name")
+
+    sub = subparsers.add_parser('backup', help="backups redirect database")
+    sub.add_argument('dbname', help="database name")
+    sub.add_argument('filename', help="backup filename")
+
+    sub = subparsers.add_parser('restore', help="restores redirect database")
+    sub.add_argument('dbname', help="database name")
+    sub.add_argument('filename', help="backup filename")
+
+    sub = subparsers.add_parser('migrate', help="migrates redirect database")
+    sub.add_argument('dbname_src', help="source database name")
+    sub.add_argument('dbname_dst', help="destination backup filename")
+    sub.add_argument('scripts', nargs='+', type=str, help="upgrade scripts")
+
+    return parser
+
+
+def create(runner, args):
+    script_base = join(dirname(__file__), '../db')
+
+    runner.drop(args.dbname)
+    runner.create(args.dbname)
+    runner.run(args.dbname, join(script_base, 'init.sql'))
+
+def backup(runner, args):
+    runner.backup(args.dbname, args.filename)
+
+def restore(runner, args):
+    runner.restore(args.dbname, args.filename)
+
+def migrate(runner, args):
+    database_src_temp = 'redirect_backup'
+    backup_filename = '~/temp-redirect-backup'
+
+    script_base = join(dirname(__file__), '../db')
+
+    # backup source database
+    runner.backup(args.dbname_src, backup_filename)
+
+    # restore source database under different name
+    runner.restore(database_src_temp, backup_filename)
+
+    # drop and create destination database
+    runner.drop(args.dbname_dst)
+    runner.create(args.dbname_dst)
+
+    # switch off foreign key constraints
+    runner.execute('set global foreign_key_checks=0;')
+
+    # create new structure of database
+    runner.run(args.dbname_dst, join(script_base, 'init.sql'))
+
+    # run all migration scripts
+    for script in args.scripts:
+        runner.run(args.dbname_dst, join(script_base, script))
+
+    # switch on foreign key constraints
+    runner.execute('set global foreign_key_checks=1;')
+
+
+if __name__=='__main__':
+    parser = create_args_parser()
+    args = parser.parse_args()
+
+    runner = get_runner()
+
+    if (args.action == 'create'):
+        create(runner, args)
+
+    if (args.action == 'backup'):
+        backup(runner, args)
+
+    if (args.action == 'restore'):
+        restore(runner, args)
+
+    if (args.action == 'migrate'):
+        migrate(runner, args)

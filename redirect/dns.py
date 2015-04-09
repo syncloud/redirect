@@ -11,15 +11,16 @@ class Dns:
         self.hosted_zone_id = hosted_zone_id
 
     def service_change(self, changes, main_domain, change_type, service):
-            change = changes.add_change(change_type, service.dns_name(main_domain), 'SRV')
-            change.add_value(service.dns_value(main_domain))
+        change = changes.add_change(change_type, service.dns_name(main_domain), 'SRV')
+        change.add_value(service.dns_value(main_domain))
+        logging.debug(change.to_print())
 
     def services_change(self, changes, main_domain, change_type, services):
         for s in services:
             self.service_change(changes, main_domain, change_type, s)
 
     def a_change(self, changes, main_domain, domain, change_type):
-        change = changes.add_change(change_type, domain.dns_device_name(main_domain), 'A')
+        change = changes.add_change(change_type, domain.dns_name(main_domain), 'A')
         change.add_value(domain.ip)
 
     def cname_change(self, changes, main_domain, domain, change_type):
@@ -30,7 +31,6 @@ class Dns:
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
-        self.cname_change(changes, main_domain, domain, 'UPSERT')
         self.a_change(changes, main_domain, domain, 'UPSERT')
         self.services_change(changes, main_domain, 'UPSERT', domain.services)
 
@@ -72,16 +72,13 @@ class Dns:
 
     def delete_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
-        changes = ResourceRecordSets(conn, self.hosted_zone_id)
         zone = conn.get_zone(main_domain)
 
-        if zone.find_records(domain.dns_name(main_domain)):
-            self.cname_change(changes, main_domain, domain, 'DELETE')
+        for service in domain.services:
+            found = zone.find_records(service.dns_name(main_domain), 'SRV')
+            if found:
+                zone.delete_record(found)
 
-        if zone.find_records(domain.dns_device_name(main_domain)):
-            self.a_change(changes, main_domain, domain, 'DELETE')
-
-        existing = [s for s in domain.services if zone.find_records(s.dns_name(main_domain), 'SRV')]
-        self.services_change(changes, main_domain, 'DELETE', existing)
-
-        changes.commit()
+        dns_name = domain.dns_name(main_domain)
+        if zone.find_records(dns_name, 'A'):
+            zone.delete_a(dns_name)

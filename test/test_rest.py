@@ -38,7 +38,16 @@ class TestFlask(unittest.TestCase):
         return email, password
 
     def acquire_domain(self, email, password, user_domain):
-        response = self.app.post('/domain/acquire', data={'user_domain': user_domain, 'email': email, 'password': password})
+        self.maxDiff = None
+        acquire_data = {
+            'user_domain': user_domain,
+            'email': email,
+            'password': password,
+            'device_mac_address': '00:00:00:00:00:00',
+            'device_name': 'some-device',
+            'device_title': 'Some Device',
+        }
+        response = self.app.post('/domain/acquire', data=acquire_data)
         domain_data = json.loads(response.data)
         update_token = domain_data['update_token']
         return update_token
@@ -49,6 +58,13 @@ class TestUser(TestFlask):
         user_domain = create_token()
         email = user_domain+'@mail.com'
         response = self.app.post('/user/create', data={'email': email, 'password': 'pass123456'})
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(self.smtp.empty())
+
+    def test_user_create_special_symbols_in_password(self):
+        user_domain = create_token()
+        email = user_domain+'@mail.com'
+        response = self.app.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
         self.assertEqual(200, response.status_code)
         self.assertFalse(self.smtp.empty())
 
@@ -75,7 +91,7 @@ class TestUser(TestFlask):
         user_domain = create_token()
         update_token = self.acquire_domain(email, password, user_domain)
 
-        service_data = {'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10000, 'url': None}
+        service_data = {'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10000, 'local_port': 80, 'url': None}
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': [service_data]}
         self.app.post('/domain/update', data=json.dumps(update_data))
 
@@ -88,18 +104,23 @@ class TestUser(TestFlask):
         last_update = user_data["domains"][0]["last_update"]
 
         expected = {
-            "active": True,
-            "email": email,
-            "domains": [{
-                "user_domain": user_domain,
-                "ip": "127.0.0.1",
-                "last_update": last_update,
-                "services": [{
-                    "name": "ownCloud",
-                    "protocol": "http",
-                    "port": 10000,
-                    "type": "_http._tcp",
-                    "url": None
+            'active': True,
+            'email': email,
+            'domains': [{
+                'user_domain': user_domain,
+                'ip': '127.0.0.1',
+                'local_ip': None,
+                'device_mac_address': '00:00:00:00:00:00',
+                'device_name': 'some-device',
+                'device_title': 'Some Device',
+                'last_update': last_update,
+                'services': [{
+                    'name': 'ownCloud',
+                    'protocol': 'http',
+                    'port': 10000,
+                    'local_port': 80,
+                    'type': '_http._tcp',
+                    'url': None
                 }],
             }]
         }
@@ -170,7 +191,7 @@ class TestUserPassword(TestFlask):
 
         new_password = 'new_password'
         response = self.app.post('/user/set_password', data={'token': token_old, 'password': new_password})
-        self.assertEqual(403, response.status_code, response.data)
+        self.assertEqual(400, response.status_code, response.data)
 
     def test_user_reset_password_set_twice(self):
         email, password = self.create_active_user()
@@ -186,7 +207,7 @@ class TestUserPassword(TestFlask):
 
         new_password = 'new_password2'
         response = self.app.post('/user/set_password', data={'token': token, 'password': new_password})
-        self.assertEqual(403, response.status_code, response.data)
+        self.assertEqual(400, response.status_code, response.data)
 
 
 class TestDomain(TestFlask):
@@ -194,6 +215,9 @@ class TestDomain(TestFlask):
     def assertDomain(self, expected, actual):
         for key, expected_value in expected.items():
             actual_value = actual[key]
+            if key == 'services':
+                expected_value = sorted(expected_value, key=lambda s: s['name'])
+                actual_value = sorted(actual_value, key=lambda s: s['name'])
             self.assertEquals(expected_value, actual_value)
 
     def get_domain(self, update_token):
@@ -211,11 +235,18 @@ class TestDomain(TestFlask):
 
 class TestDomainAcquire(TestDomain):
 
-    def test_acquire_new(self):
+    def test_new(self):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        acquire_data = dict(
+            user_domain=user_domain,
+            device_mac_address='00:00:00:00:00:00',
+            device_name='my-super-board',
+            device_title='My Super Board',
+            email=email,
+            password=password)
+        response = self.app.post('/domain/acquire', data=acquire_data)
 
         self.assertEqual(200, response.status_code)
         domain_data = json.loads(response.data)
@@ -223,39 +254,135 @@ class TestDomainAcquire(TestDomain):
         update_token = domain_data['update_token']
         self.assertIsNotNone(update_token)
 
-        self.check_domain(update_token, {'ip': None, 'user_domain': user_domain, 'services': []})
+        self.check_domain(update_token, {
+            'ip': None,
+            'user_domain': user_domain,
+            'device_mac_address': '00:00:00:00:00:00',
+            'device_name': 'my-super-board',
+            'device_title': 'My Super Board',
+            'services': []})
 
-    def test_acquire_existing(self):
+    def test_existing(self):
         user_domain = create_token()
 
         other_email, other_password = self.create_active_user()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=other_email, password=other_password))
+        acquire_data = dict(
+            user_domain=user_domain,
+            device_mac_address='00:00:00:00:00:00',
+            device_name='my-super-board',
+            device_title='My Super Board',
+            email=other_email,
+            password=other_password)
+        response = self.app.post('/domain/acquire', data=acquire_data)
         domain_data = json.loads(response.data)
         update_token = domain_data['update_token']
 
         email, password = self.create_active_user()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        acquire_data = dict(
+            user_domain=user_domain,
+            device_mac_address='00:00:00:00:00:11',
+            device_name='other-board',
+            device_title='Other Board',
+            email=email,
+            password=password)
+        response = self.app.post('/domain/acquire', data=acquire_data)
 
-        self.assertEqual(409, response.status_code)
+        self.assertEqual(400, response.status_code)
 
-        self.check_domain(update_token, {'ip': None, 'user_domain': user_domain, 'services': []})
+        self.check_domain(update_token, {
+            'ip': None,
+            'user_domain': user_domain,
+            'device_mac_address': '00:00:00:00:00:00',
+            'device_name': 'my-super-board',
+            'device_title': 'My Super Board',
+            'services': []})
 
-    def test_acquire_twice(self):
+    def test_twice(self):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        acquire_data = dict(
+            user_domain=user_domain,
+            device_mac_address='00:00:00:00:00:00',
+            device_name='my-super-board',
+            device_title='My Super Board',
+            email=email,
+            password=password)
+        response = self.app.post('/domain/acquire', data=acquire_data)
         domain_data = json.loads(response.data)
         update_token1 = domain_data['update_token']
 
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        acquire_data = dict(
+            user_domain=user_domain,
+            device_mac_address='00:00:00:00:00:11',
+            device_name='my-super-board-2',
+            device_title='My Super Board 2',
+            email=email,
+            password=password)
+        response = self.app.post('/domain/acquire', data=acquire_data)
         self.assertEqual(200, response.status_code)
         domain_data = json.loads(response.data)
         update_token2 = domain_data['update_token']
 
         self.assertNotEquals(update_token1, update_token2)
 
-        self.check_domain(update_token2, {'ip': None, 'user_domain': user_domain, 'services': []})
+        self.check_domain(update_token2, {
+            'ip': None,
+            'user_domain': user_domain,
+            'device_mac_address': '00:00:00:00:00:11',
+            'device_name': 'my-super-board-2',
+            'device_title': 'My Super Board 2',
+            'services': []})
+
+    def test_wrong_mac_address_format(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        acquire_data = {
+            'user_domain': user_domain,
+            'device_mac_address': 'wrong_format',
+            'device_name': 'my-super-board',
+            'device_title': 'My Super Board',
+            'email': email,
+            'password': password
+        }
+        response = self.app.post('/domain/acquire', data=acquire_data)
+
+        self.assertEqual(400, response.status_code)
+
+
+
+class TestDomainLoose(TestDomain):
+
+    def test_simple(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        acquire_data = dict(
+            user_domain=user_domain,
+            device_mac_address='00:00:00:00:00:00',
+            device_name='my-super-board',
+            device_title='My Super Board',
+            email=email,
+            password=password)
+        response = self.app.post('/domain/acquire', data=acquire_data)
+
+        self.assertEqual(200, response.status_code)
+        domain_data = json.loads(response.data)
+
+        update_token = domain_data['update_token']
+
+        drop_data = {
+            'email': email,
+            'password': password,
+            'user_domain': user_domain
+        }
+
+        response = self.app.post('/domain/drop_device', data=drop_data)
+        self.assertEqual(200, response.status_code)
+
+        response = self.app.get('/domain/get', query_string={'token': update_token})
+        self.assertEqual(400, response.status_code)
 
 
 class TestDomainUpdate(TestDomain):
@@ -264,12 +391,9 @@ class TestDomainUpdate(TestDomain):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        update_token = self.acquire_domain(email, password, user_domain)
 
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
-
-        service_data = {'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10000, 'url': None}
+        service_data = {'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10000, 'local_port': 80, 'url': None}
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': [service_data]}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -281,10 +405,8 @@ class TestDomainUpdate(TestDomain):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
 
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
+        update_token = self.acquire_domain(email, password, user_domain)
 
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': []}
 
@@ -311,10 +433,7 @@ class TestDomainUpdate(TestDomain):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
-
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
+        update_token = self.acquire_domain(email, password, user_domain)
 
         service_data = {'name': 'ownCloud', 'type': '_http._tcp', 'url': None}
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': [service_data]}
@@ -322,18 +441,27 @@ class TestDomainUpdate(TestDomain):
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(400, response.status_code)
 
+        response_data = json.loads(response.data)
+        self.assertIsNotNone(response_data['message'])
+
+        parameters_messages = response_data['parameters_messages']
+
+        port_messages = next((pm for pm in parameters_messages if pm['parameter'] == 'port'), None)
+        self.assertIsNotNone(port_messages)
+        self.assertGreater(len(port_messages['messages']), 0)
+
+        local_port_messages = next((pm for pm in parameters_messages if pm['parameter'] == 'local_port'), None)
+        self.assertIsNotNone(local_port_messages)
+        self.assertGreater(len(local_port_messages['messages']), 0)
 
     def test_domain_update_two_new_services(self):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        update_token = self.acquire_domain(email, password, user_domain)
 
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
-
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'local_port': 81, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -345,43 +473,38 @@ class TestDomainUpdate(TestDomain):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
-
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
+        update_token = self.acquire_domain(email, password, user_domain)
 
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_tcp', 'port': 10002, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_tcp', 'port': 10002, 'local_port': 81, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(200, response.status_code)
         # self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10002, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10002, 'local_port': 81, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_tcp', 'port': 10001, 'local_port': 80, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(200, response.status_code)
 
-        # self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
+        self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
 
     def test_domain_update_service_removed(self):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        update_token = self.acquire_domain(email, password, user_domain)
 
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
-
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'local_port': 81, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
-        self.app.post('/domain/update', data=json.dumps(update_data))
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -394,19 +517,17 @@ class TestDomainUpdate(TestDomain):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        update_token = self.acquire_domain(email, password, user_domain)
 
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
-
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10002, 'local_port': 81, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
-        self.app.post('/domain/update', data=json.dumps(update_data))
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None},
-                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10003, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None},
+                         {'name': 'SSH', 'protocol': 'https', 'type': '_http._tcp', 'port': 10003, 'local_port': 82, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -419,17 +540,15 @@ class TestDomainUpdate(TestDomain):
         email, password = self.create_active_user()
 
         user_domain = create_token()
-        response = self.app.post('/domain/acquire', data=dict(user_domain=user_domain, email=email, password=password))
+        update_token = self.acquire_domain(email, password, user_domain)
 
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
-
-        services_data = [{'name': 'ownCloud', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': services_data}
 
-        self.app.post('/domain/update', data=json.dumps(update_data))
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
 
-        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'url': None}]
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None}]
         update_data = {'token': update_token, 'ip': '127.0.0.2', 'services': services_data}
 
         response = self.app.post('/domain/update', data=json.dumps(update_data))
@@ -437,3 +556,39 @@ class TestDomainUpdate(TestDomain):
         self.assertEqual(200, response.status_code)
 
         self.check_domain(update_token, {'ip': '127.0.0.2', 'user_domain': user_domain, 'services': services_data})
+
+    def test_local_ip_changed(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        update_token = self.acquire_domain(email, password, user_domain)
+
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None}]
+        update_data = {'token': update_token, 'ip': '127.0.0.1', 'local_ip': '192.168.1.5', 'services': services_data}
+
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
+
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None}]
+        update_data = {'token': update_token, 'ip': '127.0.0.2', 'local_ip': '192.168.1.6', 'services': services_data}
+
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+
+        self.assertEqual(200, response.status_code)
+
+        self.check_domain(update_token, {'ip': '127.0.0.2', 'local_ip': '192.168.1.6', 'user_domain': user_domain, 'services': services_data})
+
+    def test_domain_update_server_side_client_ip(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        update_token = self.acquire_domain(email, password, user_domain)
+
+        services_data = [{'name': 'ownCloud', 'protocol': 'http', 'type': '_http._tcp', 'port': 10001, 'local_port': 80, 'url': None}]
+        update_data = {'token': update_token, 'services': services_data}
+
+        response = self.app.post('/domain/update', data=json.dumps(update_data), environ_base={'REMOTE_ADDR': '127.0.0.1'})
+        self.assertEqual(200, response.status_code)
+
+        self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
+
