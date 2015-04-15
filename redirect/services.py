@@ -216,6 +216,24 @@ class Users(UsersRead):
             domain.last_update = datetime.now()
             return domain
 
+    def domain_delete(self, request):
+        self.authenticate(request)
+        validator = Validator(request)
+        email = validator.email()
+        user_domain = validator.user_domain()
+        check_validator(validator)
+
+        with self.create_storage() as storage:
+            domain = storage.get_domain_by_name(user_domain)
+
+            if not domain or domain.user.email != email:
+                raise servicesexceptions.bad_request('Unknown domain')
+
+            self.dns.delete_domain(self.main_domain, domain)
+
+            storage.delete_domain(domain)
+
+
     def get_domain(self, request):
         validator = Validator(request)
         token = validator.token()

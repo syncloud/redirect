@@ -72,6 +72,14 @@ def domain_update():
     return jsonify(success=True, message='Domain was updated', data=domain_data), 200
 
 
+@app.route('/domain/delete', methods=["POST"])
+@cross_origin()
+def domain_delete():
+    request_data = json.loads(request.data)
+    manager().domain_delete(request_data)
+    return jsonify(success=True, message='Domain was deleted'), 200
+
+
 @app.route('/user/delete', methods=["POST"])
 @cross_origin()
 def user_delete():

@@ -52,6 +52,14 @@ class TestFlask(unittest.TestCase):
         update_token = domain_data['update_token']
         return update_token
 
+    def get_user(self, email, password):
+        response = self.app.get('/user/get', query_string={'email': email, 'password': password})
+
+        response_data = json.loads(response.data)
+        user_data = response_data['data']
+
+        return user_data
+
 class TestUser(TestFlask):
 
     def test_user_create_success(self):
@@ -383,6 +391,24 @@ class TestDomainLoose(TestDomain):
 
         response = self.app.get('/domain/get', query_string={'token': update_token})
         self.assertEqual(400, response.status_code)
+
+
+class TestDomainDelete(TestDomain):
+
+    def test_simple(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        update_token = self.acquire_domain(email, password, user_domain)
+
+        delete_data = {'user_domain': user_domain, 'email': email, 'password': password}
+
+        response = self.app.post('/domain/delete', data=json.dumps(delete_data))
+        self.assertEqual(200, response.status_code)
+
+        user_data = self.get_user(email, password)
+
+        self.assertEquals(0, len(user_data['domains']))
 
 
 class TestDomainUpdate(TestDomain):

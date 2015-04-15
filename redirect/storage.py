@@ -12,10 +12,13 @@ class Storage:
 
     def delete_user(self, user):
         for domain in user.domains:
-            for service in domain.services:
-                self.delete(service)
-            self.delete(domain)
+            self.delete_domain(domain)
         self.delete(user)
+
+    def delete_domain(self, domain):
+        for service in domain.services:
+            self.delete(service)
+        self.delete(domain)
 
     def get_user_by_email(self, email):
         user = self.session.query(User).filter(User.email == email).first()
