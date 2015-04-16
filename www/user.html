@@ -58,10 +58,12 @@ main_menu_item: menu_user
         </div>
         <ul class="list-group">
           <li class="list-group-item clearfix">
+            <span>Device: <%= domain.device_title %></span>
+            <br/>
             <span>Address: <%= domain.nice_ip %></span>
             <br/>
             <span>Updated: <%= domain.nice_last_update %></span>
-            <button type="button" class="btn btn-default pull-right" user_domain="<%= domain.user_domain %>">
+            <button type="button" class="btn btn-default pull-right" onClick="domain_delete(<%= domain.user_domain %>);">
               <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
             </button>
           </li>
