@@ -3,22 +3,25 @@ from flask.ext.login import LoginManager, login_user, logout_user, current_user,
 import db_helper
 import services
 from servicesexceptions import ServiceException, ParametersException
+from dns import Dns
+from mock import MagicMock
 import traceback
 import convertible
 import config
+import mail
 
-config = config.read_redirect_configs()
+the_config = config.read_redirect_configs()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = config.get('redirect', 'auth_secret_key')
+app.config['SECRET_KEY'] = the_config.get('redirect', 'auth_secret_key')
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 # This is to host static html - should be done on proper web server in prod
 
-host_static_files = config.has_option('redirect', 'static_files_path')
+host_static_files = the_config.has_option('redirect', 'static_files_path')
 if host_static_files:
-    static_files_path = config.get('redirect', 'static_files_path')
+    static_files_path = the_config.get('redirect', 'static_files_path')
 
     @app.route('/<path:filename>')
     def static_file(filename):
@@ -89,11 +92,39 @@ def handle_exception(error):
         return jsonify(message=tb), 500
 
 
+# def manager():
+#     the_config = config.read_redirect_configs()
+#     redirect_domain = the_config.get('redirect', 'domain')
+#     create_storage = db_helper.get_storage_creator(the_config)
+#     users_manager = services.Users(create_storage, None, None, None, redirect_domain)
+#     return users_manager
+
+
 def manager():
-    redirect_domain = config.get('redirect', 'domain')
-    create_storage = db_helper.get_storage_creator(config)
-    users_manager = services.UsersRead(create_storage, redirect_domain)
+    the_config = config.read_redirect_configs()
+    email_from = the_config.get('mail', 'from')
+    activate_url_template = the_config.get('mail', 'activate_url_template')
+    password_url_template = the_config.get('mail', 'password_url_template')
+
+    redirect_domain = the_config.get('redirect', 'domain')
+    redirect_activate_by_email = the_config.getboolean('redirect', 'activate_by_email')
+    mock_dns = the_config.getboolean('redirect', 'mock_dns')
+
+    if mock_dns:
+        dns = MagicMock()
+    else:
+        dns = Dns(
+            the_config.get('aws', 'access_key_id'),
+            the_config.get('aws', 'secret_access_key'),
+            the_config.get('aws', 'hosted_zone_id'))
+
+    create_storage = db_helper.get_storage_creator(the_config)
+    smtp = mail.get_smtp(the_config)
+
+    the_mail = mail.Mail(smtp, email_from, activate_url_template, password_url_template)
+    users_manager = services.Users(create_storage, redirect_activate_by_email, the_mail, dns, redirect_domain)
     return users_manager
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

@@ -126,6 +126,7 @@ def handle_exception(error):
 
 
 def manager():
+    the_config = config.read_redirect_configs()
     email_from = the_config.get('mail', 'from')
     activate_url_template = the_config.get('mail', 'activate_url_template')
     password_url_template = the_config.get('mail', 'password_url_template')
