@@ -63,7 +63,7 @@ main_menu_item: menu_user
             <span>Address: <%= domain.nice_ip %></span>
             <br/>
             <span>Updated: <%= domain.nice_last_update %></span>
-            <button type="button" class="btn btn-default pull-right" onClick="domain_delete(<%= domain.user_domain %>);">
+            <button type="button" class="btn btn-default pull-right" onClick="domain_delete('<%= domain.user_domain %>');">
               <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
             </button>
           </li>
