@@ -70,6 +70,13 @@ def user():
     user_data = convertible.to_dict(user)
     return jsonify(user_data), 200
 
+@app.route("/domain_delete", methods=["POST"])
+@login_required
+def user():
+    user = current_user.user
+    manager().user_domain_delete(request.form, user)
+    return 'Domain deleted', 200
+
 @app.errorhandler(Exception)
 def handle_exception(error):
     if isinstance(error, ParametersException):
