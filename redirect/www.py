@@ -72,7 +72,7 @@ def user():
 
 @app.route("/domain_delete", methods=["POST"])
 @login_required
-def user():
+def domain_delete():
     user = current_user.user
     manager().user_domain_delete(request.form, user)
     return 'Domain deleted', 200
