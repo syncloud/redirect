@@ -57,9 +57,17 @@ main_menu_item: menu_user
           </div>
         </div>
         <ul class="list-group">
-          <li class="list-group-item">
-            <span>Address: <%= domain.nice_ip %></span>
-            <span class="pull-right">Updated: <%= domain.nice_last_update %></span>
+          <li class="list-group-item clearfix">
+            <div class="pull-left">
+              <span>Device: <%= domain.device_title %></span>
+              <br/>
+              <span>Address: <%= domain.nice_ip %></span>
+              <br/>
+              <span>Updated: <%= domain.nice_last_update %></span>
+            </div>
+            <button type="button" class="btn btn-default pull-right" onClick="domain_delete('<%= domain.user_domain %>');">
+              <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
+            </button>
           </li>
         <% if (domain.services.length === 0) { %>
             <li class="list-group-item">
@@ -176,6 +184,16 @@ function prepareUserData(user) {
             service.full_url = fullUrl(domain, service);
         }
     }
+}
+
+function domain_delete(user_domain) {
+    var posting = $.post(redirect.web("domain_delete"), { "user_domain": user_domain })
+        .done( function(data) {
+            window.location.reload();
+        })
+        .fail( function(xhr, textStatus, errorThrown) {
+            var error = xhr.responseJSON;
+        });
 }
 
 $( document ).ready(function() {
