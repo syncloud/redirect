@@ -23,6 +23,7 @@ class User(Base):
     password_hash = Column(String())
     active = Column(Boolean())
     update_token = Column(String())
+    unsubscribed = Column(Boolean())
 
     domains = relationship("Domain", lazy='subquery')
     actions = relationship("Action", lazy='subquery', cascade="all, delete, delete-orphan")
@@ -31,6 +32,7 @@ class User(Base):
         self.email = email
         self.password_hash = password_hash
         self.active = active
+        self.unsubscribed = False
 
     def enable_action(self, type):
         token = util.create_token()

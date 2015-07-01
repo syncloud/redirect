@@ -4,6 +4,7 @@ CREATE TABLE `user` (
   `password_hash` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `active` BOOLEAN NOT NULL DEFAULT 0,
   `update_token` char(36) UNIQUE,
+  `unsubscribed` BOOLEAN NOT NULL DEFAULT 0,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -58,4 +59,4 @@ create table db_version (
     `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('004');
+insert into db_version (version) values ('005');

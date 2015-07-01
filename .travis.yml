@@ -10,5 +10,5 @@ before_script:
   - ./ci/redirectdb create redirect
 script: py.test --cov redirect
 after_script:
-  - ./ci/redirectdb migrate redirect redirect 004.sql
+  - ./ci/redirectdb migrate redirect redirect 005.sql
   - py.test --cov redirect
