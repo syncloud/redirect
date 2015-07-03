@@ -114,6 +114,7 @@ class TestUser(TestFlask):
         expected = {
             'active': True,
             'email': email,
+            'unsubscribed': False,
             'domains': [{
                 'user_domain': user_domain,
                 'ip': '127.0.0.1',

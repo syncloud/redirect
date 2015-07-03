@@ -16,7 +16,7 @@ Base.from_dict = from_dict
 
 class User(Base):
     __tablename__ = "user"
-    __public__ = ['email', 'active', 'domains']
+    __public__ = ['email', 'active', 'unsubscribed', 'domains']
 
     id = Column(Integer, primary_key=True)
     email = Column(String())

@@ -1,0 +1,66 @@
+---
+layout: default
+title: Account
+
+main_menu_item: menu_account
+---
+
+<div class="container">
+  <div id="has_domains">
+    <h2>Account</h2>
+    <br/>
+
+    <div>
+      <div class="row">
+        <div class="col-6 col-md-6 col-sm-6 col-lg-6">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <div class="panel-title">
+                Notifications
+              </div>
+            </div>
+            <div class="panel-body">
+              <h4>Email</h4>
+              <input checked="checked" type="checkbox" id="chk_email" onClick="set_subscribed($('#chk_email').is(':checked'));"> Email me Syncloud notifications, including releases announcements.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+function set_subscribed(subscribed) {
+    var posting = $.post(redirect.web("set_subscribed"), {"subscribed": subscribed})
+        .done( function(data) {
+        })
+        .fail( function(xhr, textStatus, errorThrown) {
+            if (xhr.status === 401) {
+                window.location.href = "login.html";
+            } else {
+                window.location.href = "error.html";
+            }
+        });
+}
+
+$( document ).ready(function() {
+
+    var url = redirect.web("user")
+
+    var getting = $.get( url )
+        .done( function(data) {
+            var user = data;
+            $('#chk_email').prop('checked', !user.unsubscribed);
+        })
+        .fail( function(xhr, textStatus, errorThrown) {
+            if (xhr.status === 401) {
+                window.location.href = "login.html";
+            } else {
+                window.location.href = "error.html";
+            }
+        });
+});
+
+</script>

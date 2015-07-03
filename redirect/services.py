@@ -235,6 +235,16 @@ class Users(UsersRead):
 
             storage.delete_domain(domain)
 
+    def user_set_subscribed(self, request, user_email):
+        validator = Validator(request)
+        subscribed = validator.boolean('subscribed')
+        check_validator(validator)
+
+        with self.create_storage() as storage:
+            user = storage.get_user_by_email(user_email)
+            if not user:
+                raise servicesexceptions.bad_request('Unknown user')
+            user.unsubscribed = not subscribed
 
     def get_domain(self, request):
         validator = Validator(request)
