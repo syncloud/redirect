@@ -73,6 +73,13 @@ def user():
     user_data = convertible.to_dict(user)
     return jsonify(user_data), 200
 
+@app.route("/user_delete", methods=["POST"])
+@login_required
+def user_delete():
+    user = current_user.user
+    manager().do_delete_user(user.email)
+    return 'User deleted', 200
+
 @app.route("/set_subscribed", methods=["POST"])
 @login_required
 def user_unsubscribe():

@@ -11,6 +11,7 @@ main_menu_item: menu_account
     <br/>
 
     <div>
+
       <div class="row">
         <div class="col-6 col-md-6 col-sm-6 col-lg-6">
           <div class="panel panel-default">
@@ -25,12 +26,46 @@ main_menu_item: menu_account
             </div>
           </div>
         </div>
+
+        <div class="col-6 col-md-6 col-sm-6 col-lg-6">
+          <div class="panel panel-danger">
+            <div class="panel-heading">
+              <div class="panel-title">
+                Danger Zone
+              </div>
+            </div>
+            <div class="panel-body clearfix">
+              <h4>Delete this account</h4>
+              <div class="pull-left">
+                Once you delete your account, there's no going back. All domains you have will be released.
+              </div>
+              <button type="button" class="btn btn-default pull-right" onClick="account_delete();">
+                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 </div>
 
 <script type="text/javascript">
+
+function account_delete() {
+    var posting = $.post(redirect.web("user_delete"))
+        .done( function(data) {
+            window.location.href = "register.html";
+        })
+        .fail( function(xhr, textStatus, errorThrown) {
+            if (xhr.status === 401) {
+                window.location.href = "login.html";
+            } else {
+                window.location.href = "error.html";
+            }
+        });
+}
 
 function set_subscribed(subscribed) {
     var posting = $.post(redirect.web("set_subscribed"), {"subscribed": subscribed})

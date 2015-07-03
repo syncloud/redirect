@@ -272,6 +272,18 @@ class Users(UsersRead):
 
             storage.delete_user(user)
 
+    def do_delete_user(self, email):
+        with self.create_storage() as storage:
+            user = storage.get_user_by_email(email)
+
+            if not user or not user.active:
+                raise servicesexceptions.bad_request('Authentication failed')
+
+            for domain in user.domains:
+                self.dns.delete_domain(self.main_domain, domain)
+
+            storage.delete_user(user)
+
     def user_reset_password(self, request):
         validator = Validator(request)
         email = validator.email()
