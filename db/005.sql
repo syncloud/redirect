@@ -11,7 +11,6 @@ insert into `domain`
 `user_domain`,
 `ip`,
 `local_ip`,
-`map_local_address`,
 `update_token`,
 `user_id`,
 `device_mac_address`,
