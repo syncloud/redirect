@@ -27,7 +27,7 @@ select
 `device_name`,
 `device_title`,
 `last_update`
-from redirect_backup.`user`;
+from redirect_backup.`domain`;
 
 insert into `service`
 select *
