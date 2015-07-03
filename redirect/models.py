@@ -84,12 +84,13 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'local_ip', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
+    __public__ = ['user_domain', 'ip', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
     ip = Column(String())
     local_ip = Column(String())
+    map_local_address = Column(Boolean())
     update_token = Column(String())
     last_update = Column(DateTime)
     device_mac_address = Column(String())
@@ -100,9 +101,8 @@ class Domain(Base):
 
     services = relationship("Service", lazy='subquery')
 
-    def __init__(self, user_domain, device_mac_address, device_name, device_title, ip=None, update_token=None):
+    def __init__(self, user_domain, device_mac_address, device_name, device_title, update_token):
         self.user_domain = user_domain
-        self.ip = ip
         self.update_token = update_token
         self.device_mac_address = device_mac_address
         self.device_name = device_name

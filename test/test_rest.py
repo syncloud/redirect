@@ -119,6 +119,7 @@ class TestUser(TestFlask):
                 'user_domain': user_domain,
                 'ip': '127.0.0.1',
                 'local_ip': None,
+                'map_local_address': None,
                 'device_mac_address': '00:00:00:00:00:00',
                 'device_name': 'some-device',
                 'device_title': 'Some Device',

@@ -145,7 +145,7 @@ class Users(UsersRead):
 
             update_token = util.create_token()
             if not domain:
-                domain = Domain(user_domain, device_mac_address, device_name, device_title, ip=None, update_token=update_token)
+                domain = Domain(user_domain, device_mac_address, device_name, device_title, update_token=update_token)
                 domain.user = user
                 storage.add(domain)
             else:

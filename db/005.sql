@@ -6,6 +6,33 @@ insert into `domain`
 select *
 from redirect_backup.`domain`;
 
+insert into `domain`
+(`id`,
+`user_domain`,
+`ip`,
+`local_ip`,
+`map_local_address`,
+`update_token`,
+`user_id`,
+`device_mac_address`,
+`device_name`,
+`device_title`,
+`last_update`,
+`timestamp`)
+select
+`id`,
+`user_domain`,
+`ip`,
+`local_ip`,
+0 as `map_local_address`,
+`update_token`,
+`user_id`,
+`device_mac_address`,
+`device_name`,
+`device_title`,
+`last_update`
+from redirect_backup.`user`;
+
 insert into `service`
 select *
 from redirect_backup.`service`;
