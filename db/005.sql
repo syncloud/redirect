@@ -26,7 +26,8 @@ select
 `device_mac_address`,
 `device_name`,
 `device_title`,
-`last_update`
+`last_update`,
+`timestamp`
 from redirect_backup.`domain`;
 
 insert into `service`
