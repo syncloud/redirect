@@ -181,7 +181,11 @@ class Users(UsersRead):
         token = validator.token()
         ip = validator.ip(request_ip)
         local_ip = validator.local_ip()
+        map_local_address = validator.boolean('map_local_address', required=False)
         check_validator(validator)
+
+        if map_local_address is None:
+            map_local_address = False
 
         with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
@@ -204,9 +208,10 @@ class Users(UsersRead):
             storage.add(added_services)
 
             is_new_dmain = domain.ip is None
-            update_ip = domain.ip != ip
+            update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip)
             domain.ip = ip
             domain.local_ip = local_ip
+            domain.map_local_address = map_local_address
 
             if is_new_dmain:
                 self.dns.new_domain(self.main_domain, domain)
@@ -237,7 +242,7 @@ class Users(UsersRead):
 
     def user_set_subscribed(self, request, user_email):
         validator = Validator(request)
-        subscribed = validator.boolean('subscribed')
+        subscribed = validator.boolean('subscribed', required=True)
         check_validator(validator)
 
         with self.create_storage() as storage:

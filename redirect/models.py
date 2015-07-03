@@ -111,6 +111,11 @@ class Domain(Base):
     def dns_name(self, main_domain):
         return '{0}.{1}.'.format(self.user_domain, main_domain)
 
+    def dns_ip(self):
+        if self.map_local_address:
+            return self.local_ip
+        return self.ip
+
 
 class Service(Base):
     __tablename__ = "service"
