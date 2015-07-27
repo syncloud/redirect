@@ -26,7 +26,7 @@ def generate_user():
 def generate_domain():
     domain = create_token()
     update_token = create_token()
-    domain = Domain(domain, '00:00:00:00:00:00', 'some-device', 'Some Device', ip=None, update_token=update_token)
+    domain = Domain(domain, '00:00:00:00:00:00', 'some-device', 'Some Device', update_token=update_token)
     return domain
 
 

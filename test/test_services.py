@@ -195,3 +195,28 @@ class TestUsers(unittest.TestCase):
         self.assertGreater(len(exc.message), 0)
         self.assertEquals(len(exc.parameters_errors), 1)
         self.assertGreater(len(exc.parameters_errors['password']), 0)
+
+    def test_user_set_subscribed_false(self):
+        users = self.get_users_service()
+        user = User(u'boris@mail.com', hash('pass'), True)
+        self.add_user(user)
+
+        request = {'subscribed': 'false'}
+        users.user_set_subscribed(request, user.email)
+
+        user = self.get_user(user.email)
+        self.assertTrue(user.unsubscribed)
+
+    def test_user_set_subscribed_true(self):
+        users = self.get_users_service()
+        user = User(u'boris@mail.com', hash('otherpass1234'), True)
+        self.add_user(user)
+
+        request = {'subscribed': 'false'}
+        users.user_set_subscribed(request, user.email)
+
+        request = {'subscribed': 'true'}
+        users.user_set_subscribed(request, user.email)
+
+        user = self.get_user(user.email)
+        self.assertFalse(user.unsubscribed)

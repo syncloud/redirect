@@ -21,7 +21,7 @@ class Dns:
 
     def a_change(self, changes, main_domain, domain, change_type):
         change = changes.add_change(change_type, domain.dns_name(main_domain), 'A')
-        change.add_value(domain.ip)
+        change.add_value(domain.dns_ip())
 
     def cname_change(self, changes, main_domain, domain, change_type):
         change = changes.add_change(change_type, domain.dns_name(main_domain), 'CNAME')

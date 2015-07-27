@@ -114,10 +114,12 @@ class TestUser(TestFlask):
         expected = {
             'active': True,
             'email': email,
+            'unsubscribed': False,
             'domains': [{
                 'user_domain': user_domain,
                 'ip': '127.0.0.1',
                 'local_ip': None,
+                'map_local_address': False,
                 'device_mac_address': '00:00:00:00:00:00',
                 'device_name': 'some-device',
                 'device_title': 'Some Device',
@@ -618,3 +620,15 @@ class TestDomainUpdate(TestDomain):
 
         self.check_domain(update_token, {'ip': '127.0.0.1', 'user_domain': user_domain, 'services': services_data})
 
+    def test_domain_update_map_local_address(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        update_token = self.acquire_domain(email, password, user_domain)
+
+        update_data = {'token': update_token, 'ip': '108.108.108.108', 'local_ip': '192.168.1.2', 'map_local_address': True, 'services': []}
+
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
+
+        self.check_domain(update_token, {'ip': '108.108.108.108', 'local_ip': '192.168.1.2', 'map_local_address': True, 'user_domain': user_domain})

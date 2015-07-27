@@ -125,3 +125,18 @@ class Validator:
                 self.add_field_error(parameter, 'Missing')
             return None
         return self.params[parameter]
+
+    def boolean(self, parameter, required=False):
+        if parameter not in self.params:
+            if required:
+                self.add_field_error(parameter, 'Missing')
+            return None
+        value = self.params[parameter]
+        if isinstance(value, str):
+            if value.lower() == 'true':
+                return True
+            if value.lower() == 'false':
+                return False
+            self.add_field_error(parameter, 'Unexpected value')
+        else:
+            return value

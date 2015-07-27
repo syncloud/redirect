@@ -47,9 +47,13 @@ class Storage:
         for domain in self.session.query(Domain).yield_per(10):
             yield domain
 
-    def users_iterate(self):
-        for user in self.session.query(User).yield_per(10):
-            yield user
+    def users_iterate(self, include_unsubscribed=False):
+        if include_unsubscribed:
+            for user in self.session.query(User).yield_per(10):
+                yield user
+        else:
+            for user in self.session.query(User).filter(User.unsubscribed == False).yield_per(10):
+                yield user
 
     def get_action(self, token):
         return self.session.query(Action).filter(Action.token == token).first()

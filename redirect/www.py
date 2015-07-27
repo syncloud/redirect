@@ -73,6 +73,20 @@ def user():
     user_data = convertible.to_dict(user)
     return jsonify(user_data), 200
 
+@app.route("/user_delete", methods=["POST"])
+@login_required
+def user_delete():
+    user = current_user.user
+    manager().do_delete_user(user.email)
+    return 'User deleted', 200
+
+@app.route("/set_subscribed", methods=["POST"])
+@login_required
+def user_unsubscribe():
+    user = current_user.user
+    manager().user_set_subscribed(request.form, user.email)
+    return 'Successfully set', 200
+
 @app.route("/domain_delete", methods=["POST"])
 @login_required
 def domain_delete():

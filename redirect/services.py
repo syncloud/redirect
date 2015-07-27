@@ -145,7 +145,7 @@ class Users(UsersRead):
 
             update_token = util.create_token()
             if not domain:
-                domain = Domain(user_domain, device_mac_address, device_name, device_title, ip=None, update_token=update_token)
+                domain = Domain(user_domain, device_mac_address, device_name, device_title, update_token=update_token)
                 domain.user = user
                 storage.add(domain)
             else:
@@ -181,7 +181,11 @@ class Users(UsersRead):
         token = validator.token()
         ip = validator.ip(request_ip)
         local_ip = validator.local_ip()
+        map_local_address = validator.boolean('map_local_address', required=False)
         check_validator(validator)
+
+        if map_local_address is None:
+            map_local_address = False
 
         with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
@@ -204,9 +208,10 @@ class Users(UsersRead):
             storage.add(added_services)
 
             is_new_dmain = domain.ip is None
-            update_ip = domain.ip != ip
+            update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip)
             domain.ip = ip
             domain.local_ip = local_ip
+            domain.map_local_address = map_local_address
 
             if is_new_dmain:
                 self.dns.new_domain(self.main_domain, domain)
@@ -235,6 +240,16 @@ class Users(UsersRead):
 
             storage.delete_domain(domain)
 
+    def user_set_subscribed(self, request, user_email):
+        validator = Validator(request)
+        subscribed = validator.boolean('subscribed', required=True)
+        check_validator(validator)
+
+        with self.create_storage() as storage:
+            user = storage.get_user_by_email(user_email)
+            if not user:
+                raise servicesexceptions.bad_request('Unknown user')
+            user.unsubscribed = not subscribed
 
     def get_domain(self, request):
         validator = Validator(request)
@@ -255,6 +270,18 @@ class Users(UsersRead):
             user = storage.get_user_by_email(email)
 
             if not user or not user.active or not util.hash(password) == user.password_hash:
+                raise servicesexceptions.bad_request('Authentication failed')
+
+            for domain in user.domains:
+                self.dns.delete_domain(self.main_domain, domain)
+
+            storage.delete_user(user)
+
+    def do_delete_user(self, email):
+        with self.create_storage() as storage:
+            user = storage.get_user_by_email(email)
+
+            if not user or not user.active:
                 raise servicesexceptions.bad_request('Authentication failed')
 
             for domain in user.domains:

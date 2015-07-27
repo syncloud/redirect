@@ -130,5 +130,31 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
         self.assertUser(None, read_user)
         self.assertDomain(None, read_domain)
 
+    def test_iterate_one_user(self):
+        user = generate_user()
+        with self.create_storage() as storage:
+            storage.add(user)
+        with self.create_storage() as storage:
+            users = storage.users_iterate()
+        self.assertEquals(1, len(list(users)))
+
+    def test_iterate_two_users(self):
+        user1 = generate_user()
+        user2 = generate_user()
+        with self.create_storage() as storage:
+            storage.add(user1, user2)
+        with self.create_storage() as storage:
+            users = storage.users_iterate()
+        self.assertEquals(2, len(list(users)))
+
+    def test_iterate_user_unsubscribed(self):
+        user = generate_user()
+        user.unsubscribed = True
+        with self.create_storage() as storage:
+            storage.add(user)
+        with self.create_storage() as storage:
+            users = storage.users_iterate()
+        self.assertEquals(0, len(list(users)))
+
 if __name__ == '__main__':
     unittest.run()

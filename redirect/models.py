@@ -16,13 +16,14 @@ Base.from_dict = from_dict
 
 class User(Base):
     __tablename__ = "user"
-    __public__ = ['email', 'active', 'domains']
+    __public__ = ['email', 'active', 'unsubscribed', 'domains']
 
     id = Column(Integer, primary_key=True)
     email = Column(String())
     password_hash = Column(String())
     active = Column(Boolean())
     update_token = Column(String())
+    unsubscribed = Column(Boolean())
 
     domains = relationship("Domain", lazy='subquery')
     actions = relationship("Action", lazy='subquery', cascade="all, delete, delete-orphan")
@@ -31,6 +32,7 @@ class User(Base):
         self.email = email
         self.password_hash = password_hash
         self.active = active
+        self.unsubscribed = False
 
     def enable_action(self, type):
         token = util.create_token()
@@ -82,12 +84,13 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'local_ip', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
+    __public__ = ['user_domain', 'ip', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
     ip = Column(String())
     local_ip = Column(String())
+    map_local_address = Column(Boolean())
     update_token = Column(String())
     last_update = Column(DateTime)
     device_mac_address = Column(String())
@@ -98,9 +101,8 @@ class Domain(Base):
 
     services = relationship("Service", lazy='subquery')
 
-    def __init__(self, user_domain, device_mac_address, device_name, device_title, ip=None, update_token=None):
+    def __init__(self, user_domain, device_mac_address, device_name, device_title, update_token):
         self.user_domain = user_domain
-        self.ip = ip
         self.update_token = update_token
         self.device_mac_address = device_mac_address
         self.device_name = device_name
@@ -108,6 +110,11 @@ class Domain(Base):
 
     def dns_name(self, main_domain):
         return '{0}.{1}.'.format(self.user_domain, main_domain)
+
+    def dns_ip(self):
+        if self.map_local_address:
+            return self.local_ip
+        return self.ip
 
 
 class Service(Base):
