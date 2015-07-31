@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 from models import User, Domain, new_service_from_dict, ActionType
@@ -33,6 +32,7 @@ class UsersRead:
             raise servicesexceptions.bad_request('Authentication failed')
 
         return user
+
 
 class Users(UsersRead):
 
@@ -301,6 +301,16 @@ class Users(UsersRead):
                 action = user.enable_action(ActionType.PASSWORD)
 
                 self.mail.send_reset_password(user.email, action.token)
+
+    def user_log(self, request):
+        validator = Validator(request)
+        token = validator.token()
+        data = validator.string('data')
+        with self.create_storage() as storage:
+            user = storage.get_user_by_token(ActionType.PASSWORD, token)
+            if not user:
+                raise servicesexceptions.bad_request('Invalid password token')
+            self.mail.send_logs(user.email, data)
 
     def user_set_password(self, request):
         validator = Validator(request)

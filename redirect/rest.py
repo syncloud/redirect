@@ -94,6 +94,13 @@ def user_reset_password():
     return jsonify(success=True, message='Reset password requested'), 200
 
 
+@app.route('/user/log', methods=["POST"])
+@cross_origin()
+def user_log():
+    manager().user_log(request.form)
+    return jsonify(success=True, message='Error report sent successfully'), 200
+
+
 @app.route('/user/set_password', methods=["POST"])
 @cross_origin()
 def user_set_password():
@@ -106,6 +113,8 @@ def user_set_password():
 def handle_exception(error):
     response = None
     status_code = 500
+    logging.error('request.remote_addr: {0}'.format(request.remote_addr))
+    logging.error('request.body: {0}'.format(request.data))
     if isinstance(error, ParametersException):
         parameters_messages = [{'parameter': k, 'messages': v} for k, v in error.parameters_errors.items()]
         response = jsonify(success=False, message=error.message, parameters_messages=parameters_messages)
@@ -124,10 +133,9 @@ def handle_exception(error):
     return response, status_code
 
 
-
 def manager():
     the_config = config.read_redirect_configs()
-    email_from = the_config.get('mail', 'from')
+    support_email = the_config.get('mail', 'support')
     activate_url_template = the_config.get('mail', 'activate_url_template')
     password_url_template = the_config.get('mail', 'password_url_template')
 
@@ -146,7 +154,7 @@ def manager():
     create_storage = db_helper.get_storage_creator(the_config)
     smtp = mail.get_smtp(the_config)
 
-    the_mail = mail.Mail(smtp, email_from, activate_url_template, password_url_template)
+    the_mail = mail.Mail(smtp, support_email, activate_url_template, password_url_template)
     users_manager = services.Users(create_storage, redirect_activate_by_email, the_mail, dns, redirect_domain)
     return users_manager
 

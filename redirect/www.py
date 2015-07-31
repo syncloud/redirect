@@ -116,7 +116,7 @@ def handle_exception(error):
 
 def manager():
     the_config = config.read_redirect_configs()
-    email_from = the_config.get('mail', 'from')
+    support_email = the_config.get('mail', 'support')
     activate_url_template = the_config.get('mail', 'activate_url_template')
     password_url_template = the_config.get('mail', 'password_url_template')
 
@@ -135,7 +135,7 @@ def manager():
     create_storage = db_helper.get_storage_creator(the_config)
     smtp = mail.get_smtp(the_config)
 
-    the_mail = mail.Mail(smtp, email_from, activate_url_template, password_url_template)
+    the_mail = mail.Mail(smtp, support_email, activate_url_template, password_url_template)
     users_manager = services.Users(create_storage, redirect_activate_by_email, the_mail, dns, redirect_domain)
     return users_manager
 

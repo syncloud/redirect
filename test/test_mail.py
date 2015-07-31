@@ -60,6 +60,17 @@ class TestMail(unittest.TestCase):
         self.assertEquals(1, len(sent_mails))
         self.assertTrue(activate_url in sent_mails[0])
 
+    def test_send_log(self):
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None)
+        logs = 'error logs'
+        mail.send_logs('boris@email.com', logs)
+
+        self.assertFalse(self.smtp.empty())
+        sent_mails = self.smtp.emails()
+        self.assertEquals(1, len(sent_mails))
+        self.assertTrue(logs in sent_mails[0])
+
+
 def temp_file(text=''):
     fd, filename = tempfile.mkstemp()
     f = os.fdopen(fd, 'w')

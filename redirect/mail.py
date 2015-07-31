@@ -2,6 +2,7 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from os.path import dirname, join, splitext
+import tempfile
 
 
 class Smtp:
@@ -50,6 +51,7 @@ def read_letter(filepath):
     f.close()
     return subject, content
 
+
 def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
     format = 'plain'
     _, extension = splitext(full_email_path)
@@ -63,10 +65,11 @@ def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
     msg['To'] = email_to
     smtp.send(email_from, email_to, msg.as_string())
 
+
 class Mail:
-    def __init__(self, smtp, email_from, activate_url_template, password_url_template):
+    def __init__(self, smtp, support_email, activate_url_template, password_url_template):
         self.smtp = smtp
-        self.email_from = email_from
+        self.support_email = support_email
         self.activate_url_template = activate_url_template
         self.password_url_template = password_url_template
         self.path = join(dirname(__file__), '..', 'emails')
@@ -75,7 +78,7 @@ class Mail:
         return os.path.join(self.path, filename)
 
     def send_letter(self, email_to, full_email_path, substitutions={}):
-        send_letter(self.smtp, self.email_from, email_to, full_email_path, substitutions)
+        send_letter(self.smtp, self.support_email, email_to, full_email_path, substitutions)
 
     def send_activate(self, main_domain, email_to, token):
         url = self.activate_url_template.format(token)
@@ -90,3 +93,12 @@ class Mail:
     def send_set_password(self, email_to):
         full_email_path = self.email_path('set_password.txt')
         self.send_letter(email_to, full_email_path)
+
+    def send_logs(self, email_from, data):
+        fd, filename = tempfile.mkstemp()
+        with os.fdopen(fd, 'w') as f:
+            f.write(data)
+        try:
+            send_letter(self.smtp, email_from, self.support_email, filename, {})
+        finally:
+            os.unlink(filename)
