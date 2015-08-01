@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from models import User, Domain, Service, Base, Action, ActionType
-from redirect import util
+import util
 
 
 class Storage:
