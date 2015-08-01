@@ -307,9 +307,9 @@ class Users(UsersRead):
         token = validator.token()
         data = validator.string('data')
         with self.create_storage() as storage:
-            user = storage.get_user_by_token(ActionType.PASSWORD, token)
+            user = storage.get_user_by_update_token(token)
             if not user:
-                raise servicesexceptions.bad_request('Invalid password token')
+                raise servicesexceptions.bad_request('Invalid update token')
             self.mail.send_logs(user.email, data)
 
     def user_set_password(self, request):

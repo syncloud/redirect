@@ -38,6 +38,10 @@ class Storage:
             .filter(Action.token == token).first()
         return user
 
+    def get_user_by_update_token(self, update_token):
+        user = self.session.query(User).filter(User.update_token == update_token).first()
+        return user
+
     def get_domain_by_update_token(self, update_token):
         domain = self.session.query(Domain).filter(Domain.update_token == update_token).first()
         return domain
