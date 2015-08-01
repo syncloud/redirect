@@ -1,14 +1,10 @@
-from flask import Flask, request, redirect, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
-import db_helper
-import services
 from servicesexceptions import ServiceException, ParametersException
-from dns import Dns
-from mock import MagicMock
 import traceback
 import convertible
 import config
-import mail
+import ioc
 
 the_config = config.read_redirect_configs()
 
@@ -46,25 +42,29 @@ class UserFlask:
     def get_id(self):
         return unicode(self.user.email)
 
+
 @login_manager.user_loader
 def load_user(email):
-    user = (manager().get_user(email))
+    user = ioc.manager().get_user(email)
     if not user:
         return None
     return UserFlask(user)
 
+
 @app.route("/login", methods=["POST"])
 def login():
-    user = manager().authenticate(request.form)
+    user = ioc.manager().authenticate(request.form)
     user_flask = UserFlask(user)
     login_user(user_flask, remember=False)
     return 'User logged in', 200
+
 
 @app.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()
     return 'User logged out', 200
+
 
 @app.route("/user", methods=["GET"])
 @login_required
@@ -73,26 +73,30 @@ def user():
     user_data = convertible.to_dict(user)
     return jsonify(user_data), 200
 
+
 @app.route("/user_delete", methods=["POST"])
 @login_required
 def user_delete():
     user = current_user.user
-    manager().do_delete_user(user.email)
+    ioc.manager().do_delete_user(user.email)
     return 'User deleted', 200
+
 
 @app.route("/set_subscribed", methods=["POST"])
 @login_required
 def user_unsubscribe():
     user = current_user.user
-    manager().user_set_subscribed(request.form, user.email)
+    ioc.manager().user_set_subscribed(request.form, user.email)
     return 'Successfully set', 200
+
 
 @app.route("/domain_delete", methods=["POST"])
 @login_required
 def domain_delete():
     user = current_user.user
-    manager().user_domain_delete(request.form, user)
+    ioc.manager().user_domain_delete(request.form, user)
     return 'Domain deleted', 200
+
 
 @app.errorhandler(Exception)
 def handle_exception(error):
@@ -104,40 +108,6 @@ def handle_exception(error):
     else:
         tb = traceback.format_exc()
         return jsonify(message=tb), 500
-
-
-# def manager():
-#     the_config = config.read_redirect_configs()
-#     redirect_domain = the_config.get('redirect', 'domain')
-#     create_storage = db_helper.get_storage_creator(the_config)
-#     users_manager = services.Users(create_storage, None, None, None, redirect_domain)
-#     return users_manager
-
-
-def manager():
-    the_config = config.read_redirect_configs()
-    support_email = the_config.get('mail', 'support')
-    activate_url_template = the_config.get('mail', 'activate_url_template')
-    password_url_template = the_config.get('mail', 'password_url_template')
-
-    redirect_domain = the_config.get('redirect', 'domain')
-    redirect_activate_by_email = the_config.getboolean('redirect', 'activate_by_email')
-    mock_dns = the_config.getboolean('redirect', 'mock_dns')
-
-    if mock_dns:
-        dns = MagicMock()
-    else:
-        dns = Dns(
-            the_config.get('aws', 'access_key_id'),
-            the_config.get('aws', 'secret_access_key'),
-            the_config.get('aws', 'hosted_zone_id'))
-
-    create_storage = db_helper.get_storage_creator(the_config)
-    smtp = mail.get_smtp(the_config)
-
-    the_mail = mail.Mail(smtp, support_email, activate_url_template, password_url_template)
-    users_manager = services.Users(create_storage, redirect_activate_by_email, the_mail, dns, redirect_domain)
-    return users_manager
 
 
 if __name__ == '__main__':

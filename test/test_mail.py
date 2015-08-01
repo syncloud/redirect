@@ -40,7 +40,7 @@ class TestMail(unittest.TestCase):
         url_template = 'http://redirect.com/activate?token={0}'
         token = 't123456'
         activate_url = url_template.format(token)
-        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', url_template, None)
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', url_template, None, None)
         mail.send_activate('redirect.com', 'boris@email.com', token)
 
         self.assertFalse(self.smtp.empty())
@@ -52,7 +52,7 @@ class TestMail(unittest.TestCase):
         url_template = 'http://redirect.com/reset?token={0}'
         token = 't123456'
         activate_url = url_template.format(token)
-        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, url_template)
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, url_template, None)
         mail.send_reset_password('boris@email.com', token)
 
         self.assertFalse(self.smtp.empty())
@@ -61,7 +61,7 @@ class TestMail(unittest.TestCase):
         self.assertTrue(activate_url in sent_mails[0])
 
     def test_send_log(self):
-        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None)
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None, None)
         logs = 'error logs'
         mail.send_logs('boris@email.com', logs)
 

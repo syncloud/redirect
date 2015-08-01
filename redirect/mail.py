@@ -67,9 +67,10 @@ def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
 
 
 class Mail:
-    def __init__(self, smtp, support_email, activate_url_template, password_url_template):
+    def __init__(self, smtp, from_email, activate_url_template, password_url_template, device_error_email):
+        self.device_error_email = device_error_email
         self.smtp = smtp
-        self.support_email = support_email
+        self.from_email = from_email
         self.activate_url_template = activate_url_template
         self.password_url_template = password_url_template
         self.path = join(dirname(__file__), '..', 'emails')
@@ -78,7 +79,7 @@ class Mail:
         return os.path.join(self.path, filename)
 
     def send_letter(self, email_to, full_email_path, substitutions={}):
-        send_letter(self.smtp, self.support_email, email_to, full_email_path, substitutions)
+        send_letter(self.smtp, self.from_email, email_to, full_email_path, substitutions)
 
     def send_activate(self, main_domain, email_to, token):
         url = self.activate_url_template.format(token)
@@ -97,8 +98,9 @@ class Mail:
     def send_logs(self, email_from, data):
         fd, filename = tempfile.mkstemp()
         with os.fdopen(fd, 'w') as f:
+            f.write('Device error report\n')
             f.write(data)
         try:
-            send_letter(self.smtp, email_from, self.support_email, filename, {})
+            send_letter(self.smtp, email_from, self.device_error_email, filename, {})
         finally:
             os.unlink(filename)
