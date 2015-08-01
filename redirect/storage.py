@@ -3,7 +3,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from models import User, Domain, Service, Base, Action, ActionType
-import util
 
 
 class Storage:
@@ -23,8 +22,6 @@ class Storage:
 
     def get_user_by_email(self, email):
         user = self.session.query(User).filter(User.email == email).first()
-        if not user.update_token:
-            user.update_token = util.create_token()
         return user
 
     def get_user_by_activate_token(self, activate_token):

@@ -33,6 +33,7 @@ class User(Base):
         self.password_hash = password_hash
         self.active = active
         self.unsubscribed = False
+        self.update_token = util.create_token()
 
     def enable_action(self, type):
         token = util.create_token()

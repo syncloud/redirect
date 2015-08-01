@@ -110,11 +110,13 @@ class TestUser(TestFlask):
 
         # This is hack. We do not know last_update value - it is set by server.
         last_update = user_data["domains"][0]["last_update"]
+        update_token = user_data["update_token"]
 
         expected = {
             'active': True,
             'email': email,
             'unsubscribed': False,
+            'update_token': update_token,
             'domains': [{
                 'user_domain': user_domain,
                 'ip': '127.0.0.1',
