@@ -67,7 +67,7 @@ class TestMail(unittest.TestCase):
 
         self.assertFalse(self.smtp.empty())
         sent_mails = self.smtp.emails()
-        self.assertEquals(1, len(sent_mails))
+        self.assertEquals(2, len(sent_mails))
         self.assertTrue(logs in sent_mails[0])
 
 
