@@ -109,6 +109,6 @@ class Mail:
             f.write(data)
         try:
             send_letter(self.smtp, user_email, self.device_error_email, filename)
-            send_letter(self.smtp, self.from_email, user_email, filename)
+            send_letter(self.smtp, self.device_error_email, user_email, filename)
         finally:
             os.unlink(filename)
