@@ -100,12 +100,15 @@ class Mail:
         full_email_path = self.email_path('set_password.txt')
         self.send_letter(email_to, full_email_path)
 
-    def send_logs(self, email_from, data):
+    def send_logs(self, user_email, data):
         fd, filename = tempfile.mkstemp()
         with os.fdopen(fd, 'w') as f:
             f.write('Device error report\n')
+            f.write('Thank you for sharing Syncloud device error info, Syncloud support will get back to you shortly.\n')
+            f.write('If you need to add more details just reply to this email.\n\n')
             f.write(data)
         try:
-            send_letter(self.smtp, email_from, self.device_error_email, filename)
+            send_letter(self.smtp, user_email, self.device_error_email, filename)
+            send_letter(self.smtp, self.from_email, user_email, filename)
         finally:
             os.unlink(filename)
