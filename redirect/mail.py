@@ -58,7 +58,12 @@ def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
     if extension == '.html':
         format = 'html'
     subject, letter = read_letter(full_email_path)
-    content = letter.format(**substitutions)
+
+    if substitutions:
+        content = letter.format(**substitutions)
+    else:
+        content = letter
+
     msg = MIMEText(content, format)
     msg['Subject'] = subject
     msg['From'] = email_from
@@ -101,6 +106,6 @@ class Mail:
             f.write('Device error report\n')
             f.write(data)
         try:
-            send_letter(self.smtp, email_from, self.device_error_email, filename, {})
+            send_letter(self.smtp, email_from, self.device_error_email, filename)
         finally:
             os.unlink(filename)
