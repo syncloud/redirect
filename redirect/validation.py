@@ -61,7 +61,7 @@ class Validator:
         return self.params['password']
 
     def port(self, port_parameter, required=True):
-        if 'port' not in self.params:
+        if port_parameter not in self.params:
             if required:
                 self.add_field_error(port_parameter, 'Missing')
             return None
