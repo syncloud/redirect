@@ -69,7 +69,6 @@ class Dns:
         else:
             return False
 
-
     def delete_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         zone = conn.get_zone(main_domain)

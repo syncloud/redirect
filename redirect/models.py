@@ -137,7 +137,12 @@ class Service(Base):
         return '{0}.{1}.{2}.'.format(self.type, self.domain.user_domain, main_domain)
 
     def dns_value(self, main_domain):
-        return '0 0 {0} {1}.{2}.'.format(self.port, self.domain.user_domain, main_domain)
+        return '0 0 {0} {1}.{2}.'.format(self.dns_port(), self.domain.user_domain, main_domain)
+
+    def dns_port(self):
+        if self.domain.map_local_address:
+            return self.local_port
+        return self.port
 
     def __str__(self):
         return "{ " + ", ".join(["{0}: {1}".format(f, getattr(self, f)) for f in self.fields_str()]) + " }"
