@@ -172,7 +172,7 @@ class Users(UsersRead):
 
     def validate_service(self, data):
         validator = Validator(data)
-        validator.port('port')
+        validator.port('port', required=False)
         validator.port('local_port')
         check_validator(validator)
 
