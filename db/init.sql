@@ -30,7 +30,7 @@ CREATE TABLE `service` (
   `protocol` varchar(20) NOT NULL,
   `type` varchar(100) NOT NULL,
   `url` varchar(100),
-  `port` int(11) NOT NULL,
+  `port` int(11),
   `local_port` int(11) NOT NULL,
   `domain_id` integer NOT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -60,4 +60,4 @@ create table db_version (
     `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('005');
+insert into db_version (version) values ('006');

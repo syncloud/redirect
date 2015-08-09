@@ -107,6 +107,5 @@ redirect ALL = (root) NOPASSWD: /usr/bin/pip install -r requirements.txt
 ````
 sudo su redirect
 cd /var/www/redirect-test
-./ci/refresh_test_db redirect-test
-./ci/migratedb redirect_test
+./ci/redirectdb redirect redirect-test 006.sql
 ````
