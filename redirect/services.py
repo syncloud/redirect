@@ -213,10 +213,8 @@ class Users(UsersRead):
             domain.local_ip = local_ip
             domain.map_local_address = map_local_address
 
-            if is_new_dmain:
-                self.dns.new_domain(self.main_domain, domain)
-            else:
-                self.dns.update_domain(self.main_domain, domain, update_ip=update_ip, added=added_services, removed=removed_services)
+            if update_ip:
+                self.dns.update_domain(self.main_domain, domain)
 
             domain.last_update = datetime.now()
             return domain
