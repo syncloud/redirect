@@ -16,7 +16,7 @@ Base.from_dict = from_dict
 
 class User(Base):
     __tablename__ = "user"
-    __public__ = ['email', 'active', 'unsubscribed', 'domains']
+    __public__ = ['email', 'active', 'unsubscribed', 'domains', 'update_token']
 
     id = Column(Integer, primary_key=True)
     email = Column(String())
@@ -33,6 +33,7 @@ class User(Base):
         self.password_hash = password_hash
         self.active = active
         self.unsubscribed = False
+        self.update_token = util.create_token()
 
     def enable_action(self, type):
         token = util.create_token()
@@ -136,7 +137,12 @@ class Service(Base):
         return '{0}.{1}.{2}.'.format(self.type, self.domain.user_domain, main_domain)
 
     def dns_value(self, main_domain):
-        return '0 0 {0} {1}.{2}.'.format(self.port, self.domain.user_domain, main_domain)
+        return '0 0 {0} {1}.{2}.'.format(self.dns_port(), self.domain.user_domain, main_domain)
+
+    def dns_port(self):
+        if self.domain.map_local_address:
+            return self.local_port
+        return self.port
 
     def __str__(self):
         return "{ " + ", ".join(["{0}: {1}".format(f, getattr(self, f)) for f in self.fields_str()]) + " }"

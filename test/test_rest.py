@@ -110,11 +110,13 @@ class TestUser(TestFlask):
 
         # This is hack. We do not know last_update value - it is set by server.
         last_update = user_data["domains"][0]["last_update"]
+        update_token = user_data["update_token"]
 
         expected = {
             'active': True,
             'email': email,
             'unsubscribed': False,
+            'update_token': update_token,
             'domains': [{
                 'user_domain': user_domain,
                 'ip': '127.0.0.1',
@@ -457,30 +459,30 @@ class TestDomainUpdate(TestDomain):
         response = self.app.post('/domain/update', data=json.dumps(update_data))
         self.assertEqual(400, response.status_code)
 
-    def test_domain_update_missing_port(self):
-        email, password = self.create_active_user()
-
-        user_domain = create_token()
-        update_token = self.acquire_domain(email, password, user_domain)
-
-        service_data = {'name': 'ownCloud', 'type': '_http._tcp', 'url': None}
-        update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': [service_data]}
-
-        response = self.app.post('/domain/update', data=json.dumps(update_data))
-        self.assertEqual(400, response.status_code)
-
-        response_data = json.loads(response.data)
-        self.assertIsNotNone(response_data['message'])
-
-        parameters_messages = response_data['parameters_messages']
-
-        port_messages = next((pm for pm in parameters_messages if pm['parameter'] == 'port'), None)
-        self.assertIsNotNone(port_messages)
-        self.assertGreater(len(port_messages['messages']), 0)
-
-        local_port_messages = next((pm for pm in parameters_messages if pm['parameter'] == 'local_port'), None)
-        self.assertIsNotNone(local_port_messages)
-        self.assertGreater(len(local_port_messages['messages']), 0)
+    # def test_domain_update_missing_port(self):
+    #     email, password = self.create_active_user()
+    #
+    #     user_domain = create_token()
+    #     update_token = self.acquire_domain(email, password, user_domain)
+    #
+    #     service_data = {'name': 'ownCloud', 'type': '_http._tcp', 'url': None}
+    #     update_data = {'token': update_token, 'ip': '127.0.0.1', 'services': [service_data]}
+    #
+    #     response = self.app.post('/domain/update', data=json.dumps(update_data))
+    #     self.assertEqual(400, response.status_code)
+    #
+    #     response_data = json.loads(response.data)
+    #     self.assertIsNotNone(response_data['message'])
+    #
+    #     parameters_messages = response_data['parameters_messages']
+    #
+    #     port_messages = next((pm for pm in parameters_messages if pm['parameter'] == 'port'), None)
+    #     self.assertIsNotNone(port_messages)
+    #     self.assertGreater(len(port_messages['messages']), 0)
+    #
+    #     local_port_messages = next((pm for pm in parameters_messages if pm['parameter'] == 'local_port'), None)
+    #     self.assertIsNotNone(local_port_messages)
+    #     self.assertGreater(len(local_port_messages['messages']), 0)
 
     def test_domain_update_two_new_services(self):
         email, password = self.create_active_user()

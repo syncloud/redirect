@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 from models import User, Domain, new_service_from_dict, ActionType
@@ -33,6 +32,7 @@ class UsersRead:
             raise servicesexceptions.bad_request('Authentication failed')
 
         return user
+
 
 class Users(UsersRead):
 
@@ -172,7 +172,7 @@ class Users(UsersRead):
 
     def validate_service(self, data):
         validator = Validator(data)
-        validator.port('port')
+        validator.port('port', required=False)
         validator.port('local_port')
         check_validator(validator)
 
@@ -213,10 +213,8 @@ class Users(UsersRead):
             domain.local_ip = local_ip
             domain.map_local_address = map_local_address
 
-            if is_new_dmain:
-                self.dns.new_domain(self.main_domain, domain)
-            else:
-                self.dns.update_domain(self.main_domain, domain, update_ip=update_ip, added=added_services, removed=removed_services)
+            if update_ip:
+                self.dns.update_domain(self.main_domain, domain)
 
             domain.last_update = datetime.now()
             return domain
@@ -301,6 +299,16 @@ class Users(UsersRead):
                 action = user.enable_action(ActionType.PASSWORD)
 
                 self.mail.send_reset_password(user.email, action.token)
+
+    def user_log(self, request):
+        validator = Validator(request)
+        token = validator.token()
+        data = validator.string('data')
+        with self.create_storage() as storage:
+            user = storage.get_user_by_update_token(token)
+            if not user:
+                raise servicesexceptions.bad_request('Invalid update token')
+            self.mail.send_logs(user.email, data)
 
     def user_set_password(self, request):
         validator = Validator(request)

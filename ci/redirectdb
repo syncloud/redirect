@@ -97,7 +97,7 @@ def create_args_parser():
 
     sub = subparsers.add_parser('migrate', help="migrates redirect database")
     sub.add_argument('dbname_src', help="source database name")
-    sub.add_argument('dbname_dst', help="destination backup filename")
+    sub.add_argument('dbname_dst', help="destination database name")
     sub.add_argument('scripts', nargs='+', type=str, help="upgrade scripts")
 
     return parser
