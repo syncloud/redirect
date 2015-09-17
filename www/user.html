@@ -3,11 +3,12 @@ layout: default
 title: User
 
 main_menu_item: menu_user
+styles: css/user.css
 ---
 
 <div class="container">
   <div id="has_domains" style="display: none;">
-    <h2>Domains</h2>
+    <h2>Devices</h2>
     <br/>
     <div id="domains">
     </div>
@@ -17,8 +18,9 @@ main_menu_item: menu_user
       <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span/></div>
       <div class="col-8 col-md-8 col-sm-8 col-lg-8">
         <div class="jumbotron" style="margin: 40px">
-          <h1>Get Domain!</h1>
-          <p>You do not have domains registered yet. You can register one by building your own Syncloud server and linking it to your account.</p>
+          <h1>No Devices</h1>
+          <p>You do not have any activated devices.<br/>Buy or build your first Syncloud device and activate it.</p>
+            <br/>
           <p style="text-align:center;">
             <a class="btn btn-primary btn-lg" href="http://syncloud.org" role="button">Learn more</a>
           </p>
@@ -44,49 +46,50 @@ main_menu_item: menu_user
           <div class="panel-title">
             <h3 style="margin-top: 5px; margin-bottom: 5px">
                 <span>
-                    <%= domain.user_domain %>.<%= domain.main_domain %>
+                    <%= domain.domain_name %>
                 </span>
-                <span class="pull-right">
-                    <% if (domain.online) { %>
-                        <span class="hidden-xs">Online</span> <span class="glyphicon glyphicon-ok-sign" style="color: green; top: 3px;"></span>
-                    <% } else { %>
-                        <span class="hidden-xs">Offline</span> <span class="glyphicon glyphicon-remove-sign" style="color: red; top: 3px;"></span>
-                    <% } %>
-                </span>
+                <% if (domain.online) { %>
+                <div id="circle_online" class="pull-right"></div>
+                <% } else { %>
+                <div id="circle_offline" class="pull-right"></div>
+                <% } %>
             </h3>
           </div>
         </div>
         <ul class="list-group">
           <li class="list-group-item clearfix">
-            <div class="pull-left">
-              <span>Device: <%= domain.device_title %></span>
-              <br/>
-              <span>Address: <%= domain.nice_ip %></span>
-              <br/>
-              <span>Updated: <%= domain.nice_last_update %></span>
-            </div>
+            <h3 class="pull-left" style="margin-top: 5px; margin-bottom: 5px"><%= domain.device_title %></h3>
             <button type="button" class="btn btn-default pull-right" onClick="domain_delete('<%= domain.user_domain %>');">
-              <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
+              <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate
             </button>
           </li>
-        <% if (domain.services.length === 0) { %>
-            <li class="list-group-item">
-              <span>No services available</span>
-            </li>
-        <% } else { %>
-          <% for (s=0; s < domain.services.length; s++) {
-               var service = domain.services[s]; %>
-              <li class="list-group-item" style="overflow: hidden">
-                <div style="float: left">
-                  <a href="<%= service.full_url %>">
-                      <img src="<%= service.image %>" style="width: 64px; height: 64px; margin-right: 10px"/>
-                  </a>
-                </div>
-                <h4><%= service.name %></h4>
-                <span class="hidden-xs" ><a href="<%= service.full_url %>"><%= service.full_url %></a></span>
-              </li>
-          <% } %>
-        <% } %>
+          <li class="list-group-item clearfix">
+              <span>Domain Address: </span>
+              <% if (domain.has_domain_address) { %>
+              <a href="<%= domain.domain_address %>"><%= domain.domain_address %></a>
+              <% } else { %>
+              <span>Not mapped</span>
+              <% } %>
+          </li>
+          <li class="list-group-item clearfix">
+              <span>External Address: </span>
+              <% if (domain.has_external_address) { %>
+              <a href="<%= domain.external_address %>"><%= domain.external_address %></a>
+              <% } else { %>
+              <span>Not provided</span>
+              <% } %>
+          </li>
+          <li class="list-group-item clearfix">
+              <span>Internal Address: </span>
+              <% if (domain.has_internal_address) { %>
+              <a href="<%= domain.internal_address %>"><%= domain.internal_address %></a>
+              <% } else { %>
+              <span>Not provided</span>
+              <% } %>
+          </li>
+          <li class="list-group-item clearfix">
+              <span>Updated: <%= domain.nice_last_update %></span>
+          </li>
         </ul>
       </div>
     </div>
@@ -99,6 +102,16 @@ main_menu_item: menu_user
 </script>
 
 <script type="text/javascript">
+
+function serverService(domain) {
+    for (si = 0; di < domain.services.length; si++) {
+        var service = domain.services[di];
+        if (service.name === "server") {
+            return service;
+        }
+    }
+    return null;
+}
 
 function sameDay(date1, date2) {
     var isSameDay = (date1.getDate() == date2.getDate()
@@ -132,57 +145,49 @@ function niceTimestamp(ds) {
     return $.format.date(d, date_format);
 }
 
-function niceIp(ip) {
-    if (ip === null) {
-      return "not mapped";
+function fullUrl(protocol, address, port, url) {
+    if (protocol === null || address === null || port === null) {
+        return null;
     }
-    return ip;
-}
-
-function serviceImage(name) {
-    switch (name.toLowerCase()) {
-        case "owncloud":
-            return "images/owncloud-64.png"
-            break;
-        case "gitbucket":
-            return "images/gitbucket-64.png"
-            break;
-        case "ssh":
-            return "images/ssh-64.png"
-            break;
-        case "image-ci":
-            return "images/image-ci-64.png"
-            break;
-        case "server":
-            return "images/server-64.png"
-            break;
-        default:
-            return "images/unknown-64.png";
-            break;
-    }
-}
-
-function fullUrl(domain, service) {
-    var url = service.protocol+"://"+domain.user_domain+"."+redirect.main_domain;
-    if (service.port !== 80)
-        url = url+":"+service.port;
-    if (service.url !== null)
-        url = url+"/"+service.url;
-    return url;
+    var result = protocol+"://"+address;
+    if (port !== 80)
+        result = result+":"+port;
+    if (url !== null)
+        result = result+"/"+url;
+    return result;
 }
 
 function prepareUserData(user) {
     for (di = 0; di < user.domains.length; ++di) {
         var domain = user.domains[di];
-        domain.nice_last_update = niceTimestamp(domain.last_update);
-        domain.nice_ip = niceIp(domain.ip);
-        domain.main_domain = redirect.main_domain;
-        domain.online = online(domain.last_update);
-        for (si = 0; si < domain.services.length; ++si) {
-            var service = domain.services[si];
-            service.image = serviceImage(service.name);
-            service.full_url = fullUrl(domain, service);
+
+        var server = serverService(domain);
+        if (server !== null) {
+            domain.protocol = server.protocol;
+            domain.port = server.port;
+            domain.local_port = server.local_port;
+            domain.url = server.url;
+        } else {
+            domain.protocol = null
+            domain.port = null;
+            domain.local_port = null;
+            domain.url = null;
         }
+        domain.domain_name = domain.user_domain + "." + redirect.main_domain;
+
+        domain.domain_address_port = domain.map_local_address ? domain.local_port : domain.port;
+
+        domain.domain_address = fullUrl(domain.protocol, domain.domain_name, domain.domain_address_port, domain.url);
+        domain.has_domain_address = domain.domain_address !== null;
+
+        domain.external_address = fullUrl(domain.protocol, domain.ip, domain.port, domain.url);
+        domain.has_external_address = domain.external_address !== null;
+
+        domain.internal_address = fullUrl(domain.protocol, domain.local_ip, domain.local_port, domain.url);
+        domain.has_internal_address = domain.internal_address !== null;
+
+        domain.online = online(domain.last_update);
+        domain.nice_last_update = niceTimestamp(domain.last_update);
     }
 }
 
