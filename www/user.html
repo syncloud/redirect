@@ -104,8 +104,8 @@ styles: css/user.css
 <script type="text/javascript">
 
 function serverService(domain) {
-    for (si = 0; di < domain.services.length; si++) {
-        var service = domain.services[di];
+    for (si = 0; si < domain.services.length; si++) {
+        var service = domain.services[si];
         if (service.name === "server") {
             return service;
         }
