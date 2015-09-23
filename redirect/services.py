@@ -4,6 +4,7 @@ from models import User, Domain, new_service_from_dict, ActionType
 from validation import Validator
 import servicesexceptions
 import util
+import requests
 
 
 def check_validator(validator):
@@ -126,7 +127,6 @@ class Users(UsersRead):
             storage.delete(domain.services)
 
             return domain
-
 
     def domain_acquire(self, request):
         user = self.authenticate(request)
@@ -328,3 +328,18 @@ class Users(UsersRead):
 
             action = storage.get_action(token)
             storage.delete(action)
+
+    def port_probe(self, request):
+        validator = Validator(request)
+        token = validator.token()
+        port = validator.string('port', True)
+        check_validator(validator)
+
+        with self.create_storage() as storage:
+            domain = storage.get_domain_by_update_token(token)
+
+            if not domain or not domain.user.active:
+                raise servicesexceptions.bad_request('Unknown domain update token')
+
+            response = requests.get('http://{0}:{1}/ping'.format(domain.ip, port))
+            return response.status_code == 200 and response.text == 'OK'
