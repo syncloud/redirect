@@ -341,5 +341,5 @@ class Users(UsersRead):
             if not domain or not domain.user.active:
                 raise servicesexceptions.bad_request('Unknown domain update token')
 
-            response = requests.get('http://{0}:{1}/ping'.format(domain.ip, port))
+            response = requests.get('http://{0}:{1}/ping'.format(domain.ip, port), timeout=1, max_retries=0)
             return response.status_code == 200 and response.text == 'OK'
