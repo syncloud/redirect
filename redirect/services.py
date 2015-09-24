@@ -348,4 +348,4 @@ class Users(UsersRead):
             except Exception, e:
                 pass
 
-            raise servicesexceptions.bad_request('Port is not reachable')
+            return 'Port is not reachable'
