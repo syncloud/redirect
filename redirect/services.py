@@ -341,8 +341,11 @@ class Users(UsersRead):
             if not domain or not domain.user.active:
                 raise servicesexceptions.bad_request('Unknown domain update token')
 
-            response = requests.get('http://{0}:{1}/ping'.format(domain.ip, port), timeout=1)
-            if response.status_code == 200:
-                return response.text
-            else:
-                raise servicesexceptions.bad_request('Port is not reachable')
+            try:
+                response = requests.get('http://{0}:{1}/ping'.format(domain.ip, port), timeout=1)
+                if response.status_code == 200:
+                    return response.text
+                else:
+                    raise servicesexceptions.bad_request('Port is not reachable')
+            except Exception, e:
+                    raise servicesexceptions.bad_request(e.message)
