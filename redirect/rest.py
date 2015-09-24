@@ -107,7 +107,7 @@ def user_set_password():
 @app.route('/probe/port', methods=["GET"])
 @cross_origin()
 def probe_port():
-    return ioc.manager().port_probe(request.args), 200
+    return ioc.manager().port_probe(request.args)
 
 @app.errorhandler(Exception)
 @cross_origin()

@@ -344,8 +344,8 @@ class Users(UsersRead):
             try:
                 response = requests.get('http://{0}:{1}/ping'.format(domain.ip, port), timeout=1)
                 if response.status_code == 200:
-                    return response.text
+                    return response.text, 200
             except Exception, e:
                 pass
 
-            return 'Port is not reachable'
+            return 'Port is not reachable', 404
