@@ -104,6 +104,11 @@ def user_set_password():
     return jsonify(success=True, message='Password was set successfully'), 200
 
 
+@app.route('/probe/port', methods=["GET"])
+@cross_origin()
+def probe_port():
+    return ioc.manager().port_probe(request.args, request.remote_addr)
+
 @app.errorhandler(Exception)
 @cross_origin()
 def handle_exception(error):
