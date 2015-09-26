@@ -332,7 +332,6 @@ class Users(UsersRead):
     def port_probe(self, request, request_ip):
         validator = Validator(request)
         token = validator.token()
-        ip = validator.ip(request_ip)
         port = validator.string('port', True)
         check_validator(validator)
 
@@ -343,7 +342,7 @@ class Users(UsersRead):
                 raise servicesexceptions.bad_request('Unknown domain update token')
 
             try:
-                response = requests.get('http://{0}:{1}/ping'.format(ip, port), timeout=1)
+                response = requests.get('http://{0}:{1}/ping'.format(request_ip, port), timeout=1)
                 if response.status_code == 200:
                     return response.text, 200
             except Exception, e:
