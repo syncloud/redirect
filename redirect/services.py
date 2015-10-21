@@ -346,7 +346,7 @@ class Users(UsersRead):
                 proto = 'http'
                 if protocol:
                     proto = protocol
-                response = requests.get('{0}://{1}:{2}/ping'.format(proto, request_ip, port), timeout=1)
+                response = requests.get('{0}://{1}:{2}/ping'.format(proto, request_ip, port), timeout=1, verify=False)
                 if response.status_code == 200:
                     return response.text, 200
             except Exception, e:
