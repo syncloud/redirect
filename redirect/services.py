@@ -333,6 +333,7 @@ class Users(UsersRead):
         validator = Validator(request)
         token = validator.token()
         port = validator.string('port', True)
+        protocol = validator.string('protocol', False)
         check_validator(validator)
 
         with self.create_storage() as storage:
@@ -342,7 +343,10 @@ class Users(UsersRead):
                 raise servicesexceptions.bad_request('Unknown domain update token')
 
             try:
-                response = requests.get('http://{0}:{1}/ping'.format(request_ip, port), timeout=1)
+                proto = 'http'
+                if protocol:
+                    proto = protocol
+                response = requests.get('{0}://{1}:{2}/ping'.format(proto, request_ip, port), timeout=1, verify=False)
                 if response.status_code == 200:
                     return response.text, 200
             except Exception, e:
