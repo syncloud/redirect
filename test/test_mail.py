@@ -61,7 +61,7 @@ class TestMail(unittest.TestCase):
         self.assertTrue(activate_url in sent_mails[0])
 
     def test_send_log(self):
-        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None, None)
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None, 'support@redirect.com')
         logs = 'error logs'
         mail.send_logs('boris@email.com', logs)
 
