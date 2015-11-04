@@ -13,7 +13,7 @@ class Smtp:
         self.login = login
         self.password = password
 
-    def send(self, email_from, email_to, msg_string):
+    def send(self, email_from, email_to_list, msg_string):
         s = smtplib.SMTP()
         s.connect(self.smtp_host, self.smtp_port)
         s.ehlo()
@@ -21,7 +21,7 @@ class Smtp:
             s.starttls()
         if self.login:
             s.login(self.login, self.password)
-        s.sendmail(email_from, [email_to], msg_string)
+        s.sendmail(email_from, email_to_list, msg_string)
         s.quit()
 
 
@@ -68,7 +68,26 @@ def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
     msg['Subject'] = subject
     msg['From'] = email_from
     msg['To'] = email_to
-    smtp.send(email_from, email_to, msg.as_string())
+    smtp.send(email_from, [email_to], msg.as_string())
+
+
+def send_letter_to_many(smtp, email_from, emails_to, full_email_path, substitutions={}):
+    format = 'plain'
+    _, extension = splitext(full_email_path)
+    if extension == '.html':
+        format = 'html'
+    subject, letter = read_letter(full_email_path)
+
+    if substitutions:
+        content = letter.format(**substitutions)
+    else:
+        content = letter
+
+    msg = MIMEText(content, format)
+    msg['Subject'] = subject
+    msg['From'] = email_from
+    msg['To'] = ', '.join(emails_to)
+    smtp.send(email_from, emails_to, msg.as_string())
 
 
 class Mail:
@@ -108,7 +127,6 @@ class Mail:
             f.write('If you need to add more details just reply to this email.\n\n')
             f.write(data)
         try:
-            send_letter(self.smtp, user_email, self.device_error_email, filename)
-            send_letter(self.smtp, self.device_error_email, user_email, filename)
+            send_letter_to_many(self.smtp, self.device_error_email, [user_email, self.device_error_email], filename)
         finally:
             os.unlink(filename)

@@ -61,13 +61,13 @@ class TestMail(unittest.TestCase):
         self.assertTrue(activate_url in sent_mails[0])
 
     def test_send_log(self):
-        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None, None)
+        mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None, 'support@redirect.com')
         logs = 'error logs'
         mail.send_logs('boris@email.com', logs)
 
         self.assertFalse(self.smtp.empty())
         sent_mails = self.smtp.emails()
-        self.assertEquals(2, len(sent_mails))
+        self.assertEquals(1, len(sent_mails))
         self.assertTrue(logs in sent_mails[0])
 
 
