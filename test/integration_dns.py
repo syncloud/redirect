@@ -9,67 +9,60 @@ import os
 from redirect.dns import Dns
 from redirect.models import Domain, new_service
 from redirect.util import create_token
+import logging
 
 
 class TestDns(unittest.TestCase):
 
     def setUp(self):
-        config = ConfigParser.ConfigParser()
-        config.read(os.path.dirname(__file__) + '/config.cfg')
+        self.config = ConfigParser.ConfigParser()
+        self.config.read(os.path.dirname(__file__) + '/config.cfg')
 
-        self.main_domain = config.get('full_cycle', 'domain')
+        self.main_domain = self.config.get('full_cycle', 'domain')
         self.user_domain = 'user11'
 
         self.dns = Dns(
-            config.get('aws', 'access_key_id'),
-            config.get('aws', 'secret_access_key'),
-            config.get('aws', 'hosted_zone_id'))
+            self.config.get('aws', 'access_key_id'),
+            self.config.get('aws', 'secret_access_key'),
+            self.config.get('aws', 'hosted_zone_id'))
+
+        logging.getLogger('boto').setLevel(logging.DEBUG)
 
     def test(self):
         update_token = create_token()
 
+        full_domain_name = 'name1.{0}.{1}'.format(self.user_domain, self.main_domain)
+        original_ip = self.query_dns(full_domain_name, 'A')
+
         domain = Domain(self.user_domain, '00:00:00:00:00:00', 'some-device', 'Some Device', update_token)
         domain.ip = '192.168.0.1'
-
         self.dns.update_domain(self.main_domain, domain)
-
-        service_80 = new_service('ssh', '_ssh._tcp', 80)
-        service_80.domain = domain
-        self.dns.update_domain(self.main_domain, domain)
-        self.validate_dns('192.168.0.1')
+        full_domain_name = 'name1.{0}.{1}'.format(self.user_domain, self.main_domain)
+        self.validate_dns('192.168.0.1', full_domain_name)
 
         domain.ip = '192.168.0.2'
-        service_81 = new_service('web', '_www._tcp', 81)
-        service_81.domain = domain
         self.dns.update_domain(self.main_domain, domain)
-        self.validate_dns('192.168.0.2')
-
-        domain.ip = '192.168.0.3'
-        service_82 = new_service('web1', '_www1._tcp', 82)
-        service_82.domain = domain
-        self.dns.update_domain(self.main_domain, domain)
-        self.validate_dns('192.168.0.3')
-
-        self.dns.update_domain(self.main_domain, domain)
+        full_domain_name = 'name1.{0}.{1}'.format(self.user_domain, self.main_domain)
+        self.validate_dns('192.168.0.2', full_domain_name)
 
         self.dns.delete_domain(self.main_domain, domain)
-        self.assertFalse(self.wait_for_dns('{0}.{1}'.format(self.main_domain, domain), 'CNAME', lambda v: not v))
+        full_domain_name = 'name1.{0}.{1}'.format(self.user_domain, self.main_domain)
+        self.validate_dns(original_ip.address, full_domain_name)
 
-    def validate_dns(self, ip):
-        full_domain_name = 'device.{0}.{1}'.format(self.user_domain, self.main_domain)
-        record = self.wait_for_dns(full_domain_name, 'A', lambda v: v and v.address == ip)
+    def validate_dns(self, ip, full_domain_name):
+        record = self.wait_for_dns(full_domain_name, 'A', ip)
         self.assertEquals(record.address, ip)
 
-    def wait_for_dns(self, name, name_type, condition=lambda v: v):
+    def wait_for_dns(self, name, name_type, ip):
 
         stop = 50
         for i in range(0, stop):
             value = self.query_dns(name, name_type)
-            if condition(value):
+            if value.address == ip:
                 print "found: {0}/{1} => {2}".format(name, name_type, value)
                 return value
             time.sleep(1)
-            print "waiting for {0}, {1} ... {2}/{3}".format(name, name_type, i, stop)
+            print "waiting for {0}, {1}, {2}, got: {3} ... {4}/{5}".format(name, name_type, ip, value.address, i, stop)
 
         return None
 

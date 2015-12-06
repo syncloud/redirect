@@ -33,6 +33,6 @@ class Dns:
         if zone.find_records(full_domain, 'A'):
             zone.delete_a(full_domain)
 
-        wildcard_domain = '*.{0}'.format(full_domain)
+        wildcard_domain = domain.dns_wildcard_name(main_domain)
         if zone.find_records(wildcard_domain, 'A'):
             zone.delete_a(wildcard_domain)
