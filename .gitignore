@@ -7,3 +7,4 @@ deploy.log.last
 _site
 .coverage
 secret.cfg
+*.iml
