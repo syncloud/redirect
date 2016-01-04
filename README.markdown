@@ -14,12 +14,20 @@
     git clone https://github.com/syncloud/redirect.git
     sudo chown -R redirect. redirect
     
-### Configure apache:
+### Configure apache
 
     cd /var/www/redirect
     sudo cp apache/redirect.conf /etc/apache2/sites-available/redirect.conf
     sudo a2dissite 000-default.conf
     sudo a2ensite redirect
+    
+#### Configure apache environment variables
+
+    nano /etc/apach2/envvars
+    export SYNCLOUD_DOMAIN=syncloud.it
+    export SYNCLOUD_ENV=prod
+    export SYNCLOUD_PORT=80
+    
     sudo service apache2 restart
 
 ### Configure mail server
