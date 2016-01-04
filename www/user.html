@@ -15,7 +15,7 @@ styles: css/user.css
   </div>
   <div id="no_domains" style="display: none;">
     <div class="row">
-      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span/></div>
+      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
       <div class="col-8 col-md-8 col-sm-8 col-lg-8">
         <div class="jumbotron" style="margin: 40px">
           <h1>No Devices</h1>
@@ -26,7 +26,7 @@ styles: css/user.css
           </p>
         </div>
       </div>
-      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span/></div>
+      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
     </div>
   </div>
 </div>
@@ -41,7 +41,7 @@ styles: css/user.css
   <div class="row">
   <% } %>
 
-    <div class="modal fade" id="modalDeactivateDomain" tabindex="-1" role="dialog" aria-labelledby="modalDeactivateDomain">
+    <div class="modal fade" id="modalDeactivateDomain_<%= d %>" tabindex="-1" role="dialog" aria-labelledby="modalDeactivateDomain_<%= d %>">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -68,9 +68,9 @@ styles: css/user.css
                     <%= domain.domain_name %>
                 </span>
                 <% if (domain.online) { %>
-                <div id="circle_online" class="pull-right"></div>
+                <span class="pull-right circle_online"></span>
                 <% } else { %>
-                <div id="circle_offline" class="pull-right"></div>
+                <span class="pull-right circle_offline"></span>
                 <% } %>
             </h3>
           </div>
@@ -79,7 +79,7 @@ styles: css/user.css
           <li class="list-group-item clearfix">
             <h3 class="pull-left" style="margin-top: 5px; margin-bottom: 5px"><%= domain.device_title %></h3>
 
-            <button type="button" class="btn btn-default pull-right" data-toggle="modal" data-target="#modalDeactivateDomain">
+            <button type="button" class="btn btn-default pull-right" data-toggle="modal" data-target="#modalDeactivateDomain_<%= d %>">
               <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate
             </button>
 
