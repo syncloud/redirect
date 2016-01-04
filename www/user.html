@@ -15,7 +15,7 @@ styles: css/user.css
   </div>
   <div id="no_domains" style="display: none;">
     <div class="row">
-      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span/></div>
+      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
       <div class="col-8 col-md-8 col-sm-8 col-lg-8">
         <div class="jumbotron" style="margin: 40px">
           <h1>No Devices</h1>
@@ -26,7 +26,7 @@ styles: css/user.css
           </p>
         </div>
       </div>
-      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span/></div>
+      <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
     </div>
   </div>
 </div>
@@ -68,9 +68,9 @@ styles: css/user.css
                     <%= domain.domain_name %>
                 </span>
                 <% if (domain.online) { %>
-                <div id="circle_online" class="pull-right"></div>
+                <span class="pull-right circle_online"></span>
                 <% } else { %>
-                <div id="circle_offline" class="pull-right"></div>
+                <span class="pull-right circle_offline"></span>
                 <% } %>
             </h3>
           </div>
