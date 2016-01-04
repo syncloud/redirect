@@ -23,7 +23,7 @@
     
 #### Configure apache environment variables
 
-    nano /etc/apach2/envvars
+    sudo nano /etc/apach2/envvars
     export SYNCLOUD_DOMAIN=syncloud.it
     export SYNCLOUD_ENV=prod
     export SYNCLOUD_PORT=80
