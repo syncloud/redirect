@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
 ### Install dependencies:
 
-    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git jekyll
+    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git jekyll python-dev
 
 * set mysql password to root
 
