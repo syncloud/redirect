@@ -34,6 +34,12 @@
     
     sudo service apache2 restart
 
+### Set credentials
+
+    cd /var/www/redirect
+    suod su redirect
+    nano redirect/secret.cfg
+
 ### Configure mail server
 
     sudo apt-get install exim4
@@ -52,31 +58,21 @@
     
     sudo pip install -r dev_requirements.txt
 
-### Configuration
-
-Copy redirect/config.cfg.dist to redirect/config.cfg
-and set all needed config properties
-
-
 #### Add hosts (local dns)
 
     sudo sh -c 'echo "127.0.0.1 test.com" >> /etc/hosts'
     sudo sh -c 'echo "127.0.0.1 user.test.com" >> /etc/hosts'
 
-#### Create and edit config
-
-    cp config.cfg.dist config.cfg
-
-#### Add crontab entry (auto deployment)
+#### Add crontab entry (uat auto deployment)
 
     crontab -e
     
-    */1 * * * * /var/www/redirect/ci/deploy test > /var/www/redirect/deploy.log 2>&1
+    */1 * * * * /var/www/redirect/ci/deploy > /var/www/redirect/deploy.log 2>&1
 
-#### Add apache restart to sudoers (auto deployment)
+#### Add apache restart to sudoers (uat auto deployment)
 
     sudo visudo -f /etc/sudoers.d/redirect
-    redirect ALL = (root) NOPASSWD: /usr/bin/service apache2-test restart
+    redirect ALL = (root) NOPASSWD: /usr/bin/service apache2 restart
     redirect ALL = (root) NOPASSWD: /usr/bin/pip install -r requirements.txt
 
 
