@@ -3,7 +3,6 @@
 ### Install dependencies:
 
     sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git jekyll
-    sudo pip install -r requirements.txt
 
 * set mysql password to root
 
@@ -13,6 +12,11 @@
     cd /var/www
     git clone https://github.com/syncloud/redirect.git
     sudo chown -R redirect. redirect
+
+### Install python libs
+
+    cd /var/www/redirect
+    sudo pip install -r requirements.txt
     
 ### Configure apache
 
