@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
 ### Install dependencies:
 
-    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git
+    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git jekyll
     sudo pip install -r requirements.txt
 
 * set mysql password to root
@@ -54,10 +54,6 @@ Copy redirect/config.cfg.dist to redirect/config.cfg
 and set all needed config properties
 
 
-### Run tests
-
-    py.test
-
 #### Add hosts (local dns)
 
     sudo sh -c 'echo "127.0.0.1 test.com" >> /etc/hosts'
@@ -67,17 +63,11 @@ and set all needed config properties
 
     cp config.cfg.dist config.cfg
 
-#### Setup apache site (and set WSGIScriptAlias path)
-
-    sudo cp apache/redirect.conf /etc/apache2/sites-available
-    sudo a2ensite redirect
-    sudo service apache2 restart
-
 #### Add crontab entry (auto deployment)
 
     crontab -e
     
-    */1 * * * * /var/www/redirect-test/deploy.sh > /var/www/redirect-test/deploy.log
+    */1 * * * * /var/www/redirect/ci/deploy test > /var/www/redirect/deploy.log 2>&1
 
 #### Add apache restart to sudoers (auto deployment)
 
