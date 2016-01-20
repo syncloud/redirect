@@ -19,6 +19,9 @@ CREATE TABLE `domain` (
   `device_mac_address` varchar(20),
   `device_name` varchar(100),
   `device_title` varchar(100),
+  `web_protocol` varchar(20),
+  `web_port` integer,
+  `web_local_port` integer,
   `last_update` DATETIME NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user(id)
@@ -60,4 +63,4 @@ create table db_version (
     `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('006');
+insert into db_version (version) values ('007');

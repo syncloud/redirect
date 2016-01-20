@@ -182,6 +182,9 @@ class Users(UsersRead):
         ip = validator.ip(request_ip)
         local_ip = validator.local_ip()
         map_local_address = validator.boolean('map_local_address', required=False)
+        web_protocol = validator.web_protocol(required=True)
+        web_local_port = validator.port('web_local_port', required=True)
+        web_port = validator.port('web_port', required=False)
         check_validator(validator)
 
         if map_local_address is None:
@@ -207,11 +210,13 @@ class Users(UsersRead):
 
             storage.add(added_services)
 
-            is_new_dmain = domain.ip is None
             update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip)
             domain.ip = ip
             domain.local_ip = local_ip
             domain.map_local_address = map_local_address
+            domain.web_protocol = web_protocol
+            domain.web_local_port = web_local_port
+            domain.web_port = web_port
 
             if update_ip:
                 self.dns.update_domain(self.main_domain, domain)
@@ -332,7 +337,7 @@ class Users(UsersRead):
     def port_probe(self, request, request_ip):
         validator = Validator(request)
         token = validator.token()
-        port = validator.string('port', True)
+        port = validator.port('port', True)
         protocol = validator.string('protocol', False)
         check_validator(validator)
 

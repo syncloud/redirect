@@ -85,7 +85,7 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
+    __public__ = ['user_domain', 'ip', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'web_protocol', 'web_port', 'web_local_port', 'services', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
@@ -97,6 +97,9 @@ class Domain(Base):
     device_mac_address = Column(String())
     device_name = Column(String())
     device_title = Column(String())
+    web_protocol = Column(String())
+    web_port = Column(Integer())
+    web_local_port = Column(Integer())
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", lazy='subquery')
 

@@ -60,6 +60,19 @@ class Validator:
             return None
         return self.params['password']
 
+    def web_protocol(self, required=True):
+        parameter = 'web_protocol'
+        if 'web_protocol' not in self.params:
+            if required:
+                self.add_field_error(parameter, 'Missing')
+            return None
+        protocol = self.params[parameter]
+        protocol_lower = protocol.lower()
+        if protocol_lower != 'http' and protocol_lower != 'https':
+            self.add_field_error(parameter, 'Protocol should be either http or https')
+            return None
+        return protocol_lower
+
     def port(self, port_parameter, required=True):
         if port_parameter not in self.params or not self.params[port_parameter]:
             if required:
