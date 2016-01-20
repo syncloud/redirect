@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from models import User, Domain, new_service_from_dict, ActionType
+from models import User, Domain, ActionType
 from validation import Validator
 import servicesexceptions
 import util
@@ -124,8 +124,6 @@ class Users(UsersRead):
 
             self.dns.delete_domain(self.main_domain, domain)
 
-            storage.delete(domain.services)
-
             return domain
 
     def domain_acquire(self, request):
@@ -195,20 +193,6 @@ class Users(UsersRead):
 
             if not domain or not domain.user.active:
                 raise servicesexceptions.bad_request('Unknown domain update token')
-
-            map(self.validate_service, request['services'])
-
-            request_services = [new_service_from_dict(s) for s in request['services']]
-            added_services = self.get_missing(request_services, domain.services)
-            removed_services = self.get_missing(domain.services, request_services)
-
-            storage.delete(removed_services)
-
-            for s in added_services:
-                s.domain = domain
-                domain.services.append(s)
-
-            storage.add(added_services)
 
             update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip)
             domain.ip = ip
