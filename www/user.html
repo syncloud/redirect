@@ -124,16 +124,6 @@ styles: css/user.css
 
 <script type="text/javascript">
 
-function serverService(domain) {
-    for (si = 0; si < domain.services.length; si++) {
-        var service = domain.services[si];
-        if (service.name === "server") {
-            return service;
-        }
-    }
-    return null;
-}
-
 function sameDay(date1, date2) {
     var isSameDay = (date1.getDate() == date2.getDate()
                      && date1.getMonth() == date2.getMonth()
@@ -182,29 +172,17 @@ function prepareUserData(user) {
     for (di = 0; di < user.domains.length; ++di) {
         var domain = user.domains[di];
 
-        var server = serverService(domain);
-        if (server !== null) {
-            domain.protocol = server.protocol;
-            domain.port = server.port;
-            domain.local_port = server.local_port;
-            domain.url = server.url;
-        } else {
-            domain.protocol = null
-            domain.port = null;
-            domain.local_port = null;
-            domain.url = null;
-        }
         domain.domain_name = domain.user_domain + "." + redirect.main_domain;
 
-        domain.domain_address_port = domain.map_local_address ? domain.local_port : domain.port;
+        domain.domain_address_port = domain.map_local_address ? domain.web_local_port : domain.web_port;
 
-        domain.domain_address = fullUrl(domain.protocol, domain.domain_name, domain.domain_address_port, domain.url);
+        domain.domain_address = fullUrl(domain.web_protocol, domain.domain_name, domain.domain_address_port, null);
         domain.has_domain_address = domain.domain_address !== null;
 
-        domain.external_address = fullUrl(domain.protocol, domain.ip, domain.port, domain.url);
+        domain.external_address = fullUrl(domain.web_protocol, domain.ip, domain.web_port, null);
         domain.has_external_address = domain.external_address !== null;
 
-        domain.internal_address = fullUrl(domain.protocol, domain.local_ip, domain.local_port, domain.url);
+        domain.internal_address = fullUrl(domain.web_protocol, domain.local_ip, domain.web_local_port, null);
         domain.has_internal_address = domain.internal_address !== null;
 
         domain.online = online(domain.last_update);
