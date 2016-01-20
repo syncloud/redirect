@@ -27,19 +27,6 @@ CREATE TABLE `domain` (
   FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
-CREATE TABLE `service` (
-  `id` integer PRIMARY KEY AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `protocol` varchar(20) NOT NULL,
-  `type` varchar(100) NOT NULL,
-  `url` varchar(100),
-  `port` int(11),
-  `local_port` int(11) NOT NULL,
-  `domain_id` integer NOT NULL,
-  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY (domain_id, name)
-);
-
 CREATE TABLE `action_type` (
   `id` integer PRIMARY KEY,
   `name` varchar(100) NOT NULL

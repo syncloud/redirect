@@ -5,6 +5,4 @@ select d.`id`,d.`user_domain`,d.`ip`,d.`local_ip`,d.`map_local_address`,d.`updat
 from redirect_backup.`domain` as d
 left join (select * from redirect_backup.`service` where `name`="server") as s on d.`id`=s.`domain_id`;
 
-insert into `service` select * from redirect_backup.`service`;
-
 insert into `action` select * from redirect_backup.`action`;
