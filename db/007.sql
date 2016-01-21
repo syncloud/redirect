@@ -6,5 +6,3 @@ from redirect_backup.`domain` as d
 left join (select * from redirect_backup.`service` where `name`="server") as s on d.`id`=s.`domain_id`;
 
 insert into `action` select * from redirect_backup.`action`;
-
-drop table service;
