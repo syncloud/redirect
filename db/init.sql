@@ -19,6 +19,7 @@ CREATE TABLE `domain` (
   `device_mac_address` varchar(20),
   `device_name` varchar(100),
   `device_title` varchar(100),
+  `platform_version` varchar(20),
   `web_protocol` varchar(20),
   `web_port` integer,
   `web_local_port` integer,

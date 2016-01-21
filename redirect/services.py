@@ -180,6 +180,7 @@ class Users(UsersRead):
         ip = validator.ip(request_ip)
         local_ip = validator.local_ip()
         map_local_address = validator.boolean('map_local_address', required=False)
+        platform_version = validator.string('platform_version', required=False)
         web_protocol = validator.web_protocol(required=True)
         web_local_port = validator.port('web_local_port', required=True)
         web_port = validator.port('web_port', required=False)
@@ -198,6 +199,7 @@ class Users(UsersRead):
             domain.ip = ip
             domain.local_ip = local_ip
             domain.map_local_address = map_local_address
+            domain.platform_version = platform_version
             domain.web_protocol = web_protocol
             domain.web_local_port = web_local_port
             domain.web_port = web_port

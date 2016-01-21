@@ -130,6 +130,7 @@ class TestUser(TestFlask):
                 'ip': '127.0.0.1',
                 'local_ip': None,
                 'map_local_address': False,
+                'platform_version': None,
                 'device_mac_address': '00:00:00:00:00:00',
                 'device_name': 'some-device',
                 'device_title': 'Some Device',
@@ -522,6 +523,26 @@ class TestDomainUpdate(TestDomain):
         self.assertEqual(200, response.status_code)
 
         self.check_domain(update_token, {'ip': '127.0.0.2', 'user_domain': user_domain})
+
+    def test_domain_update_platform_version(self):
+        email, password = self.create_active_user()
+
+        user_domain = create_token()
+        update_token = self.acquire_domain(email, password, user_domain)
+
+        update_data = {
+            'token': update_token,
+            'ip': '127.0.0.1',
+            'platform_version': '366',
+            'web_protocol': 'http',
+            'web_port': 10001,
+            'web_local_port': 80,
+        }
+
+        response = self.app.post('/domain/update', data=json.dumps(update_data))
+        self.assertEqual(200, response.status_code)
+
+        self.check_domain(update_token, {'platform_version': '366'})
 
     def test_local_ip_changed(self):
         email, password = self.create_active_user()
