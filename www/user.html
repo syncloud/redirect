@@ -161,7 +161,7 @@ function fullUrl(protocol, address, port, url) {
         return null;
     }
     var result = protocol+"://"+address;
-    if (port !== 80)
+    if ((protocol === "http" && port !== 80) || (protocol === "https" && port !== 443))
         result = result+":"+port;
     if (url !== null)
         result = result+"/"+url;
