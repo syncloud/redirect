@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from models import User, Domain, new_service_from_dict, ActionType
+from models import User, Domain, ActionType
 from validation import Validator
 import servicesexceptions
 import util
@@ -124,8 +124,6 @@ class Users(UsersRead):
 
             self.dns.delete_domain(self.main_domain, domain)
 
-            storage.delete(domain.services)
-
             return domain
 
     def domain_acquire(self, request):
@@ -182,6 +180,10 @@ class Users(UsersRead):
         ip = validator.ip(request_ip)
         local_ip = validator.local_ip()
         map_local_address = validator.boolean('map_local_address', required=False)
+        platform_version = validator.string('platform_version', required=False)
+        web_protocol = validator.web_protocol(required=True)
+        web_local_port = validator.port('web_local_port', required=True)
+        web_port = validator.port('web_port', required=False)
         check_validator(validator)
 
         if map_local_address is None:
@@ -193,25 +195,14 @@ class Users(UsersRead):
             if not domain or not domain.user.active:
                 raise servicesexceptions.bad_request('Unknown domain update token')
 
-            map(self.validate_service, request['services'])
-
-            request_services = [new_service_from_dict(s) for s in request['services']]
-            added_services = self.get_missing(request_services, domain.services)
-            removed_services = self.get_missing(domain.services, request_services)
-
-            storage.delete(removed_services)
-
-            for s in added_services:
-                s.domain = domain
-                domain.services.append(s)
-
-            storage.add(added_services)
-
-            is_new_dmain = domain.ip is None
             update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip)
             domain.ip = ip
             domain.local_ip = local_ip
             domain.map_local_address = map_local_address
+            domain.platform_version = platform_version
+            domain.web_protocol = web_protocol
+            domain.web_local_port = web_local_port
+            domain.web_port = web_port
 
             if update_ip:
                 self.dns.update_domain(self.main_domain, domain)
@@ -332,7 +323,7 @@ class Users(UsersRead):
     def port_probe(self, request, request_ip):
         validator = Validator(request)
         token = validator.token()
-        port = validator.string('port', True)
+        port = validator.port('port', True)
         protocol = validator.string('protocol', False)
         check_validator(validator)
 

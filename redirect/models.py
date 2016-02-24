@@ -85,7 +85,7 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'services', 'last_update']
+    __public__ = ['user_domain', 'ip', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'platform_version', 'web_protocol', 'web_port', 'web_local_port', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
@@ -97,10 +97,12 @@ class Domain(Base):
     device_mac_address = Column(String())
     device_name = Column(String())
     device_title = Column(String())
+    platform_version = Column(String())
+    web_protocol = Column(String())
+    web_port = Column(Integer())
+    web_local_port = Column(Integer())
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", lazy='subquery')
-
-    services = relationship("Service", lazy='subquery')
 
     def __init__(self, user_domain, device_mac_address, device_name, device_title, update_token):
         self.user_domain = user_domain
@@ -119,52 +121,3 @@ class Domain(Base):
         if self.map_local_address:
             return self.local_ip
         return self.ip
-
-
-class Service(Base):
-    __tablename__ = "service"
-    __public__ = ['name', 'protocol', 'type', 'port', 'local_port', 'url']
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String())
-    protocol = Column(String())
-    type = Column(String())
-    url = Column(String())
-    port = Column(Integer())
-    local_port = Column(Integer())
-
-    domain_id = Column(Integer, ForeignKey('domain.id'))
-    domain = relationship("Domain", lazy='subquery')
-
-    def dns_name(self, main_domain):
-        return '{0}.{1}.{2}.'.format(self.type, self.domain.user_domain, main_domain)
-
-    def dns_value(self, main_domain):
-        return '0 0 {0} {1}.{2}.'.format(self.dns_port(), self.domain.user_domain, main_domain)
-
-    def dns_port(self):
-        if self.domain.map_local_address:
-            return self.local_port
-        return self.port
-
-    def __str__(self):
-        return "{ " + ", ".join(["{0}: {1}".format(f, getattr(self, f)) for f in self.fields_str()]) + " }"
-
-    def fields_str(self):
-        return [field for field in self.__public__ if getattr(self, field)]
-
-    def __repr__(self):
-        return self.__str__()
-
-def new_service(name, type, port):
-    s = Service()
-    s.name = name
-    s.type = type
-    s.port = port
-    return s
-
-
-def new_service_from_dict(dictionary):
-    s = Service()
-    s.from_dict(dictionary)
-    return s

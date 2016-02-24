@@ -2,7 +2,7 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from models import User, Domain, Service, Base, Action, ActionType
+from models import User, Domain, Base, Action, ActionType
 import util
 
 
@@ -17,8 +17,6 @@ class Storage:
         self.delete(user)
 
     def delete_domain(self, domain):
-        for service in domain.services:
-            self.delete(service)
         self.delete(domain)
 
     def get_user_by_email(self, email):
@@ -79,7 +77,6 @@ class Storage:
             self.session.flush()
 
     def clear(self):
-        self.session.query(Service).delete()
         self.session.query(Domain).delete()
         self.session.query(Action).delete()
         self.session.query(User).delete()

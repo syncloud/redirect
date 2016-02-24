@@ -19,22 +19,13 @@ CREATE TABLE `domain` (
   `device_mac_address` varchar(20),
   `device_name` varchar(100),
   `device_title` varchar(100),
+  `platform_version` varchar(20),
+  `web_protocol` varchar(20),
+  `web_port` integer,
+  `web_local_port` integer,
   `last_update` DATETIME NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user(id)
-);
-
-CREATE TABLE `service` (
-  `id` integer PRIMARY KEY AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `protocol` varchar(20) NOT NULL,
-  `type` varchar(100) NOT NULL,
-  `url` varchar(100),
-  `port` int(11),
-  `local_port` int(11) NOT NULL,
-  `domain_id` integer NOT NULL,
-  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY (domain_id, name)
 );
 
 CREATE TABLE `action_type` (
@@ -60,4 +51,4 @@ create table db_version (
     `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('006');
+insert into db_version (version) values ('007');

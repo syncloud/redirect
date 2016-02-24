@@ -2,20 +2,43 @@
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
 ### Install dependencies:
 
-    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb
+    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git jekyll python-dev
+
+* set mysql password to root
+
+### Get source code
+
+    sudo useradd redirect
+    cd /var/www
+    git clone https://github.com/syncloud/redirect.git
+    sudo chown -R redirect. redirect
+
+### Install python libs
+
+    cd /var/www/redirect
     sudo pip install -r requirements.txt
+    
+### Configure apache
 
-### Configure apache:
-
+    cd /var/www/redirect
     sudo cp apache/redirect.conf /etc/apache2/sites-available/redirect.conf
     sudo a2dissite 000-default.conf
     sudo a2ensite redirect
-    sudo useradd -m redirect
+    
+#### Configure apache environment variables
+
+    sudo nano /etc/apache2/envvars
+    export SYNCLOUD_DOMAIN=syncloud.it
+    export SYNCLOUD_ENV=prod
+    export SYNCLOUD_PORT=80
+    
     sudo service apache2 restart
 
-#### Apache multiple-instances
+### Set credentials
 
-sh /usr/share/doc/apache2/examples/setup-instance xxx
+    cd /var/www/redirect
+    suod su redirect
+    nano redirect/secret.cfg
 
 ### Configure mail server
 
@@ -27,85 +50,35 @@ sh /usr/share/doc/apache2/examples/setup-instance xxx
 
 ### Configure mysql database (redirect)
 
+    cd /var/www/redirect
+    mysql -u root -p root -e "create database redirect";
     mysql -u login -p password < db/init.sql
 
 ### Development dependencies
     
     sudo pip install -r dev_requirements.txt
 
-### Configuration
-
-Copy redirect/config.cfg.dist to redirect/config.cfg
-and set all needed config properties
-
-
-### Run tests
-
-    py.test
-
-### Integration tests
-
-````
-git clone https://github.com/syncloud/redirect /var/www/redirect
-````
-
-#### Recreate db if needed
-```
-mysqladmin -uroot -proot -f drop redirect
-mysql -uroot -proot < db/init.sql
-````
 #### Add hosts (local dns)
-````
-sudo sh -c 'echo "127.0.0.1 test.com" >> /etc/hosts'
-sudo sh -c 'echo "127.0.0.1 user.test.com" >> /etc/hosts'
-````
-#### Create and edit config
-````
-cp config.cfg.dist config.cfg
-````
-#### Setup apache site (and set WSGIScriptAlias path)
-````
-sudo cp apache/redirect.conf /etc/apache2/sites-available
-sudo a2ensite redirect
-sudo service apache2 restart
-````
-### Test environment deployment
 
-#### Add redirect user and test site dir
+    sudo sh -c 'echo "127.0.0.1 test.com" >> /etc/hosts'
+    sudo sh -c 'echo "127.0.0.1 user.test.com" >> /etc/hosts'
 
-````
-sudo useradd redirect
-sudo mkdir /var/www/redirect-test
-sudo chown redirect. /var/www/redirect-test
-sudo su redirect
-cd /var/www/redirect-test
-````
-#### Clone repo to test www dir
+#### Add crontab entry (uat auto deployment)
 
-````
-git clone https://github.com/syncloud/redirect .
-````
-#### Add crontab entry
-````
-crontab -e
-````
-````
-*/1 * * * * /var/www/redirect-test/deploy.sh > /var/www/redirect-test/deploy.log
-````
+    crontab -e
+    
+    */1 * * * * /var/www/redirect/ci/deploy > /var/www/redirect/deploy.log 2>&1
 
-#### Add apache restart to sudoers
-````
-sudo visudo -f /etc/sudoers.d/redirect
-````
-````
-redirect ALL = (root) NOPASSWD: /usr/bin/service apache2-test restart
-redirect ALL = (root) NOPASSWD: /usr/bin/pip install -r requirements.txt
-````
+#### Add apache restart to sudoers (uat auto deployment)
+
+    sudo visudo -f /etc/sudoers.d/redirect
+    redirect ALL = (root) NOPASSWD: /usr/bin/service apache2 restart
+    redirect ALL = (root) NOPASSWD: /usr/bin/pip install -r requirements.txt
+
 
 #### Upgrade test db from release to master
 
-````
-sudo su redirect
-cd /var/www/redirect-test
-./ci/redirectdb redirect redirect-test 006.sql
-````
+
+    sudo su redirect
+    cd /var/www/redirect-test
+    ./ci/redirectdb redirect redirect-test 006.sql

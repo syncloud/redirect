@@ -7,7 +7,7 @@ import ConfigParser
 import os
 
 from redirect.dns import Dns
-from redirect.models import Domain, new_service
+from redirect.models import Domain
 from redirect.util import create_token
 import logging
 
