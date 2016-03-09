@@ -9,9 +9,13 @@ class Dns:
         self.aws_secret_access_key = aws_secret_access_key
         self.hosted_zone_id = hosted_zone_id
 
-    def change(self, changes, ip, full_domain, change_action, change_type):
-        change = changes.add_change(change_action, full_domain, change_type)
+    def a_change(self, changes, ip, full_domain, change_action):
+        change = changes.add_change(change_action, full_domain, 'A')
         change.add_value(ip)
+
+    def mx_change(self, changes, full_domain, change_action):
+        change = changes.add_change(change_action, full_domain, 'MX')
+        change.add_value('1 {0}'.format(full_domain))
 
     def update_domain(self, main_domain, domain):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
@@ -20,9 +24,9 @@ class Dns:
         ip = domain.dns_ip()
         full_domain = domain.dns_name(main_domain)
 
-        self.change(changes, ip, full_domain, 'UPSERT', 'A')
-        self.change(changes, full_domain, full_domain, 'UPSERT', 'MX')
-        self.change(changes, ip, '*.{0}'.format(full_domain), 'UPSERT', 'A')
+        self.a_change(changes, ip, full_domain, 'UPSERT')
+        self.a_change(changes, ip, '*.{0}'.format(full_domain), 'UPSERT')
+        self.mx_change(changes, full_domain, 'UPSERT')
 
         changes.commit()
 
