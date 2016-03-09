@@ -9,8 +9,8 @@ class Dns:
         self.aws_secret_access_key = aws_secret_access_key
         self.hosted_zone_id = hosted_zone_id
 
-    def a_change(self, changes, ip, full_domain, change_type):
-        change = changes.add_change(change_type, full_domain, 'A')
+    def change(self, changes, ip, full_domain, change_action, change_type):
+        change = changes.add_change(change_action, full_domain, change_type)
         change.add_value(ip)
 
     def update_domain(self, main_domain, domain):
@@ -20,8 +20,9 @@ class Dns:
         ip = domain.dns_ip()
         full_domain = domain.dns_name(main_domain)
 
-        self.a_change(changes, ip, full_domain, 'UPSERT')
-        self.a_change(changes, ip, '*.{0}'.format(full_domain), 'UPSERT')
+        self.change(changes, ip, full_domain, 'UPSERT', 'A')
+        self.change(changes, full_domain, full_domain, 'UPSERT', 'MX')
+        self.change(changes, ip, '*.{0}'.format(full_domain), 'UPSERT', 'A')
 
         changes.commit()
 
@@ -32,6 +33,8 @@ class Dns:
         full_domain = domain.dns_name(main_domain)
         if zone.find_records(full_domain, 'A'):
             zone.delete_a(full_domain)
+        if zone.find_records(full_domain, 'MX'):
+            zone.delete_mx(full_domain)
 
         wildcard_domain = domain.dns_wildcard_name(main_domain)
         if zone.find_records(wildcard_domain, 'A'):
