@@ -32,7 +32,7 @@ class Dns:
         self.a_change(changes, ip, full_domain, 'UPSERT')
         self.a_change(changes, ip, '*.{0}'.format(full_domain), 'UPSERT')
         self.mx_change(changes, full_domain, 'UPSERT')
-        self.spf_change(changes, full_domain, 'UPSERT')
+        self.spf_change(changes, ip, full_domain, 'UPSERT')
 
         changes.commit()
 
