@@ -8,10 +8,13 @@ import convertible
 import config
 import logging
 import ioc
+import graphitesend
 
 the_config = config.read_redirect_configs()
+graphitesend.init(graphite_server=the_config.get('stats', 'server'))
 
 app = Flask(__name__)
+
 
 @app.route('/user/create', methods=["POST"])
 @cross_origin()
@@ -62,6 +65,7 @@ def domain_get():
 @app.route('/domain/update', methods=["POST"])
 @cross_origin()
 def domain_update():
+    graphitesend.send('domain.update', 1)
     request_data = json.loads(request.data)
     domain = ioc.manager().domain_update(request_data, request.remote_addr)
     domain_data = convertible.to_dict(domain)
