@@ -1,3 +1,4 @@
+import graphitesend
 from flask import Flask, request, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from servicesexceptions import ServiceException, ParametersException
@@ -7,6 +8,7 @@ import config
 import ioc
 
 the_config = config.read_redirect_configs()
+graphitesend.init(graphite_server=the_config.get('stats', 'server'))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = the_config.get('redirect', 'auth_secret_key')
@@ -53,6 +55,7 @@ def load_user(email):
 
 @app.route("/login", methods=["POST"])
 def login():
+    graphitesend.send('www.user.login', 1)
     user = ioc.manager().authenticate(request.form)
     user_flask = UserFlask(user)
     login_user(user_flask, remember=False)
@@ -62,6 +65,7 @@ def login():
 @app.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    graphitesend.send('www.user.logout', 1)
     logout_user()
     return 'User logged out', 200
 
@@ -69,6 +73,7 @@ def logout():
 @app.route("/user", methods=["GET"])
 @login_required
 def user():
+    graphitesend.send('www.user.get', 1)
     user = current_user.user
     user_data = convertible.to_dict(user)
     return jsonify(user_data), 200
@@ -77,6 +82,7 @@ def user():
 @app.route("/user_delete", methods=["POST"])
 @login_required
 def user_delete():
+    graphitesend.send('www.user.delete', 1)
     user = current_user.user
     ioc.manager().do_delete_user(user.email)
     return 'User deleted', 200
@@ -85,6 +91,7 @@ def user_delete():
 @app.route("/set_subscribed", methods=["POST"])
 @login_required
 def user_unsubscribe():
+    graphitesend.send('www.user.unsubscribe', 1)
     user = current_user.user
     ioc.manager().user_set_subscribed(request.form, user.email)
     return 'Successfully set', 200
@@ -93,6 +100,7 @@ def user_unsubscribe():
 @app.route("/domain_delete", methods=["POST"])
 @login_required
 def domain_delete():
+    graphitesend.send('www.domain.delete', 1)
     user = current_user.user
     ioc.manager().user_domain_delete(request.form, user)
     return 'Domain deleted', 200
@@ -101,11 +109,14 @@ def domain_delete():
 @app.errorhandler(Exception)
 def handle_exception(error):
     if isinstance(error, ParametersException):
+        graphitesend.send('www.exception.param', 1)
         parameters_messages = [{'parameter': k, 'messages': v} for k, v in error.parameters_errors.items()]
         return jsonify(message=error.message, parameters_messages=parameters_messages), error.status_code
     if isinstance(error, ServiceException):
+        graphitesend.send('www.exception.service', 1)
         return jsonify(message=error.message), error.status_code
     else:
+        graphitesend.send('www.exception.unknown', 1)
         tb = traceback.format_exc()
         return jsonify(message=tb), 500
 
