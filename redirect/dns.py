@@ -53,4 +53,4 @@ class Dns:
 
         if zone.find_records(full_domain, 'SPF'):
             record = self.find_records(full_domain, 'SPF', identifier=None, all=False)
-            self.delete_record(record)
+            zone.delete_record(record)
