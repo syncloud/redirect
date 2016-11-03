@@ -28,6 +28,15 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
             read = storage.get_user_by_email(user.email)
             self.assertUser(user, read)
 
+    def test_get_users_emails(self):
+        user = generate_user()
+        with self.create_storage() as storage:
+            storage.add(user)
+        with self.create_storage() as storage:
+            read = storage.get_users_emails('SELECT email FROM user WHERE email="{0}"'.format(user.email))
+            self.assertEquals(1, len(read))
+            self.assertEquals(user.email, read[0])
+
     def test_user_add_different_session(self):
         user = generate_user()
         with self.create_storage() as storage:
