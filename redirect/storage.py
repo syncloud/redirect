@@ -21,7 +21,7 @@ class Storage:
 
     def get_users_emails(self, query):
         emails = []
-        result = self.session.execute()
+        result = self.session.execute(query)
         for row in result:
             email = row[0]
             emails.append(email)
