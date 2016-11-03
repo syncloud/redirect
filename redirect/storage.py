@@ -19,6 +19,14 @@ class Storage:
     def delete_domain(self, domain):
         self.delete(domain)
 
+    def get_users_emails(self, query):
+        emails = []
+        result = self.session.execute()
+        for row in result:
+            email = row[0]
+            emails.append(email)
+        return emails
+
     def get_user_by_email(self, email):
         user = self.session.query(User).filter(User.email == email).first()
         if user and not user.update_token:
