@@ -37,7 +37,7 @@
 ### Set credentials
 
     cd /var/www/redirect
-    suod su redirect
+    sudo su redirect
     nano redirect/secret.cfg
 
 ### Configure mail server
