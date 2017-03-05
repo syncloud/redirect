@@ -127,10 +127,10 @@ class Mail:
             f.write('If you need to add more details just reply to this email.\n\n')
             f.write(data)
         try:
-            from = self.device_error_email
-            to = [user_email]
+            from_email = self.device_error_email
+            to_email = [user_email]
             if include_support:
-                to.append(self.device_error_email)
-            send_letter_to_many(self.smtp, from, to, filename)
+                to_email.append(self.device_error_email)
+            send_letter_to_many(self.smtp, from_email, to_email, filename)
         finally:
             os.unlink(filename)
