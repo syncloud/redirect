@@ -63,7 +63,7 @@ class TestMail(unittest.TestCase):
     def test_send_log(self):
         mail = Mail(Smtp(self.smtp_host, self.smtp_port), 'support@redirect.com', None, None, 'support@redirect.com')
         logs = 'error logs'
-        mail.send_logs('boris@email.com', logs)
+        mail.send_logs('boris@email.com', logs, False)
 
         self.assertFalse(self.smtp.empty())
         sent_mails = self.smtp.emails()
