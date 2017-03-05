@@ -306,11 +306,12 @@ class Users(UsersRead):
         validator = Validator(request)
         token = validator.token()
         data = validator.string('data')
+        include_support = validator.boolean('include_support', False, True)
         with self.create_storage() as storage:
             user = storage.get_user_by_update_token(token)
             if not user:
                 raise servicesexceptions.bad_request('Invalid update token')
-            self.mail.send_logs(user.email, data)
+            self.mail.send_logs(user.email, data, include_support)
 
     def user_set_password(self, request):
         validator = Validator(request)
