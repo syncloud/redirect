@@ -146,7 +146,7 @@ class Validator:
                 self.add_field_error(parameter, 'Missing')
             return default
         value = self.params[parameter]
-        if isinstance(value, str):
+        if isinstance(value, basestring):
             if value.lower() == 'true':
                 return True
             if value.lower() == 'false':
