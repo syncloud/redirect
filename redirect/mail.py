@@ -119,7 +119,7 @@ class Mail:
         full_email_path = self.email_path('set_password.txt')
         self.send_letter(email_to, full_email_path)
 
-    def send_logs(self, user_email, data):
+    def send_logs(self, user_email, data, include_support):
         fd, filename = tempfile.mkstemp()
         with os.fdopen(fd, 'w') as f:
             f.write('Device error report\n')
@@ -127,6 +127,10 @@ class Mail:
             f.write('If you need to add more details just reply to this email.\n\n')
             f.write(data)
         try:
-            send_letter_to_many(self.smtp, self.device_error_email, [user_email, self.device_error_email], filename)
+            from_email = self.device_error_email
+            to_email = [user_email]
+            if include_support:
+                to_email.append(self.device_error_email)
+            send_letter_to_many(self.smtp, from_email, to_email, filename)
         finally:
             os.unlink(filename)

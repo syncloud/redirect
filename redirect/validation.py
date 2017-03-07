@@ -140,13 +140,13 @@ class Validator:
             return None
         return self.params[parameter]
 
-    def boolean(self, parameter, required=False):
+    def boolean(self, parameter, required=False, default=None):
         if parameter not in self.params:
             if required:
                 self.add_field_error(parameter, 'Missing')
-            return None
+            return default
         value = self.params[parameter]
-        if isinstance(value, str):
+        if isinstance(value, basestring):
             if value.lower() == 'true':
                 return True
             if value.lower() == 'false':
