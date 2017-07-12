@@ -41,16 +41,11 @@ class Dns:
         zone = conn.get_zone(main_domain)
 
         full_domain = domain.dns_name(main_domain)
-        if zone.find_records(full_domain, 'A'):
-            zone.delete_a(full_domain)
+        zone.delete_a(full_domain)
         wildcard_domain = domain.dns_wildcard_name(main_domain)
-        if zone.find_records(wildcard_domain, 'A'):
-            zone.delete_a(wildcard_domain)
+        zone.delete_a(wildcard_domain)
 
-        if zone.find_records(full_domain, 'MX'):
-            zone.delete_mx(full_domain)
+        zone.delete_mx(full_domain)
 
-
-        if zone.find_records(full_domain, 'SPF'):
-            record = zone.find_records(full_domain, 'SPF', identifier=None, all=False)
-            zone.delete_record(record)
+        record = zone.find_records(full_domain, 'SPF', identifier=None, all=False)
+        zone.delete_record(record)
