@@ -1,6 +1,6 @@
 markdown: rdiscount
 
-rest_api_url: http://api.syncloud.it/
+rest_api_url: https://api.syncloud.it/
 web_api_url: /api/
 
 main_domain: syncloud.it
