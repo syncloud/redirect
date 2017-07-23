@@ -23,29 +23,21 @@ class Dns:
         change.add_value('1 {0}'.format(full_domain))
 
     def update_domain(self, main_domain, domain):
-        conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
-        changes = ResourceRecordSets(conn, self.hosted_zone_id)
-
-        ip = domain.dns_ip()
-        full_domain = domain.dns_name(main_domain)
-
-        self.a_change(changes, ip, full_domain, 'UPSERT')
-        self.a_change(changes, ip, '*.{0}'.format(full_domain), 'UPSERT')
-        self.mx_change(changes, full_domain, 'UPSERT')
-        self.spf_change(changes, ip, full_domain, 'UPSERT')
-
-        changes.commit()
+        self.__action_domain(main_domain, domain, 'UPSERT')
 
     def delete_domain(self, main_domain, domain):
+        self.__action_domain(main_domain, domain, 'DELETE')
+
+    def __action_domain(self, main_domain, domain, action):
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
         ip = domain.dns_ip()
         full_domain = domain.dns_name(main_domain)
 
-        self.a_change(changes, ip, full_domain, 'DELETE')
-        self.a_change(changes, ip, '*.{0}'.format(full_domain), 'DELETE')
-        self.mx_change(changes, full_domain, 'DELETE')
-        self.spf_change(changes, ip, full_domain, 'DELETE')
+        self.a_change(changes, ip, full_domain, action)
+        self.a_change(changes, ip, '*.{0}'.format(full_domain), action)
+        self.mx_change(changes, full_domain, action)
+        self.spf_change(changes, ip, full_domain, action)
 
         changes.commit()
