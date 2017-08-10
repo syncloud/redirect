@@ -1,5 +1,5 @@
 import re
-import socket
+from IPy import IP
 
 
 class Validator:
@@ -96,8 +96,8 @@ class Validator:
 
     def __check_ip_address(self, name, ip):
         try:
-            socket.inet_aton(ip)
-        except socket.error:
+            IP(ip)
+        except Exception:
             self.add_field_error(name, 'Invalid IP address')
 
     def ip(self, default_ip=None):
