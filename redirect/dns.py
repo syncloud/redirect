@@ -1,5 +1,6 @@
 from boto.route53.record import ResourceRecordSets
 import boto.route53
+from IPy import IP
 
 
 class Dns:
@@ -10,7 +11,11 @@ class Dns:
         self.hosted_zone_id = hosted_zone_id
 
     def a_change(self, changes, ip, full_domain, change_action):
-        change = changes.add_change(change_action, full_domain, 'A')
+        change_type = 'A'
+        if IP(ip).version() == 6:
+            change_type = 'AAAA'
+
+        change = changes.add_change(change_action, full_domain, change_type)
         change.add_value(ip)
 
     def spf_change(self, changes, ip, full_domain, change_action):
