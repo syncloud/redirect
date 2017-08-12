@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/syncloud/redirect.svg?branch=master)](https://travis-ci.org/syncloud/redirect)
 ### Install dependencies:
 
-    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git jekyll python-dev
+    sudo apt-get install apache2 mysql-server python python-pip libapache2-mod-wsgi python-mysqldb git jekyll python-dev libmysqlclient-dev
 
 * set mysql password to root
 
@@ -29,9 +29,7 @@
 
     sudo nano /etc/apache2/envvars
     export SYNCLOUD_DOMAIN=syncloud.it
-    export SYNCLOUD_ENV=prod
-    export SYNCLOUD_PORT=80
-    
+
     sudo service apache2 restart
 
 ### Set credentials
@@ -40,19 +38,11 @@
     sudo su redirect
     nano redirect/secret.cfg
 
-### Configure mail server
-
-    sudo apt-get install exim4
-    sudo dpkg-reconfigure exim4-config
-
-* internet site: Y
-* leave the rest as is and never allow relay
-
 ### Configure mysql database (redirect)
 
     cd /var/www/redirect
-    mysql -u root -p root -e "create database redirect";
-    mysql -u login -p password < db/init.sql
+    mysql -uroot -proot -e "create database redirect";
+    mysql -ulogin -ppassword < db/init.sql
 
 ### Development dependencies
     
