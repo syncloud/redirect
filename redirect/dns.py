@@ -34,10 +34,14 @@ class Dns:
         self.__action_domain(main_domain, domain, 'DELETE')
 
     def __action_domain(self, main_domain, domain, action):
+
+        ip = domain.dns_ip()
+        if ip is None:
+            return
+
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
-        ip = domain.dns_ip()
         full_domain = domain.dns_name(main_domain)
         ip_version = IP(ip).version()
         self.a_change(changes, ip, full_domain, action, ip_version)
