@@ -338,21 +338,21 @@ class Users(UsersRead):
         port = validator.port('port', True)
         protocol = validator.string('protocol', False)
         check_validator(validator)
-
+        domain = None
         with self.create_storage() as storage:
             domain = storage.get_domain_by_update_token(token)
 
-            if not domain or not domain.user.active:
-                raise servicesexceptions.bad_request('Unknown domain update token')
+        if not domain or not domain.user.active:
+            raise servicesexceptions.bad_request('Unknown domain update token')
 
-            try:
-                proto = 'http'
-                if protocol:
-                    proto = protocol
-                response = requests.get('{0}://{1}:{2}/ping'.format(proto, request_ip, port), timeout=1, verify=False)
-                if response.status_code == 200:
-                    return response.text, 200
-            except Exception, e:
-                pass
+        try:
+            proto = 'http'
+            if protocol:
+                proto = protocol
+            response = requests.get('{0}://{1}:{2}/ping'.format(proto, request_ip, port), timeout=1, verify=False)
+            if response.status_code == 200:
+                return {'message': response.text, 'device_ip': request_ip}, 200
+        except Exception, e:
+            pass
 
-            return 'Port is not reachable', 404
+        return {'message': 'Port is not reachable', 'device_ip': request_ip}, 404

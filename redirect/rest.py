@@ -122,8 +122,16 @@ def user_set_password():
 
 @app.route('/probe/port', methods=["GET"])
 @cross_origin()
-def probe_port():
-    statsd_client.incr('rest.probe.port')
+def probe_port_v1():
+    statsd_client.incr('rest.probe.port_v1')
+    result, status_code = ioc.manager().port_probe(request.args, request.remote_addr)
+    return result['message'], status_code
+
+
+@app.route('/probe/port_v2', methods=["GET"])
+@cross_origin()
+def probe_port_v2():
+    statsd_client.incr('rest.probe.port_v2')
     return ioc.manager().port_probe(request.args, request.remote_addr)
 
 
