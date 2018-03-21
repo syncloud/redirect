@@ -337,6 +337,7 @@ class Users(UsersRead):
         token = validator.token()
         port = validator.port('port', True)
         protocol = validator.string('protocol', False)
+        ip = validator.string('ip', False)
         check_validator(validator)
         domain = None
         with self.create_storage() as storage:
@@ -346,6 +347,8 @@ class Users(UsersRead):
             raise servicesexceptions.bad_request('Unknown domain update token')
 
         try:
+            if ip:
+                request_ip = ip
             proto = 'http'
             if protocol:
                 proto = protocol
