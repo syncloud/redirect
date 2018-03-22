@@ -11,8 +11,8 @@ CREATE TABLE `user` (
 CREATE TABLE `domain` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `user_domain` varchar(100) NOT NULL UNIQUE,
-  `ip` varchar(15),
-  `local_ip` varchar(15),
+  `ip` varchar(45),
+  `local_ip` varchar(45),
   `map_local_address` BOOLEAN DEFAULT 0,
   `update_token` char(36) UNIQUE,
   `user_id` integer NOT NULL,
