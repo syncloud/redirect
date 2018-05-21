@@ -125,7 +125,7 @@ class Mail:
             f.write('Device error report\n')
             f.write('Thank you for sharing Syncloud device error info, Syncloud support will get back to you shortly.\n')
             f.write('If you need to add more details just reply to this email.\n\n')
-            f.write(data)
+            f.write(data.encode('utf-8'))
         try:
             from_email = self.device_error_email
             to_email = [user_email]
