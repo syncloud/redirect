@@ -349,12 +349,16 @@ class Users(UsersRead):
         try:
             if ip:
                 request_ip = ip
-            proto = 'http'
-            if protocol:
-                proto = protocol
-            response = requests.get('{0}://{1}:{2}/ping'.format(proto, request_ip, port), timeout=1, verify=False)
+            
+            response = requests.get('{0}://{1}:{2}/ping'.format(protocol, request_ip, port),
+                                    timeout=1, verify=False, allow_redirects=False)
             if response.status_code == 200:
                 return {'message': response.text, 'device_ip': request_ip}, 200
+
+            # TODO: Remove after release 18.07 reaches wider adoption
+            elif response.status_code == 301 and protocol == 'http':
+                return {'message': "OK", 'device_ip': request_ip}, 200
+
         except Exception, e:
             pass
 
