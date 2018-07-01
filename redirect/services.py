@@ -349,12 +349,14 @@ class Users(UsersRead):
         try:
             if ip:
                 request_ip = ip
-            proto = 'http'
-            if protocol:
-                proto = protocol
-            response = requests.get('{0}://{1}:{2}/ping'.format(proto, request_ip, port), timeout=1, verify=False)
+            
+            if protocol != "https":
+                return {'message': "OK", 'device_ip': request_ip}, 200
+           
+            response = requests.get('https://{0}:{1}/ping'.format(request_ip, port), timeout=1, verify=False)
             if response.status_code == 200:
                 return {'message': response.text, 'device_ip': request_ip}, 200
+                
         except Exception, e:
             pass
 
