@@ -19,8 +19,12 @@ class Dns:
         change.add_value(ip)
 
     def spf_change(self, changes, ip, full_domain, change_action, ip_version):
+        spf_value = '"v=spf1 ip{0}:{1} -all"'.format(ip_version, ip)
+
         change = changes.add_change(change_action, full_domain, 'SPF')
-        spf_value = '"v=spf1 ip{0}:{1}-all"'.format(ip_version, ip)
+        change.add_value(spf_value)
+
+        change = changes.add_change(change_action, full_domain, 'TXT')
         change.add_value(spf_value)
 
     def mx_change(self, changes, full_domain, change_action):
