@@ -9,7 +9,7 @@ import statsd
 from socket import gethostname
 
 the_config = config.read_redirect_configs()
-statsd_client = statsd.StatsClient(the_config.get('stats', 'server'), 8125, prefix=gethostname())
+statsd_client = statsd.StatsClient(the_config.get('stats', 'server'), 8125, prefix=the_config.get('stats', 'prefix'))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = the_config.get('redirect', 'auth_secret_key')
