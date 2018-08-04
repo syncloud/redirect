@@ -1,0 +1,24 @@
+platform: linux/${arch}
+
+clone:
+  git:
+    image: syncloud/drone-git-${arch}
+    depth: 50
+
+pipeline:
+  build:
+    image: syncloud/build-deps-${arch}
+    commands:
+      - apt-get update -qq
+      - apt-get install -y -qq postfix
+      - pip install -r requirements.txt
+      - pip install -r dev_requirements.txt
+      - ./configure test
+      - ./ci/redirectdb create redirect
+      - py.test --cov redirect
+      - ./ci/redirectdb migrate redirect redirect 005.sql
+      - py.test --cov redirect
+
+matrix:
+  arch:
+    - amd64
