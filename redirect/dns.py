@@ -35,6 +35,7 @@ class Dns:
         self.__action_domain(main_domain, domain, 'UPSERT')
 
     def delete_domain(self, main_domain, domain):
+        self.__action_domain(main_domain, domain, 'UPSERT')
         self.__action_domain(main_domain, domain, 'DELETE')
 
     def __action_domain(self, main_domain, domain, action):
