@@ -11,7 +11,7 @@ import ioc
 import statsd
 from socket import gethostname
 
-statsd_client = ioc.stats_client()
+statsd_client = ioc.statsd_client()
 
 app = Flask(__name__)
 
