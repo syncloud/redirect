@@ -12,7 +12,7 @@ pipeline:
       #- apt-get update -qq
       #- debconf-set-selections <<< "postfix postfix/mailname string your.hostname.com"
       #- debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-      #- apt-get install -y -qq postfix
+      - apt-get install -y -qq mysql-server
       - pip install -r requirements.txt
       - pip install -r dev_requirements.txt
       - ./configure test
