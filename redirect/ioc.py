@@ -4,6 +4,7 @@ from dns import Dns
 from mock import MagicMock
 import mail
 import config
+import statsd
 
 def statsd_client(the_config = config.read_redirect_configs()):
     return statsd.StatsClient(the_config.get('stats', 'server'), 8125, prefix=the_config.get('stats', 'prefix'))

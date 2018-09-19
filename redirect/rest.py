@@ -8,7 +8,6 @@ import convertible
 import config
 import logging
 import ioc
-import statsd
 from socket import gethostname
 
 statsd_client = ioc.statsd_client()
