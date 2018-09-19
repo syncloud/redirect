@@ -5,6 +5,8 @@ from mock import MagicMock
 import mail
 import config
 
+def statsd_client(the_config = config.read_redirect_configs()):
+    return statsd.StatsClient(the_config.get('stats', 'server'), 8125, prefix=the_config.get('stats', 'prefix'))
 
 def manager():
     the_config = config.read_redirect_configs()
@@ -20,10 +22,12 @@ def manager():
     if mock_dns:
         dns = MagicMock()
     else:
+        statsd_client = statsd_client(the_config)
         dns = Dns(
             the_config.get('aws', 'access_key_id'),
             the_config.get('aws', 'secret_access_key'),
-            the_config.get('aws', 'hosted_zone_id'))
+            the_config.get('aws', 'hosted_zone_id'),
+            statsd_client)
 
     create_storage = db_helper.get_storage_creator(the_config)
     smtp = mail.get_smtp(the_config)
