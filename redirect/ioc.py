@@ -23,12 +23,12 @@ def manager():
     if mock_dns:
         dns = MagicMock()
     else:
-        statsd_client = statsd_client(the_config)
+        statsd_cli = statsd_client(the_config)
         dns = Dns(
             the_config.get('aws', 'access_key_id'),
             the_config.get('aws', 'secret_access_key'),
             the_config.get('aws', 'hosted_zone_id'),
-            statsd_client)
+            statsd_cli)
 
     create_storage = db_helper.get_storage_creator(the_config)
     smtp = mail.get_smtp(the_config)
