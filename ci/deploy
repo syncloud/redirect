@@ -29,7 +29,7 @@ sudo /usr/sbin/service apache2 restart
 
 cp ${REV_FILE} www/${REV_FILE}
 cd www
-jekyll
+jekyll build
 
 cd ..
 cp deploy.log deploy.log.last
