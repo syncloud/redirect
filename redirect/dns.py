@@ -55,6 +55,6 @@ class Dns:
         self.mx_change(changes, full_domain, action)
         self.spf_change(changes, ip, full_domain, action, ip_version)
         
-        self.statsd_client.incr('dns.commit')
+        self.statsd_client.incr('dns.ip.commit')
         
         changes.commit()
