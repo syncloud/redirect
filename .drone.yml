@@ -9,17 +9,12 @@ pipeline:
   build:
     image: syncloud/build-deps-${arch}
     commands:
-      #- apt-get update -qq
-      #- debconf-set-selections <<< "postfix postfix/mailname string your.hostname.com"
-      #- debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-      #- apt-get install -y -qq mysql-server
-      #- pip install -r requirements.txt
-      #- pip install -r dev_requirements.txt
-      #- ./configure test
-      #- ./ci/redirectdb create redirect
-      #- py.test --cov redirect
-      #- ./ci/redirectdb migrate redirect redirect 005.sql
-      #- py.test --cov redirect
+      - ./test.deps.sh
+      - ./configure test
+      - ./ci/redirectdb create redirect
+      - py.test --cov redirect
+      - ./ci/redirectdb migrate redirect redirect 005.sql
+      - py.test --cov redirect
 
 matrix:
   arch:
