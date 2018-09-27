@@ -9,5 +9,5 @@ apt-get install -y -qq mysql-server libmysqlclient-dev postfix
 pip install -r requirements.txt
 pip install -r dev_requirements.txt
 adduser --disabled-password --gecos "" test
-mkdir outbox
-chown test. outbox
+mkdir mail.root
+chown test. mail.root
