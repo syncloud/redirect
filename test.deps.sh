@@ -8,3 +8,4 @@ debconf-set-selections <<< 'mysql-server mysql-server/root_password_again passwo
 apt-get install -y -qq mysql-server postfix
 pip install -r requirements.txt
 pip install -r dev_requirements.txt
+adduser --disabled-password --gecos "" test

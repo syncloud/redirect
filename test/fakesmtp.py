@@ -30,7 +30,7 @@ class FakeSmtp:
         self.start(ip, port)
 
     def start(self, ip, port, timeout=1):
-        smtp_sink_cmd = 'smtp-sink -d "{}/%d.%H.%M.%S" {}:{} 1000'.format(self.smtp_outbox_path, ip, port)
+        smtp_sink_cmd = 'smtp-sink -u test -d "{}/%d.%H.%M.%S" {}:{} 1000'.format(self.smtp_outbox_path, ip, port)
         self.server = subprocess.Popen(smtp_sink_cmd, shell=True, preexec_fn=os.setsid)
         wait_smtp(ip, port, timeout)
 
