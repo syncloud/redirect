@@ -15,7 +15,7 @@ class TestUsers(unittest.TestCase):
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
 
         self.mail = Mail(Smtp('localhost', 2500), 'support@redirect.com', self.activate_url_template, None, None)
-        self.smtp = FakeSmtp('outbox', 'localhost', 2500)
+        self.smtp = FakeSmtp('localhost', 2500)
         self.dns = MagicMock()
         self.create_storage = get_test_storage_creator()
         with self.create_storage() as storage:

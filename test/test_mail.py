@@ -6,13 +6,13 @@ from fakesmtp import FakeSmtp
 from email.mime.text import MIMEText
 from redirect.mail import Smtp, Mail, read_letter
 
+
 class TestMail(unittest.TestCase):
-    smtp_outbox_path = 'outbox'
     smtp_host = 'localhost'
     smtp_port = 2500
 
     def setUp(self):
-        self.smtp = FakeSmtp(self.smtp_outbox_path, self.smtp_host, self.smtp_port)
+        self.smtp = FakeSmtp(self.smtp_host, self.smtp_port)
 
     def tearDown(self):
         self.smtp.stop()
@@ -77,6 +77,7 @@ def temp_file(text=''):
     f.write(text)
     f.close()
     return filename
+
 
 class TestReadLetter(unittest.TestCase):
 
