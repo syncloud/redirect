@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, lazyload
 
 from models import User, Domain, Base, Action, ActionType
 import util
@@ -62,10 +62,10 @@ class Storage:
 
     def users_iterate(self, include_unsubscribed=False):
         if include_unsubscribed:
-            for user in self.session.query(User).yield_per(10):
+            for user in self.session.query(User).options(lazyload('*')).yield_per(10):
                 yield user
         else:
-            for user in self.session.query(User).filter(User.unsubscribed == False).yield_per(10):
+            for user in self.session.query(User).options(lazyload('*')).filter(User.unsubscribed == False).yield_per(10):
                 yield user
 
     def get_action(self, token):
