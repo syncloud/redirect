@@ -13,8 +13,6 @@ pipeline:
       - ./configure test
       - ./ci/redirectdb create redirect
       - py.test --cov redirect
-      - ./ci/redirectdb migrate redirect redirect 005.sql
-      - py.test --cov redirect
 
 matrix:
   arch:
