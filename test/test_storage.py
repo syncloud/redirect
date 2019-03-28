@@ -165,5 +165,6 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
             users = storage.users_iterate()
         self.assertEquals(0, len(list(users)))
 
+
 if __name__ == '__main__':
     unittest.run()

@@ -9,13 +9,14 @@ from redirect.util import create_token
 from fakesmtp import FakeSmtp
 from urlparse import urlparse
 
+
 class TestFlask(unittest.TestCase):
 
     def setUp(self):
         redirect.rest.app.config['TESTING'] = True
         self.app = redirect.rest.app.test_client()
 
-        self.smtp = FakeSmtp('outbox', 'localhost', 2500)
+        self.smtp = FakeSmtp('localhost', 2500)
 
     def tearDown(self):
         self.smtp.stop()

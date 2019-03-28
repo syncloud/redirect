@@ -62,7 +62,7 @@
 #### Add apache restart to sudoers (uat auto deployment)
 
     sudo visudo -f /etc/sudoers.d/redirect
-    redirect ALL = (root) NOPASSWD: /usr/bin/service apache2 restart
+    redirect ALL = (root) NOPASSWD: /usr/sbin/service apache2 restart
     redirect ALL = (root) NOPASSWD: /usr/bin/pip install -r requirements.txt
 
 

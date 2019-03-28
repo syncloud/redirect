@@ -8,11 +8,9 @@ import convertible
 import config
 import logging
 import ioc
-import statsd
 from socket import gethostname
 
-the_config = config.read_redirect_configs()
-statsd_client = statsd.StatsClient(the_config.get('stats', 'server'), 8125, prefix=the_config.get('stats', 'prefix'))
+statsd_client = ioc.statsd_client()
 
 app = Flask(__name__)
 

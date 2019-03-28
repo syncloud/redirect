@@ -1,0 +1,19 @@
+platform: linux/${arch}
+
+clone:
+  git:
+    image: syncloud/drone-git-${arch}
+    depth: 50
+
+pipeline:
+  build:
+    image: syncloud/build-deps-${arch}
+    commands:
+      - ./test.deps.sh
+      - ./configure test
+      - ./ci/redirectdb create redirect
+      - py.test --cov redirect
+
+matrix:
+  arch:
+    - amd64

@@ -23,13 +23,13 @@ echo "$LATEST_REV" > ${REV_FILE}
 
 git pull
 
-sudo pip install -r requirements.txt
+sudo /usr/bin/pip install -r requirements.txt
 ./configure uat
-sudo service apache2 restart
+sudo /usr/sbin/service apache2 restart
 
 cp ${REV_FILE} www/${REV_FILE}
 cd www
-jekyll
+jekyll build
 
 cd ..
 cp deploy.log deploy.log.last
