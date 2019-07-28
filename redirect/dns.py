@@ -45,6 +45,8 @@ class Dns:
         if ip is None:
             return
 
+        self.statsd_client.incr('dns.ip.connect')
+
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
@@ -54,7 +56,6 @@ class Dns:
         self.a_change(changes, ip, '*.{0}'.format(full_domain), action, ip_version)
         self.mx_change(changes, full_domain, action)
         self.spf_change(changes, ip, full_domain, action, ip_version)
-        
+
         self.statsd_client.incr('dns.ip.commit')
-        
         changes.commit()
