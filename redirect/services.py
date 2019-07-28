@@ -104,7 +104,7 @@ class Users(UsersRead):
         return True
 
     def drop_device(self, request):
-        user = self.authenticate(request)
+        self.authenticate(request)
         validator = Validator(request)
         user_domain = validator.new_user_domain()
         check_validator(validator)
