@@ -11,14 +11,14 @@ class Dns:
         self.statsd_client = statsd_client
         
     def a_change(self, changes, ip, full_domain, change_action, ip_version):
-        change_type = 'A'
-        if ip_version == 6:
-            change_type = 'AAAA'
-
-        change = changes.add_change(change_action, full_domain, change_type)
+        change = changes.add_change(change_action, full_domain, "A")
         change.add_value(ip)
 
-    def spf_change(self, changes, ip, full_domain, change_action, ip_version):
+    def aaaa_change(self, changes, ip, full_domain, change_action):
+        change = changes.add_change(change_action, full_domain, "AAAA")
+        change.add_value(ip)
+
+    def spf_change(self, changes, full_domain, change_action):
         spf_value = '"v=spf1 a mx -all"'
 
         change = changes.add_change(change_action, full_domain, 'SPF')
@@ -40,8 +40,7 @@ class Dns:
 
     def __action_domain(self, main_domain, domain, action):
 
-        ip = domain.dns_ip()
-        if ip is None:
+        if not domain.has_dns_ip()
             return
 
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
@@ -49,10 +48,18 @@ class Dns:
 
         full_domain = domain.dns_name(main_domain)
         
-        self.a_change(changes, ip, full_domain, action, ip_version)
-        self.a_change(changes, ip, '*.{0}'.format(full_domain), action, ip_version)
+        ipv6 = domain.dns_ipv6()
+        if ipv6:
+            self.aaaa_change(changes, ipv6, full_domain, action)
+            self.aaaa_change(changes, ipv6, '*.{0}'.format(full_domain), action)
+  
+        ipv4 = domain.dns_ipv4()
+        if ipv4:
+            self.a_change(changes, ipv4, full_domain, action)
+            self.a_change(changes, ipv4, '*.{0}'.format(full_domain), action)
+  
         self.mx_change(changes, full_domain, action)
-        self.spf_change(changes, ip, full_domain, action, ip_version)
+        self.spf_change(changes, full_domain, action)
         
         self.statsd_client.incr('dns.ip.commit')
         
