@@ -40,7 +40,7 @@ class Dns:
 
     def __action_domain(self, main_domain, domain, action):
 
-        if not domain.has_dns_ip()
+        if not domain.has_dns_ip():
             return
 
         conn = boto.connect_route53(self.aws_access_key_id, self.aws_secret_access_key)
