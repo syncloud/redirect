@@ -109,6 +109,14 @@ styles: css/user.css
               <% } %>
           </li>
           <li class="list-group-item clearfix">
+              <span>IPv6 Address: </span>
+              <% if (domain.has_ipv6_address) { %>
+              <a href="<%= domain.ipv6_address %>"><%= domain.ipv6_address %></a>
+              <% } else { %>
+              <span>Not provided</span>
+              <% } %>
+          </li>
+          <li class="list-group-item clearfix">
               <span>Updated: <%= domain.nice_last_update %></span>
           </li>
         </ul>
@@ -184,6 +192,9 @@ function prepareUserData(user) {
 
         domain.internal_address = fullUrl(domain.web_protocol, domain.local_ip, domain.web_local_port, null);
         domain.has_internal_address = domain.internal_address !== null;
+
+        domain.ipv6_address = fullUrl(domain.web_protocol, domain.ipv6, domain.web_local_port, null);
+        domain.has_ipv6_address = domain.ipv6_address !== null;
 
         domain.online = online(domain.last_update);
         domain.nice_last_update = niceTimestamp(domain.last_update);
