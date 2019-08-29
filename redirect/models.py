@@ -128,13 +128,13 @@ class Domain(Base):
         if self.ipv6 and IP(self.ipv6).version() == 6:
             return self.ipv6
         access_ip = self.access_ip()
-        if IP(access_ip).version() == 6:
+        if access_ip and IP(access_ip).version() == 6:
             return access_ip
         return None
     
     def dns_ipv4(self):
         access_ip = self.access_ip()
-        if IP(access_ip).version() == 4:
+        if access_ip and IP(access_ip).version() == 4:
             return access_ip
         return None
 
