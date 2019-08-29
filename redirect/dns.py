@@ -1,6 +1,5 @@
 from boto.route53.record import ResourceRecordSets
 import boto.route53
-from IPy import IP
 
 
 class Dns:
