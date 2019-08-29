@@ -10,7 +10,7 @@ class Dns:
         self.hosted_zone_id = hosted_zone_id
         self.statsd_client = statsd_client
         
-    def a_change(self, changes, ip, full_domain, change_action, ip_version):
+    def a_change(self, changes, ip, full_domain, change_action):
         change = changes.add_change(change_action, full_domain, "A")
         change.add_value(ip)
 
