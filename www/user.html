@@ -164,15 +164,10 @@ function niceTimestamp(ds) {
     return $.format.date(d, date_format);
 }
 
-function fullUrl(protocol, address, port, url) {
-    if (protocol === null || address === null || port === null) {
-        return null;
-    }
-    var result = protocol+"://"+address;
-    if ((protocol === "http" && port !== 80) || (protocol === "https" && port !== 443))
+function fullUrl(address, port) {
+    var result = "https://"+address;
+    if (port !== 443)
         result = result+":"+port;
-    if (url !== null)
-        result = result+"/"+url;
     return result;
 }
 
@@ -184,17 +179,17 @@ function prepareUserData(user) {
 
         domain.domain_address_port = domain.map_local_address ? domain.web_local_port : domain.web_port;
 
-        domain.domain_address = fullUrl(domain.web_protocol, domain.domain_name, domain.domain_address_port, null);
-        domain.has_domain_address = domain.domain_address !== null;
+        domain.domain_address = fullUrl(domain.domain_name, domain.domain_address_port);
+        domain.has_domain_address = domain.domain_name !== null;
 
-        domain.external_address = fullUrl(domain.web_protocol, domain.ip, domain.web_port, null);
-        domain.has_external_address = domain.external_address !== null;
+        domain.external_address = fullUrl(domain.ip, domain.web_port);
+        domain.has_external_address = domain.ip !== null;
 
-        domain.internal_address = fullUrl(domain.web_protocol, domain.local_ip, domain.web_local_port, null);
-        domain.has_internal_address = domain.internal_address !== null;
+        domain.internal_address = fullUrl(domain.local_ip, domain.web_local_port);
+        domain.has_internal_address = domain.local_ip !== null;
 
-        domain.ipv6_address = fullUrl(domain.web_protocol, domain.ipv6, domain.web_local_port, null);
-        domain.has_ipv6_address = domain.ipv6_address !== null;
+        domain.ipv6_address = fullUrl("[" + domain.ipv6 + "]", domain.web_local_port);
+        domain.has_ipv6_address = domain.ipv6 !== null;
 
         domain.online = online(domain.last_update);
         domain.nice_last_update = niceTimestamp(domain.last_update);
