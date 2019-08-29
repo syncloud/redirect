@@ -49,7 +49,7 @@ class Dns:
         changes = ResourceRecordSets(conn, self.hosted_zone_id)
 
         full_domain = domain.dns_name(main_domain)
-        ip_version = IP(ip).version()
+        
         self.a_change(changes, ip, full_domain, action, ip_version)
         self.a_change(changes, ip, '*.{0}'.format(full_domain), action, ip_version)
         self.mx_change(changes, full_domain, action)

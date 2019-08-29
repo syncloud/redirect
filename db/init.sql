@@ -12,6 +12,7 @@ CREATE TABLE `domain` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `user_domain` varchar(100) NOT NULL UNIQUE,
   `ip` varchar(45),
+  `ipv6` varchar(45),
   `local_ip` varchar(45),
   `map_local_address` BOOLEAN DEFAULT 0,
   `update_token` char(36) UNIQUE,
@@ -51,4 +52,4 @@ create table db_version (
     `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('007');
+insert into db_version (version) values ('008');
