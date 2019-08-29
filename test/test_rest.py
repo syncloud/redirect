@@ -129,6 +129,7 @@ class TestUser(TestFlask):
                 'web_port': 10000,
                 'web_protocol': 'http',
                 'ip': '127.0.0.1',
+                'ipv6': None,
                 'local_ip': None,
                 'map_local_address': False,
                 'platform_version': None,
