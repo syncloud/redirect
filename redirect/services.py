@@ -199,7 +199,7 @@ class Users(UsersRead):
             update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip)
             domain.ip = ip
             domain.local_ip = local_ip
-            domain.ipb6 = ipv6
+            domain.ipv6 = ipv6
             domain.map_local_address = map_local_address
             domain.platform_version = platform_version
             domain.web_protocol = web_protocol
