@@ -32,4 +32,7 @@ def test_access_ip_local():
 
 def test_has_dns_ip():
     dns = Domain('user_domain', '0:0:0:0:0', 'device_name', 'device_title', 'update_token')
+    dns.ip = None
+    dns.local_ip = None
+    dns.ipv6 = None
     assert not dns.has_dns_ip()
