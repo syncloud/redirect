@@ -136,7 +136,7 @@ class Domain(Base):
         access_ip = self.access_ip()
         if IP(access_ip).version() == 4:
             return access_ip
-        retirn None
+        return None
 
     def has_dns_ip(self):
         return self.dns_ipv6() is not None or self.dns_ipv4() is not None
