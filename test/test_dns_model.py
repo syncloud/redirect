@@ -20,7 +20,7 @@ def test_access_ip_external():
     dns.ip = "192.168.0.1"
     dns.local_ip = "192.168.0.2"
     dns.map_local_address = False
-    assert dns.dns_ip() == "192.168.0.1"
+    assert dns.access_ip() == "192.168.0.1"
 
 
 def test_access_ip_local():
@@ -28,7 +28,7 @@ def test_access_ip_local():
     dns.ip = "192.168.0.1"
     dns.local_ip = "192.168.0.2"
     dns.map_local_address = True
-    assert dns.dns_ip() == "192.168.0.2"
+    assert dns.access_ip() == "192.168.0.2"
 
 def test_has_dns_ip():
     dns = Domain('user_domain', '0:0:0:0:0', 'device_name', 'device_title', 'update_token')
