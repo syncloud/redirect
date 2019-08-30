@@ -1,7 +1,7 @@
 from sqlalchemy import Table, Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
-
+from IPy import IP
 import util
 
 Base = declarative_base()
@@ -85,11 +85,12 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'platform_version', 'web_protocol', 'web_port', 'web_local_port', 'last_update']
+    __public__ = ['user_domain', 'ip', 'ipv6', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'platform_version', 'web_protocol', 'web_port', 'web_local_port', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
     ip = Column(String())
+    ipv6 = Column(String())
     local_ip = Column(String())
     map_local_address = Column(Boolean())
     update_token = Column(String())
@@ -117,7 +118,25 @@ class Domain(Base):
     def dns_wildcard_name(self, main_domain):
         return '\\052.{0}.{1}.'.format(self.user_domain, main_domain)
 
-    def dns_ip(self):
+    def access_ip(self):
         if self.map_local_address:
             return self.local_ip
         return self.ip
+
+
+    def dns_ipv6(self):
+        if self.ipv6 and IP(self.ipv6).version() == 6:
+            return self.ipv6
+        access_ip = self.access_ip()
+        if access_ip and IP(access_ip).version() == 6:
+            return access_ip
+        return None
+    
+    def dns_ipv4(self):
+        access_ip = self.access_ip()
+        if access_ip and IP(access_ip).version() == 4:
+            return access_ip
+        return None
+
+    def has_dns_ip(self):
+        return self.dns_ipv6() is not None or self.dns_ipv4() is not None
