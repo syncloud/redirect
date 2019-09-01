@@ -177,7 +177,7 @@ function prepareUserData(user) {
 
         domain.domain_name = domain.user_domain + "." + redirect.main_domain;
 
-        domain.domain_address_port = domain.map_local_address ? domain.web_local_port : domain.web_port;
+        domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port;
 
         domain.domain_address = fullUrl(domain.domain_name, domain.domain_address_port);
         domain.has_domain_address = domain.domain_name !== null;
@@ -185,10 +185,10 @@ function prepareUserData(user) {
         domain.external_address = fullUrl(domain.ip, domain.web_port);
         domain.has_external_address = domain.ip !== null;
 
-        domain.internal_address = fullUrl(domain.local_ip, domain.web_local_port);
+        domain.internal_address = "https://" + domain.local_ip;
         domain.has_internal_address = domain.local_ip !== null;
 
-        domain.ipv6_address = fullUrl("[" + domain.ipv6 + "]", domain.web_local_port);
+        domain.ipv6_address = "https://[" + domain.ipv6 + "]";
         domain.has_ipv6_address = domain.ipv6 !== null;
 
         domain.online = online(domain.last_update);
