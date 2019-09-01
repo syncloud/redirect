@@ -196,7 +196,7 @@ class Users(UsersRead):
             if not domain or not domain.user.active:
                 raise servicesexceptions.bad_request('Unknown domain update token')
 
-            update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip)
+            update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip) or (domain.ipv6 != ipv6)
             domain.ip = ip
             domain.local_ip = local_ip
             domain.ipv6 = ipv6
