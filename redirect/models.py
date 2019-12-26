@@ -91,6 +91,7 @@ class Domain(Base):
     user_domain = Column(String())
     ip = Column(String())
     ipv6 = Column(String())
+    dkim_key = Column(String())
     local_ip = Column(String())
     map_local_address = Column(Boolean())
     update_token = Column(String())
