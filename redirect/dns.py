@@ -27,7 +27,7 @@ class Dns:
         change = changes.add_change(change_action, full_domain, 'TXT')
         change.add_value(spf_value)
 
-    def mx_change(self, changes, full_domain, change_action):
+  def mx_change(self, changes, full_domain, change_action):
         change = changes.add_change(change_action, full_domain, 'MX')
         change.add_value('1 {0}'.format(full_domain))
 
