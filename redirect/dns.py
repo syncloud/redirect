@@ -31,6 +31,12 @@ class Dns:
         change = changes.add_change(change_action, full_domain, 'MX')
         change.add_value('1 {0}'.format(full_domain))
 
+    def dkim_change(self, changes, full_domain, change_action, key):
+        name = 'mail._domainkey.{0}'.format(full_domain)
+        key = 'v=DKIM1; k=rsa; p={0}'.format(key)
+        change = changes.add_change(change_action, full_domain, 'TXT')
+        change.add_value('{0}'.format(full_domain))
+
     def update_domain(self, main_domain, domain):
         self.__action_domain(main_domain, domain, 'UPSERT')
 
@@ -59,7 +65,11 @@ class Dns:
         if ipv4:
             self.a_change(changes, ipv4, full_domain, action)
             self.a_change(changes, ipv4, '*.{0}'.format(full_domain), action)
-  
+
+        dkim_key = domain.dkim_key()
+        if dkim_key:
+            self.dkim_change(changes, full_domain, action, dkim_key)
+
         self.mx_change(changes, full_domain, action)
 
         self.spf_change(changes, full_domain, action)

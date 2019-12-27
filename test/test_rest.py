@@ -130,6 +130,7 @@ class TestUser(TestFlask):
                 'web_protocol': 'http',
                 'ip': '127.0.0.1',
                 'ipv6': None,
+                'dkim_key': None,
                 'local_ip': None,
                 'map_local_address': False,
                 'platform_version': None,

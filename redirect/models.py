@@ -85,12 +85,13 @@ class ActionType(Base):
 
 class Domain(Base):
     __tablename__ = "domain"
-    __public__ = ['user_domain', 'ip', 'ipv6', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'platform_version', 'web_protocol', 'web_port', 'web_local_port', 'last_update']
+    __public__ = ['user_domain', 'ip', 'ipv6', 'dkim_key', 'local_ip', 'map_local_address', 'device_mac_address', 'device_name', 'device_title', 'platform_version', 'web_protocol', 'web_port', 'web_local_port', 'last_update']
 
     id = Column(Integer, primary_key=True)
     user_domain = Column(String())
     ip = Column(String())
     ipv6 = Column(String())
+    dkim_key = Column(String())
     local_ip = Column(String())
     map_local_address = Column(Boolean())
     update_token = Column(String())

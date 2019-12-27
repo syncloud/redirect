@@ -179,6 +179,7 @@ class Users(UsersRead):
         token = validator.token()
         ip = validator.ip(request_ip)
         ipv6 = validator.string('ipv6', required=False)
+        dkim_key = validator.string('dkim_key', required=False)
         local_ip = validator.local_ip()
         map_local_address = validator.boolean('map_local_address', required=False)
         platform_version = validator.string('platform_version', required=False)
@@ -200,6 +201,7 @@ class Users(UsersRead):
             domain.ip = ip
             domain.local_ip = local_ip
             domain.ipv6 = ipv6
+            domain.dkim_key = dkim_key
             domain.map_local_address = map_local_address
             domain.platform_version = platform_version
             domain.web_protocol = web_protocol
