@@ -66,7 +66,7 @@ class Dns:
             self.a_change(changes, ipv4, full_domain, action)
             self.a_change(changes, ipv4, '*.{0}'.format(full_domain), action)
 
-        dkim_key = domain.dkim_key()
+        dkim_key = domain.dkim_key
         if dkim_key:
             self.dkim_change(changes, full_domain, action, dkim_key)
 
