@@ -31,11 +31,11 @@ class Dns:
         change = changes.add_change(change_action, full_domain, 'MX')
         change.add_value('1 {0}'.format(full_domain))
 
-    def dkim_change(self, changes, full_domain, change_action, key):
+    def dkim_change(self, changes, full_domain, change_action, dkim_key):
         name = 'mail._domainkey.{0}'.format(full_domain)
-        key = 'v=DKIM1; k=rsa; p={0}'.format(key)
-        change = changes.add_change(change_action, full_domain, 'TXT')
-        change.add_value('{0}'.format(full_domain))
+        value = 'v=DKIM1; k=rsa; p={0}'.format(dkim_key)
+        change = changes.add_change(change_action, name, 'TXT')
+        change.add_value(value)
 
     def update_domain(self, main_domain, domain):
         self.__action_domain(main_domain, domain, 'UPSERT')
