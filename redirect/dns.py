@@ -33,7 +33,7 @@ class Dns:
 
     def dkim_change(self, changes, full_domain, change_action, dkim_key):
         name = 'mail._domainkey.{0}'.format(full_domain)
-        value = 'v=DKIM1; k=rsa; p={0}'.format(dkim_key)
+        value = '"v=DKIM1; k=rsa; p={0}"'.format(dkim_key)
         change = changes.add_change(change_action, name, 'TXT')
         change.add_value(value)
 
