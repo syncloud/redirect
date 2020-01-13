@@ -18,5 +18,5 @@ if __name__=='__main__':
     create_storage =  manager.create_storage
     dns = manager.dns
     with create_storage() as storage:
-        for domain in storage.get_domains-last_updated_before(date, limit):
+        for domain in storage.get_domains_last_updated_before(date, limit):
             print('ip: {0}, last update: {1}'.format(domain.ip))
