@@ -59,6 +59,9 @@ class Storage:
     def domains_iterate(self):
         for domain in self.session.query(Domain).yield_per(10):
             yield domain
+    
+    def get_domains_last_update_before(self, date, limit):
+        return self.session.query(Domain).filter(Domain.last_update < data).filter(Domain.ip != None).order_by(Domain.last_update).limit(limit).all()
 
     def users_iterate(self, include_unsubscribed=False):
         if include_unsubscribed:
