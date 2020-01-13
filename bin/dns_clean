@@ -2,7 +2,7 @@
 import sys
 from os.path import dirname, join, normpath
 sys.path.append(normpath(join(dirname(__file__), '..')))
-
+import redirect.ioc
 import argparse
 
 if __name__=='__main__':
@@ -14,7 +14,7 @@ if __name__=='__main__':
     date = args.date
     limit = args.limit
 
-    manager = rediect.ioc().manager()
+    manager = rediect.ioc.manager()
     create_storage =  manager.create_storage
     dns = manager.dns
     with create_storage() as storage:
