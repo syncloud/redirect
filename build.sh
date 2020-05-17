@@ -5,6 +5,7 @@ cd ${DIR}
 
 BUILD_DIR=${DIR}/build
 
+apt update
 apt -y install ruby ruby-dev
 gem install jekyll
 
