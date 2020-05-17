@@ -11,13 +11,15 @@ local build(arch) = {
             name: "test",
             image: "syncloud/build-deps-" + arch,
             commands: [
-	        "./test.deps.sh",
+                "./test.deps.sh",
                 "./configure test",
                 "./ci/redirectdb create redirect",
                 "py.test --cov redirect"
             ]
         },
-        {                                                   name: "build",                                  image: "syncloud/build-deps-" + arch,
+        {
+            name: "build",
+            image: "syncloud/build-deps-" + arch,
             commands: [
                 "./build.sh",
             ]

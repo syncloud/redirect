@@ -8,3 +8,4 @@ _site
 .coverage
 secret.cfg
 *.iml
+venv

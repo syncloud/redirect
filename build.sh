@@ -5,10 +5,13 @@ cd ${DIR}
 
 BUILD_DIR=${DIR}/build
 
+apt -y install ruby ruby-dev
+gem install jekyll
+
 mkdir ${BUILD_DIR}
 cp -r redirect ${BUILD_DIR}
 cd www
-jekyl build
+jekyll build
 cp -r _site ${BUILD_DIR}/www
 cd ..
 
