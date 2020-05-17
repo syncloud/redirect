@@ -8,13 +8,18 @@ local build(arch) = {
     },
     steps: [
         {
-            name: "build",
+            name: "test",
             image: "syncloud/build-deps-" + arch,
             commands: [
 	        "./test.deps.sh",
                 "./configure test",
                 "./ci/redirectdb create redirect",
                 "py.test --cov redirect"
+            ]
+        },
+        {                                                   name: "build",                                  image: "syncloud/build-deps-" + arch,
+            commands: [
+                "./build.sh",
             ]
         }
     ]
