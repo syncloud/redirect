@@ -13,7 +13,7 @@ CURRENT=/var/www/redirect/current
 
 mkdir ${TARGET}
 tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
-rm ${CURRENT}
+rm -f ${CURRENT}
 ln -s ${TARGET} ${CURRENT}
 sudo pip install -r requirements.txt
 ${CURRENT}/configure ${ENV}
