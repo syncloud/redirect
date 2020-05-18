@@ -22,4 +22,5 @@ cp -r _site ${BUILD_DIR}/www
 cd ${DIR}
 cp -r redirect ${BUILD_DIR}
 
+mkdir ${DIR}/artifact
 tar czf ${DIR}/artifact/redirect.tar.gz -C ${BUILD_DIR} .
