@@ -1,12 +1,17 @@
 ---
 kind: pipeline
-name: amd64
+name: redirect
 
 platform:
   os: linux
   arch: amd64
 
 steps:
+- name: build
+  image: syncloud/build-deps-amd64
+  commands:
+  - ./build.sh
+
 - name: test
   image: syncloud/build-deps-amd64
   commands:
@@ -15,9 +20,27 @@ steps:
   - ./ci/redirectdb create redirect
   - py.test --cov redirect
 
-- name: build
+- name: deploy
   image: syncloud/build-deps-amd64
   commands:
-  - ./build.sh
+  - ./ci/deploy
+
+- name: artifact
+  image: appleboy/drone-scp
+  settings:
+    command_timeout: 2m
+    host:
+      from_secret: artifact_host
+    key:
+      from_secret: artifact_key
+    source: artifact/*
+    strip_components: 1
+    target: /home/artifact/repo/redirect/${DRONE_BUILD_NUMBER}
+    timeout: 2m
+    username: artifact
+  when:
+    status:
+    - failure
+    - success
 
 ...
