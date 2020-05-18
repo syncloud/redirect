@@ -11,7 +11,7 @@ ENV=$2
 TARGET=/var/www/redirect/${VERSION}
 CURRENT=/var/www/redirect/current
 
-mkdir ${TARGET}
+mkdir -p ${TARGET}
 tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
 rm -f ${CURRENT}
 ln -s ${TARGET} ${CURRENT}
