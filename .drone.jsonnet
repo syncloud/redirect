@@ -13,7 +13,7 @@ local build(arch) = {
             name: "build",
             image: "syncloud/build-deps-" + arch,
             commands: [
-                "./build.sh",
+                "./build.sh ${DRONE_BUILD_NUMBER}",
             ]
         },
         {
@@ -30,7 +30,8 @@ local build(arch) = {
             name: "deploy",
             image: "syncloud/build-deps-" + arch,
             commands: [
-                "./ci/deploy"
+	        "cd artifact",
+                "../ci/deploy ${DRONE_BUILD_NUMBER} uat"
             ]
         },
         {

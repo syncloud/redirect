@@ -3,6 +3,12 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd ${DIR} 
 
+if [[ -z "$1" ]]; then
+    echo "usage $0 version"
+    exit 1
+fi
+
+VERSION=$1
 RUBY_VERSION=2.4.1
 BUILD_DIR=${DIR}/build
 
@@ -23,4 +29,4 @@ cd ${DIR}
 cp -r redirect ${BUILD_DIR}
 
 mkdir ${DIR}/artifact
-tar czf ${DIR}/artifact/redirect.tar.gz -C ${BUILD_DIR} .
+tar czf ${DIR}/artifact/redirect-${VERSION}.tar.gz -C ${BUILD_DIR} .

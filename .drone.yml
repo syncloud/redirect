@@ -10,7 +10,7 @@ steps:
 - name: build
   image: syncloud/build-deps-amd64
   commands:
-  - ./build.sh
+  - ./build.sh ${DRONE_BUILD_NUMBER}
 
 - name: test
   image: syncloud/build-deps-amd64
@@ -23,7 +23,8 @@ steps:
 - name: deploy
   image: syncloud/build-deps-amd64
   commands:
-  - ./ci/deploy
+  - cd artifact
+  - ../ci/deploy ${DRONE_BUILD_NUMBER} uat
 
 - name: artifact
   image: appleboy/drone-scp

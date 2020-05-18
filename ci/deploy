@@ -1,35 +1,21 @@
-#!/bin/bash
+#!/bin/bash -e
 
-cd "$( dirname "${BASH_SOURCE[0]}" )"
-cd ..
-
-GIT_URL=https://github.com/syncloud/redirect
-REV_FILE=revision
-LATEST_REV=$(git ls-remote ${GIT_URL} refs/heads/master | cut -f1)
-if [ "$LATEST_REV" == "" ]; then
-  echo "Unable to get latest version"
-  exit 1
-else
-  echo "Latest rev: $LATEST_REV"
-fi
-
-if [ -f ${REV_FILE} ]; then
-  CURRENT_REV=$(<${REV_FILE})
-  if [ "$CURRENT_REV" == "$LATEST_REV" ]; then
+if [[ -z "$2" ]]; then
+    echo "usage $0 version env"
     exit 1
-  fi
 fi
-echo "$LATEST_REV" > ${REV_FILE}
 
-git pull
+VERSION=$1
+ENV=$2
 
-sudo /usr/bin/pip install -r requirements.txt
-./configure uat
-sudo /usr/sbin/service apache2 restart
+TARGET=/var/www/redirect/${VERSION}
+CURRENT=/var/www/redirect/current
 
-cp ${REV_FILE} www/${REV_FILE}
-cd www
-jekyll build
+mkdir ${TARGET}
+tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
+rm ${CURRENT}
+ln -s ${TARGET} ${CURRENT}
+sudo pip install -r requirements.txt
+${CURRENT}/configure ${ENV}
+sudo service apache2 restart
 
-cd ..
-cp deploy.log deploy.log.last
