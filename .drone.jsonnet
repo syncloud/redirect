@@ -30,10 +30,10 @@ local build(arch) = {
             name: "deploy",
             image: "syncloud/build-deps-" + arch,
             commands: [
-	        "debconf-set-selections <<< 'mysql-server mysql-server/root_password password root'",
-                "debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password root'",
+	            "echo 'mysql-server mysql-server/root_password password root' | debconf-set-selections",
+                "echo 'mysql-server mysql-server/root_password_again password root' | debconf-set-selections",
                 "apt-get install -y -qq mysql-server libmysqlclient-dev",
-	        "cd artifact",
+	            "cd artifact",
                 "../ci/deploy ${DRONE_BUILD_NUMBER} uat"
             ]
         },
