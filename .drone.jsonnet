@@ -21,7 +21,7 @@ local build(arch) = {
             image: "syncloud/build-deps-" + arch,
             commands: [
                 "./test.deps.sh",
-                "./configure test",
+                "cp -r config/test/* .",
                 "./ci/redirectdb create redirect",
                 "py.test --cov redirect"
             ]
