@@ -14,7 +14,9 @@ class TestFlask(unittest.TestCase):
 
     def setUp(self):
         redirect.rest.app.config['TESTING'] = True
+        redirect.www.app.config['TESTING'] = True
         self.app = redirect.rest.app.test_client()
+        self.www = redirect.www.app.test_client()
 
         self.smtp = FakeSmtp('localhost', 2500)
 
@@ -32,7 +34,7 @@ class TestFlask(unittest.TestCase):
         self.smtp.clear()
         email = create_token()+'@mail.com'
         password = 'pass123456'
-        self.app.post('/user/create', data={'email': email, 'password': password})
+        self.www.post('/user/create', data={'email': email, 'password': password})
         activate_token = self.get_token(self.smtp.emails()[0])
         self.app.get('/user/activate', query_string={'token': activate_token})
         self.smtp.clear()
@@ -66,14 +68,14 @@ class TestUser(TestFlask):
     def test_user_create_success(self):
         user_domain = create_token()
         email = user_domain+'@mail.com'
-        response = self.app.post('/user/create', data={'email': email, 'password': 'pass123456'})
+        response = self.www.post('/user/create', data={'email': email, 'password': 'pass123456'})
         self.assertEqual(200, response.status_code)
         self.assertFalse(self.smtp.empty())
 
     def test_user_create_special_symbols_in_password(self):
         user_domain = create_token()
         email = user_domain+'@mail.com'
-        response = self.app.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
+        response = self.www.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
         self.assertEqual(200, response.status_code)
         self.assertFalse(self.smtp.empty())
 
@@ -86,7 +88,7 @@ class TestUser(TestFlask):
     def test_user_activate_success(self):
         user_domain = create_token()
         email = user_domain+'@mail.com'
-        self.app.post('/user/create', data={'email': email, 'password': 'pass123456'})
+        self.www.post('/user/create', data={'email': email, 'password': 'pass123456'})
 
         self.assertFalse(self.smtp.empty())
         token = self.get_token(self.smtp.emails()[0])
@@ -167,7 +169,7 @@ class TestUserPassword(TestFlask):
     def test_user_reset_password_sent_mail(self):
         email, password = self.create_active_user()
 
-        response = self.app.post('/user/reset_password', data={'email': email})
+        response = self.www.post('/user/reset_password', data={'email': email})
         self.assertEqual(200, response.status_code)
 
         self.assertFalse(self.smtp.empty(), msg='Server should send email with link to reset password')
@@ -178,13 +180,13 @@ class TestUserPassword(TestFlask):
     def test_user_reset_password_set_new(self):
         email, password = self.create_active_user()
 
-        self.app.post('/user/reset_password', data={'email': email})
+        self.www.post('/user/reset_password', data={'email': email})
         token = self.get_token(self.smtp.emails()[0])
 
         self.smtp.clear()
 
         new_password = 'new_password'
-        response = self.app.post('/user/set_password', data={'token': token, 'password': new_password})
+        response = self.www.post('/user/set_password', data={'token': token, 'password': new_password})
         self.assertEqual(200, response.status_code, response.data)
 
         self.assertFalse(self.smtp.empty(), msg='Server should send email when setting new password')
@@ -195,34 +197,34 @@ class TestUserPassword(TestFlask):
     def test_user_reset_password_set_with_old_token(self):
         email, password = self.create_active_user()
 
-        self.app.post('/user/reset_password', data={'email': email})
+        self.www.post('/user/reset_password', data={'email': email})
         token_old = self.get_token(self.smtp.emails()[0])
 
         self.smtp.clear()
 
-        self.app.post('/user/reset_password', data={'email': email})
+        self.www.post('/user/reset_password', data={'email': email})
         token = self.get_token(self.smtp.emails()[0])
 
         self.smtp.clear()
 
         new_password = 'new_password'
-        response = self.app.post('/user/set_password', data={'token': token_old, 'password': new_password})
+        response = self.www.post('/user/set_password', data={'token': token_old, 'password': new_password})
         self.assertEqual(400, response.status_code, response.data)
 
     def test_user_reset_password_set_twice(self):
         email, password = self.create_active_user()
 
-        self.app.post('/user/reset_password', data={'email': email})
+        self.www.post('/user/reset_password', data={'email': email})
         token = self.get_token(self.smtp.emails()[0])
 
         self.smtp.clear()
 
         new_password = 'new_password'
-        response = self.app.post('/user/set_password', data={'token': token, 'password': new_password})
+        response = self.www.post('/user/set_password', data={'token': token, 'password': new_password})
         self.assertEqual(200, response.status_code, response.data)
 
         new_password = 'new_password2'
-        response = self.app.post('/user/set_password', data={'token': token, 'password': new_password})
+        response = self.www.post('/user/set_password', data={'token': token, 'password': new_password})
         self.assertEqual(400, response.status_code, response.data)
 
 
