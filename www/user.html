@@ -175,7 +175,7 @@ function prepareUserData(user) {
     for (di = 0; di < user.domains.length; ++di) {
         var domain = user.domains[di];
 
-        domain.domain_name = domain.user_domain + "." + redirect.main_domain;
+        domain.domain_name = domain.user_domain + ".syncloud.it";
 
         domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port;
 
@@ -208,7 +208,7 @@ function domain_delete(user_domain) {
 
 $( document ).ready(function() {
 
-    var url = redirect.web("user")
+    var url = redirect.web("user/get")
 
     var getting = $.get( url )
         .done( function(data) {

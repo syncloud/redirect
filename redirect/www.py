@@ -71,13 +71,35 @@ def logout():
     return 'User logged out', 200
 
 
-@app.route("/user", methods=["GET"])
+@app.route("/user/get", methods=["GET"])
 @login_required
 def user():
     statsd_client.incr('www.user.get')
     user = current_user.user
     user_data = convertible.to_dict(user)
     return jsonify(user_data), 200
+
+
+@app.route('/user/create', methods=["POST"])
+def user_create():
+    statsd_client.incr('www.user.create')
+    user = ioc.manager().create_new_user(request.form)
+    user_data = convertible.to_dict(user)
+    return jsonify(success=True, message='User was created', data=user_data), 200
+
+
+@app.route('/user/reset_password', methods=["POST"])
+def user_reset_password():
+    statsd_client.incr('www.user.reset_password')
+    ioc.manager().user_reset_password(request.form)
+    return jsonify(success=True, message='Reset password requested'), 200
+
+
+@app.route('/user/set_password', methods=["POST"])
+def user_set_password():
+    statsd_client.incr('rest.user.set_password')
+    ioc.manager().user_set_password(request.form)
+    return jsonify(success=True, message='Password was set successfully'), 200
 
 
 @app.route("/user_delete", methods=["POST"])

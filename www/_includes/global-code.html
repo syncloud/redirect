@@ -1,13 +1,7 @@
 <script type="text/javascript">
 var redirect = {
-    restApiUrl: "{{ site.rest_api_url }}",
-    rest: function ( url ) {
-        return this.restApiUrl + url;
-    },
-    webApiUrl: "{{ site.web_api_url }}",
     web: function ( url ) {
-        return this.webApiUrl + url;
-    },
-    main_domain: "{{ site.main_domain }}"
+        return '/api/' + url;
+    }
 };
 </script>

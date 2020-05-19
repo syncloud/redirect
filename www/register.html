@@ -89,7 +89,7 @@ $( document ).ready(function() {
 
         var values = $("#form-register").serializeArray();
         reset_error()
-        var url = redirect.rest("user/create")
+        var url = redirect.web("user/create")
         $.post( url, values )
             .done( function(data) {
                 $.post( redirect.web( "login" ), values )

@@ -100,7 +100,7 @@ function set_subscribed(subscribed) {
 
 $( document ).ready(function() {
 
-    var url = redirect.web("user")
+    var url = redirect.web("user/get")
 
     var getting = $.get( url )
         .done( function(data) {

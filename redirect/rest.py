@@ -15,15 +15,6 @@ statsd_client = ioc.statsd_client()
 app = Flask(__name__)
 
 
-@app.route('/user/create', methods=["POST"])
-@cross_origin()
-def user_create():
-    statsd_client.incr('rest.user.create')
-    user = ioc.manager().create_new_user(request.form)
-    user_data = convertible.to_dict(user)
-    return jsonify(success=True, message='User was created', data=user_data), 200
-
-
 @app.route('/user/activate', methods=["GET"])
 @cross_origin()
 def user_activate():
@@ -94,28 +85,12 @@ def user_delete():
     return jsonify(success=True, message='User deleted'), 200
 
 
-@app.route('/user/reset_password', methods=["POST"])
-@cross_origin()
-def user_reset_password():
-    statsd_client.incr('rest.user.reset_password')
-    ioc.manager().user_reset_password(request.form)
-    return jsonify(success=True, message='Reset password requested'), 200
-
-
 @app.route('/user/log', methods=["POST"])
 @cross_origin()
 def user_log():
     statsd_client.incr('rest.user.log')
     ioc.manager().user_log(request.form)
     return jsonify(success=True, message='Error report sent successfully'), 200
-
-
-@app.route('/user/set_password', methods=["POST"])
-@cross_origin()
-def user_set_password():
-    statsd_client.incr('rest.user.set_password')
-    ioc.manager().user_set_password(request.form)
-    return jsonify(success=True, message='Password was set successfully'), 200
 
 
 @app.route('/probe/port', methods=["GET"])

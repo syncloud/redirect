@@ -15,7 +15,7 @@ $( document ).ready(function() {
             });
     });
 
-    var getting = $.get( redirect.web("user") )
+    var getting = $.get( redirect.web("user/get") )
         .done( function(data) {
             var user = data;
 
