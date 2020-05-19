@@ -28,7 +28,7 @@ cp -r _site ${BUILD_DIR}/www
 cd ${DIR}
 cp -r redirect ${BUILD_DIR}
 cp requirements.txt ${BUILD_DIR}
-cp config ${BUILD_DIR}
+cp -r config ${BUILD_DIR}
 
 mkdir ${DIR}/artifact
 tar czf ${DIR}/artifact/redirect-${VERSION}.tar.gz -C ${BUILD_DIR} .
