@@ -15,7 +15,7 @@ mkdir -p ${TARGET}
 tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
 rm -f ${CURRENT}
 ln -s ${TARGET} ${CURRENT}
-sudo pip install -r requirements.txt
+sudo pip install -r ${CURRENT}/requirements.txt
 ${CURRENT}/configure ${ENV}
 sudo service apache2 restart
 
