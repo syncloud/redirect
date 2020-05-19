@@ -18,4 +18,3 @@ ln -s ${TARGET} ${CURRENT}
 sudo pip install -r ${CURRENT}/requirements.txt
 ${CURRENT}/configure ${ENV}
 sudo service apache2 restart
-
