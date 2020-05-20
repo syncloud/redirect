@@ -33,7 +33,7 @@ local build(arch) = {
                 "./deploy.deps.sh",
                 "cd artifact",
                 "../ci/deploy ${DRONE_BUILD_NUMBER} uat",
-                "cd integration",
+                "cd ../integration",
                 "py.test -x -s verify.py"
             ]
         },
