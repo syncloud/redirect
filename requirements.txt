@@ -11,6 +11,6 @@ configobj==4.7.2
 mock==1.0.1
 jsonpickle==0.7.1
 statsd==3.2.1
-syncloud-lib==2
+syncloud-lib==172
 IPy==0.83
 sql-to-graphite==0.0.6
