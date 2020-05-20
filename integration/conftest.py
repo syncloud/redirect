@@ -1,13 +1,21 @@
 import pytest
 import os
+from os.path import dirname
 from os.path import join, exists
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
+DIR = dirname(__file__)
+
 
 def pytest_addoption(parser):
     parser.addoption("--ui-mode", action="store", default="desktop")
+
+
+@pytest.fixture(scope="session")
+def project_dir():
+    return join(DIR, '..')
 
 
 def new_profile(user_agent):
