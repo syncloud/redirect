@@ -4,7 +4,7 @@ from servicesexceptions import ServiceException, ParametersException
 import sys
 import traceback
 import json
-import convertible
+from syncloudlib.json import convertible
 import config
 import logging
 import ioc
