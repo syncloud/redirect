@@ -42,7 +42,6 @@ local build(arch) = {
             image: "syncloud/build-deps-" + arch,
             commands: [
               "pip2 install -r dev_requirements.txt",
-              "DOMAIN=$(cat domain)",
               "cd integration",
               "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop",
               "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile",
