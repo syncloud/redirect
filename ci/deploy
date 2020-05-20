@@ -17,4 +17,12 @@ rm -f ${CURRENT}
 ln -s ${TARGET} ${CURRENT}
 sudo pip install -r ${CURRENT}/requirements.txt
 cp -rf ${CURRENT}/config/${ENV}/* ${CURRENT}
+cp ${CURRENT}/apache/redirect.conf /etc/apache2/sites-available
+sudo adduser --disabled-password --gecos "" test
+sudo chown -R redirect. ${CURRENT}
+sudo a2dissite 000-default.conf
+s2ensite redirect.conf
+sudo nano /etc/apache2/envvars
+sed -i 's/SYNCLOUD_DOMAIN.*/d'
+export SYNCLOUD_DOMAIN=syncloud.it
 sudo service apache2 restart
