@@ -7,7 +7,7 @@ import requests
 @pytest.fixture(scope="session")
 def module_setup(request, log_dir):
     def module_teardown():
-        check_output('cp /var/log/apache/error.log {0}'.format(log_dir))
+        check_output('cp /var/log/apache2/error.log {0}'.format(log_dir), shell=True)
 
     request.addfinalizer(module_teardown)
 
