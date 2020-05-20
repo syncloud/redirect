@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from servicesexceptions import ServiceException, ParametersException
 import traceback
-from syncloudlib.json import convertiblek
+from syncloudlib.json import convertible
 import config
 import ioc
 import statsd
