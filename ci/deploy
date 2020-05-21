@@ -23,8 +23,7 @@ if  ! id -u redirect > /dev/null 2>&1; then
 fi
 sudo chown -R redirect. ${CURRENT}
 sudo a2dissite 000-default.conf
-s2ensite redirect.conf
-sudo nano /etc/apache2/envvars
-sed -i 's/SYNCLOUD_DOMAIN.*/d'
-export SYNCLOUD_DOMAIN=syncloud.it
+sudo a2ensite redirect.conf
+sed -i 's/SYNCLOUD_DOMAIN.*/d' /etc/apache2/envvars
+echo 'export SYNCLOUD_DOMAIN=syncloud.it' >> /etc/apache2/envvars
 sudo service apache2 restart
