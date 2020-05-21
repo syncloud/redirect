@@ -18,7 +18,7 @@ ln -s ${TARGET} ${CURRENT}
 sudo pip install -r ${CURRENT}/requirements.txt
 cp -rf ${CURRENT}/config/${ENV}/* ${CURRENT}
 cp ${CURRENT}/apache/redirect.conf /etc/apache2/sites-available
-if [[ ! id -u redirect ]]; then
+if  ! id -u redirect > /dev/null 2>&1; then
     sudo adduser --disabled-password --gecos "" redirect
 fi
 sudo chown -R redirect. ${CURRENT}
