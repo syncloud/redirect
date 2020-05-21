@@ -22,8 +22,12 @@ if  ! id -u redirect > /dev/null 2>&1; then
     sudo adduser --disabled-password --gecos "" redirect
 fi
 sudo chown -R redirect. ${CURRENT}
-sudo a2dissite 000-default.conf
-sudo a2ensite redirect.conf
+if a2query -s 000-default; then
+  sudo a2dissite 000-default
+fi
+if ! a2query -s redirect; then
+  sudo a2ensite redirect
+fi
 sed -i 's/SYNCLOUD_DOMAIN.*/d' /etc/apache2/envvars
 echo 'export SYNCLOUD_DOMAIN=syncloud.it' >> /etc/apache2/envvars
 sudo service apache2 restart
