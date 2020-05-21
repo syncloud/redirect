@@ -17,7 +17,7 @@ TMP_DIR = '/tmp/syncloud/ui'
 @pytest.fixture(scope="session")
 def module_setup(request, ui_mode, log_dir, artifact_dir):
     def module_teardown():
-        check_output('cp /var/log/apache/error.log {0}/apache.ui.{1}.error.log'.format(log_dir, ui_mode))
+        check_output('cp /var/log/apache/error.log {0}/apache.ui.{1}.error.log'.format(log_dir, ui_mode), shell=True)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
 
     request.addfinalizer(module_teardown)
