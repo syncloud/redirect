@@ -11,13 +11,12 @@ from syncloudlib.integration.hosts import add_host_alias_by_ip
 from syncloudlib.integration.screenshots import screenshots
 
 DIR = dirname(__file__)
-TMP_DIR = '/tmp/syncloud/ui'
 
 
 @pytest.fixture(scope="session")
 def module_setup(request, ui_mode, log_dir, artifact_dir):
     def module_teardown():
-        check_output('cp /var/log/apache/error.log {0}/apache.ui.{1}.error.log'.format(log_dir, ui_mode), shell=True)
+        check_output('cp /var/log/apache2/error.log {0}/apache.ui.{1}.error.log'.format(log_dir, ui_mode), shell=True)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
 
     request.addfinalizer(module_teardown)
@@ -28,7 +27,7 @@ def test_start(module_setup):
 
 
 def test_login(driver):
-    driver.get("https://wwwsyncloud.it")
+    driver.get("https://www.syncloud.it")
     time.sleep(10)
 
 
