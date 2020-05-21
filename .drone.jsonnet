@@ -37,7 +37,11 @@ local build(arch) = {
                 "py.test -x -s verify.py",
                 "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop",
                 "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile",
-             ]
+            ],
+            volumes: [{
+              name: "shm",
+              path: "/dev/shm"
+            }]
         },
         {
             name: "artifact",
@@ -60,7 +64,13 @@ local build(arch) = {
               status: [ "failure", "success" ]
             }
         }
-    ]
+    ],
+     volumes: [
+         {
+             name: "shm",
+             temp: {}
+         }
+     ]
 };
 
 [
