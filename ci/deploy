@@ -28,6 +28,7 @@ fi
 if ! a2query -s redirect; then
   sudo a2ensite redirect
 fi
+a2enmod rewrite
 sed -i '/SYNCLOUD_DOMAIN.*/d' /etc/apache2/envvars
 echo 'export SYNCLOUD_DOMAIN=syncloud.it' >> /etc/apache2/envvars
 sudo service apache2 restart
