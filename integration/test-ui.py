@@ -11,7 +11,8 @@ from syncloudlib.integration.hosts import add_host_alias_by_ip
 from syncloudlib.integration.screenshots import screenshots
 
 DIR = dirname(__file__)
-
+DEVICE_USER="user"
+DEVICE_PASSWORD="password"
 
 @pytest.fixture(scope="session")
 def module_setup(request, ui_mode, log_dir, artifact_dir):
@@ -22,24 +23,28 @@ def module_setup(request, ui_mode, log_dir, artifact_dir):
     request.addfinalizer(module_teardown)
 
 
-def test_start(module_setup):
-    add_host_alias_by_ip('www', 'syncloud.it', '127.0.0.1')
+def test_start(module_setup, domain):
+    add_host_alias_by_ip('www', domain, '127.0.0.1')
 
 
-def test_login(driver, screenshot_dir, ui_mode):
-    driver.get("https://www.syncloud.it")
+def test_login(driver, screenshot_dir, ui_mode, domain):
+    driver.get("https://www.{0}".format(domain))
     screenshots(driver, screenshot_dir, 'index-' + ui_mode)
     time.sleep(10)
 
 
-def test_main(driver, device_user, device_password, ui_mode, screenshot_dir):
+def test_register(driver, ui_mode, screenshot_dir, domain):
+    driver.get("https://www.{0}/register.html".format(domain))
+    screenshots(driver, screenshot_dir, 'register-' + ui_mode)
 
+
+def test_main(driver, ui_mode, screenshot_dir, domain):
+    driver.get("https://www.{0}".format(domain))
     user = driver.find_element_by_id("user")
-    user.send_keys(device_user)
+    user.send_keys(DEVICE_USER)
     password = driver.find_element_by_id("password")
-    password.send_keys(device_password)
+    password.send_keys(DEVICE_PASSWORD)
     screenshots(driver, screenshot_dir, 'login-' + ui_mode)
-    # print(driver.page_source.encode('utf-8'))
 
     password.send_keys(Keys.RETURN)
     time.sleep(10)

@@ -11,6 +11,7 @@ DIR = dirname(__file__)
 
 def pytest_addoption(parser):
     parser.addoption("--ui-mode", action="store", default="desktop")
+    parser.addoption("--domain", action="store")
 
 
 @pytest.fixture(scope="session")
@@ -70,6 +71,11 @@ def driver(mobile_driver, desktop_driver, ui_mode):
 @pytest.fixture(scope='session')
 def ui_mode(request):
     return request.config.getoption("--ui-mode")
+
+
+@pytest.fixture(scope='session')
+def domain(request):
+    return request.config.getoption("--domain")
 
 
 @pytest.fixture(scope="session")

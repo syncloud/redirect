@@ -1,12 +1,13 @@
 #!/bin/bash -e
 
-if [[ -z "$2" ]]; then
-    echo "usage $0 version env"
+if [[ -z "$3" ]]; then
+    echo "usage $0 version env domain"
     exit 1
 fi
 
 VERSION=$1
 ENV=$2
+SYNCLOUD_DOMAIN=$3
 
 TARGET=/var/www/redirect/${VERSION}
 CURRENT=/var/www/redirect/current
@@ -31,5 +32,5 @@ fi
 a2enmod rewrite
 a2enmod ssl
 sed -i '/SYNCLOUD_DOMAIN.*/d' /etc/apache2/envvars
-echo 'export SYNCLOUD_DOMAIN=syncloud.it' >> /etc/apache2/envvars
+echo "export SYNCLOUD_DOMAIN=${SYNCLOUD_DOMAIN}" >> /etc/apache2/envvars
 sudo service apache2 restart

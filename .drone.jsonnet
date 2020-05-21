@@ -32,11 +32,11 @@ local build(arch) = {
             commands: [
                 "./deploy.deps.sh",
                 "cd artifact",
-                "../ci/deploy ${DRONE_BUILD_NUMBER} uat",
+                "../ci/deploy ${DRONE_BUILD_NUMBER} uat syncloud.test",
                 "cd ../integration",
-                "py.test -x -s verify.py",
-                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop",
-                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile",
+                "py.test -x -s verify.py --domain=syncloud.test",
+                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test",
+                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test",
             ],
             volumes: [{
               name: "shm",
