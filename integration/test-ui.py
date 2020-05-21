@@ -26,8 +26,9 @@ def test_start(module_setup):
     add_host_alias_by_ip('www', 'syncloud.it', '127.0.0.1')
 
 
-def test_login(driver):
+def test_login(driver, screenshot_dir, ui_mode):
     driver.get("https://www.syncloud.it")
+    screenshots(driver, screenshot_dir, 'index-' + ui_mode)
     time.sleep(10)
 
 
