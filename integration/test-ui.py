@@ -20,7 +20,8 @@ def module_setup(request, ui_mode, log_dir, artifact_dir):
         check_output('cp /var/log/apache2/redirect_rest-error.log {0}/{1}-redirect_rest-error.log'.format(log_dir, ui_mode), shell=True)
         check_output('cp /var/log/apache2/redirect_rest-access.log {0}/{1}-redirect_rest-access.log'.format(log_dir, ui_mode), shell=True)
         check_output('cp /var/log/apache2/redirect_ssl_web-access.log {0}/{1}-redirect_ssl_web-access.log'.format(log_dir, ui_mode), shell=True)
-      
+        check_output('cp /var/log/apache2/redirect_ssl_web-error.log {0}/{1}-redirect_ssl_web-error.log'.format(log_dir, ui_mode), shell=True)
+
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
 
     request.addfinalizer(module_teardown)
