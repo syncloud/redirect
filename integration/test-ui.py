@@ -18,6 +18,9 @@ DEVICE_PASSWORD="password"
 def module_setup(request, ui_mode, log_dir, artifact_dir):
     def module_teardown():
         check_output('cp /var/log/apache2/redirect_rest-error.log {0}/{1}-redirect_rest-error.log'.format(log_dir, ui_mode), shell=True)
+        check_output('cp /var/log/apache2/redirect_rest-access.log {0}/{1}-redirect_rest-access.log'.format(log_dir, ui_mode), shell=True)
+        check_output('cp /var/log/apache2/redirect_ssl_web-access.log {0}/{1}-redirect_ssl_web-access.log'.format(log_dir, ui_mode), shell=True)
+      
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
 
     request.addfinalizer(module_teardown)
@@ -59,3 +62,4 @@ def test_main(driver, ui_mode, screenshot_dir, domain):
     screenshots(driver, screenshot_dir, 'login-progress-' + ui_mode)
     time.sleep(2)
     screenshots(driver, screenshot_dir, 'main-' + ui_mode)
+
