@@ -33,4 +33,6 @@ a2enmod rewrite
 a2enmod ssl
 sed -i '/SYNCLOUD_DOMAIN.*/d' /etc/apache2/envvars
 echo "export SYNCLOUD_DOMAIN=${SYNCLOUD_DOMAIN}" >> /etc/apache2/envvars
+cat /etc/apache2/envvars
+ls -la /etc/apache2/sites-enabled
 sudo service apache2 restart
