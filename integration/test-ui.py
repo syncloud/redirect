@@ -11,7 +11,7 @@ from syncloudlib.integration.hosts import add_host_alias_by_ip
 from syncloudlib.integration.screenshots import screenshots
 
 DIR = dirname(__file__)
-DEVICE_USER="user"
+DEVICE_USER="user@example.com"
 DEVICE_PASSWORD="password"
 
 @pytest.fixture(scope="session")
@@ -36,28 +36,26 @@ def test_login(driver, screenshot_dir, ui_mode, domain):
 def test_register(driver, ui_mode, screenshot_dir, domain):
     driver.get("https://www.{0}/register.html".format(domain))
     screenshots(driver, screenshot_dir, 'register-' + ui_mode)
+    user = driver.find_element_by_id("email")
+    user.send_keys(DEVICE_USER)
+    password = driver.find_element_by_id("password")
+    password.send_keys(DEVICE_PASSWORD)
+    screenshots(driver, screenshot_dir, 'register-credentials-' + ui_mode)
+    password.send_keys(Keys.RETURN)
+    time.sleep(2)
+    screenshots(driver, screenshot_dir, 'register-progress-' + ui_mode)
 
 
 def test_main(driver, ui_mode, screenshot_dir, domain):
     driver.get("https://www.{0}".format(domain))
-    user = driver.find_element_by_id("user")
+    screenshots(driver, screenshot_dir, 'login-' + ui_mode)
+    user = driver.find_element_by_id("email")
     user.send_keys(DEVICE_USER)
     password = driver.find_element_by_id("password")
     password.send_keys(DEVICE_PASSWORD)
-    screenshots(driver, screenshot_dir, 'login-' + ui_mode)
-
+    screenshots(driver, screenshot_dir, 'login-credentials-' + ui_mode)
     password.send_keys(Keys.RETURN)
-    time.sleep(10)
-    screenshots(driver, screenshot_dir, 'login_progress-' + ui_mode)
-       
-    wait_driver = WebDriverWait(driver, 300)
-
-    if ui_mode == "desktop":
-        close_btn_xpath =  "//button[@aria-label='Close']"
-        wait_driver.until(EC.presence_of_element_located((By.XPATH, close_btn_xpath)))
-        wizard_close_button = driver.find_element_by_xpath(close_btn_xpath)
-        screenshots(driver, screenshot_dir, 'main_first_time-' + ui_mode)
-        wizard_close_button.click()
-    
+    time.sleep(2)
+    screenshots(driver, screenshot_dir, 'login-progress-' + ui_mode)
     time.sleep(2)
     screenshots(driver, screenshot_dir, 'main-' + ui_mode)
