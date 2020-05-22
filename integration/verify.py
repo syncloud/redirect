@@ -13,12 +13,12 @@ def module_setup(request, log_dir, artifact_dir):
     request.addfinalizer(module_teardown)
 
 
-def test_start(module_setup):
-    add_host_alias_by_ip('www', 'syncloud.it', '127.0.0.1')
+def test_start(module_setup, domain):
+    add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
 
 
-def test_index():
-    response = requests.get('https://www.syncloud.it', allow_redirects=False, verify=False)
+def test_index(domain):
+    response = requests.get('https://www.{0}'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 200, response.text
 
 

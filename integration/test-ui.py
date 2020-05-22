@@ -24,7 +24,7 @@ def module_setup(request, ui_mode, log_dir, artifact_dir):
 
 
 def test_start(module_setup, domain):
-    add_host_alias_by_ip('www', domain, '127.0.0.1')
+    add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
 
 
 def test_login(driver, screenshot_dir, ui_mode, domain):
