@@ -52,6 +52,10 @@ steps:
     - failure
     - success
 
+services:
+- name: statsd
+  image: statsd/statsd
+
 volumes:
 - name: shm
   temp: {}
