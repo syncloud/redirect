@@ -65,10 +65,21 @@ local build(arch) = {
             }
         }
     ],
-     services: [{
+    services: [
+    {
         name: "statsd",
         image: "statsd/statsd"
-     }],
+     },
+     {
+        name: "mysql",
+        image: "mysql:5.7.30",
+        environment: {
+            MYSQL_ROOT_PASSWORD: {
+                from_secret: "root"
+            }
+        }
+      }
+     ],
      volumes: [
          {
              name: "shm",
