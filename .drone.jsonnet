@@ -74,9 +74,7 @@ local build(arch) = {
         name: "mysql",
         image: "mysql:5.7.30",
         environment: {
-            MYSQL_ROOT_PASSWORD: {
-                from_secret: "root"
-            }
+            MYSQL_ROOT_PASSWORD: "root"
         }
       }
      ],
@@ -84,6 +82,13 @@ local build(arch) = {
          {
              name: "shm",
              temp: {}
+         }
+     ]
+};
+
+[
+    build("amd64")
+]
          }
      ]
 };
