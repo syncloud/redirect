@@ -15,4 +15,3 @@ openssl req -x509 -newkey rsa:4096 \
   -nodes -days 1 \
   -subj "/C=US/ST=Oregon/L=Portland/O=Company Name/OU=Org/CN=www.example.com"
 pip install -r dev_requirements.txt
-cp ${DIR}/integration/test_secret.cfg /var/www/redirect/current/redirect/secret.cfg
