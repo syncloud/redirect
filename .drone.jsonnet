@@ -65,6 +65,10 @@ local build(arch) = {
             }
         }
     ],
+     services: [{
+        name: "statsd",
+        image: "statsd/statsd"
+     }],
      volumes: [
          {
              name: "shm",
