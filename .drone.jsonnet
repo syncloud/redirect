@@ -11,7 +11,7 @@ local build(arch) = {
     steps: [
         {
             name: "build",
-            image: "syncloud/build-deps-" + arch,
+            image: "ruby:2.5",
             commands: [
                 "./build.sh ${DRONE_BUILD_NUMBER}",
             ]
