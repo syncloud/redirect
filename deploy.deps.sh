@@ -3,7 +3,7 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 apt-get update -qq
-apt-get install -y -qq mysql-client libmysqlclient-dev apache2 python python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl
+apt-get install -y -qq mysql-client libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl
 
 # integration deps
 mkdir -p /etc/letsencrypt/live/syncloud.test
