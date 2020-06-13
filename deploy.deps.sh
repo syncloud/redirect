@@ -18,5 +18,5 @@ pip install -r dev_requirements.txt
   -subj "/C=US/ST=Oregon/L=Portland/O=Company Name/OU=Org/CN=www.example.com"
 pip install -r dev_requirements.txt
 
-mysql -h mysql -u root -p root -e "CREATE DATABASE redirect_test"
-mysql -h mysql -u root -p root redirect_test < ${DIR}/db/init.sql
+mysql -h mysql -u root -p root -e "CREATE DATABASE redirect"
+mysql -h mysql -u root -p root redirect < ${DIR}/db/init.sql
