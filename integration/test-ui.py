@@ -3,16 +3,16 @@ from os.path import dirname
 from subprocess import check_output
 
 import pytest
-from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 from syncloudlib.integration.hosts import add_host_alias_by_ip
 from syncloudlib.integration.screenshots import screenshots
+
+import db
 
 DIR = dirname(__file__)
 DEVICE_USER="user@example.com"
 DEVICE_PASSWORD="password"
+
 
 @pytest.fixture(scope="session")
 def module_setup(request, ui_mode, log_dir, artifact_dir):
@@ -29,6 +29,7 @@ def module_setup(request, ui_mode, log_dir, artifact_dir):
 
 def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
+    db.recreate()
 
 
 def test_login(driver, screenshot_dir, ui_mode, domain):

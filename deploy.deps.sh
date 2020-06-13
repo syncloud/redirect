@@ -17,7 +17,3 @@ pip install -r dev_requirements.txt
   -nodes -days 1 \
   -subj "/C=US/ST=Oregon/L=Portland/O=Company Name/OU=Org/CN=www.example.com"
 pip install -r dev_requirements.txt
-
-mysql --host=mysql --user=root --password=root -e "drop DATABASE redirect"
-mysql --host=mysql --user=root --password=root -e "CREATE DATABASE redirect"
-mysql --host=mysql --user=root --password=root redirect < ${DIR}/db/init.sql

@@ -3,6 +3,7 @@ import pytest
 from os.path import dirname
 from syncloudlib.integration.hosts import add_host_alias_by_ip
 import requests
+import db
 
 DIR = dirname(__file__)
 
@@ -13,6 +14,7 @@ def module_setup(request, log_dir, artifact_dir):
         check_output('cp /var/log/apache2/error.log {0}'.format(log_dir), shell=True)
         check_output('cp /var/log/apache2/redirect_rest-error.log {0}/redirect_rest-error.log'.format(log_dir), shell=True)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
+        db.recreate()
 
     request.addfinalizer(module_teardown)
 
