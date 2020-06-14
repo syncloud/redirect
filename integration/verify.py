@@ -21,7 +21,6 @@ def module_setup(request, log_dir, artifact_dir):
 
 def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
-    check_output('cp {0}/test_secret.cfg /var/www/redirect/current/redirect/secret.cfg'.format(DIR), shell=True)
 
 
 def test_index(domain):

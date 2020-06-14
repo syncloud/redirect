@@ -28,7 +28,7 @@ class FakeSmtp:
     def __init__(self, ip, port):
         self.smtp_outbox_path = 'outbox'
         self.root_dir = '/home/test'
-        self.smtp_outbox_fuul_path = os.path.join(self.root_dir, 'outbox')
+        self.smtp_outbox_full_path = os.path.join(self.root_dir, 'outbox')
         self.start(ip, port)
 
     def start(self, ip, port, timeout=1):
@@ -36,6 +36,7 @@ class FakeSmtp:
             self.root_dir, self.smtp_outbox_path, ip, port)
         self.server = subprocess.Popen(smtp_sink_cmd, shell=True, preexec_fn=os.setsid)
         wait_smtp(ip, port, timeout)
+        
 
     def stop(self):
         os.killpg(self.server.pid, signal.SIGKILL)
@@ -43,17 +44,17 @@ class FakeSmtp:
         self.clear()
 
     def clear(self):
-        if os.path.isdir(self.smtp_outbox_fuul_path):
-            shutil.rmtree(self.smtp_outbox_fuul_path)
+        if os.path.isdir(self.smtp_outbox_full_path):
+            shutil.rmtree(self.smtp_outbox_full_path)
 
     def emails(self):
         emails = []
-        for filename in os.listdir(self.smtp_outbox_fuul_path):
-            with open(os.path.join(self.smtp_outbox_fuul_path, filename), 'r') as f:
+        for filename in os.listdir(self.smtp_outbox_full_path):
+            with open(os.path.join(self.smtp_outbox_full_path, filename), 'r') as f:
                 emails.append(f.read())
         return emails
 
     def empty(self):
-        if not os.path.isdir(self.smtp_outbox_fuul_path):
+        if not os.path.isdir(self.smtp_outbox_full_path):
             return True
-        return len(os.listdir(self.smtp_outbox_fuul_path)) == 0
+        return len(os.listdir(self.smtp_outbox_full_path)) == 0
