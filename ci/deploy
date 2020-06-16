@@ -16,18 +16,19 @@ mkdir -p ${TARGET}
 tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
 rm -f ${CURRENT}
 ln -s ${TARGET} ${CURRENT}
-sudo pip install -r ${CURRENT}/requirements.txt
+pip install -r ${CURRENT}/requirements.txt
 cp -rf ${CURRENT}/config/${ENV}/* ${CURRENT}
 cp ${CURRENT}/apache/redirect.conf /etc/apache2/sites-available
 if  ! id -u redirect > /dev/null 2>&1; then
-    sudo adduser --disabled-password --gecos "" redirect
+    adduser --disabled-password --gecos "" redirect
 fi
-sudo chown -R redirect. ${CURRENT}
+chown -R redirect. ${TARGET}
+chown -R redirect. ${CURRENT}
 if a2query -s 000-default; then
-  sudo a2dissite 000-default
+  a2dissite 000-default
 fi
 if ! a2query -s redirect; then
-  sudo a2ensite redirect
+  a2ensite redirect
 fi
 a2enmod rewrite
 a2enmod ssl
@@ -35,4 +36,4 @@ sed -i '/SYNCLOUD_DOMAIN.*/d' /etc/apache2/envvars
 echo "export SYNCLOUD_DOMAIN=${SYNCLOUD_DOMAIN}" >> /etc/apache2/envvars
 cat /etc/apache2/envvars
 ls -la /etc/apache2/sites-enabled
-sudo service apache2 restart
+service apache2 restart
