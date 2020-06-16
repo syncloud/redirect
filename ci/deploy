@@ -17,7 +17,7 @@ tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
 rm -f ${CURRENT}
 ln -s ${TARGET} ${CURRENT}
 pip install -r ${CURRENT}/requirements.txt
-cp -rf ${CURRENT}/config/${ENV}/* ${CURRENT}
+cp -rf ${CURRENT}/config/${ENV}/* /var/www/redirect
 cp ${CURRENT}/apache/redirect.conf /etc/apache2/sites-available
 if  ! id -u redirect > /dev/null 2>&1; then
     adduser --disabled-password --gecos "" redirect

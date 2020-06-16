@@ -12,5 +12,5 @@ def read_configs(filenames):
 
 def read_redirect_configs():
     file_dirname = dirname(__file__)
-    config = read_configs([join(file_dirname, f) for f in ['config.cfg', 'secret.cfg']])
+    config = read_configs([join(file_dirname, '..', '..', f) for f in ['config.cfg', 'secret.cfg']])
     return config

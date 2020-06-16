@@ -10,8 +10,9 @@ import logging
 import ioc
 from socket import gethostname
 
-statsd_client = ioc.statsd_client()
-
+the_ioc = ioc.Ioc()
+statsd_client = the_ioc.statsd_client
+users_manager = the_ioc.users_manager
 app = Flask(__name__)
 
 
@@ -19,7 +20,7 @@ app = Flask(__name__)
 @cross_origin()
 def user_activate():
     statsd_client.incr('rest.user.activate')
-    ioc.manager().activate(request.args)
+    users_manager.activate(request.args)
     return jsonify(success=True, message='User was activated'), 200
 
 
@@ -27,7 +28,7 @@ def user_activate():
 @cross_origin()
 def user_get():
     statsd_client.incr('rest.user.get')
-    user = ioc.manager().authenticate(request.args)
+    user = users_manager.authenticate(request.args)
     user_data = convertible.to_dict(user)
     return jsonify(success=True, message='User provided', data=user_data), 200
 
@@ -36,7 +37,7 @@ def user_get():
 @cross_origin()
 def domain_acquire():
     statsd_client.incr('rest.domain.acquire')
-    domain = ioc.manager().domain_acquire(request.form)
+    domain = users_manager.domain_acquire(request.form)
     return jsonify(success=True, user_domain=domain.user_domain, update_token=domain.update_token), 200
 
 
@@ -44,7 +45,7 @@ def domain_acquire():
 @cross_origin()
 def drop_device():
     statsd_client.incr('rest.device.drop')
-    domain = ioc.manager().drop_device(request.form)
+    domain = users_manager.drop_device(request.form)
     domain_data = convertible.to_dict(domain)
     return jsonify(success=True, message='Device was dropped', data=domain_data), 200
 
@@ -53,7 +54,7 @@ def drop_device():
 @cross_origin()
 def domain_get():
     statsd_client.incr('rest.domain.get')
-    domain = ioc.manager().get_domain(request.args)
+    domain = users_manager.get_domain(request.args)
     domain_data = convertible.to_dict(domain)
     return jsonify(success=True, message='Domain retrieved', data=domain_data), 200
 
@@ -63,7 +64,7 @@ def domain_get():
 def domain_update():
     statsd_client.incr('rest.domain.update')
     request_data = json.loads(request.data)
-    domain = ioc.manager().domain_update(request_data, request.remote_addr)
+    domain = users_manager.domain_update(request_data, request.remote_addr)
     domain_data = convertible.to_dict(domain)
     return jsonify(success=True, message='Domain was updated', data=domain_data), 200
 
@@ -73,7 +74,7 @@ def domain_update():
 def domain_delete():
     statsd_client.incr('rest.domain.delete')
     request_data = json.loads(request.data)
-    ioc.manager().domain_delete(request_data)
+    users_manager.domain_delete(request_data)
     return jsonify(success=True, message='Domain was deleted'), 200
 
 
@@ -81,7 +82,7 @@ def domain_delete():
 @cross_origin()
 def user_delete():
     statsd_client.incr('rest.user.update')
-    ioc.manager().delete_user(request.form)
+    users_manager.delete_user(request.form)
     return jsonify(success=True, message='User deleted'), 200
 
 
@@ -89,7 +90,7 @@ def user_delete():
 @cross_origin()
 def user_log():
     statsd_client.incr('rest.user.log')
-    ioc.manager().user_log(request.form)
+    users_manager.user_log(request.form)
     return jsonify(success=True, message='Error report sent successfully'), 200
 
 
@@ -97,7 +98,7 @@ def user_log():
 @cross_origin()
 def probe_port_v1():
     statsd_client.incr('rest.probe.port_v1')
-    result, status_code = ioc.manager().port_probe(request.args, request.remote_addr)
+    result, status_code = users_manager.port_probe(request.args, request.remote_addr)
     return result['message'], status_code
 
 
@@ -105,7 +106,7 @@ def probe_port_v1():
 @cross_origin()
 def probe_port_v2():
     statsd_client.incr('rest.probe.port_v2')
-    result, status_code = ioc.manager().port_probe(request.args, request.remote_addr)
+    result, status_code = users_manager.port_probe(request.args, request.remote_addr)
     return json.dumps(result), status_code
 
 
