@@ -8,3 +8,4 @@ pip install -r dev_requirements.txt
 adduser --disabled-password --gecos "" test
 mkdir mail.root
 chown test. mail.root
+./ci/recreatedb
