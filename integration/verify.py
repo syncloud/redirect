@@ -19,6 +19,7 @@ def module_setup(request, log_dir, artifact_dir):
         check_output('cp /var/log/apache2/redirect_ssl_rest-access.log {0}'.format(log_dir), shell=True)
         check_output('cp /var/log/apache2/redirect_ssl_web-access.log {0}'.format(log_dir), shell=True)
         check_output('cp /var/log/apache2/redirect_ssl_web-error.log {0}'.format(log_dir), shell=True)
+        check_output('ls -la /var/log/apache2 > {0}/apache2.ls.log'.format(log_dir), shell=True)
 
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
         db.recreate()
