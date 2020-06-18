@@ -4,6 +4,7 @@ from os.path import dirname
 from syncloudlib.integration.hosts import add_host_alias_by_ip
 import requests
 import db
+import uuid
 
 DIR = dirname(__file__)
 
@@ -19,12 +20,22 @@ def module_setup(request, log_dir, artifact_dir):
     request.addfinalizer(module_teardown)
 
 
+def create_token():
+    return unicode(uuid.uuid4().hex)
+
 def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
+    add_host_alias_by_ip('app', 'api', '127.0.0.1', domain)
 
 
 def test_index(domain):
     response = requests.get('https://www.{0}'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 200, response.text
 
+def test_user_create_success(domain):
+    user_domain = create_token()
+    email = user_domain+'@mail.com'
+    response = requests.post('https://api.{0}/user/create'.format(domain), data={'email': email, 'password': 'pass123456'})
+    assert response.status_code == 200
+    # self.assertFalse(self.smtp.empty())
 

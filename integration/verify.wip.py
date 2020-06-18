@@ -67,13 +67,6 @@ class TestFlask(unittest.TestCase):
 
 class TestUser(TestFlask):
 
-    def test_user_create_success(self):
-        user_domain = create_token()
-        email = user_domain+'@mail.com'
-        response = self.www.post('/user/create', data={'email': email, 'password': 'pass123456'})
-        self.assertEqual(200, response.status_code)
-        self.assertFalse(self.smtp.empty())
-
     def test_user_create_special_symbols_in_password(self):
         user_domain = create_token()
         email = user_domain+'@mail.com'

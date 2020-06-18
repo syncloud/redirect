@@ -10,7 +10,6 @@ def read_configs(filenames):
     config.read(filenames)
     return config
 
-def read_redirect_configs():
-    file_dirname = dirname(__file__)
-    config = read_configs([join(file_dirname, '..', '..', f) for f in ['config.cfg', 'secret.cfg']])
+def read_redirect_configs(config_dir):
+    config = read_configs([join(config_dir, f) for f in ['config.cfg', 'secret.cfg']])
     return config
