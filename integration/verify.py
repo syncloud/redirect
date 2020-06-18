@@ -35,7 +35,7 @@ def test_index(domain):
 def test_user_create_success(domain):
     user_domain = create_token()
     email = user_domain+'@mail.com'
-    response = requests.post('https://api.{0}/user/create'.format(domain), data={'email': email, 'password': 'pass123456'})
+    response = requests.post('https://api.{0}/user/create'.format(domain), data={'email': email, 'password': 'pass123456'}, verify=False)
     assert response.status_code == 200
     # self.assertFalse(self.smtp.empty())
 
