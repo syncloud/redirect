@@ -13,6 +13,7 @@ DIR = dirname(__file__)
 def module_setup(request, log_dir, artifact_dir):
     def module_teardown():
         check_output('cp /var/log/apache2/error.log {0}'.format(log_dir), shell=True)
+        check_output('cp /var/log/syslog {0}/syslog.log'.format(log_dir), shell=True)
         check_output('cp /var/log/apache2/redirect_rest-error.log {0}'.format(log_dir), shell=True)
         check_output('cp /var/log/apache2/redirect_rest-access.log {0}'.format(log_dir), shell=True)
         check_output('cp /var/log/apache2/redirect_ssl_rest-error.log {0}'.format(log_dir), shell=True)
@@ -43,6 +44,6 @@ def test_user_create_success(domain):
     user_domain = create_token()
     email = user_domain+'@mail.com'
     response = requests.post('https://www.{0}/user/create'.format(domain), data={'email': email, 'password': 'pass123456'}, verify=False)
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     # self.assertFalse(self.smtp.empty())
 
