@@ -1,32 +1,20 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-from servicesexceptions import ServiceException, ParametersException
 import traceback
-from syncloudlib.json import convertible
-import config
-import ioc
-import statsd
-from socket import gethostname
 
-the_config = config.read_redirect_configs()
-statsd_client = statsd.StatsClient(the_config.get('stats', 'server'), 8125, prefix=the_config.get('stats', 'prefix'))
+from flask import Flask, request, jsonify
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
+from syncloudlib.json import convertible
+
+import ioc
+from servicesexceptions import ServiceException, ParametersException
+
+the_ioc = ioc.Ioc()
+statsd_client = the_ioc.statsd_client
+users_manager = the_ioc.users_manager
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = the_config.get('redirect', 'auth_secret_key')
+app.config['SECRET_KEY'] = the_ioc.redirect_config.get('redirect', 'auth_secret_key')
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-# This is to host static html - should be done on proper web server in prod
-
-host_static_files = the_config.has_option('redirect', 'static_files_path')
-if host_static_files:
-    static_files_path = the_config.get('redirect', 'static_files_path')
-
-    @app.route('/<path:filename>')
-    def static_file(filename):
-        return send_from_directory(static_files_path, filename)
-
-# End of hosting static html
 
 
 class UserFlask:
@@ -48,7 +36,7 @@ class UserFlask:
 
 @login_manager.user_loader
 def load_user(email):
-    user = ioc.manager().get_user(email)
+    user = users_manager.get_user(email)
     if not user:
         return None
     return UserFlask(user)
@@ -57,7 +45,7 @@ def load_user(email):
 @app.route("/login", methods=["POST"])
 def login():
     statsd_client.incr('www.user.login')
-    user = ioc.manager().authenticate(request.form)
+    user = users_manager.authenticate(request.form)
     user_flask = UserFlask(user)
     login_user(user_flask, remember=False)
     return 'User logged in', 200
@@ -83,7 +71,7 @@ def user():
 @app.route('/user/create', methods=["POST"])
 def user_create():
     statsd_client.incr('www.user.create')
-    user = ioc.manager().create_new_user(request.form)
+    user = users_manager.create_new_user(request.form)
     user_data = convertible.to_dict(user)
     return jsonify(success=True, message='User was created', data=user_data), 200
 
@@ -91,14 +79,14 @@ def user_create():
 @app.route('/user/reset_password', methods=["POST"])
 def user_reset_password():
     statsd_client.incr('www.user.reset_password')
-    ioc.manager().user_reset_password(request.form)
+    users_manager.user_reset_password(request.form)
     return jsonify(success=True, message='Reset password requested'), 200
 
 
 @app.route('/user/set_password', methods=["POST"])
 def user_set_password():
     statsd_client.incr('rest.user.set_password')
-    ioc.manager().user_set_password(request.form)
+    users_manager.user_set_password(request.form)
     return jsonify(success=True, message='Password was set successfully'), 200
 
 
@@ -107,7 +95,7 @@ def user_set_password():
 def user_delete():
     statsd_client.incr('www.user.delete')
     user = current_user.user
-    ioc.manager().do_delete_user(user.email)
+    users_manager.do_delete_user(user.email)
     return 'User deleted', 200
 
 
@@ -116,7 +104,7 @@ def user_delete():
 def user_unsubscribe():
     statsd_client.incr('www.user.unsubscribe')
     user = current_user.user
-    ioc.manager().user_set_subscribed(request.form, user.email)
+    users_manager.user_set_subscribed(request.form, user.email)
     return 'Successfully set', 200
 
 
@@ -125,7 +113,7 @@ def user_unsubscribe():
 def domain_delete():
     statsd_client.incr('www.domain.delete')
     user = current_user.user
-    ioc.manager().user_domain_delete(request.form, user)
+    users_manager.user_domain_delete(request.form, user)
     return 'Domain deleted', 200
 
 
