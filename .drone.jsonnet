@@ -64,24 +64,34 @@ local build(arch) = {
         }
     ],
     services: [
-    {
-        name: "statsd",
-        image: "statsd/statsd"
-     },
-     {
-        name: "mysql",
-        image: "mysql:5.7.30",
-        environment: {
-            MYSQL_ROOT_PASSWORD: "root"
+        {
+            name: "statsd",
+            image: "statsd/statsd"
+        },
+        {
+            name: "mail",
+            image: "mailhog/mailhog:v1.0.0",
+            environment: {
+                MH_HOSTNAME: "syncloud.test",
+                MH_API_BIND_ADDR: "0.0.0.0:80",
+                MH_SMTP_BIND_ADDR: "0.0.0.0:25",
+                MH_AUTH_FILE: "/drone/src/integration/mailhog.auth"
+            }
+        },
+        {
+            name: "mysql",
+            image: "mysql:5.7.30",
+            environment: {
+                MYSQL_ROOT_PASSWORD: "root"
+            }
         }
-      }
-     ],
-     volumes: [
-         {
-             name: "shm",
-             temp: {}
-         }
-     ]
+    ],
+    volumes: [
+        {
+         name: "shm",
+         temp: {}
+        }
+    ]
 };
 
 [

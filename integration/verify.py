@@ -1,6 +1,6 @@
 from subprocess import check_output
 import pytest
-from os.path import dirname
+from os.path import dirname, join
 from syncloudlib.integration.hosts import add_host_alias_by_ip
 import requests
 import db
@@ -31,6 +31,7 @@ def module_setup(request, log_dir, artifact_dir):
 def create_token():
     return unicode(uuid.uuid4().hex)
 
+
 def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
     add_host_alias_by_ip('app', 'api', '127.0.0.1', domain)
@@ -40,10 +41,13 @@ def test_index(domain):
     response = requests.get('https://www.{0}'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 200, response.text
 
-def test_user_create_success(domain):
-    user_domain = create_token()
-    email = user_domain+'@mail.com'
+
+def test_user_create_success(domain, log_dir):
+    email = 'test@syncloud.test'
     response = requests.post('https://www.{0}/api/user/create'.format(domain), data={'email': email, 'password': 'pass123456'}, verify=False)
     assert response.status_code == 200, response.text
-    # self.assertFalse(self.smtp.empty())
+    response = requests.get('http://mail/api/v1/messages')
+    with open(join(log_dir, 'mail.user.create.messages.log'), 'w') as f:
+        f.write(str(response.text).replace(',', '\n'))
+    assert response.status_code == 200, response.text
 
