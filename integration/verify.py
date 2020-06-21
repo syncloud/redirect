@@ -60,7 +60,8 @@ def test_user_create_special_symbols_in_password(domain):
                              data={'email': email, 'password': r'pass12& ^%"'},
                              verify=False)
     assert response.status_code == 200
-    assert smtp.emails() == 0
+    assert len(smtp.emails()) == 1
+    smtp.clear()
 
 
 def test_user_create_success(domain):
@@ -69,7 +70,7 @@ def test_user_create_success(domain):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              data={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
-    assert smtp.emails() > 0
+    assert len(smtp.emails()) > 0
     activate_token = get_token(smtp.emails()[0])
     requests.get('https://www.{0}/api/user/activate'.format(domain),
                  query_string={'token': activate_token},
