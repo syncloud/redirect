@@ -74,8 +74,7 @@ local build(arch) = {
             environment: {
                 MH_HOSTNAME: "syncloud.test",
                 MH_API_BIND_ADDR: "0.0.0.0:80",
-                MH_SMTP_BIND_ADDR: "0.0.0.0:25",
-                MH_AUTH_FILE: "/drone/src/integration/mailhog.auth"
+                MH_SMTP_BIND_ADDR: "0.0.0.0:25"
             }
         },
         {
