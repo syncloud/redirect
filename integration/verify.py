@@ -46,7 +46,7 @@ def test_user_create_success(domain, log_dir):
     email = 'test@syncloud.test'
     response = requests.post('https://www.{0}/api/user/create'.format(domain), data={'email': email, 'password': 'pass123456'}, verify=False)
     assert response.status_code == 200, response.text
-    response = requests.get('http://mail/api/v1/messages')
+    response = requests.get('http://mail:8025/api/v1/messages')
     with open(join(log_dir, 'mail.user.create.messages.log'), 'w') as f:
         f.write(str(response.text).replace(',', '\n'))
     assert response.status_code == 200, response.text

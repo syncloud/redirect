@@ -72,9 +72,7 @@ local build(arch) = {
             name: "mail",
             image: "mailhog/mailhog:v1.0.0",
             environment: {
-                MH_HOSTNAME: "syncloud.test",
-                MH_API_BIND_ADDR: "mail:80",
-                MH_SMTP_BIND_ADDR: "mail:25"
+                MH_HOSTNAME: "syncloud.test"
             }
         },
         {

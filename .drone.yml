@@ -57,9 +57,7 @@ services:
 - name: mail
   image: mailhog/mailhog:v1.0.0
   environment:
-    MH_API_BIND_ADDR: mail:80
     MH_HOSTNAME: syncloud.test
-    MH_SMTP_BIND_ADDR: mail:25
 
 - name: mysql
   image: mysql:5.7.30
