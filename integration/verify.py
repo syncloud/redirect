@@ -1,11 +1,14 @@
 import json
 from subprocess import check_output
+from urlparse import urlparse
+
 import pytest
 from os.path import dirname, join
 from syncloudlib.integration.hosts import add_host_alias_by_ip
 import requests
 import db
 import uuid
+import smtp
 
 DIR = dirname(__file__)
 
@@ -33,6 +36,25 @@ def create_token():
     return unicode(uuid.uuid4().hex)
 
 
+def get_token(body):
+    link_index = body.find('http://')
+    link = body[link_index:].split(' ')[0].strip()
+    parts = urlparse(link)
+    token = parts.query.replace('token=', '')
+    return token
+
+
+def create_active_user(self):
+    smtp.clear()
+    email = '@mail.com'
+    password = 'pass123456'
+    self.www.post('/user/create', data={'email': email, 'password': password})
+    activate_token = self.get_token(self.smtp.emails()[0])
+    self.app.get('/user/activate', query_string={'token': activate_token})
+    self.smtp.clear()
+    return email, password
+
+
 def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
     add_host_alias_by_ip('app', 'api', '127.0.0.1', domain)
@@ -43,15 +65,21 @@ def test_index(domain):
     assert response.status_code == 200, response.text
 
 
+def test_user_create_special_symbols_in_password(self):
+    email = 'symbols_in_password@mail.com'
+    response = requests.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
+    assert response.status_code == 200
+    assert smtp.emails() == 0
+
+
 def test_user_create_success(domain, log_dir):
     email = 'test@syncloud.test'
-    response = requests.post('https://www.{0}/api/user/create'.format(domain), data={'email': email, 'password': 'pass123456'}, verify=False)
+    password = 'pass123456'
+    response = requests.post('https://www.{0}/api/user/create'.format(domain), data={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
-    response = requests.get('http://mail:8025/api/v1/messages')
-    with open(join(log_dir, 'mail.user.create.messages.log'), 'w') as f:
-        f.write(str(response.text).replace(',', '\n'))
-    assert response.status_code == 200, response.text
-    assert len(json.loads(response.text)) == 1, response.text
-    response = requests.delete('http://mail:8025/api/v1/messages')
-    assert response.status_code == 200, response.text
-
+    assert smtp.emails() > 0
+    activate_token = get_token(smtp.emails()[0])
+    requests.get('/user/activate', query_string={'token': activate_token})
+    smtp.clear()
+    response = requests.get('/user/get', query_string={'email': email, 'password': password})
+    assert response.status_code== 200, response.text

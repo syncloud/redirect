@@ -25,22 +25,6 @@ class TestFlask(unittest.TestCase):
     def tearDown(self):
         self.smtp.stop()
 
-    def get_token(self, email):
-        link_index = email.find('http://')
-        link = email[link_index:].split(' ')[0].strip()
-        parts = urlparse(link)
-        token = parts.query.replace('token=', '')
-        return token
-
-    def create_active_user(self):
-        self.smtp.clear()
-        email = create_token()+'@mail.com'
-        password = 'pass123456'
-        self.www.post('/user/create', data={'email': email, 'password': password})
-        activate_token = self.get_token(self.smtp.emails()[0])
-        self.app.get('/user/activate', query_string={'token': activate_token})
-        self.smtp.clear()
-        return email, password
 
     def acquire_domain(self, email, password, user_domain):
         self.maxDiff = None
@@ -67,29 +51,6 @@ class TestFlask(unittest.TestCase):
 
 class TestUser(TestFlask):
 
-    def test_user_create_special_symbols_in_password(self):
-        user_domain = create_token()
-        email = user_domain+'@mail.com'
-        response = self.www.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
-        self.assertEqual(200, response.status_code)
-        self.assertFalse(self.smtp.empty())
-
-    def test_user_get_success(self):
-        email, password = self.create_active_user()
-
-        response = self.app.get('/user/get', query_string={'email': email, 'password': password})
-        self.assertEqual(200, response.status_code, response.data)
-
-    def test_user_activate_success(self):
-        user_domain = create_token()
-        email = user_domain+'@mail.com'
-        self.www.post('/user/create', data={'email': email, 'password': 'pass123456'})
-
-        self.assertFalse(self.smtp.empty())
-        token = self.get_token(self.smtp.emails()[0])
-
-        activate_response = self.app.get('/user/activate', query_string={'token': token})
-        self.assertEqual(200, activate_response.status_code)
 
     def test_get_user_data(self):
         email, password = self.create_active_user()
