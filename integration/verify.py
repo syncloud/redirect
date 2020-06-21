@@ -1,13 +1,13 @@
-import json
+import uuid
+from os.path import dirname
 from subprocess import check_output
 from urlparse import urlparse
 
 import pytest
-from os.path import dirname, join
-from syncloudlib.integration.hosts import add_host_alias_by_ip
 import requests
+from syncloudlib.integration.hosts import add_host_alias_by_ip
+
 import db
-import uuid
 import smtp
 
 DIR = dirname(__file__)
@@ -44,17 +44,6 @@ def get_token(body):
     return token
 
 
-def create_active_user(self):
-    smtp.clear()
-    email = '@mail.com'
-    password = 'pass123456'
-    self.www.post('/user/create', data={'email': email, 'password': password})
-    activate_token = self.get_token(self.smtp.emails()[0])
-    self.app.get('/user/activate', query_string={'token': activate_token})
-    self.smtp.clear()
-    return email, password
-
-
 def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
     add_host_alias_by_ip('app', 'api', '127.0.0.1', domain)
@@ -65,21 +54,22 @@ def test_index(domain):
     assert response.status_code == 200, response.text
 
 
-def test_user_create_special_symbols_in_password(self):
+def test_user_create_special_symbols_in_password():
     email = 'symbols_in_password@mail.com'
     response = requests.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
     assert response.status_code == 200
     assert smtp.emails() == 0
 
 
-def test_user_create_success(domain, log_dir):
+def test_user_create_success(domain):
     email = 'test@syncloud.test'
     password = 'pass123456'
-    response = requests.post('https://www.{0}/api/user/create'.format(domain), data={'email': email, 'password': password}, verify=False)
+    response = requests.post('https://www.{0}/api/user/create'.format(domain),
+                             data={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
     assert smtp.emails() > 0
     activate_token = get_token(smtp.emails()[0])
     requests.get('/user/activate', query_string={'token': activate_token})
     smtp.clear()
     response = requests.get('/user/get', query_string={'email': email, 'password': password})
-    assert response.status_code== 200, response.text
+    assert response.status_code == 200, response.text
