@@ -14,6 +14,7 @@ BUILD_DIR=${DIR}/build
 mkdir ${BUILD_DIR}
 
 cd www
+mkdir .jekyll-cache
 jekyll build
 cp -r _site ${BUILD_DIR}/www
 
