@@ -54,9 +54,9 @@ def test_index(domain):
     assert response.status_code == 200, response.text
 
 
-def test_user_create_special_symbols_in_password():
+def test_user_create_special_symbols_in_password(domain):
     email = 'symbols_in_password@mail.com'
-    response = requests.post('/user/create', data={'email': email, 'password': r'pass12& ^%"'})
+    response = requests.post('https://www.{0}/api/user/create'.format(domain), data={'email': email, 'password': r'pass12& ^%"'})
     assert response.status_code == 200
     assert smtp.emails() == 0
 
@@ -69,7 +69,7 @@ def test_user_create_success(domain):
     assert response.status_code == 200, response.text
     assert smtp.emails() > 0
     activate_token = get_token(smtp.emails()[0])
-    requests.get('/user/activate', query_string={'token': activate_token})
+    requests.get('https://www.{0}/api/user/activate'.format(domain), query_string={'token': activate_token})
     smtp.clear()
-    response = requests.get('/user/get', query_string={'email': email, 'password': password})
+    response = requests.get('https://www.{0}/api/user/get'.format(domain), query_string={'email': email, 'password': password})
     assert response.status_code == 200, response.text
