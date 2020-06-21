@@ -1,3 +1,4 @@
+import json
 from subprocess import check_output
 import pytest
 from os.path import dirname, join
@@ -49,5 +50,8 @@ def test_user_create_success(domain, log_dir):
     response = requests.get('http://mail:8025/api/v1/messages')
     with open(join(log_dir, 'mail.user.create.messages.log'), 'w') as f:
         f.write(str(response.text).replace(',', '\n'))
+    assert response.status_code == 200, response.text
+    assert len(json.loads(response.text)) == 1, response.text
+    response = requests.delete('http://mail:8025/api/v1/messages')
     assert response.status_code == 200, response.text
 
