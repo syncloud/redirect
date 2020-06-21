@@ -13,7 +13,6 @@ BUILD_DIR=${DIR}/build
 
 mkdir ${BUILD_DIR}
 
-gem install jekyll
 cd www
 jekyll build
 cp -r _site ${BUILD_DIR}/www

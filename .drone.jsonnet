@@ -11,7 +11,7 @@ local build(arch) = {
     steps: [
         {
             name: "build",
-            image: "ruby:2.5",
+            image: "jekyll/jekyll:4.1.0",
             commands: [
                 "./build.sh ${DRONE_BUILD_NUMBER}",
             ]
