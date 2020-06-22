@@ -72,7 +72,7 @@ def test_user_create_success(domain):
     assert response.status_code == 200, response.text
     assert len(smtp.emails()) == 1
     activate_token = get_token(smtp.emails()[0])
-    response  = requests.get('https://www.{0}/api/user/activate?token={1}'.format(domain, activate_token),
+    response  = requests.get('https://api.{0}/api/user/activate?token={1}'.format(domain, activate_token),
                  verify=False)
     assert response.status_code == 200, response.text
     smtp.clear()
