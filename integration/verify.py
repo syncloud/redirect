@@ -197,7 +197,7 @@ def test_user_reset_password_set_new(domain):
                              verify=False)
     assert response.status_code == 200, response.text
 
-    assert len(smtp.emails()) == 0, 'Server should send email when setting new password'
+    assert len(smtp.emails()) > 0, 'Server should send email when setting new password'
 
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': new_password},
