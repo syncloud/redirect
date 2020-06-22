@@ -70,10 +70,11 @@ def test_user_create_success(domain):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              data={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
-    assert len(smtp.emails()) > 0
+    assert len(smtp.emails()) == 1
     activate_token = get_token(smtp.emails()[0])
-    requests.get('https://www.{0}/api/user/activate?token={1}'.format(domain, activate_token),
+    response  = requests.get('https://www.{0}/api/user/activate?token={1}'.format(domain, activate_token),
                  verify=False)
+    assert response.status_code == 200, response.text
     smtp.clear()
     response = requests.get('https://www.{0}/api/user/get?email={1}&password={2}'.format(domain, email, password),
                             verify=False)
