@@ -144,7 +144,7 @@ def test_get_user_data(domain):
 
 
 def test_user_delete(domain):
-    email = 'test_get_user_data@syncloud.test'
+    email = 'test_user_delete@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password)
 
@@ -160,5 +160,92 @@ def test_user_delete(domain):
     assert response.status_code == 400
 
     response = requests.get('https://api.{0}/domain/get'.format(domain),
-                            params={'token': update_token_2})
+                            params={'token': update_token_2},
+                            verify=False)
     assert response.status_code == 400
+
+
+def test_user_reset_password_sent_mail(domain):
+    email = 'test_user_delete@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    response = requests.post('https://api.{0}/user/reset_password'.format(domain),
+                             data={'email': email}, verify=False)
+    assert response.status_code == 200
+
+    assert len(smtp.emails()), 'Server should send email with link to reset password'
+    token = smtp.get_token(smtp.emails()[0])
+
+    assert token is not None
+
+
+def test_user_reset_password_set_new(domain):
+    email = 'test_user_reset_password_set_new@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    requests.post('https://api.{0}/user/reset_password'.format(domain), data={'email': email},
+                  verify=False)
+    token = smtp.get_token(smtp.emails()[0])
+
+    smtp.clear()
+
+    new_password = 'new_password'
+    response = requests.post('https://api.{0}/user/set_password'.format(domain),
+                             data={'token': token, 'password': new_password},
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    assert len(smtp.emails()) == 0, 'Server should send email when setting new password'
+
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': new_password},
+                            verify=False)
+    assert response.status_code == 200, response.text
+
+
+def test_user_reset_password_set_with_old_token(domain):
+    email = 'test_user_reset_password_set_with_old_token@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    requests.post('https://api.{0}/user/reset_password'.format(domain), data={'email': email},
+                  verify=False)
+    token_old = smtp.get_token(smtp.emails()[0])
+
+    smtp.clear()
+
+    requests.post('https://api.{0}/user/reset_password'.format(domain), data={'email': email},
+                  verify=False)
+    token = smtp.get_token(smtp.emails()[0])
+    smtp.clear()
+
+    new_password = 'new_password'
+    response = requests.post('https://api.{0}/user/set_password'.format(domain),
+                             data={'token': token_old, 'password': new_password},
+                             verify=False)
+    assert response.status_code == 400, response.text
+
+
+def test_user_reset_password_set_twice(domain):
+    email = 'test_user_reset_password_set_twice@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    requests.post('https://api.{0}/user/reset_password'.format(domain), data={'email': email},
+                  verify=False)
+    token = smtp.get_token(smtp.emails()[0])
+    smtp.clear()
+
+    new_password = 'new_password'
+    response = requests.post('https://api.{0}/user/set_password'.format(domain),
+                             data={'token': token, 'password': new_password},
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    new_password = 'new_password2'
+    response = requests.post('https://api.{0}/user/set_password'.format(domain),
+                             data={'token': token, 'password': new_password},
+                             verify=False)
+    assert response.status_code == 400, response.text
