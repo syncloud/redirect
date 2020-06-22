@@ -71,4 +71,5 @@ def test_main(driver, ui_mode, screenshot_dir, domain):
     screenshots(driver, screenshot_dir, 'login-progress-' + ui_mode)
     time.sleep(2)
     screenshots(driver, screenshot_dir, 'main-' + ui_mode)
+    assert "You do not have any activated devices" in driver.page_source.encode("utf-8")
 
