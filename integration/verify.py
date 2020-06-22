@@ -77,7 +77,7 @@ def acquire_domain(domain, email, password, user_domain):
     response = requests.post('https://api.{0}/domain/acquire'.format(domain),
                              data=acquire_data,
                              verify=False)
-    domain_data = json.loads(response.data)
+    domain_data = json.loads(response.text)
     update_token = domain_data['update_token']
     return update_token
 
