@@ -6,6 +6,8 @@ import pytest
 from selenium.webdriver.common.keys import Keys
 from syncloudlib.integration.hosts import add_host_alias_by_ip
 from syncloudlib.integration.screenshots import screenshots
+import smtp
+import requests
 
 import db
 
@@ -49,6 +51,11 @@ def test_register(driver, ui_mode, screenshot_dir, domain):
     password.send_keys(Keys.RETURN)
     time.sleep(2)
     screenshots(driver, screenshot_dir, 'register-progress-' + ui_mode)
+    activate_token = smtp.get_token(smtp.emails()[0])
+    response  = requests.get('https://api.{0}/user/activate?token={1}'.format(domain, activate_token),
+                             verify=False)
+    assert response.status_code == 200, response.text
+    smtp.clear()
 
 
 def test_main(driver, ui_mode, screenshot_dir, domain):

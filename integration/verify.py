@@ -1,7 +1,5 @@
-import uuid
 from os.path import dirname
 from subprocess import check_output
-from urlparse import urlparse
 
 import pytest
 import requests
@@ -32,18 +30,6 @@ def module_setup(request, log_dir, artifact_dir):
     request.addfinalizer(module_teardown)
 
 
-def create_token():
-    return unicode(uuid.uuid4().hex)
-
-
-def get_token(body):
-    link_index = body.find('http://')
-    link = body[link_index:].split(' ')[0].strip()
-    parts = urlparse(link)
-    token = parts.query.replace('token=', '')
-    return token
-
-
 def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
     add_host_alias_by_ip('app', 'api', '127.0.0.1', domain)
@@ -71,7 +57,7 @@ def test_user_create_success(domain):
                              data={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
     assert len(smtp.emails()) == 1
-    activate_token = get_token(smtp.emails()[0])
+    activate_token = smtp.get_token(smtp.emails()[0])
     response  = requests.get('https://api.{0}/user/activate?token={1}'.format(domain, activate_token),
                  verify=False)
     assert response.status_code == 200, response.text
