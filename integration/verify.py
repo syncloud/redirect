@@ -174,9 +174,9 @@ def test_user_reset_password_sent_mail(domain):
                              data={'email': email}, verify=False)
     assert response.status_code == 200
 
-    assert len(smtp.emails()), 'Server should send email with link to reset password'
+    assert len(smtp.emails()) > 0, 'Server should send email with link to reset password'
     token = smtp.get_token(smtp.emails()[0])
-
+    smtp.clear()
     assert token is not None
 
 
