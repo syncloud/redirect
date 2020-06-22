@@ -1,6 +1,7 @@
 from os.path import dirname
 from subprocess import check_output
 
+import json
 import pytest
 import requests
 from syncloudlib.integration.hosts import add_host_alias_by_ip
@@ -50,9 +51,7 @@ def test_user_create_special_symbols_in_password(domain):
     smtp.clear()
 
 
-def test_user_create_success(domain):
-    email = 'test@syncloud.test'
-    password = 'pass123456'
+def create_user(domain, email, password):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              data={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
@@ -65,3 +64,77 @@ def test_user_create_success(domain):
     response = requests.get('https://api.{0}/user/get?email={1}&password={2}'.format(domain, email, password),
                             verify=False)
     assert response.status_code == 200, response.text
+
+def acquire_domain(domain, email, password, user_domain):
+    acquire_data = {
+        'user_domain': user_domain,
+        'email': email,
+        'password': password,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device',
+    }
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain),
+                             data=acquire_data,
+                             verify=False)
+    domain_data = json.loads(response.data)
+    update_token = domain_data['update_token']
+    return update_token
+
+def test_user_create_success(domain):
+    create_user(domain, 'test@syncloud.test', 'pass123456')
+
+def test_get_user_data(domain):
+    email = 'test_get_user_data@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "test_get_user_data"
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.1',
+        'web_protocol': 'http',
+        'web_local_port': 80,
+        'web_port': 10000
+    }
+    requests.post('https://api.{0}/domain/update'.format(domain),
+                  json=update_data,
+                  verify=False)
+
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': password},
+                            verify=False)
+
+    response_data = json.loads(response.text)
+    user_data = response_data['data']
+
+    # This is hack. We do not know last_update value - it is set by server.
+    last_update = user_data["domains"][0]["last_update"]
+    update_token = user_data["update_token"]
+
+    expected = {
+        'active': True,
+        'email': email,
+        'unsubscribed': False,
+        'update_token': update_token,
+        'domains': [{
+            'user_domain': user_domain,
+            'web_local_port': 80,
+            'web_port': 10000,
+            'web_protocol': 'http',
+            'ip': '127.0.0.1',
+            'ipv6': None,
+            'dkim_key': None,
+            'local_ip': None,
+            'map_local_address': False,
+            'platform_version': None,
+            'device_mac_address': '00:00:00:00:00:00',
+            'device_name': 'some-device',
+            'device_title': 'Some Device',
+            'last_update': last_update
+        }]
+    }
+
+    assert expected == user_data

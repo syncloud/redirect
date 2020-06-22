@@ -26,20 +26,7 @@ class TestFlask(unittest.TestCase):
         self.smtp.stop()
 
 
-    def acquire_domain(self, email, password, user_domain):
-        self.maxDiff = None
-        acquire_data = {
-            'user_domain': user_domain,
-            'email': email,
-            'password': password,
-            'device_mac_address': '00:00:00:00:00:00',
-            'device_name': 'some-device',
-            'device_title': 'Some Device',
-        }
-        response = self.app.post('/domain/acquire', data=acquire_data)
-        domain_data = json.loads(response.data)
-        update_token = domain_data['update_token']
-        return update_token
+
 
     def get_user(self, email, password):
         response = self.app.get('/user/get', query_string={'email': email, 'password': password})
@@ -52,54 +39,7 @@ class TestFlask(unittest.TestCase):
 class TestUser(TestFlask):
 
 
-    def test_get_user_data(self):
-        email, password = self.create_active_user()
 
-        user_domain = create_token()
-        update_token = self.acquire_domain(email, password, user_domain)
-
-        update_data = {
-            'token': update_token,
-            'ip': '127.0.0.1',
-            'web_protocol': 'http',
-            'web_local_port': 80,
-            'web_port': 10000
-        }
-        self.app.post('/domain/update', data=json.dumps(update_data))
-
-        response = self.app.get('/user/get', query_string={'email': email, 'password': password})
-
-        response_data = json.loads(response.data)
-        user_data = response_data['data']
-
-        # This is hack. We do not know last_update value - it is set by server.
-        last_update = user_data["domains"][0]["last_update"]
-        update_token = user_data["update_token"]
-
-        expected = {
-            'active': True,
-            'email': email,
-            'unsubscribed': False,
-            'update_token': update_token,
-            'domains': [{
-                'user_domain': user_domain,
-                'web_local_port': 80,
-                'web_port': 10000,
-                'web_protocol': 'http',
-                'ip': '127.0.0.1',
-                'ipv6': None,
-                'dkim_key': None,
-                'local_ip': None,
-                'map_local_address': False,
-                'platform_version': None,
-                'device_mac_address': '00:00:00:00:00:00',
-                'device_name': 'some-device',
-                'device_title': 'Some Device',
-                'last_update': last_update
-            }]
-        }
-
-        self.assertEquals(expected, user_data)
 
     def test_user_delete(self):
         email, password = self.create_active_user()
