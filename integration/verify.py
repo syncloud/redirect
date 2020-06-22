@@ -76,6 +76,6 @@ def test_user_create_success(domain):
                  verify=False)
     assert response.status_code == 200, response.text
     smtp.clear()
-    response = requests.get('https://www.{0}/api/user/get?email={1}&password={2}'.format(domain, email, password),
+    response = requests.get('https://api.{0}/user/get?email={1}&password={2}'.format(domain, email, password),
                             verify=False)
     assert response.status_code == 200, response.text
