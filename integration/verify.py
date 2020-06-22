@@ -57,13 +57,14 @@ def create_user(domain, email, password):
     assert response.status_code == 200, response.text
     assert len(smtp.emails()) == 1
     activate_token = smtp.get_token(smtp.emails()[0])
-    response  = requests.get('https://api.{0}/user/activate?token={1}'.format(domain, activate_token),
+    response = requests.get('https://api.{0}/user/activate?token={1}'.format(domain, activate_token),
                  verify=False)
     assert response.status_code == 200, response.text
     smtp.clear()
     response = requests.get('https://api.{0}/user/get?email={1}&password={2}'.format(domain, email, password),
                             verify=False)
     assert response.status_code == 200, response.text
+
 
 def acquire_domain(domain, email, password, user_domain):
     acquire_data = {
@@ -81,8 +82,10 @@ def acquire_domain(domain, email, password, user_domain):
     update_token = domain_data['update_token']
     return update_token
 
+
 def test_user_create_success(domain):
     create_user(domain, 'test@syncloud.test', 'pass123456')
+
 
 def test_get_user_data(domain):
     email = 'test_get_user_data@syncloud.test'
@@ -138,3 +141,24 @@ def test_get_user_data(domain):
     }
 
     assert expected == user_data
+
+
+def test_user_delete(domain):
+    email = 'test_get_user_data@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    update_token_1 = acquire_domain(domain, email, password, "user_domain_1")
+    update_token_2 = acquire_domain(domain, email, password, "user_domain_2")
+
+    response = requests.post('https://api.{0}/user/delete'.format(domain),
+                             data={'email': email, 'password': password}, verify=False)
+    assert response.status_code == 200
+
+    response = requests.get('https://api.{0}/domain/get'.format(domain),
+                            params={'token': update_token_1}, verify=False)
+    assert response.status_code == 400
+
+    response = requests.get('https://api.{0}/domain/get'.format(domain),
+                            params={'token': update_token_2})
+    assert response.status_code == 400

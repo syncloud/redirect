@@ -41,24 +41,6 @@ class TestUser(TestFlask):
 
 
 
-    def test_user_delete(self):
-        email, password = self.create_active_user()
-
-        user_domain_1 = create_token()
-        update_token_1 = self.acquire_domain(email, password, user_domain_1)
-
-        user_domain_2 = create_token()
-        update_token_2 = self.acquire_domain(email, password, user_domain_2)
-
-        response = self.app.post('/user/delete', data={'email': email, 'password': password})
-        self.assertEquals(200, response.status_code)
-
-        response = self.app.get('/domain/get', query_string={'token': update_token_1})
-        self.assertEqual(400, response.status_code)
-
-        response = self.app.get('/domain/get', query_string={'token': update_token_2})
-        self.assertEqual(400, response.status_code)
-
 
 class TestUserPassword(TestFlask):
 
