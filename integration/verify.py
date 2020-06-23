@@ -302,3 +302,47 @@ def test_domain_new(domain):
     }
 
     check_domain(domain, update_token, expected_data)
+
+
+def test_domain_existing(domain):
+    email_1 = 'test_domain_existing_@syncloud.test'
+    password_1 = 'pass123456_'
+    create_user(domain, email_1, password_1)
+
+    user_domain = "test_domain_existing"
+    acquire_data = dict(
+        user_domain=user_domain,
+        device_mac_address='00:00:00:00:00:00',
+        device_name='my-super-board',
+        device_title='My Super Board',
+        email=email_1,
+        password=password_1)
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
+                             verify=False)
+    domain_data = json.loads(response.data)
+    update_token = domain_data['update_token']
+
+    email_2 = 'test_domain_existing@syncloud.test'
+    password_2 = 'pass123456'
+    create_user(domain, email_2, password_2)
+    acquire_data = dict(
+        user_domain=user_domain,
+        device_mac_address='00:00:00:00:00:11',
+        device_name='other-board',
+        device_title='Other Board',
+        email=email_2,
+        password=password_2)
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
+                             verify=False)
+
+    assert response.status_code == 400
+
+    expected_data = {
+        'ip': None,
+        'user_domain': user_domain,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'my-super-board',
+        'device_title': 'My Super Board'
+    }
+
+    check_domain(domain, update_token, expected_data)
