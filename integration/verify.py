@@ -346,3 +346,66 @@ def test_domain_existing(domain):
     }
 
     check_domain(domain, update_token, expected_data)
+
+
+def test_domain_twice(domain):
+    email = 'test_domain_twice@syncloud.test'
+    password = 'pass123456_'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_twice"
+    acquire_data = dict(
+        user_domain=user_domain,
+        device_mac_address='00:00:00:00:00:00',
+        device_name='my-super-board',
+        device_title='My Super Board',
+        email=email,
+        password=password)
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
+                             verify=False)
+    domain_data = json.loads(response.text)
+    update_token1 = domain_data['update_token']
+
+    acquire_data = dict(
+        user_domain=user_domain,
+        device_mac_address='00:00:00:00:00:11',
+        device_name='my-super-board-2',
+        device_title='My Super Board 2',
+        email=email,
+        password=password)
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
+                             verify=False)
+    assert response.status_code == 200
+    domain_data = json.loads(response.text)
+    update_token2 = domain_data['update_token']
+
+    assert update_token1 != update_token2
+
+    expected_data = {
+        'ip': None,
+        'user_domain': user_domain,
+        'device_mac_address': '00:00:00:00:00:11',
+        'device_name': 'my-super-board-2',
+        'device_title': 'My Super Board 2'
+    }
+
+    check_domain(domain, update_token2, expected_data)
+
+def test_domain_wrong_mac_address_format(domain):
+    email = 'test_domain_wrong_mac_address_format@syncloud.test'
+    password = 'pass123456_'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_wrong_mac_address_format"
+    acquire_data = {
+        'user_domain': user_domain,
+        'device_mac_address': 'wrong_format',
+        'device_name': 'my-super-board',
+        'device_title': 'My Super Board',
+        'email': email,
+        'password': password
+    }
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
+                             verify=False)
+
+    assert response.status_code == 400

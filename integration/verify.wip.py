@@ -61,60 +61,6 @@ class TestDomainAcquire(TestDomain):
 
 
 
-    def test_twice(self):
-        email, password = self.create_active_user()
-
-        user_domain = create_token()
-        acquire_data = dict(
-            user_domain=user_domain,
-            device_mac_address='00:00:00:00:00:00',
-            device_name='my-super-board',
-            device_title='My Super Board',
-            email=email,
-            password=password)
-        response = self.app.post('/domain/acquire', data=acquire_data)
-        domain_data = json.loads(response.data)
-        update_token1 = domain_data['update_token']
-
-        acquire_data = dict(
-            user_domain=user_domain,
-            device_mac_address='00:00:00:00:00:11',
-            device_name='my-super-board-2',
-            device_title='My Super Board 2',
-            email=email,
-            password=password)
-        response = self.app.post('/domain/acquire', data=acquire_data)
-        self.assertEqual(200, response.status_code)
-        domain_data = json.loads(response.data)
-        update_token2 = domain_data['update_token']
-
-        self.assertNotEquals(update_token1, update_token2)
-
-        expected_data = {
-            'ip': None,
-            'user_domain': user_domain,
-            'device_mac_address': '00:00:00:00:00:11',
-            'device_name': 'my-super-board-2',
-            'device_title': 'My Super Board 2'
-        }
-
-        self.check_domain(update_token2, expected_data)
-
-    def test_wrong_mac_address_format(self):
-        email, password = self.create_active_user()
-
-        user_domain = create_token()
-        acquire_data = {
-            'user_domain': user_domain,
-            'device_mac_address': 'wrong_format',
-            'device_name': 'my-super-board',
-            'device_title': 'My Super Board',
-            'email': email,
-            'password': password
-        }
-        response = self.app.post('/domain/acquire', data=acquire_data)
-
-        self.assertEqual(400, response.status_code)
 
 
 
