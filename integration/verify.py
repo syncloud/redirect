@@ -442,6 +442,6 @@ def test_drop_device(domain):
                              verify=False)
     assert response.status_code == 200
 
-    response = requests.get('https://api.{0}/domain/get'.format(domain), query_string={'token': update_token},
+    response = requests.get('https://api.{0}/domain/get'.format(domain), params={'token': update_token},
                             verify=False)
     assert response.status_code == 400
