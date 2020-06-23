@@ -59,34 +59,6 @@ class TestDomain(TestFlask):
 
 class TestDomainAcquire(TestDomain):
 
-    def test_new(self):
-        email, password = self.create_active_user()
-
-        user_domain = create_token()
-        acquire_data = dict(
-            user_domain=user_domain,
-            device_mac_address='00:00:00:00:00:00',
-            device_name='my-super-board',
-            device_title='My Super Board',
-            email=email,
-            password=password)
-        response = self.app.post('/domain/acquire', data=acquire_data)
-
-        self.assertEqual(200, response.status_code)
-        domain_data = json.loads(response.data)
-
-        update_token = domain_data['update_token']
-        self.assertIsNotNone(update_token)
-
-        expected_data = {
-            'ip': None,
-            'user_domain': user_domain,
-            'device_mac_address': '00:00:00:00:00:00',
-            'device_name': 'my-super-board',
-            'device_title': 'My Super Board'
-        }
-
-        self.check_domain(update_token, expected_data)
 
     def test_existing(self):
         user_domain = create_token()

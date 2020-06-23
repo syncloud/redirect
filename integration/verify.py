@@ -36,6 +36,23 @@ def test_start(module_setup, domain):
     add_host_alias_by_ip('app', 'api', '127.0.0.1', domain)
 
 
+def get_domain(update_token, domain):
+    response = requests.get('https://api.{0}/domain/get'.format(domain), params={'token': update_token}, verify=False)
+    assert response.status_code == 200
+    assert response.text is not None
+    response_data = json.loads(response.text)
+    return response_data['data']
+
+
+def check_domain(domain, update_token, expected_data):
+    domain_data = get_domain(update_token, domain)
+    for key, expected_value in expected_data.items():
+        actual_value = domain_data[key]
+        assert expected_value == actual_value, 'Key "{}" has different values: {} != {}'.format(key, expected_value,
+                                                                                                actual_value)
+    return domain_data
+
+
 def test_index(domain):
     response = requests.get('https://www.{0}'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 200, response.text
@@ -252,3 +269,36 @@ def test_user_reset_password_set_twice(domain):
                              verify=False)
     assert response.status_code == 400, response.text
     smtp.clear()
+
+
+def test_domain_new(domain):
+    email = 'test_domain_new@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_new"
+    acquire_data = dict(
+        user_domain=user_domain,
+        device_mac_address='00:00:00:00:00:00',
+        device_name='my-super-board',
+        device_title='My Super Board',
+        email=email,
+        password=password)
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
+                             verify=False)
+
+    assert response.status_code == 200
+    domain_data = json.loads(response.text)
+
+    update_token = domain_data['update_token']
+    assert update_token is not None
+
+    expected_data = {
+        'ip': None,
+        'user_domain': user_domain,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'my-super-board',
+        'device_title': 'My Super Board'
+    }
+
+    check_domain(domain, update_token, expected_data)
