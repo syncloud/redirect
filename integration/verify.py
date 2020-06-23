@@ -409,3 +409,39 @@ def test_domain_wrong_mac_address_format(domain):
                              verify=False)
 
     assert response.status_code == 400
+
+
+def test_drop_device(domain):
+    email = 'test_drop_device@syncloud.test'
+    password = 'pass123456_'
+    create_user(domain, email, password)
+
+    user_domain = "test_drop_device"
+    acquire_data = dict(
+        user_domain=user_domain,
+        device_mac_address='00:00:00:00:00:00',
+        device_name='my-super-board',
+        device_title='My Super Board',
+        email=email,
+        password=password)
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
+                             verify=False)
+
+    assert response.status_code == 200
+    domain_data = json.loads(response.text)
+
+    update_token = domain_data['update_token']
+
+    drop_data = {
+        'email': email,
+        'password': password,
+        'user_domain': user_domain
+    }
+
+    response = requests.post('https://api.{0}/domain/drop_device'.format(domain), data=drop_data,
+                             verify=False)
+    assert response.status_code == 200
+
+    response = requests.get('https://api.{0}/domain/get'.format(domain), query_string={'token': update_token},
+                            verify=False)
+    assert response.status_code == 400
