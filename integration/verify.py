@@ -203,6 +203,7 @@ def test_user_reset_password_set_new(domain):
                             params={'email': email, 'password': new_password},
                             verify=False)
     assert response.status_code == 200, response.text
+    smtp.clear()
 
 
 def test_user_reset_password_set_with_old_token(domain):
@@ -226,6 +227,7 @@ def test_user_reset_password_set_with_old_token(domain):
                              data={'token': token_old, 'password': new_password},
                              verify=False)
     assert response.status_code == 400, response.text
+    smtp.clear()
 
 
 def test_user_reset_password_set_twice(domain):
@@ -249,3 +251,4 @@ def test_user_reset_password_set_twice(domain):
                              data={'token': token, 'password': new_password},
                              verify=False)
     assert response.status_code == 400, response.text
+    smtp.clear()
