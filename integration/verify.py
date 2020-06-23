@@ -319,7 +319,7 @@ def test_domain_existing(domain):
         password=password_1)
     response = requests.post('https://api.{0}/domain/acquire'.format(domain), data=acquire_data,
                              verify=False)
-    domain_data = json.loads(response.data)
+    domain_data = json.loads(response.text)
     update_token = domain_data['update_token']
 
     email_2 = 'test_domain_existing@syncloud.test'
