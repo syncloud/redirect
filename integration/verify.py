@@ -37,7 +37,8 @@ def test_start(module_setup, domain):
 
 
 def get_domain(update_token, domain):
-    response = requests.get('https://api.{0}/domain/get'.format(domain), params={'token': update_token}, verify=False)
+    response = requests.get('https://api.{0}/domain/get'.format(domain),
+                            params={'token': update_token}, verify=False)
     assert response.status_code == 200
     assert response.text is not None
     response_data = json.loads(response.text)
@@ -74,11 +75,13 @@ def create_user(domain, email, password):
     assert response.status_code == 200, response.text
     assert len(smtp.emails()) == 1
     activate_token = smtp.get_token(smtp.emails()[0])
-    response = requests.get('https://api.{0}/user/activate?token={1}'.format(domain, activate_token),
-                 verify=False)
+    response = requests.get('https://api.{0}/user/activate'.format(domain),
+                            params={'token': activate_token},
+                            verify=False)
     assert response.status_code == 200, response.text
     smtp.clear()
-    response = requests.get('https://api.{0}/user/get?email={1}&password={2}'.format(domain, email, password),
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': password},
                             verify=False)
     assert response.status_code == 200, response.text
 
@@ -445,3 +448,26 @@ def test_drop_device(domain):
     response = requests.get('https://api.{0}/domain/get'.format(domain), params={'token': update_token},
                             verify=False)
     assert response.status_code == 400
+
+
+def test_domain_delete(domain):
+    email = 'test_domain_delete@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_delete"
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    delete_data = {'user_domain': user_domain, 'email': email, 'password': password}
+
+    response = requests.post('https://api.{0}/domain/delete'.format(domain), data=json.dumps(delete_data),
+                             verify=False)
+    assert response.status_code == 200
+
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': password},
+                            verify=False)
+    assert response.status_code == 200, response.text
+
+    response_data = json.loads(response.text)
+    assert len(response_data['data']['domains']) == 0

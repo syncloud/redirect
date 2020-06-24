@@ -57,35 +57,6 @@ class TestDomain(TestFlask):
         return domain_data
 
 
-class TestDomainAcquire(TestDomain):
-
-
-
-
-
-
-class TestDomainLoose(TestDomain):
-
-
-
-
-class TestDomainDelete(TestDomain):
-
-    def test_simple(self):
-        email, password = self.create_active_user()
-
-        user_domain = create_token()
-        update_token = self.acquire_domain(email, password, user_domain)
-
-        delete_data = {'user_domain': user_domain, 'email': email, 'password': password}
-
-        response = self.app.post('/domain/delete', data=json.dumps(delete_data))
-        self.assertEqual(200, response.status_code)
-
-        user_data = self.get_user(email, password)
-
-        self.assertEquals(0, len(user_data['domains']))
-
 
 class TestDomainUpdate(TestDomain):
 
