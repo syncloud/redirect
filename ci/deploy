@@ -9,8 +9,9 @@ VERSION=$1
 ENV=$2
 SYNCLOUD_DOMAIN=$3
 
-TARGET=/var/www/redirect/${VERSION}
-CURRENT=/var/www/redirect/current
+REDIRECT_DIR=/var/www/redirect
+TARGET=${REDIRECT_DIR}/${VERSION}
+CURRENT=${REDIRECT_DIR}/current
 
 mkdir -p ${TARGET}
 tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
@@ -22,8 +23,7 @@ cp ${CURRENT}/apache/redirect.conf /etc/apache2/sites-available
 if  ! id -u redirect > /dev/null 2>&1; then
     adduser --disabled-password --gecos "" redirect
 fi
-chown -R redirect. ${TARGET}
-chown -R redirect. ${CURRENT}
+chown -R redirect. ${REDIRECT_DIR}
 if a2query -s 000-default; then
   a2dissite 000-default
 fi
