@@ -1,3 +1,4 @@
+import time
 from os.path import dirname
 from subprocess import check_output
 
@@ -471,3 +472,239 @@ def test_domain_delete(domain):
 
     response_data = json.loads(response.text)
     assert len(response_data['data']['domains']) == 0
+
+def test_domain_update_date(domain):
+    email = 'test_domain_update_date@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_update_date"
+
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.1',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80
+    }
+
+    requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                  verify=False)
+    domain = get_domain(update_token, domain)
+    last_updated1 = domain['last_update']
+
+    time.sleep(1)
+
+    requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                  verify=False)
+    domain = get_domain(update_token, domain)
+    last_updated2 = domain['last_update']
+
+    assert last_updated2 > last_updated1
+
+def test_domain_update_wrong_token(domain):
+    update_data = {'token': 'test_domain_update_wrong_token', 'ip': '127.0.0.1'}
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+    assert response.status_code == 400
+
+def test_domain_update_web_updated(domain):
+    email = 'test_domain_update_web_updated@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_update_web_updated"
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.1',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+    self.assertEqual(200, response.status_code)
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.1',
+        'web_protocol': 'https',
+        'web_port': 10002,
+        'web_local_port': 443,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+
+    assert response.status_code == 200
+
+    expected_data = {
+        'ip': '127.0.0.1',
+        'user_domain': user_domain,
+        'web_protocol': 'https',
+        'web_port': 10002,
+        'web_local_port': 443,
+    }
+
+    check_domain(domain, update_token, expected_data)
+
+def test_domain_update_ip_changed(domain):
+    email = 'test_domain_update_ip_changed@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+    user_domain = "test_domain_update_ip_changed"
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.1',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+    assert response.status_code == 200
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.2',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+
+    assert response.status_code == 200
+
+    check_domain(domain, update_token, {'ip': '127.0.0.2', 'user_domain': user_domain})
+
+def test_domain_update_platform_version(domain):
+    email = 'test_domain_update_platform_version@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+    user_domain = "test_domain_update_platform_version"
+
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.1',
+        'platform_version': '366',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+    assert response.status_code == 200
+
+    check_domain(domain, update_token, {'platform_version': '366'})
+
+def test_domain_update_local_ip_changed(domain):
+    email = 'test_domain_update_local_ip_changed@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+    user_domain = "test_domain_update_local_ip_changed"
+
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.1',
+        'local_ip': '192.168.1.5',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+    assert response.status_code == 200
+
+    update_data = {
+        'token': update_token,
+        'ip': '127.0.0.2',
+        'local_ip': '192.168.1.6',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+
+    assert response.status_code == 200
+
+    check_domain(domain, update_token, {'ip': '127.0.0.2', 'local_ip': '192.168.1.6', 'user_domain': user_domain})
+
+def test_domain_update_server_side_client_ip(domain):
+    email = 'test_domain_update_server_side_client_ip@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+    user_domain = "test_domain_update_server_side_client_ip"
+
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain),
+                             json=update_data,
+                             verify=False)
+    assert response.status_code == 200
+
+    expected_data = {
+        'ip': '127.0.0.1',
+        'user_domain': user_domain,
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80,
+    }
+
+    check_domain(domain, update_token, expected_data)
+
+def test_domain_update_map_local_address(domain):
+    email = 'test_domain_update_map_local_address@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_update_map_local_address"
+    update_token = acquire_domain(domain, email, password, user_domain)
+
+    update_data = {
+        'token': update_token,
+        'ip': '108.108.108.108',
+        'local_ip': '192.168.1.2',
+        'map_local_address': True,
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80
+    }
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
+                             verify=False)
+    assert response.status_code == 200
+
+    check_domain(domain,
+        update_token, {
+            'ip': '108.108.108.108',
+            'local_ip': '192.168.1.2',
+            'map_local_address': True,
+            'user_domain': user_domain
+        }
+    )
