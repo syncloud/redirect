@@ -492,15 +492,15 @@ def test_domain_update_date(domain):
 
     requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
                   verify=False)
-    domain = get_domain(update_token, domain)
-    last_updated1 = domain['last_update']
+    domain_info = get_domain(update_token, domain)
+    last_updated1 = domain_info['last_update']
 
     time.sleep(1)
 
     requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
                   verify=False)
-    domain = get_domain(update_token, domain)
-    last_updated2 = domain['last_update']
+    domain_info = get_domain(update_token, domain)
+    last_updated2 = domain_info['last_update']
 
     assert last_updated2 > last_updated1
 
@@ -529,7 +529,7 @@ def test_domain_update_web_updated(domain):
 
     response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
                              verify=False)
-    self.assertEqual(200, response.status_code)
+    assert response.status_code == 200
 
     update_data = {
         'token': update_token,
