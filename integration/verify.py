@@ -1,7 +1,7 @@
 import time
 from os.path import dirname
 from subprocess import check_output
-
+from os.path import join
 import json
 import pytest
 import requests
@@ -11,30 +11,46 @@ import db
 import smtp
 
 DIR = dirname(__file__)
+TMP_DIR = '/tmp/syncloud'
 
 
 @pytest.fixture(scope="session")
-def module_setup(request, log_dir, artifact_dir):
+def module_setup(request, log_dir, artifact_dir, device):
     def module_teardown():
-        check_output('cp /var/log/apache2/error.log {0}'.format(log_dir), shell=True)
-        check_output('cp /var/log/apache2/redirect_rest-error.log {0}'.format(log_dir), shell=True)
-        check_output('cp /var/log/apache2/redirect_rest-access.log {0}'.format(log_dir), shell=True)
-        check_output('cp /var/log/apache2/redirect_ssl_rest-error.log {0}'.format(log_dir), shell=True)
-        check_output('cp /var/log/apache2/redirect_ssl_rest-access.log {0}'.format(log_dir), shell=True)
-        check_output('cp /var/log/apache2/redirect_ssl_web-access.log {0}'.format(log_dir), shell=True)
-        check_output('cp /var/log/apache2/redirect_ssl_web-error.log {0}'.format(log_dir), shell=True)
-        check_output('ls -la /var/log/apache2 > {0}/var.log.apache2.ls.log'.format(log_dir), shell=True)
-        check_output('ls -la /var/log > {0}/var.log.ls.log'.format(log_dir), shell=True)
 
+        device.run_ssh('cp /var/log/apache2/error.log {0}'.format(TMP_DIR), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_rest-error.log {0}'.format(TMP_DIR), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_rest-access.log {0}'.format(TMP_DIR), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_ssl_rest-error.log {0}'.format(TMP_DIR), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_ssl_rest-access.log {0}'.format(TMP_DIR), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_ssl_web-access.log {0}'.format(TMP_DIR), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_ssl_web-error.log {0}'.format(TMP_DIR), throw=False)
+        device.run_ssh('ls -la /var/log/apache2 > {0}/var.log.apache2.ls.log'.format(TMP_DIR), throw=False)
+        device.run_ssh('ls -la /var/log > {0}/var.log.ls.log'.format(TMP_DIR), throw=False)
+
+        device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
         db.recreate()
 
     request.addfinalizer(module_teardown)
 
 
-def test_start(module_setup, domain):
-    add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
-    add_host_alias_by_ip('app', 'api', '127.0.0.1', domain)
+def test_start(module_setup, device, device_host, domain, build_number):
+
+    check_output('apt-get update', shell=True)
+    check_output('apt-get install -y mysql-client', shell=True)
+
+    add_host_alias_by_ip('app', 'www', device_host, domain)
+    add_host_alias_by_ip('app', 'api', device_host, domain)
+    device.run_ssh('mkdir {0}'.format(TMP_DIR))
+    device.run_ssh("snap remove platform")
+    device.run_ssh("apt-get update")
+    device.run_ssh("apt-get install -y default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(TMP_DIR))
+    device.scp_to_device("fakecertificate.sh", "/")
+    device.run_ssh("/fakecertificate.sh")
+    device.scp_to_device("../artifact/redirect-{0}.tar.gz".format(build_number), "/")
+    device.scp_to_device("../ci/deploy", "/")
+    device.run_ssh("cd / && /deploy {0} integration syncloud.test > {1}/deploy.log".format(build_number, TMP_DIR))
 
 
 def get_domain(update_token, domain):
@@ -55,9 +71,11 @@ def check_domain(domain, update_token, expected_data):
     return domain_data
 
 
-def test_index(domain):
+def test_index(domain, artifact_dir):
     response = requests.get('https://www.{0}'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 200, response.text
+    with open(join(artifact_dir, 'index.html.log'), 'w') as f:
+       f.write(str(response.text))
 
 
 def test_user_create_special_symbols_in_password(domain):
@@ -669,7 +687,6 @@ def test_domain_update_server_side_client_ip(domain):
     assert response.status_code == 200
 
     expected_data = {
-        'ip': '127.0.0.1',
         'user_domain': user_domain,
         'web_protocol': 'http',
         'web_port': 10001,

@@ -1,0 +1,9 @@
+[Unit]
+Description=Redirect
+
+[Service]
+ExecStart=/var/www/redirect/current/bin/redirect
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

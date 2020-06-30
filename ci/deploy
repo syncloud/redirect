@@ -15,25 +15,12 @@ CURRENT=${REDIRECT_DIR}/current
 
 mkdir -p ${TARGET}
 tar xf redirect-${VERSION}.tar.gz -C ${TARGET}
+
+if [[ -f ${CURRENT}/bin/uninstall.sh ]]; then
+  ${CURRENT}/bin/uninstall.sh
+fi
+
 rm -f ${CURRENT}
 ln -s ${TARGET} ${CURRENT}
-pip install -r ${CURRENT}/requirements.txt
-cp -rf ${CURRENT}/config/${ENV}/* /var/www/redirect
-cp ${CURRENT}/apache/redirect.conf /etc/apache2/sites-available
-if  ! id -u redirect > /dev/null 2>&1; then
-    adduser --disabled-password --gecos "" redirect
-fi
-chown -R redirect. ${REDIRECT_DIR}
-if a2query -s 000-default; then
-  a2dissite 000-default
-fi
-if ! a2query -s redirect; then
-  a2ensite redirect
-fi
-a2enmod rewrite
-a2enmod ssl
-sed -i '/SYNCLOUD_DOMAIN.*/d' /etc/apache2/envvars
-echo "export SYNCLOUD_DOMAIN=${SYNCLOUD_DOMAIN}" >> /etc/apache2/envvars
-cat /etc/apache2/envvars
-ls -la /etc/apache2/sites-enabled
-service apache2 restart
+
+${CURRENT}/bin/install.sh ${ENV} ${SYNCLOUD_DOMAIN}

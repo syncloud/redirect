@@ -10,10 +10,37 @@ local build(arch) = {
     },
     steps: [
         {
-            name: "build",
+            name: "build web",
             image: "jekyll/jekyll:4.1.0",
             commands: [
-                "./build.sh ${DRONE_BUILD_NUMBER}",
+                "mkdir build",
+                "cd www",
+                "mkdir .jekyll-cache _site",
+                "jekyll build",
+                "cp -r _site ../build/www"
+            ]
+        },
+        {
+            name: "build backend",
+            image: "golang:1.14",
+            commands: [
+                "cd backend",
+                "go test ./... -cover",
+                "go build -o ../build/bin/backend cmd/main.go"
+            ]
+        },
+        {
+            name: "package",
+            image: "syncloud/build-deps-" + arch,
+            commands: [
+                "cp -r bin build",
+                "cp -r redirect build",
+                "cp requirements.txt build",
+                "cp -r config build",
+                "cp -r emails build",
+                "cp redirect_*.wsgi build",
+                "mkdir artifact",
+                "tar czf artifact/redirect-${DRONE_BUILD_NUMBER}.tar.gz -C build ."
             ]
         },
         {
@@ -28,13 +55,19 @@ local build(arch) = {
             name: "test-integration",
             image: "syncloud/build-deps-" + arch,
             commands: [
-                "./deploy.deps.sh",
-                "cd artifact",
-                "../ci/deploy ${DRONE_BUILD_NUMBER} integration syncloud.test",
-                "cd ../integration",
-                "py.test -x -s verify.py --domain=syncloud.test",
-                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test",
-                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test",
+	              "pip install -r dev_requirements.txt",
+                "cd integration",
+                "py.test -x -s verify.py --domain=syncloud.test --device-host=device --build-number=${DRONE_BUILD_NUMBER}"
+            ]
+        },
+        {
+            name: "test-ui",
+            image: "syncloud/build-deps-" + arch,
+            commands: [
+	              "pip install -r dev_requirements.txt",
+                "cd integration",
+                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=device",
+                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=device",
             ],
             volumes: [{
               name: "shm",
@@ -81,6 +114,21 @@ local build(arch) = {
             environment: {
                 MYSQL_ROOT_PASSWORD: "root"
             }
+        },
+        {
+            name: "device",
+            image: "syncloud/platform-jessie-amd64",
+            privileged: true,
+            volumes: [
+                {
+                    name: "dbus",
+                    path: "/var/run/dbus"
+                },
+                {
+                    name: "dev",
+                    path: "/dev"
+                }
+            ]
         }
     ],
     volumes: [

@@ -2,7 +2,6 @@ werkzeug==0.16.1
 Flask==0.12.4
 flask-cors==1.2.1
 flask-login==0.2.10
-werkzeug==0.16.1
 MySQL-python==1.2.3
 SQLAlchemy==1.1.15
 boto==2.32.0
@@ -11,6 +10,6 @@ configobj==4.7.2
 mock==1.0.1
 jsonpickle==0.7.1
 statsd==3.2.1
-syncloud-lib==172
+syncloud-lib==185
 IPy==0.83
 sql-to-graphite==0.0.6

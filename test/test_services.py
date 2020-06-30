@@ -1,12 +1,12 @@
 import unittest
 from mock import MagicMock
-from fakesmtp import FakeSmtp
 from redirect.models import User, Action, ActionType
 from redirect.util import hash
 from redirect.mail import Smtp, Mail
 from redirect.services import Users
 from redirect.servicesexceptions import ServiceException
 from test.helpers import get_test_storage_creator
+import smtp
 
 
 class TestUsers(unittest.TestCase):
@@ -14,15 +14,14 @@ class TestUsers(unittest.TestCase):
     def setUp(self):
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
 
-        self.mail = Mail(Smtp('localhost', 2500), 'support@redirect.com', self.activate_url_template, None, None)
-        self.smtp = FakeSmtp('localhost', 2500)
+        self.mail = Mail(Smtp('mail', 1025), 'support@redirect.com', self.activate_url_template, None, None)
         self.dns = MagicMock()
         self.create_storage = get_test_storage_creator()
         with self.create_storage() as storage:
             storage.clear()
 
     def tearDown(self):
-        self.smtp.stop()
+        smtp.clear()
         with self.create_storage() as storage:
             storage.clear()
 
@@ -39,7 +38,7 @@ class TestUsers(unittest.TestCase):
 
     def test_user_create_success(self):
         users = self.get_users_service()
-
+        smtp.clear()
         request = {'email': u'valid@mail.com', 'password': u'pass123456'}
         user = users.create_new_user(request)
 
@@ -50,10 +49,11 @@ class TestUsers(unittest.TestCase):
         self.assertFalse(user.active)
 
         activate_url = self.activate_url_template.format(user.token(ActionType.ACTIVATE))
-        self.assertFalse(self.smtp.empty())
-        email = self.smtp.emails()[0]
-        self.assertTrue(user.email in email)
-        self.assertTrue(activate_url in email)
+        self.assertFalse(len(smtp.emails()) == 0)
+        email = smtp.emails()[0]
+        print(email)
+        self.assertTrue(user.email in email['Headers']['To'])
+        self.assertTrue(activate_url in email['Body'])
 
     def test_user_create_no_activation(self):
         users = self.get_users_service(activate_by_email=False)
@@ -67,7 +67,7 @@ class TestUsers(unittest.TestCase):
         # self.assertIsNone(user.activate_token())
         self.assertTrue(user.active)
 
-        self.assertTrue(self.smtp.empty())
+        self.assertTrue(len(smtp.emails()) == 0)
 
     def test_user_create_existing_email(self):
         users = self.get_users_service()

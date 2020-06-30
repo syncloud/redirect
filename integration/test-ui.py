@@ -14,23 +14,29 @@ import db
 DIR = dirname(__file__)
 DEVICE_USER="user@example.com"
 DEVICE_PASSWORD="password"
+TMP_DIR = '/tmp/syncloud'
 
 
 @pytest.fixture(scope="session")
-def module_setup(request, ui_mode, log_dir, artifact_dir):
+def module_setup(request, ui_mode, log_dir, artifact_dir, device):
     def module_teardown():
-        check_output('cp /var/log/apache2/redirect_rest-error.log {0}/{1}-redirect_rest-error.log'.format(log_dir, ui_mode), shell=True)
-        check_output('cp /var/log/apache2/redirect_rest-access.log {0}/{1}-redirect_rest-access.log'.format(log_dir, ui_mode), shell=True)
-        check_output('cp /var/log/apache2/redirect_ssl_web-access.log {0}/{1}-redirect_ssl_web-access.log'.format(log_dir, ui_mode), shell=True)
-        check_output('cp /var/log/apache2/redirect_ssl_web-error.log {0}/{1}-redirect_ssl_web-error.log'.format(log_dir, ui_mode), shell=True)
+        device.run_ssh('ls -la /data/platform/backup > {0}/data.platform.backup.ls.log'.format(TMP_DIR), throw=False)
 
+        device.run_ssh('cp /var/log/apache2/redirect_rest-error.log {0}/{1}-redirect_rest-error.log'.format(TMP_DIR, ui_mode), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_rest-access.log {0}/{1}-redirect_rest-access.log'.format(TMP_DIR, ui_mode), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_ssl_web-access.log {0}/{1}-redirect_ssl_web-access.log'.format(TMP_DIR, ui_mode), throw=False)
+        device.run_ssh('cp /var/log/apache2/redirect_ssl_web-error.log {0}/{1}-redirect_ssl_web-error.log'.format(TMP_DIR, ui_mode), throw=False)
+        device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
 
     request.addfinalizer(module_teardown)
 
 
-def test_start(module_setup, domain):
-    add_host_alias_by_ip('app', 'www', '127.0.0.1', domain)
+def test_start(module_setup, device_host, domain):
+    check_output('apt-get update', shell=True)
+    check_output('apt-get install -y mysql-client', shell=True)
+    add_host_alias_by_ip('app', 'www', device_host, domain)
+    add_host_alias_by_ip('app', 'api', device_host, domain)
     db.recreate()
 
 
