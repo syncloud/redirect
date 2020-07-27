@@ -126,6 +126,16 @@ def test_user_create_success(domain):
     create_user(domain, 'test@syncloud.test', 'pass123456')
 
 
+def test_user_create_existing_case_difference(domain):
+    email1 = 'case_test@syncloud.test'
+    email2 = 'Case_test@syncloud.test'
+    create_user(domain, email1, 'pass123456')
+    response = requests.post('https://www.{0}/api/user/create'.format(domain),
+                             data={'email': email2, 'password': 'pass123456'}, verify=False)
+    assert response.status_code == 400, response.text
+    assert "already registered" in response.text, response.text
+
+
 def test_get_user_data(domain):
     email = 'test_get_user_data@syncloud.test'
     password = 'pass123456'

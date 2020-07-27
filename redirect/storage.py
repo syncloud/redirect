@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, lazyload
-
+from sqlalchemy import func
 from models import User, Domain, Base, Action, ActionType
 import util
 
@@ -28,7 +28,7 @@ class Storage:
         return emails
 
     def get_user_by_email(self, email):
-        user = self.session.query(User).filter(User.email == email).first()
+        user = self.session.query(User).filter(func.lower(User.email) == func.lower(email)).first()
         if user and not user.update_token:
             user.update_token = util.create_token()
         return user

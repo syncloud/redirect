@@ -42,7 +42,7 @@ class Validator:
             if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
                 self.add_field_error('email', 'Not valid email')
             else:
-                return email
+                return email.lower()
         else:
             self.add_field_error('email', 'Missing')
         return None
