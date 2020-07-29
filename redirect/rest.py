@@ -33,6 +33,15 @@ def user_get():
     return jsonify(success=True, message='User provided', data=user_data), 200
 
 
+@app.route('/user/create', methods=["POST"])
+@cross_origin()
+def user_create():
+    statsd_client.incr('rest.user.create')
+    user = users_manager.create_new_user(request.form)
+    user_data = convertible.to_dict(user)
+    return jsonify(success=True, message='User was created', data=user_data), 200
+
+
 @app.route('/domain/acquire', methods=["POST"])
 @cross_origin()
 def domain_acquire():

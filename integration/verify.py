@@ -92,6 +92,31 @@ def create_user(domain, email, password):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              data={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
+
+    activate_user(domain)
+
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': password},
+                            verify=False)
+    assert response.status_code == 200, response.text
+
+
+def test_create_user_api_for_mobile_app(domain):
+    email = 'mobile_create_user@syncloud.test'
+    password = 'pass123456'
+    response = requests.post('https://api.{0}/user/create'.format(domain),
+                             data={'email': email, 'password': password}, verify=False)
+    assert response.status_code == 200, response.text
+
+    activate_user(domain)
+
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': password},
+                            verify=False)
+    assert response.status_code == 200, response.text
+
+
+def activate_user(domain):
     assert len(smtp.emails()) == 1
     activate_token = smtp.get_token(smtp.emails()[0])
     response = requests.get('https://api.{0}/user/activate'.format(domain),
@@ -99,10 +124,6 @@ def create_user(domain, email, password):
                             verify=False)
     assert response.status_code == 200, response.text
     smtp.clear()
-    response = requests.get('https://api.{0}/user/get'.format(domain),
-                            params={'email': email, 'password': password},
-                            verify=False)
-    assert response.status_code == 200, response.text
 
 
 def acquire_domain(domain, email, password, user_domain):
