@@ -59,25 +59,6 @@ def drop_device():
     return jsonify(success=True, message='Device was dropped', data=domain_data), 200
 
 
-@app.route('/domain/get', methods=["GET"])
-@cross_origin()
-def domain_get():
-    statsd_client.incr('rest.domain.get')
-    domain = users_manager.get_domain(request.args)
-    domain_data = convertible.to_dict(domain)
-    return jsonify(success=True, message='Domain retrieved', data=domain_data), 200
-
-
-@app.route('/domain/update', methods=["POST"])
-@cross_origin()
-def domain_update():
-    statsd_client.incr('rest.domain.update')
-    request_data = json.loads(request.data)
-    domain = users_manager.domain_update(request_data, request.remote_addr)
-    domain_data = convertible.to_dict(domain)
-    return jsonify(success=True, message='Domain was updated', data=domain_data), 200
-
-
 @app.route('/domain/delete', methods=["POST"])
 @cross_origin()
 def domain_delete():

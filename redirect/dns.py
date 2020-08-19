@@ -37,16 +37,6 @@ class Dns:
         change = changes.add_change(action, name, 'TXT')
         change.add_value(dkim_value)
         
-    def update_domain(self, main_domain, domain):
-        full_domain = domain.dns_name(main_domain)
-        ipv4 = domain.dns_ipv4()
-        ipv6 = domain.dns_ipv6()
-        spf = '"v=spf1 a mx -all"'
-        mx = '1 {0}'.format(full_domain)
-        dkim = domain.dkim_key
-        self.delete_domain(main_domain, domain)
-        self.__action_domain(main_domain, full_domain, ipv4, ipv6, dkim, spf, mx, 'CREATE')
-
     def delete_domain(self, main_domain, domain):
         full_domain = domain.dns_name(main_domain)
         self.__action_domain(main_domain, full_domain,self.default_ipv4, self.default_ipv6, self.default_dkim, self.default_spf, self.default_mx, 'UPSERT')

@@ -9,6 +9,10 @@ pip install -r ${CURRENT}/requirements.txt
 
 cp -rf ${CURRENT}/config/env/${ENV}/* /var/www/redirect
 
+cp ${CURRENT}/config/common/systemd/redirect.service /lib/systemd/system/
+systemctl enable redirect
+systemctl start redirect
+
 cp ${CURRENT}/config/common/apache/redirect.conf /etc/apache2/sites-available
 
 if  ! id -u redirect > /dev/null 2>&1; then
@@ -23,12 +27,11 @@ if ! a2query -s redirect; then
 fi
 a2enmod rewrite
 a2enmod ssl
+a2enmod proxy
+a2enmod proxy_http
 echo "export SYNCLOUD_DOMAIN=${SYNCLOUD_DOMAIN}" >> /etc/apache2/envvars
 grep SYNCLOUD_DOMAIN /etc/apache2/envvars
-
 service apache2 restart
 
-cp ${CURRENT}/config/common/systemd/redirect.service /lib/systemd/system/
-systemctl enable redirect
-systemctl start redirect
+
 

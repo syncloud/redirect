@@ -2,7 +2,7 @@
 Description=Redirect
 
 [Service]
-ExecStart=/var/www/redirect/current/bin/redirect
+ExecStart=/var/www/redirect/current/bin/redirect /var/www/redirect/config.cfg /var/www/redirect/secret.cfg
 Restart=always
 
 [Install]

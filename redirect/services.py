@@ -168,52 +168,6 @@ class Users(UsersRead):
                 result.append(s)
         return result
 
-    def validate_service(self, data):
-        validator = Validator(data)
-        validator.port('port', required=False)
-        validator.port('local_port')
-        check_validator(validator)
-
-    def domain_update(self, request, request_ip=None):
-        validator = Validator(request)
-        token = validator.token()
-        ip = validator.ip(request_ip)
-        ipv6 = validator.string('ipv6', required=False)
-        dkim_key = validator.string('dkim_key', required=False)
-        local_ip = validator.local_ip()
-        map_local_address = validator.boolean('map_local_address', required=False)
-        platform_version = validator.string('platform_version', required=False)
-        web_protocol = validator.web_protocol(required=True)
-        web_local_port = validator.port('web_local_port', required=True)
-        web_port = validator.port('web_port', required=False)
-        check_validator(validator)
-
-        if map_local_address is None:
-            map_local_address = False
-
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_update_token(token)
-
-            if not domain or not domain.user.active:
-                raise servicesexceptions.bad_request('Unknown domain update token')
-
-            update_ip = (domain.map_local_address != map_local_address) or (domain.ip != ip) or (domain.local_ip != local_ip) or (domain.ipv6 != ipv6) or (domain.dkim_key != dkim_key)
-            domain.ip = ip
-            domain.local_ip = local_ip
-            domain.ipv6 = ipv6
-            domain.dkim_key = dkim_key
-            domain.map_local_address = map_local_address
-            domain.platform_version = platform_version
-            domain.web_protocol = web_protocol
-            domain.web_local_port = web_local_port
-            domain.web_port = web_port
-
-            if update_ip:
-                self.dns.update_domain(self.main_domain, domain)
-
-            domain.last_update = datetime.now()
-            return domain
-
     def domain_delete(self, request):
         user = self.authenticate(request)
         self.user_domain_delete(request, user)
@@ -243,15 +197,6 @@ class Users(UsersRead):
             if not user:
                 raise servicesexceptions.bad_request('Unknown user')
             user.unsubscribed = not subscribed
-
-    def get_domain(self, request):
-        validator = Validator(request)
-        token = validator.token()
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_update_token(token)
-            if not domain or not domain.user.active:
-                raise servicesexceptions.bad_request('Unknown domain update token')
-            return domain
 
     def delete_user(self, request):
         validator = Validator(request)

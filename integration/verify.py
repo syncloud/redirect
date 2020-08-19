@@ -1,4 +1,5 @@
 import time
+from os import environ
 from os.path import dirname
 from subprocess import check_output
 from os.path import join
@@ -27,7 +28,9 @@ def module_setup(request, log_dir, artifact_dir, device):
         device.run_ssh('cp /var/log/apache2/redirect_ssl_web-error.log {0}'.format(TMP_DIR), throw=False)
         device.run_ssh('ls -la /var/log/apache2 > {0}/var.log.apache2.ls.log'.format(TMP_DIR), throw=False)
         device.run_ssh('ls -la /var/log > {0}/var.log.ls.log'.format(TMP_DIR), throw=False)
-
+        device.run_ssh('ls -la /var/run > {0}/var.run.ls.log'.format(TMP_DIR), throw=False)
+        device.run_ssh('journalctl | tail -500 > {0}/journalctl.log'.format(TMP_DIR), throw=False)
+    
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
         db.recreate()
@@ -50,7 +53,11 @@ def test_start(module_setup, device, device_host, domain, build_number):
     device.run_ssh("/fakecertificate.sh")
     device.scp_to_device("../artifact/redirect-{0}.tar.gz".format(build_number), "/")
     device.scp_to_device("../ci/deploy", "/")
-    device.run_ssh("cd / && /deploy {0} integration syncloud.test > {1}/deploy.log".format(build_number, TMP_DIR))
+    device.run_ssh("cd / && /deploy {0} integration syncloud.test > {1}/deploy.log 2>&1".format(build_number, TMP_DIR))
+    device.run_ssh("sed -i 's#@access_key_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['access_key_id']), debug=False)
+    device.run_ssh("sed -i 's#@secret_access_key@#{0}#g' /var/www/redirect/secret.cfg".format(environ['secret_access_key']), debug=False)
+    device.run_ssh("sed -i 's#@hosted_zone_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['hosted_zone_id']), debug=False)
+    device.run_ssh("systemctl restart redirect")
 
 
 def get_domain(update_token, domain):
@@ -60,15 +67,6 @@ def get_domain(update_token, domain):
     assert response.text is not None
     response_data = json.loads(response.text)
     return response_data['data']
-
-
-def check_domain(domain, update_token, expected_data):
-    domain_data = get_domain(update_token, domain)
-    for key, expected_value in expected_data.items():
-        actual_value = domain_data[key]
-        assert expected_value == actual_value, 'Key "{}" has different values: {} != {}'.format(key, expected_value,
-                                                                                                actual_value)
-    return domain_data
 
 
 def test_index(domain, artifact_dir):
@@ -83,7 +81,7 @@ def test_user_create_special_symbols_in_password(domain):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              data={'email': email, 'password': r'pass12& ^%"'},
                              verify=False)
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     assert len(smtp.emails()) == 1
     smtp.clear()
 
@@ -167,14 +165,19 @@ def test_get_user_data(domain):
 
     update_data = {
         'token': update_token,
-        'ip': '127.0.0.1',
+        'ip': '192.192.1.1',
         'web_protocol': 'http',
         'web_local_port': 80,
         'web_port': 10000
     }
-    requests.post('https://api.{0}/domain/update'.format(domain),
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain),
                   json=update_data,
                   verify=False)
+    assert response.status_code == 200, response.text
+
+    response_data = json.loads(response.text)
+    assert response_data['success'], response.text
 
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': password},
@@ -197,7 +200,7 @@ def test_get_user_data(domain):
             'web_local_port': 80,
             'web_port': 10000,
             'web_protocol': 'http',
-            'ip': '127.0.0.1',
+            'ip': '192.192.1.1',
             'ipv6': None,
             'dkim_key': None,
             'local_ip': None,
@@ -347,14 +350,16 @@ def test_domain_new(domain):
     assert update_token is not None
 
     expected_data = {
-        'ip': None,
+      #  'ip': None,
         'user_domain': user_domain,
         'device_mac_address': '00:00:00:00:00:00',
         'device_name': 'my-super-board',
         'device_title': 'My Super Board'
     }
 
-    check_domain(domain, update_token, expected_data)
+    data = get_domain(update_token, domain)
+    data.pop('last_update', None)
+    assert expected_data == data
 
 
 def test_domain_existing(domain):
@@ -391,14 +396,16 @@ def test_domain_existing(domain):
     assert response.status_code == 400
 
     expected_data = {
-        'ip': None,
+    #    'ip': None,
         'user_domain': user_domain,
         'device_mac_address': '00:00:00:00:00:00',
         'device_name': 'my-super-board',
         'device_title': 'My Super Board'
     }
 
-    check_domain(domain, update_token, expected_data)
+    data = get_domain(update_token, domain)
+    data.pop('last_update', None)
+    assert expected_data == data
 
 
 def test_domain_twice(domain):
@@ -435,14 +442,16 @@ def test_domain_twice(domain):
     assert update_token1 != update_token2
 
     expected_data = {
-        'ip': None,
+      #  'ip': None,
         'user_domain': user_domain,
         'device_mac_address': '00:00:00:00:00:11',
         'device_name': 'my-super-board-2',
         'device_title': 'My Super Board 2'
     }
 
-    check_domain(domain, update_token2, expected_data)
+    data = get_domain(update_token2, domain)
+    data.pop('last_update', None)
+    assert expected_data == data
 
 def test_domain_wrong_mac_address_format(domain):
     email = 'test_domain_wrong_mac_address_format@syncloud.test'
@@ -512,7 +521,7 @@ def test_domain_delete(domain):
 
     response = requests.post('https://api.{0}/domain/delete'.format(domain), data=json.dumps(delete_data),
                              verify=False)
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
 
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': password},
@@ -521,6 +530,7 @@ def test_domain_delete(domain):
 
     response_data = json.loads(response.text)
     assert len(response_data['data']['domains']) == 0
+
 
 def test_domain_update_date(domain):
     email = 'test_domain_update_date@syncloud.test'
@@ -553,12 +563,14 @@ def test_domain_update_date(domain):
 
     assert last_updated2 > last_updated1
 
+
 def test_domain_update_wrong_token(domain):
     update_data = {'token': 'test_domain_update_wrong_token', 'ip': '127.0.0.1'}
 
     response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
                              verify=False)
-    assert response.status_code == 400
+    assert response.status_code == 400, response.text
+
 
 def test_domain_update_web_updated(domain):
     email = 'test_domain_update_web_updated@syncloud.test'
@@ -599,9 +611,15 @@ def test_domain_update_web_updated(domain):
         'web_protocol': 'https',
         'web_port': 10002,
         'web_local_port': 443,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device'
     }
 
-    check_domain(domain, update_token, expected_data)
+    domain_data = get_domain(update_token, domain)
+    domain_data.pop('last_update', None)
+    assert expected_data == domain_data
+
 
 def test_domain_update_ip_changed(domain):
     email = 'test_domain_update_ip_changed@syncloud.test'
@@ -635,7 +653,20 @@ def test_domain_update_ip_changed(domain):
 
     assert response.status_code == 200
 
-    check_domain(domain, update_token, {'ip': '127.0.0.2', 'user_domain': user_domain})
+    expected_data = {
+        'ip': '127.0.0.2',
+        'user_domain': user_domain,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device',
+        'web_local_port': 80,
+        'web_port': 10001,
+        'web_protocol': 'http'
+    }
+
+    domain_data = get_domain(update_token, domain)
+    domain_data.pop('last_update', None)
+    assert expected_data == domain_data
 
 def test_domain_update_platform_version(domain):
     email = 'test_domain_update_platform_version@syncloud.test'
@@ -658,7 +689,21 @@ def test_domain_update_platform_version(domain):
                              verify=False)
     assert response.status_code == 200
 
-    check_domain(domain, update_token, {'platform_version': '366'})
+    expected_data = {
+        'platform_version': '366',
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device',
+        'ip': '127.0.0.1',
+        'user_domain': 'test_domain_update_platform_version',
+        'web_local_port': 80,
+        'web_port': 10001,
+        'web_protocol': 'http'
+    }
+    domain_data = get_domain(update_token, domain)
+    domain_data.pop('last_update', None)
+    assert expected_data == domain_data
+
 
 def test_domain_update_local_ip_changed(domain):
     email = 'test_domain_update_local_ip_changed@syncloud.test'
@@ -695,7 +740,21 @@ def test_domain_update_local_ip_changed(domain):
 
     assert response.status_code == 200
 
-    check_domain(domain, update_token, {'ip': '127.0.0.2', 'local_ip': '192.168.1.6', 'user_domain': user_domain})
+    expected_data = {
+        'ip': '127.0.0.2',
+        'local_ip': '192.168.1.6',
+        'user_domain': user_domain,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device',
+        'web_local_port': 80,
+        'web_port': 10001,
+        'web_protocol': 'http'
+    }
+    domain_data = get_domain(update_token, domain)
+    domain_data.pop('last_update', None)
+    assert expected_data == domain_data
+
 
 def test_domain_update_server_side_client_ip(domain):
     email = 'test_domain_update_server_side_client_ip@syncloud.test'
@@ -715,16 +774,23 @@ def test_domain_update_server_side_client_ip(domain):
     response = requests.post('https://api.{0}/domain/update'.format(domain),
                              json=update_data,
                              verify=False)
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
 
     expected_data = {
         'user_domain': user_domain,
         'web_protocol': 'http',
         'web_port': 10001,
         'web_local_port': 80,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device'
     }
 
-    check_domain(domain, update_token, expected_data)
+    domain_data = get_domain(update_token, domain)
+    domain_data.pop('last_update', None)
+    domain_data.pop('ip', None)
+    assert expected_data == domain_data
+
 
 def test_domain_update_map_local_address(domain):
     email = 'test_domain_update_map_local_address@syncloud.test'
@@ -748,11 +814,26 @@ def test_domain_update_map_local_address(domain):
                              verify=False)
     assert response.status_code == 200
 
-    check_domain(domain,
-        update_token, {
-            'ip': '108.108.108.108',
-            'local_ip': '192.168.1.2',
-            'map_local_address': True,
-            'user_domain': user_domain
-        }
-    )
+    expected_data = {
+        'ip': '108.108.108.108',
+        'local_ip': '192.168.1.2',
+        'map_local_address': True,
+        'user_domain': user_domain,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device',
+        'web_protocol': 'http',
+        'web_port': 10001,
+        'web_local_port': 80
+    }
+
+    domain_data = get_domain(update_token, domain)
+    domain_data.pop('last_update', None)
+    assert expected_data == domain_data
+
+
+def test_status(domain):
+    response = requests.get('https://api.{0}/status'.format(domain), verify=False)
+    assert response.status_code == 200
+    assert 'OK' in response.text
+

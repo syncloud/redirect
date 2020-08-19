@@ -26,7 +26,7 @@ local build(arch) = {
             commands: [
                 "cd backend",
                 "go test ./... -cover",
-                "go build -o ../build/bin/backend cmd/main.go"
+                "go build -o ../build/bin/redirect cmd/main.go"
             ]
         },
         {
@@ -54,17 +54,28 @@ local build(arch) = {
         {
             name: "test-integration",
             image: "syncloud/build-deps-" + arch,
+            environment: {
+                access_key_id: {
+                  from_secret: "access_key_id"
+                },
+                secret_access_key: {
+                  from_secret: "secret_access_key"
+                },
+                hosted_zone_id: {
+                  from_secret: "hosted_zone_id"
+                },
+            },
             commands: [
-	              "pip install -r dev_requirements.txt",
+	            "pip install -r dev_requirements.txt",
                 "cd integration",
-                "py.test -x -s verify.py --domain=syncloud.test --device-host=device --build-number=${DRONE_BUILD_NUMBER}"
+                "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=device --build-number=${DRONE_BUILD_NUMBER}"
             ]
         },
         {
             name: "test-ui",
             image: "syncloud/build-deps-" + arch,
             commands: [
-	              "pip install -r dev_requirements.txt",
+	            "pip install -r dev_requirements.txt",
                 "cd integration",
                 "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=device",
                 "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=device",
