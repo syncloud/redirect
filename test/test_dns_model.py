@@ -7,7 +7,7 @@ def test_ipv6():
     assert dns.dns_ipv6() == ipv6
     assert dns.dns_ipv4() is None
 
-def test_ipv6():
+def test_ipv4():
     dns = Domain('user_domain', '0:0:0:0:0', 'device_name', 'device_title', 'update_token')
     ipv4 = "192.168.0.1"
     dns.ip = ipv4

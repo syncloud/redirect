@@ -42,14 +42,6 @@ def user_create():
     return jsonify(success=True, message='User was created', data=user_data), 200
 
 
-@app.route('/domain/acquire', methods=["POST"])
-@cross_origin()
-def domain_acquire():
-    statsd_client.incr('rest.domain.acquire')
-    domain = users_manager.domain_acquire(request.form)
-    return jsonify(success=True, user_domain=domain.user_domain, update_token=domain.update_token), 200
-
-
 @app.route('/domain/drop_device', methods=["POST"])
 @cross_origin()
 def drop_device():

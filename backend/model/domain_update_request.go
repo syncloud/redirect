@@ -12,5 +12,4 @@ type DomainUpdateRequest struct {
 	WebLocalPort    *int    `json:"web_local_port,omitempty"`
 	WebPort         *int    `json:"web_port,omitempty"`
 	UserDomain      *string `json:"user_domain,omitempty"`
-	Password        *string `json:"password,omitempty"`
 }

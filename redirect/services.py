@@ -126,47 +126,6 @@ class Users(UsersRead):
 
             return domain
 
-    def domain_acquire(self, request):
-        user = self.authenticate(request)
-
-        validator = Validator(request)
-        user_domain = validator.new_user_domain()
-        device_mac_address = validator.device_mac_address()
-        device_name = validator.string('device_name', required=True)
-        device_title = validator.string('device_title', required=True)
-        check_validator(validator)
-
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_name(user_domain)
-            if domain and domain.user_id != user.id:
-                raise servicesexceptions.parameter_error('user_domain', 'User domain name is already in use')
-
-            update_token = util.create_token()
-            if not domain:
-                domain = Domain(user_domain, device_mac_address, device_name, device_title, update_token=update_token)
-                domain.user = user
-                storage.add(domain)
-            else:
-                domain.update_token = update_token
-                domain.device_mac_address = device_mac_address
-                domain.device_name = device_name
-                domain.device_title = device_title
-
-            return domain
-
-    def service_compare(self, a, b):
-        return a.port == b.port and a.local_port == b.local_port and a.type == b.type and a.protocol == b.protocol and a.name == b.name
-
-    def get_missing(self, lookfor, lookat):
-        result = []
-        for s in lookfor:
-            existing = None
-            for x in lookat:
-                if self.service_compare(x, s):
-                    existing = x
-            if not existing:
-                result.append(s)
-        return result
 
     def domain_delete(self, request):
         user = self.authenticate(request)

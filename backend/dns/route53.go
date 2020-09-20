@@ -56,24 +56,23 @@ func (a *AmazonDns) UpdateDomain(mainDomain string, domain *model.Domain) error 
 	spf := "\"v=spf1 a mx -all\""
 	mx := fmt.Sprintf("1 %s", fullDomain)
 	dkim := domain.DkimKey
-	err := a.deleteDomain(mainDomain, domain)
+	err := a.deleteDomain(fullDomain, a.hostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(fullDomain, ipv4, ipv6, dkim, spf, mx, "CREATE")
+	err = a.actionDomain(fullDomain, ipv4, ipv6, dkim, spf, mx, "CREATE", a.hostedZoneId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *AmazonDns) deleteDomain(mainDomain string, domain *model.Domain) error {
-	fullDomain := domain.DnsName(mainDomain)
-	err := a.actionDomain(fullDomain, &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT")
+func (a *AmazonDns) deleteDomain(fullDomain string, hostedZoneId string) error {
+	err := a.actionDomain(fullDomain, &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", hostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(fullDomain, &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE")
+	err = a.actionDomain(fullDomain, &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", hostedZoneId)
 	if err != nil {
 		return err
 	}
@@ -81,7 +80,6 @@ func (a *AmazonDns) deleteDomain(mainDomain string, domain *model.Domain) error 
 }
 
 func (a *AmazonDns) change(action string, name string, value string, changeType string) *route53.Change {
-  fmt.Printf("dns change: %s, %s, %s, %s\n", action, name, value, changeType)
 	return &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
@@ -111,14 +109,14 @@ func (a *AmazonDns) changeDKIM(domain string, dkim string, action string) *route
 	return a.change(action, name, dkimValue, "TXT")
 }
 
-func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim *string, spf string, mx string, action string) error {
+func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim *string, spf string, mx string, action string, hostedZoneId string) error {
 
 	a.statsdClient.Incr("dns.ip.connect", 1)
 
 	var changes []*route53.Change
 
 	if ipv6 != nil {
-    
+
 		changes = append(changes, a.changeAAAA(*ipv6, domain, action))
 		changes = append(changes, a.changeAAAA(*ipv6, fmt.Sprintf("*.%s", domain), action))
 	}
@@ -135,7 +133,7 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
-		HostedZoneId: aws.String(a.hostedZoneId),
+		HostedZoneId: aws.String(hostedZoneId),
 	}
 	result, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {

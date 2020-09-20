@@ -30,7 +30,7 @@ func (mysql *MySql) Close() {
 }
 
 func (mysql *MySql) GetUser(id uint64) (*model.User, error) {
-	rows, err := mysql.db.Query(
+	row := mysql.db.QueryRow(
 		"SELECT "+
 			"id, "+
 			"email, "+
@@ -41,32 +41,53 @@ func (mysql *MySql) GetUser(id uint64) (*model.User, error) {
 			"timestamp "+
 			"FROM user "+
 			"WHERE id = ?", id)
-	if err != nil {
-		log.Println("Cannot query a user: ", id, err)
+	user := &model.User{}
+	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
+		&user.Unsubscribed, &user.Timestamp)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, nil
+	case err != nil:
+		log.Println("Cannot scan a user: ", id, err)
 		return nil, err
+	default:
+		return user, nil
 	}
-	defer rows.Close()
+
+}
+
+//TODO: query builder?
+func (mysql *MySql) GetUserByEmail(email string) (*model.User, error) {
+	row := mysql.db.QueryRow(
+		"SELECT "+
+			"id, "+
+			"email, "+
+			"password_hash, "+
+			"active, "+
+			"update_token, "+
+			"unsubscribed, "+
+			"timestamp "+
+			"FROM user "+
+			"WHERE email = ?", email)
 
 	user := &model.User{}
-	for rows.Next() {
-		err := rows.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
-			&user.Unsubscribed, &user.Timestamp)
-		if err != nil {
-			log.Println("Cannot scan a user: ", id, err)
-			return nil, err
-		}
-	}
+	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
+		&user.Unsubscribed, &user.Timestamp)
 
-	err = rows.Err()
 	if err != nil {
-		log.Println("Rows error: ", err)
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			log.Println("Cannot scan a user: ", user, err)
+			return nil, fmt.Errorf("DB error")
+		}
 	}
 
 	return user, nil
 }
 
-func (mysql *MySql) SelectDomainByToken(token string) (*model.Domain, error) {
-	rows, err := mysql.db.Query(
+func (mysql *MySql) GetDomainByToken(token string) (*model.Domain, error) {
+	row := mysql.db.QueryRow(
 		"SELECT "+
 			"id, "+
 			"user_domain, "+
@@ -87,49 +108,101 @@ func (mysql *MySql) SelectDomainByToken(token string) (*model.Domain, error) {
 			"last_update "+
 			"FROM domain "+
 			"WHERE update_token = ?", token)
-	if err != nil {
-		log.Println("Cannot query a user: ", token, err)
-		return nil, err
-	}
-	defer rows.Close()
 
 	var mapLocalAddress *bool
 	domain := &model.Domain{}
-	for rows.Next() {
-		err := rows.Scan(
-			&domain.Id,
-			&domain.UserDomain,
-			&domain.Ip,
-			&domain.Ipv6,
-			&domain.DkimKey,
-			&domain.LocalIp,
-			&mapLocalAddress,
-			&domain.UpdateToken,
-			&domain.UserId,
-			&domain.DeviceMacAddress,
-			&domain.DeviceName,
-			&domain.DeviceTitle,
-			&domain.PlatformVersion,
-			&domain.WebProtocol,
-			&domain.WebPort,
-			&domain.WebLocalPort,
-			&domain.LastUpdate,
-		)
-		if err != nil {
+	err := row.Scan(
+		&domain.Id,
+		&domain.UserDomain,
+		&domain.Ip,
+		&domain.Ipv6,
+		&domain.DkimKey,
+		&domain.LocalIp,
+		&mapLocalAddress,
+		&domain.UpdateToken,
+		&domain.UserId,
+		&domain.DeviceMacAddress,
+		&domain.DeviceName,
+		&domain.DeviceTitle,
+		&domain.PlatformVersion,
+		&domain.WebProtocol,
+		&domain.WebPort,
+		&domain.WebLocalPort,
+		&domain.LastUpdate,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
 			log.Println("Cannot scan a domain: ", domain, err)
 			return nil, fmt.Errorf("DB error")
 		}
-		if mapLocalAddress != nil {
-			domain.MapLocalAddress = *mapLocalAddress
-		} else {
-			domain.MapLocalAddress = false
-		}
+	}
+	if mapLocalAddress != nil {
+		domain.MapLocalAddress = *mapLocalAddress
+	} else {
+		domain.MapLocalAddress = false
 	}
 
-	err = rows.Err()
+	return domain, nil
+}
+
+func (mysql *MySql) GetDomainByUserDomain(userDomain string) (*model.Domain, error) {
+	row := mysql.db.QueryRow(
+		"SELECT "+
+			"id, "+
+			"user_domain, "+
+			"ip, "+
+			"ipv6, "+
+			"dkim_key, "+
+			"local_ip, "+
+			"map_local_address, "+
+			"update_token, "+
+			"user_id, "+
+			"device_mac_address, "+
+			"device_name, "+
+			"device_title, "+
+			"platform_version, "+
+			"web_protocol, "+
+			"web_port, "+
+			"web_local_port, "+
+			"last_update "+
+			"FROM domain "+
+			"WHERE user_domain = ?", userDomain)
+
+	var mapLocalAddress *bool
+	domain := &model.Domain{}
+	err := row.Scan(
+		&domain.Id,
+		&domain.UserDomain,
+		&domain.Ip,
+		&domain.Ipv6,
+		&domain.DkimKey,
+		&domain.LocalIp,
+		&mapLocalAddress,
+		&domain.UpdateToken,
+		&domain.UserId,
+		&domain.DeviceMacAddress,
+		&domain.DeviceName,
+		&domain.DeviceTitle,
+		&domain.PlatformVersion,
+		&domain.WebProtocol,
+		&domain.WebPort,
+		&domain.WebLocalPort,
+		&domain.LastUpdate,
+	)
 	if err != nil {
-		log.Println("Rows error: ", err)
-		return nil, fmt.Errorf("DB error")
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			log.Println("Cannot scan a domain: ", domain, err)
+			return nil, fmt.Errorf("DB error")
+		}
+	}
+	if mapLocalAddress != nil {
+		domain.MapLocalAddress = *mapLocalAddress
+	} else {
+		domain.MapLocalAddress = false
 	}
 
 	return domain, nil
@@ -138,22 +211,22 @@ func (mysql *MySql) SelectDomainByToken(token string) (*model.Domain, error) {
 func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"UPDATE domain SET " +
-			"user_domain  = ?, " +
-			"ip  = ?, " +
-			"ipv6  = ?, " +
-			"dkim_key  = ?, " +
-			"local_ip  = ?, " +
-			"map_local_address  = ?, " +
-			"update_token  = ?, " +
-			"user_id  = ?, " +
-			"device_mac_address  = ?, " +
-			"device_name  = ?, " +
-			"device_title  = ?, " +
-			"platform_version  = ?, " +
-			"web_protocol  = ?, " +
-			"web_port  = ?, " +
-			"web_local_port  = ?, " +
-			"last_update  = ? " +
+			"user_domain = ?, " +
+			"ip = ?, " +
+			"ipv6 = ?, " +
+			"dkim_key = ?, " +
+			"local_ip = ?, " +
+			"map_local_address = ?, " +
+			"update_token = ?, " +
+			"user_id = ?, " +
+			"device_mac_address = ?, " +
+			"device_name = ?, " +
+			"device_title = ?, " +
+			"platform_version = ?, " +
+			"web_protocol = ?, " +
+			"web_port = ?, " +
+			"web_local_port = ?, " +
+			"last_update = ? " +
 			"WHERE id = ?")
 	if err != nil {
 		log.Println("sql error: ", err)
@@ -177,6 +250,38 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 		domain.WebLocalPort,
 		domain.LastUpdate,
 		domain.Id,
+	)
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	defer stmt.Close()
+	return nil
+}
+
+func (mysql *MySql) InsertDomain(domain *model.Domain) error {
+	stmt, err := mysql.db.Prepare(
+		"INSERT into domain (" +
+			"user_domain, " +
+			"update_token, " +
+			"user_id, " +
+			"device_mac_address, " +
+			"device_name, " +
+			"device_title, " +
+			"last_update" +
+			") values (?,?,?,?,?,?,?)")
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	_, err = stmt.Exec(
+		domain.UserDomain,
+		domain.UpdateToken,
+		domain.UserId,
+		domain.DeviceMacAddress,
+		domain.DeviceName,
+		domain.DeviceTitle,
+		domain.LastUpdate,
 	)
 	if err != nil {
 		log.Println("sql error: ", err)

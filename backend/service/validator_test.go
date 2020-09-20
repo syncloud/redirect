@@ -6,134 +6,134 @@ import (
 	"testing"
 )
 
-/*valid_params := {
-'user_domain': 'username',
-'email': 'valid@mail.com',
-'password': 'pass123456',
-'port': '80',
-'ip': '192.168.1.1'}*/
-
-func UsernameError(t *testing.T, request model.DomainUpdateRequest) *string {
+func TestEmailMissing(t *testing.T) {
 	validator := NewValidator()
-	value := validator.newUserDomain(request.UserDomain, true)
+	_ = validator.email(nil)
 	assert.Equal(t, len(validator.errors), 1)
-	return value
 }
 
-/*
-func assertEmailError(t *testing.T, params):
-
-validator = Validator(params)
-value = validator.email()
-self.assertEqual(len(validator.errors), 1)
-return value
-
-func assertNewPasswordError(t *testing.T, params):
-
-validator = Validator(params)
-value = validator.new_password()
-self.assertEqual(len(validator.errors), 1)
-return value
-*/
-
-func assertPortError(t *testing.T, request model.DomainUpdateRequest) *int {
+func TestEmailInvalid(t *testing.T) {
 	validator := NewValidator()
-	value := validator.webPort(request.WebPort)
-	assert.Equal(t, 1, len(validator.errors))
-	return value
+	email := "invalid.email"
+	_ = validator.email(&email)
+	assert.Equal(t, len(validator.errors), 1)
 }
 
-/*
-func test_new_user_domain_missing(t *testing.T) {
+func TestNewUserDomainMissing(t *testing.T) {
 
-params = {}
-user_domain = self.assertUsernameError(params)
-self.assertIsNone(user_domain)
+	request := model.DomainAcquireRequest{}
 
-func test_new_user_domain_invalid(t *testing.T) {
+	validator := NewValidator()
+	result := validator.newUserDomain(request.UserDomain)
+	assert.Equal(t, len(validator.errors), 1)
+	assert.Nil(t, result)
+}
 
-params = {'user_domain': 'user.name'}
-self.assertUsernameError(params)
+func TestNewUserDomainInvalid(t *testing.T) {
+	domain := "user.name"
+	request := model.DomainAcquireRequest{UserDomain: &domain}
+	validator := NewValidator()
+	_ = validator.newUserDomain(request.UserDomain)
+	assert.Equal(t, len(validator.errors), 1)
+}
 
-func test_user_domain_short(t *testing.T) {
+func TestUserDomainShort(t *testing.T) {
+	domain := "use"
+	request := model.DomainAcquireRequest{UserDomain: &domain}
+	validator := NewValidator()
+	_ = validator.newUserDomain(request.UserDomain)
+	assert.Equal(t, len(validator.errors), 1)
+}
 
-params = {'user_domain': 'use'}
-self.assertUsernameError(params)
+func TestUserDomainLong(t *testing.T) {
 
-func test_user_domain_long(t *testing.T) {
+	domain := "12345678901234567890123456789012345678901234567890_"
+	request := model.DomainAcquireRequest{UserDomain: &domain}
+	validator := NewValidator()
+	_ = validator.newUserDomain(request.UserDomain)
+	assert.Equal(t, len(validator.errors), 1)
+}
 
-params = {'user_domain': '12345678901234567890123456789012345678901234567890_'}
-self.assertUsernameError(params)
+func TestPasswordMissing(t *testing.T) {
+	validator := NewValidator()
+	result := validator.newPassword(nil)
+	assert.Equal(t, 1, len(validator.errors))
+	assert.Nil(t, result)
+}
 
-func test_email_missing(t *testing.T) {
+func TestPasswordShort(t *testing.T) {
+	validator := NewValidator()
+	password := "123456"
+	result := validator.newPassword(&password)
+	assert.Equal(t, 1, len(validator.errors))
+	assert.Equal(t, "123456", *result)
+}
 
-params = {}
-self.assertEmailError(params)
+func TestIpMissing(t *testing.T) {
+	validator := NewValidator()
+	result := validator.Ip(nil, nil)
+	assert.Equal(t, 1, len(validator.errors))
+	assert.Nil(t, result)
+}
 
-func test_email_invalid(t *testing.T) {
+func TestIpDefault(t *testing.T) {
+	defaultIp := "192.168.0.2"
+	validator := NewValidator()
+	result := validator.Ip(nil, &defaultIp)
+	assert.Equal(t, 0, len(validator.errors))
+	assert.Equal(t, *result, "192.168.0.2")
+}
 
-params = {'email': 'invalid.email'}
-self.assertEmailError(params)
+func TestIpInvalid(t *testing.T) {
+	ip := "256.256.256.256"
+	validator := NewValidator()
+	_ = validator.Ip(&ip, nil)
+	assert.Equal(t, 1, len(validator.errors))
+}
 
-func test_password_missing(t *testing.T) {
+func TestPortMissing(t *testing.T) {
+	request := model.DomainUpdateRequest{}
+	validator := NewValidator()
+	_ = validator.webPort(request.WebPort)
+	assert.Equal(t, 1, len(validator.errors))
+}
 
-params = {}
-self.assertNewPasswordError(params)
+func TestPortTooSmall(t *testing.T) {
+	port := 0
+	request := model.DomainUpdateRequest{WebPort: &port}
+	validator := NewValidator()
+	_ = validator.webPort(request.WebPort)
+	assert.Equal(t, 1, len(validator.errors))
+}
 
-func test_password_short(t *testing.T) {
-
-params = {'password': '123456'}
-self.assertNewPasswordError(params)
-
-func test_ip_missing(t *testing.T) {
-
-params = {}
-validator = Validator(params)
-ip = validator.ip()
-self.assertIsNone(ip)
-self.assertEquals(0, len(validator.errors))
-
-func test_ip_default(t *testing.T):
-
-params = {}
-validator = Validator(params)
-ip = validator.ip('192.168.0.1')
-self.assertEquals(ip, '192.168.0.1')
-self.assertEquals(0, len(validator.errors))
-
-func test_ip_invalid(t *testing.T) {
-
-params = {'ip': '256.256.256.256'}
-validator = Validator(params)
-ip = validator.ip()
-self.assertEqual(len(validator.errors), 1)
-
-func test_port_missing(t *testing.T) {
-
-params = {}
-self.assertPortError(params)
-
-func test_port_small(t *testing.T) {
-
-params = {'port': '0'}
-self.assertPortError(params)
-
-func test_port_big(t *testing.T) {
-
-params = {'port': '65536'}
-self.assertPortError(params)
-
-*/
-func testPortNonInt(t *testing.T) {
-	port := 1
-	assertPortError(t, model.DomainUpdateRequest{WebPort: &port})
+func TestPortTooBig(t *testing.T) {
+	port := 65536
+	request := model.DomainUpdateRequest{WebPort: &port}
+	validator := NewValidator()
+	_ = validator.webPort(request.WebPort)
+	assert.Equal(t, 1, len(validator.errors))
 }
 
 func TestErrorsAggregated(t *testing.T) {
 
-	request := model.DomainUpdateRequest{}
 	validator := NewValidator()
-	validator.userDomain(request.UserDomain, true)
-	validator.password(request.Password)
+	validator.userDomain(nil)
+	validator.password(nil)
 	assert.Equal(t, 2, len(validator.errors))
+}
+
+func TestWrongMacAddress(t *testing.T) {
+
+	validator := NewValidator()
+	mac := "wrong_mac"
+	validator.deviceMacAddress(&mac)
+	assert.Equal(t, 1, len(validator.errors))
+}
+
+func TestGoodMacAddress(t *testing.T) {
+
+	validator := NewValidator()
+	mac := "11:22:33:44:55:66"
+	validator.deviceMacAddress(&mac)
+	assert.Equal(t, 0, len(validator.errors))
 }

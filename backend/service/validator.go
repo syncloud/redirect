@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/syncloud/redirect/model"
+	"log"
 	"net"
 	"regexp"
 	"strings"
@@ -38,9 +39,9 @@ func (v *Validator) addFieldError(field string, error string) {
 	v.fieldsErrors[field] = newErrors
 }
 
-func (v *Validator) newUserDomain(userDomain *string, errorIfMissing bool) *string {
+func (v *Validator) newUserDomain(userDomain *string) *string {
 	var valid = regexp.MustCompile(`^[\w-]+$`)
-	v.userDomain(userDomain, errorIfMissing)
+	v.userDomain(userDomain)
 	if userDomain != nil {
 		if !valid.MatchString(*userDomain) {
 			v.addFieldError("user_domain", "Invalid characters")
@@ -55,42 +56,42 @@ func (v *Validator) newUserDomain(userDomain *string, errorIfMissing bool) *stri
 	return userDomain
 }
 
-func (v *Validator) userDomain(userDomain *string, errorIfMissing bool) {
-	if userDomain == nil && errorIfMissing {
+func (v *Validator) userDomain(userDomain *string) {
+	if userDomain == nil {
 		v.addFieldError("user_domain", "Missing")
 	}
 }
 
-/*
-func (v *Validator) email(self) {
-	if 'email' in
-	self.params:
-	email = self.params['email']
-	if not re.match(r
-	"[^@]+@[^@]+\.[^@]+", email):
-	self.add_field_error('email', 'Not valid email')
-	else:
-	return email.lower()
-	else:
-	self.add_field_error('email', 'Missing')
-	return None
+func (v *Validator) email(email *string) *string {
+	var valid = regexp.MustCompile(`[^@]+@[^@]+\.[^@]+`)
+	if email != nil {
+		if !valid.MatchString(*email) {
+			v.addFieldError("email", "Not valid email")
+		} else {
+			lower := strings.ToLower(*email)
+			return &lower
+		}
+	} else {
+		v.addFieldError("email", "Missing")
+	}
+	return nil
 }
 
-func (v *Validator) new_password(self) {
-	password = self.password()
-	if password is
-	not
-None:
-	if len(password) < 7:
-	self.add_field_error('password', 'Should be 7 or more characters')
+func (v *Validator) newPassword(newPassword *string) *string {
+	password := v.password(newPassword)
+	if password != nil {
+		if len(*password) < 7 {
+			v.addFieldError("password", "Should be 7 or more characters")
+		}
+	}
 	return password
 }
-*/
 
-func (v *Validator) password(password *string) {
+func (v *Validator) password(password *string) *string {
 	if password == nil {
 		v.addFieldError("password", "Missing")
 	}
+	return password
 }
 
 func (v *Validator) webProtocol(webProtocol *string) *string {
@@ -134,7 +135,19 @@ func (v *Validator) Token(token *string) {
 	}
 }
 
-func (v *Validator) check_ip_address(name string, ip string) {
+func (v *Validator) deviceName(deviceName *string) {
+	if deviceName == nil {
+		v.addFieldError("device_name", "Missing")
+	}
+}
+
+func (v *Validator) deviceTitle(deviceTitle *string) {
+	if deviceTitle == nil {
+		v.addFieldError("device_title", "Missing")
+	}
+}
+
+func (v *Validator) checkIpAddress(name string, ip string) {
 	if net.ParseIP(ip) == nil {
 		v.addFieldError(name, "Invalid IP address")
 	}
@@ -149,32 +162,30 @@ func (v *Validator) Ip(requestIp *string, defaultIp *string) *string {
 		v.addFieldError("ip", "Missing")
 		return nil
 	}
-	v.check_ip_address("ip", *ip)
+	v.checkIpAddress("ip", *ip)
 	return ip
 }
 
 func (v *Validator) localIp(localIp *string) {
 	if localIp != nil {
-		v.check_ip_address("local_ip", *localIp)
+		v.checkIpAddress("local_ip", *localIp)
 	}
 }
 
-/*
-
-func (v *Validator) device_mac_address() {
-	mac_address = 'device_mac_address'
-	if mac_address not
-	in
-	self.params:
-	self.add_field_error(mac_address, 'Missing')
-	return None
-	mac_address_value = self.params[mac_address]
-	if not re.match('[0-9a-f]{2}([-:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address_value):
-	self.add_field_error(mac_address, 'MAC address has wrong format')
-	return None
-	return mac_address_value
+func (v *Validator) deviceMacAddress(deviceMacAddress *string) *string {
+	field := "device_mac_address"
+	var pattern = regexp.MustCompile(`^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$`)
+	if deviceMacAddress == nil {
+		v.addFieldError(field, "Missing")
+		return nil
+	}
+	if !pattern.MatchString(*deviceMacAddress) {
+		log.Println("wrong mac", *deviceMacAddress)
+		v.addFieldError(field, "MAC address has wrong format")
+		return nil
+	}
+	return deviceMacAddress
 }
-*/
 
 /*func (v *Validator) string(parameter string, required bool) {
 	if val, ok := v.request.:

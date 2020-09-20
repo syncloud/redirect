@@ -137,6 +137,7 @@ def acquire_domain(domain, email, password, user_domain):
                              data=acquire_data,
                              verify=False)
     domain_data = json.loads(response.text)
+    assert 'update_token' in domain_data, response.text
     update_token = domain_data['update_token']
     return update_token
 

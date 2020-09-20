@@ -29,9 +29,9 @@ func main() {
 
 	dnsImp := dns.New(statsdClient, config.AwsAccessKeyId(), config.AwsSecretAccessKey(), config.AwsHostedZoneId())
 
-	dynamicDns := service.New(dnsImp, database, config.Domain())
+	users := service.NewUsers(database)
+	domains := service.NewDomains(dnsImp, database, config.Domain(), users)
 
-	api := rest.NewApi(statsdClient, dynamicDns)
+	api := rest.NewApi(statsdClient, domains)
 	api.Start(config.GetApiSocket())
 }
-
