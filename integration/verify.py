@@ -117,9 +117,9 @@ def test_create_user_api_for_mobile_app(domain):
 def activate_user(domain):
     assert len(smtp.emails()) == 1
     activate_token = smtp.get_token(smtp.emails()[0])
-    response = requests.get('https://api.{0}/user/activate'.format(domain),
-                            params={'token': activate_token},
-                            verify=False)
+    response = requests.post('https://www.{0}/api/user/activate'.format(domain),
+                             data={'token': activate_token},
+                             verify=False)
     assert response.status_code == 200, response.text
     smtp.clear()
 

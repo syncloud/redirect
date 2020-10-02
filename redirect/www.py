@@ -90,6 +90,13 @@ def user_set_password():
     return jsonify(success=True, message='Password was set successfully'), 200
 
 
+@app.route('/user/activate', methods=["POST"])
+def user_activate():
+    statsd_client.incr('rest.user.activate')
+    users_manager.activate(request.form)
+    return jsonify(success=True, message='User was activated'), 200
+
+
 @app.route("/user_delete", methods=["POST"])
 @login_required
 def user_delete():

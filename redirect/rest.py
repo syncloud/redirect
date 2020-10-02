@@ -16,14 +16,6 @@ users_manager = the_ioc.users_manager
 app = Flask(__name__)
 
 
-@app.route('/user/activate', methods=["GET"])
-@cross_origin()
-def user_activate():
-    statsd_client.incr('rest.user.activate')
-    users_manager.activate(request.args)
-    return jsonify(success=True, message='User was activated'), 200
-
-
 @app.route('/user/get', methods=["GET"])
 @cross_origin()
 def user_get():

@@ -11,13 +11,15 @@ local build(arch) = {
     steps: [
         {
             name: "build web",
-            image: "jekyll/jekyll:4.1.0",
+            image: "node",
             commands: [
                 "mkdir build",
                 "cd www",
-                "mkdir .jekyll-cache _site",
-                "jekyll build",
-                "cp -r _site ../build/www"
+                "npm install",
+                "npm run test:unit",
+                "npm run lint",
+                "npm run build",
+                "cp -r dist ../build/www"
             ]
         },
         {
