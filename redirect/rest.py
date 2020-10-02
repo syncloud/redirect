@@ -76,14 +76,6 @@ def user_log():
     return jsonify(success=True, message='Error report sent successfully'), 200
 
 
-@app.route('/probe/port', methods=["GET"])
-@cross_origin()
-def probe_port_v1():
-    statsd_client.incr('rest.probe.port_v1')
-    result, status_code = users_manager.port_probe(request.args, request.remote_addr)
-    return result['message'], status_code
-
-
 @app.route('/probe/port_v2', methods=["GET"])
 @cross_origin()
 def probe_port_v2():

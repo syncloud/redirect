@@ -15,7 +15,7 @@ type (
 		DkimKey          *string    `json:"dkim_key,omitempty"`
 		LocalIp          *string    `json:"local_ip,omitempty"`
 		MapLocalAddress  bool       `json:"map_local_address,omitempty"`
-		UpdateToken      *string    `json:"-"`
+		UpdateToken      *string    `json:"update_token,omitempty"`
 		LastUpdate       *time.Time `json:"last_update,omitempty"`
 		DeviceMacAddress *string    `json:"device_mac_address,omitempty"`
 		DeviceName       *string    `json:"device_name,omitempty"`

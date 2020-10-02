@@ -351,7 +351,42 @@ def test_domain_new(domain):
     assert update_token is not None
 
     expected_data = {
-      #  'ip': None,
+        'update_token': update_token,
+        'user_domain': user_domain,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'my-super-board',
+        'device_title': 'My Super Board'
+    }
+
+    data = get_domain(update_token, domain)
+    data.pop('last_update', None)
+    assert expected_data == data
+
+
+def test_domain_new_v2(domain):
+    email = 'test_domain_new_v2@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "test_domain_new_v2"
+    acquire_data = dict(
+        user_domain=user_domain,
+        device_mac_address='00:00:00:00:00:00',
+        device_name='my-super-board',
+        device_title='My Super Board',
+        email=email,
+        password=password)
+    response = requests.post('https://api.{0}/domain/acquire_v2'.format(domain), json=acquire_data,
+                             verify=False)
+
+    assert response.status_code == 200
+    domain_data = json.loads(response.text)['data']
+
+    update_token = domain_data['update_token']
+    assert update_token is not None
+
+    expected_data = {
+        'update_token': update_token,
         'user_domain': user_domain,
         'device_mac_address': '00:00:00:00:00:00',
         'device_name': 'my-super-board',
@@ -397,7 +432,7 @@ def test_domain_existing(domain):
     assert response.status_code == 400
 
     expected_data = {
-    #    'ip': None,
+        'update_token': update_token,
         'user_domain': user_domain,
         'device_mac_address': '00:00:00:00:00:00',
         'device_name': 'my-super-board',
@@ -443,8 +478,8 @@ def test_domain_twice(domain):
     assert update_token1 != update_token2
 
     expected_data = {
-      #  'ip': None,
         'user_domain': user_domain,
+        'update_token': update_token2,
         'device_mac_address': '00:00:00:00:00:11',
         'device_name': 'my-super-board-2',
         'device_title': 'My Super Board 2'
@@ -607,6 +642,7 @@ def test_domain_update_web_updated(domain):
     assert response.status_code == 200
 
     expected_data = {
+        'update_token': update_token,
         'ip': '127.0.0.1',
         'user_domain': user_domain,
         'web_protocol': 'https',
@@ -655,6 +691,7 @@ def test_domain_update_ip_changed(domain):
     assert response.status_code == 200
 
     expected_data = {
+        'update_token': update_token,
         'ip': '127.0.0.2',
         'user_domain': user_domain,
         'device_mac_address': '00:00:00:00:00:00',
@@ -691,6 +728,7 @@ def test_domain_update_platform_version(domain):
     assert response.status_code == 200
 
     expected_data = {
+        'update_token': update_token,
         'platform_version': '366',
         'device_mac_address': '00:00:00:00:00:00',
         'device_name': 'some-device',
@@ -742,6 +780,7 @@ def test_domain_update_local_ip_changed(domain):
     assert response.status_code == 200
 
     expected_data = {
+        'update_token': update_token,
         'ip': '127.0.0.2',
         'local_ip': '192.168.1.6',
         'user_domain': user_domain,
@@ -778,6 +817,7 @@ def test_domain_update_server_side_client_ip(domain):
     assert response.status_code == 200, response.text
 
     expected_data = {
+        'update_token': update_token,
         'user_domain': user_domain,
         'web_protocol': 'http',
         'web_port': 10001,
@@ -816,6 +856,7 @@ def test_domain_update_map_local_address(domain):
     assert response.status_code == 200
 
     expected_data = {
+        'update_token': update_token,
         'ip': '108.108.108.108',
         'local_ip': '192.168.1.2',
         'map_local_address': True,

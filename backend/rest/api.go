@@ -22,10 +22,11 @@ func NewApi(statsdClient *statsd.Client, service *service.Domains) *Api {
 	return &Api{statsdClient, service}
 }
 func (a *Api) Start(socket string) {
-	http.HandleFunc("/status", Handle(a.Status))
-	http.HandleFunc("/domain/update", Handle(a.DomainUpdate))
-	http.HandleFunc("/domain/get", Handle(a.DomainGet))
-	http.HandleFunc("/domain/acquire", a.DomainAcquire)
+	http.HandleFunc("/status", Handle("GET", a.Status))
+	http.HandleFunc("/domain/update", Handle("POST", a.DomainUpdate))
+	http.HandleFunc("/domain/get", Handle("GET", a.DomainGet))
+	http.HandleFunc("/domain/acquire", a.DomainAcquireV1)
+	http.HandleFunc("/domain/acquire_v2", Handle("POST", a.DomainAcquireV2))
 	server := http.Server{}
 	if _, err := os.Stat(socket); err == nil {
 		err := os.Remove(socket)
@@ -81,10 +82,9 @@ func ErrorToResponse(err error) (Response, int) {
 	response.Message = err.Error()
 	return response, statusCode
 }
-func success(w http.ResponseWriter, message string, data interface{}) {
+func success(w http.ResponseWriter, data interface{}) {
 	response := Response{
 		Success: true,
-		Message: message,
 		Data:    &data,
 	}
 	responseJson, err := json.Marshal(response)
@@ -95,26 +95,29 @@ func success(w http.ResponseWriter, message string, data interface{}) {
 	}
 }
 
-func Handle(f func(req *http.Request) (string, interface{}, error)) func(w http.ResponseWriter, req *http.Request) {
+func Handle(method string, f func(req *http.Request) (interface{}, error)) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
-		message, data, err := f(req)
+		if req.Method != method {
+			fail(w, errors.New(fmt.Sprintf("wrong method %s, should be POST", req.Method)))
+		}
+		data, err := f(req)
 		if err != nil {
 			fail(w, err)
 		} else {
-			success(w, message, data)
+			success(w, data)
 		}
 	}
 }
 
-func (a *Api) Status(req *http.Request) (string, interface{}, error) {
+func (a *Api) Status(req *http.Request) (interface{}, error) {
 	if req.Method != "GET" {
-		return "", nil, errors.New(fmt.Sprintf("wrong method %s, should be GET", req.Method))
+		return nil, errors.New(fmt.Sprintf("wrong method %s, should be GET", req.Method))
 	}
-	return "Up and running", "OK", nil
+	return "OK", nil
 }
 
-func (a *Api) DomainAcquire(w http.ResponseWriter, req *http.Request) {
+func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 	a.statsdClient.Incr("rest.domain.acquire", 1)
 	err := req.ParseForm()
 	if err != nil {
@@ -127,21 +130,6 @@ func (a *Api) DomainAcquire(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	request := model.DomainAcquireRequest{}
-	/*
-		//TODO: migrate me to json request
-		err = json.NewDecoder(req.Body).Decode(&request)
-		if err != nil {
-			log.Println("unable to parse domain acquire request", err)
-			if e, ok := err.(*json.SyntaxError); ok {
-				log.Println("json error at", e.Offset)
-				body, err := ioutil.ReadAll(req.Body)
-				if err == nil {
-					log.Printf("json %s", body)
-				}
-			}
-			return "", nil, errors.New("invalid request")
-		}
-	*/
 	if userDomain := req.PostForm.Get("user_domain"); userDomain != "" {
 		request.UserDomain = &userDomain
 	}
@@ -165,7 +153,6 @@ func (a *Api) DomainAcquire(w http.ResponseWriter, req *http.Request) {
 		fail(w, err)
 		return
 	}
-	//TODO: migrate response to generic response with data
 	response := DomainAcquireResponse{
 		Success:     true,
 		UpdateToken: *domain.UpdateToken,
@@ -181,39 +168,48 @@ func (a *Api) DomainAcquire(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (a *Api) DomainUpdate(req *http.Request) (string, interface{}, error) {
-	a.statsdClient.Incr("rest.domain.update", 1)
-	if req.Method != "POST" {
-		return "", nil, errors.New(fmt.Sprintf("wrong method %s, should be POST", req.Method))
+func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.domain.acquire", 1)
+	request := model.DomainAcquireRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse domain acquire request", err)
+		return nil, errors.New("invalid request")
 	}
+	domain, err := a.service.DomainAcquire(request)
+	if err != nil {
+		return nil, err
+	}
+	return domain, nil
+}
+
+func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.domain.update", 1)
 	request := model.DomainUpdateRequest{MapLocalAddress: false}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
 		log.Println("unable to parse domain update request", err)
-		return "", nil, errors.New("invalid request")
+		return nil, errors.New("invalid request")
 	}
 	domain, err := a.service.Update(request, a.requestIp(req))
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
-	return "Domain was updated", domain, nil
+	return domain, nil
 }
 
-func (a *Api) DomainGet(req *http.Request) (string, interface{}, error) {
+func (a *Api) DomainGet(req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.get", 1)
-	if req.Method != "GET" {
-		return "", nil, errors.New(fmt.Sprintf("wrong method %s, should be GET", req.Method))
-	}
 	keys, ok := req.URL.Query()["token"]
 	if !ok {
-		return "", nil, errors.New("no token")
+		return nil, errors.New("no token")
 	}
 
 	domain, err := a.service.GetDomain(keys[0])
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
-	return "Domain retrieved", domain, nil
+	return domain, nil
 }
 
 func (a *Api) requestIp(req *http.Request) *string {
