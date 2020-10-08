@@ -12,7 +12,7 @@ CREATE TABLE `premium_account` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `user_id` integer NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user(id)
-)
+);
 
 CREATE TABLE `domain` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
