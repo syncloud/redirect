@@ -21,36 +21,58 @@ func TestEmailInvalid(t *testing.T) {
 
 func TestNewUserDomainMissing(t *testing.T) {
 
-	request := model.DomainAcquireRequest{}
-
 	validator := NewValidator()
-	result := validator.newUserDomain(request.UserDomain)
+	result := validator.newUserDomain(nil)
 	assert.Equal(t, len(validator.errors), 1)
 	assert.Nil(t, result)
 }
 
 func TestNewUserDomainInvalid(t *testing.T) {
 	domain := "user.name"
-	request := model.DomainAcquireRequest{UserDomain: &domain}
 	validator := NewValidator()
-	_ = validator.newUserDomain(request.UserDomain)
+	_ = validator.newUserDomain(&domain)
+	assert.Equal(t, len(validator.errors), 1)
+}
+
+func TestNewDomainMissing(t *testing.T) {
+	validator := NewValidator()
+	result := validator.newDomain(nil, "")
+	assert.Equal(t, len(validator.errors), 1)
+	assert.Nil(t, result)
+}
+
+func TestNewDomainInvalid(t *testing.T) {
+	domain := "-domain.com"
+	validator := NewValidator()
+	_ = validator.newDomain(&domain, "")
+	assert.Equal(t, len(validator.errors), 1)
+}
+
+func TestNewDomainValid(t *testing.T) {
+	domain := "domain.com"
+	validator := NewValidator()
+	_ = validator.newDomain(&domain, "")
+	assert.Equal(t, len(validator.errors), 0)
+}
+func TestNewDomainOurDomain(t *testing.T) {
+	domain := "syncloud.it"
+	validator := NewValidator()
+	_ = validator.newDomain(&domain, "syncloud.it")
 	assert.Equal(t, len(validator.errors), 1)
 }
 
 func TestUserDomainShort(t *testing.T) {
 	domain := "use"
-	request := model.DomainAcquireRequest{UserDomain: &domain}
 	validator := NewValidator()
-	_ = validator.newUserDomain(request.UserDomain)
+	_ = validator.newUserDomain(&domain)
 	assert.Equal(t, len(validator.errors), 1)
 }
 
 func TestUserDomainLong(t *testing.T) {
 
 	domain := "12345678901234567890123456789012345678901234567890_"
-	request := model.DomainAcquireRequest{UserDomain: &domain}
 	validator := NewValidator()
-	_ = validator.newUserDomain(request.UserDomain)
+	_ = validator.newUserDomain(&domain)
 	assert.Equal(t, len(validator.errors), 1)
 }
 

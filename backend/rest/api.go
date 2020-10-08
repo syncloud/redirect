@@ -183,6 +183,21 @@ func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
 	return domain, nil
 }
 
+func (a *Api) CustomDomainAcquire(req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.custom.domain.acquire", 1)
+	request := model.CustomDomainAcquireRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse custom domain acquire request", err)
+		return nil, errors.New("invalid request")
+	}
+	domain, err := a.service.CustomDomainAcquire(request)
+	if err != nil {
+		return nil, err
+	}
+	return domain, nil
+}
+
 func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.update", 1)
 	request := model.DomainUpdateRequest{MapLocalAddress: false}

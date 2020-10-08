@@ -56,7 +56,6 @@ func (mysql *MySql) GetUser(id uint64) (*model.User, error) {
 
 }
 
-//TODO: query builder?
 func (mysql *MySql) GetUserByEmail(email string) (*model.User, error) {
 	row := mysql.db.QueryRow(
 		"SELECT "+
@@ -84,6 +83,29 @@ func (mysql *MySql) GetUserByEmail(email string) (*model.User, error) {
 	}
 
 	return user, nil
+}
+
+func (mysql *MySql) GetPremiumAccount(userId uint64) (*model.PremiumAccount, error) {
+	row := mysql.db.QueryRow(
+		"SELECT "+
+			"id, "+
+			"user_id "+
+			"FROM premium_user "+
+			"WHERE user_id = ?", userId)
+
+	account := &model.PremiumAccount{}
+	err := row.Scan(&account.Id, &account.UserId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			log.Println("Cannot scan an account: ", account, err)
+			return nil, fmt.Errorf("DB error")
+		}
+	}
+
+	return account, nil
 }
 
 func (mysql *MySql) GetDomainByToken(token string) (*model.Domain, error) {

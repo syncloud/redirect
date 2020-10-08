@@ -56,6 +56,21 @@ func (v *Validator) newUserDomain(userDomain *string) *string {
 	return userDomain
 }
 
+func (v *Validator) newDomain(domain *string, ourDomain string) *string {
+	if domain == nil {
+		v.addFieldError("domain", "Missing")
+		return nil
+	}
+	var valid = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$`)
+	if !valid.MatchString(*domain) {
+		v.addFieldError("domain", "Invalid domain name")
+	}
+	if *domain == ourDomain {
+		v.addFieldError("domain", "Cannot use Syncloud domain")
+	}
+	return domain
+}
+
 func (v *Validator) userDomain(userDomain *string) {
 	if userDomain == nil {
 		v.addFieldError("user_domain", "Missing")

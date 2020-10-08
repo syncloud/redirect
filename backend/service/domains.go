@@ -104,6 +104,68 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest) (*model.Doma
 	return domain, nil
 }
 
+func (d *Domains) CustomDomainAcquire(request model.CustomDomainAcquireRequest) (*model.Domain, error) {
+
+	user, err := d.users.Authenticate(request.Email, request.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := d.db.GetPremiumAccount(user.Id)
+	if err != nil {
+		return nil, err
+	}
+	if account == nil {
+		return nil, &model.ServiceError{fmt.Errorf("Your account does not have a premium service activated, please contuct support")}
+	}
+	validator := NewValidator()
+	_ = validator.newDomain(request.Password, d.domain)
+	if validator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	}
+
+	/*domain, err := d.db.GetDomainByUserDomain(*userDomain)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("domain: %v, user: %v\n", domain, user)
+	if domain != nil && domain.UserId != user.Id {
+		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
+			Parameter: "user_domain", Messages: []string{"User domain name is already in use"},
+		}}}
+	}
+	updateToken := utils.Uuid()
+	log.Println("uuid", updateToken)
+	if domain == nil {
+		domain = &model.Domain{
+			UserDomain:       *userDomain,
+			DeviceMacAddress: deviceMacAddress,
+			DeviceName:       request.DeviceName,
+			DeviceTitle:      request.DeviceTitle,
+			UpdateToken:      &updateToken,
+			UserId:           user.Id,
+		}
+		err := d.db.InsertDomain(domain)
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+		domain.UpdateToken = &updateToken
+		domain.DeviceMacAddress = deviceMacAddress
+		domain.DeviceName = request.DeviceName
+		domain.DeviceTitle = request.DeviceTitle
+
+		err := d.db.UpdateDomain(domain)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	log.Println("domain acquired")*/
+	return nil, nil
+}
+
 func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (*model.Domain, error) {
 	validator := NewValidator()
 	validator.Token(request.Token)

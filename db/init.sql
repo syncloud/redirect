@@ -8,6 +8,12 @@ CREATE TABLE `user` (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE `premium_account` (
+  `id` integer PRIMARY KEY AUTO_INCREMENT,
+  `user_id` integer NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user(id)
+)
+
 CREATE TABLE `domain` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `user_domain` varchar(100) NOT NULL UNIQUE,
