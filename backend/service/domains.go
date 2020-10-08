@@ -116,53 +116,46 @@ func (d *Domains) CustomDomainAcquire(request model.CustomDomainAcquireRequest) 
 		return nil, err
 	}
 	if account == nil {
-		return nil, &model.ServiceError{fmt.Errorf("Your account does not have a premium service activated, please contuct support")}
+		return nil, &model.ServiceError{InternalError: fmt.Errorf("Your account does not have a premium service activated, please contuct support")}
 	}
 	validator := NewValidator()
-	_ = validator.newDomain(request.Password, d.domain)
+	newDomain := validator.newDomain(request.Password, d.domain)
 	if validator.HasErrors() {
 		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
 	}
 
-	/*domain, err := d.db.GetDomainByUserDomain(*userDomain)
+	domain, err := d.db.GetCustomDomainByDomain(*newDomain)
 	if err != nil {
 		return nil, err
 	}
 	log.Printf("domain: %v, user: %v\n", domain, user)
 	if domain != nil && domain.UserId != user.Id {
 		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
-			Parameter: "user_domain", Messages: []string{"User domain name is already in use"},
+			Parameter: "domain", Messages: []string{"Domain name is already in use"},
 		}}}
 	}
+	//d.amazonDns.UpdateDomain()
 	updateToken := utils.Uuid()
 	log.Println("uuid", updateToken)
 	if domain == nil {
-		domain = &model.Domain{
-			UserDomain:       *userDomain,
-			DeviceMacAddress: deviceMacAddress,
-			DeviceName:       request.DeviceName,
-			DeviceTitle:      request.DeviceTitle,
-			UpdateToken:      &updateToken,
-			UserId:           user.Id,
+		domain = &model.CustomDomain{
+			Domain:      *newDomain,
+			UpdateToken: &updateToken,
+			UserId:      user.Id,
 		}
-		err := d.db.InsertDomain(domain)
+		err := d.db.InsertCustomDomain(domain)
 		if err != nil {
 			return nil, err
 		}
-
 	} else {
 		domain.UpdateToken = &updateToken
-		domain.DeviceMacAddress = deviceMacAddress
-		domain.DeviceName = request.DeviceName
-		domain.DeviceTitle = request.DeviceTitle
-
-		err := d.db.UpdateDomain(domain)
+		err := d.db.UpdateCustomDomain(domain)
 		if err != nil {
 			return nil, err
 		}
-
 	}
-	log.Println("domain acquired")*/
+
+	log.Println("custom domain acquired")
 	return nil, nil
 }
 

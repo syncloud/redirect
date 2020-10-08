@@ -36,6 +36,20 @@ CREATE TABLE `domain` (
   FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
+CREATE TABLE `custom_domain` (
+  `id` integer PRIMARY KEY AUTO_INCREMENT,
+  `domain` varchar(100) NOT NULL UNIQUE,
+  `ip` varchar(45),
+  `ipv6` varchar(45),
+  `dkim_key` varchar(256),
+  `update_token` char(36) UNIQUE,
+  `user_id` integer NOT NULL,
+  `port` integer,
+  `last_update` DATETIME NULL,
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
 CREATE TABLE `action_type` (
   `id` integer PRIMARY KEY,
   `name` varchar(100) NOT NULL

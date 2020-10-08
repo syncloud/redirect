@@ -230,6 +230,46 @@ func (mysql *MySql) GetDomainByUserDomain(userDomain string) (*model.Domain, err
 	return domain, nil
 }
 
+func (mysql *MySql) GetCustomDomainByDomain(newDomain string) (*model.CustomDomain, error) {
+	row := mysql.db.QueryRow(
+		"SELECT "+
+			"id, "+
+			"domain, "+
+			"ip, "+
+			"ipv6, "+
+			"dkim_key, "+
+			"update_token, "+
+			"user_id, "+
+			"port, "+
+			"last_update, "+
+			"hosted_zone_id, "+
+			"FROM custom_domain "+
+			"WHERE domain = ?", newDomain)
+
+	domain := &model.CustomDomain{}
+	err := row.Scan(
+		&domain.Id,
+		&domain.Domain,
+		&domain.Ip,
+		&domain.Ipv6,
+		&domain.DkimKey,
+		&domain.UpdateToken,
+		&domain.UserId,
+		&domain.Port,
+		&domain.LastUpdate,
+		&domain.HostedZoneId,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			log.Println("Cannot scan custom domain: ", domain, err)
+			return nil, fmt.Errorf("DB error")
+		}
+	}
+	return domain, nil
+}
+
 func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"UPDATE domain SET " +
@@ -281,6 +321,41 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 	return nil
 }
 
+func (mysql *MySql) UpdateCustomDomain(domain *model.CustomDomain) error {
+	stmt, err := mysql.db.Prepare(
+		"UPDATE custom_domain SET " +
+			"domain = ?, " +
+			"ip = ?, " +
+			"ipv6 = ?, " +
+			"dkim_key = ?, " +
+			"update_token = ?, " +
+			"user_id = ?, " +
+			"port = ?, " +
+			"last_update = ? " +
+			"WHERE id = ?")
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	_, err = stmt.Exec(
+		domain.Domain,
+		domain.Ip,
+		domain.Ipv6,
+		domain.DkimKey,
+		domain.UpdateToken,
+		domain.UserId,
+		domain.Port,
+		domain.LastUpdate,
+		domain.Id,
+	)
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	defer stmt.Close()
+	return nil
+}
+
 func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"INSERT into domain (" +
@@ -303,6 +378,32 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 		domain.DeviceMacAddress,
 		domain.DeviceName,
 		domain.DeviceTitle,
+		domain.LastUpdate,
+	)
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	defer stmt.Close()
+	return nil
+}
+
+func (mysql *MySql) InsertCustomDomain(domain *model.CustomDomain) error {
+	stmt, err := mysql.db.Prepare(
+		"INSERT into custom_domain (" +
+			"domain, " +
+			"update_token, " +
+			"user_id, " +
+			"last_update" +
+			") values (?,?,?,?)")
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	_, err = stmt.Exec(
+		domain.Domain,
+		domain.UpdateToken,
+		domain.UserId,
 		domain.LastUpdate,
 	)
 	if err != nil {
