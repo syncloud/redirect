@@ -27,6 +27,7 @@ func (a *Api) Start(socket string) {
 	http.HandleFunc("/domain/get", Handle("GET", a.DomainGet))
 	http.HandleFunc("/domain/acquire", a.DomainAcquireV1)
 	http.HandleFunc("/domain/acquire_v2", Handle("POST", a.DomainAcquireV2))
+	http.HandleFunc("/domain/acquire_custom", Handle("POST", a.CustomDomainAcquire))
 	server := http.Server{}
 	if _, err := os.Stat(socket); err == nil {
 		err := os.Remove(socket)

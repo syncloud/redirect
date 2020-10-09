@@ -11,14 +11,15 @@ import (
 )
 
 type Domains struct {
-	amazonDns dns.Dns
-	db        *db.MySql
-	domain    string
-	users     *Users
+	amazonDns    dns.Dns
+	db           *db.MySql
+	domain       string
+	users        *Users
+	hostedZoneId string
 }
 
-func NewDomains(dnsImpl dns.Dns, db *db.MySql, domain string, users *Users) *Domains {
-	return &Domains{amazonDns: dnsImpl, db: db, domain: domain, users: users}
+func NewDomains(dnsImpl dns.Dns, db *db.MySql, domain string, users *Users, hostedZoneId string) *Domains {
+	return &Domains{amazonDns: dnsImpl, db: db, domain: domain, users: users, hostedZoneId: hostedZoneId}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
@@ -116,7 +117,11 @@ func (d *Domains) CustomDomainAcquire(request model.CustomDomainAcquireRequest) 
 		return nil, err
 	}
 	if account == nil {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("Your account does not have a premium service activated, please contuct support")}
+		return nil, &model.ServiceError{
+			InternalError: fmt.Errorf(
+				"your account does not have a premium service activated, please contact support",
+			),
+		}
 	}
 	validator := NewValidator()
 	newDomain := validator.newDomain(request.Password, d.domain)
@@ -134,7 +139,25 @@ func (d *Domains) CustomDomainAcquire(request model.CustomDomainAcquireRequest) 
 			Parameter: "domain", Messages: []string{"Domain name is already in use"},
 		}}}
 	}
-	//d.amazonDns.UpdateDomain()
+	if domain.HostedZoneId == nil {
+		activeDomains, err := d.db.GetActiveCustomDomains(user.Id)
+		if err != nil {
+			return nil, err
+		}
+		if len(activeDomains) > 0 {
+			return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
+				Parameter: "domain", Messages: []string{"You already have an existing domain"},
+			}}}
+		}
+		hostedZoneId, err := d.amazonDns.CreateHostedZone(domain.Domain)
+		domain.HostedZoneId = hostedZoneId
+	}
+
+	err = d.amazonDns.UpdateDomain(domain.Domain, domain.Ip, domain.Ipv6, domain.DkimKey, *domain.HostedZoneId)
+	if err != nil {
+		return nil, err
+	}
+
 	updateToken := utils.Uuid()
 	log.Println("uuid", updateToken)
 	if domain == nil {
@@ -207,7 +230,11 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	domain.WebPort = webPort
 
 	if changed {
-		err := d.amazonDns.UpdateDomain(d.domain, domain)
+		fullDomain := domain.DnsName(d.domain)
+		ipv4 := domain.DnsIpv4()
+		ipv6 := domain.DnsIpv6()
+		dkim := domain.DkimKey
+		err := d.amazonDns.UpdateDomain(fullDomain, ipv4, ipv6, dkim, d.hostedZoneId)
 		if err != nil {
 			return nil, err
 		}

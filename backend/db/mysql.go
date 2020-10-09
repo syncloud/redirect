@@ -270,6 +270,55 @@ func (mysql *MySql) GetCustomDomainByDomain(newDomain string) (*model.CustomDoma
 	return domain, nil
 }
 
+func (mysql *MySql) GetActiveCustomDomains(userId uint64) ([]*model.CustomDomain, error) {
+	rows, err := mysql.db.Query(
+		"SELECT "+
+			"id, "+
+			"domain, "+
+			"ip, "+
+			"ipv6, "+
+			"dkim_key, "+
+			"update_token, "+
+			"user_id, "+
+			"port, "+
+			"last_update, "+
+			"hosted_zone_id, "+
+			"FROM custom_domain "+
+			"WHERE is not null and user_id = ?", userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []*model.CustomDomain
+	for rows.Next() {
+		domain := &model.CustomDomain{}
+		err := rows.Scan(
+			&domain.Id,
+			&domain.Domain,
+			&domain.Ip,
+			&domain.Ipv6,
+			&domain.DkimKey,
+			&domain.UpdateToken,
+			&domain.UserId,
+			&domain.Port,
+			&domain.LastUpdate,
+			&domain.HostedZoneId,
+		)
+		if err != nil {
+			log.Println("Cannot scan custom domains: ", domain, err)
+			return nil, fmt.Errorf("DB error")
+		}
+		results = append(results, domain)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Println("Cannot scan custom domains: ", err)
+		return nil, fmt.Errorf("DB error")
+	}
+
+	return results, nil
+}
+
 func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"UPDATE domain SET " +

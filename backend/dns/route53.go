@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/smira/go-statsd"
-	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/utils"
 )
 
 var defaultIpv4 string
@@ -26,7 +26,8 @@ func init() {
 }
 
 type Dns interface {
-	UpdateDomain(mainDomain string, domain *model.Domain) error
+	UpdateDomain(domain string, ipv4 *string, ipv6 *string, dkim *string, hostedZoneId string) error
+	CreateHostedZone(domain string) (*string, error)
 }
 
 type AmazonDns struct {
@@ -34,10 +35,9 @@ type AmazonDns struct {
 	statsdClient    *statsd.Client
 	accessKeyId     string
 	secretAccessKey string
-	hostedZoneId    string
 }
 
-func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string, hostedZoneId string) *AmazonDns {
+func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string) *AmazonDns {
 	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(accessKeyId, secretAccessKey, "")}))
 	client := route53.New(mySession)
 	return &AmazonDns{
@@ -45,22 +45,31 @@ func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string
 		statsdClient,
 		accessKeyId,
 		secretAccessKey,
-		hostedZoneId,
 	}
 }
 
-func (a *AmazonDns) UpdateDomain(mainDomain string, domain *model.Domain) error {
-	fullDomain := domain.DnsName(mainDomain)
-	ipv4 := domain.DnsIpv4()
-	ipv6 := domain.DnsIpv6()
+func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
+	input := route53.CreateHostedZoneInput{
+		Name:            &domain,
+		CallerReference: aws.String(utils.Uuid()),
+	}
+	result, err := a.client.CreateHostedZone(&input)
+	if err != nil {
+		a.statsdClient.Incr("dns.zone.error", 1)
+		return nil, err
+	}
+	a.statsdClient.Incr("dns.zone.create", 1)
+	return result.HostedZone.Id, nil
+}
+
+func (a *AmazonDns) UpdateDomain(domain string, ipv4 *string, ipv6 *string, dkim *string, hostedZoneId string) error {
 	spf := "\"v=spf1 a mx -all\""
-	mx := fmt.Sprintf("1 %s", fullDomain)
-	dkim := domain.DkimKey
-	err := a.deleteDomain(fullDomain, a.hostedZoneId)
+	mx := fmt.Sprintf("1 %s", domain)
+	err := a.deleteDomain(domain, hostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(fullDomain, ipv4, ipv6, dkim, spf, mx, "CREATE", a.hostedZoneId)
+	err = a.actionDomain(domain, ipv4, ipv6, dkim, spf, mx, "CREATE", hostedZoneId)
 	if err != nil {
 		return err
 	}
@@ -116,7 +125,6 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 	var changes []*route53.Change
 
 	if ipv6 != nil {
-
 		changes = append(changes, a.changeAAAA(*ipv6, domain, action))
 		changes = append(changes, a.changeAAAA(*ipv6, fmt.Sprintf("*.%s", domain), action))
 	}

@@ -15,6 +15,6 @@ type (
 		LastUpdate   *time.Time `json:"last_update,omitempty"`
 		Port         *int       `json:"port,omitempty"`
 		UserId       uint64     `json:"-"`
-		HostedZoneId uint64     `json:"-"`
+		HostedZoneId *string    `json:"-"`
 	}
 )

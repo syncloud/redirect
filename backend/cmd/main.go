@@ -27,10 +27,10 @@ func main() {
 		statsd.MaxPacketSize(1400),
 		statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
 
-	dnsImp := dns.New(statsdClient, config.AwsAccessKeyId(), config.AwsSecretAccessKey(), config.AwsHostedZoneId())
+	dnsImp := dns.New(statsdClient, config.AwsAccessKeyId(), config.AwsSecretAccessKey())
 
 	users := service.NewUsers(database)
-	domains := service.NewDomains(dnsImp, database, config.Domain(), users)
+	domains := service.NewDomains(dnsImp, database, config.Domain(), users, config.AwsHostedZoneId())
 
 	api := rest.NewApi(statsdClient, domains)
 	api.Start(config.GetApiSocket())
