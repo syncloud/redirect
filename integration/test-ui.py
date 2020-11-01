@@ -35,7 +35,6 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
 
 
 def test_start(module_setup, device_host, domain, driver):
-    driver.implicitly_wait(10) 
     check_output('apt-get update', shell=True)
     check_output('apt-get install -y mysql-client', shell=True)
     add_host_alias_by_ip('app', 'www', device_host, domain)
@@ -115,9 +114,8 @@ def test_devices(driver, ui_mode, screenshot_dir):
 
 
 def test_password_reset(driver, ui_mode, screenshot_dir):
-    driver.implicitly_wait(20) 
     menu(driver, ui_mode)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'logout')))
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.element_to_be_clickable((By.ID, 'logout')))
     screenshots(driver, screenshot_dir, 'logout-' + ui_mode)
     logout = driver.find_element_by_id('logout')
     logout.click()
