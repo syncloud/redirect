@@ -96,19 +96,19 @@ def test_login(driver, ui_mode, screenshot_dir):
     screenshots(driver, screenshot_dir, 'login-credentials-' + ui_mode)
     password.send_keys(Keys.RETURN)
     screenshots(driver, screenshot_dir, 'login-progress-' + ui_mode)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'no_domains')))
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'no_domains')))
     screenshots(driver, screenshot_dir, 'default-' + ui_mode)
     assert "You do not have any activated devices" in driver.page_source.encode("utf-8")
 
 
 def test_devices(driver, ui_mode, screenshot_dir):
     menu(driver, ui_mode)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'devices')))
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.element_to_be_clickable((By.ID, 'devices')))
     devices = driver.find_element_by_id('devices')
     devices.click()
     menu(driver, ui_mode)
 
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'no_domains')))
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'no_domains')))
     screenshots(driver, screenshot_dir, 'devices-' + ui_mode)
     assert "You do not have any activated devices" in driver.page_source.encode("utf-8")
 
@@ -161,7 +161,7 @@ def test_account(driver, ui_mode, screenshot_dir):
 
 
 def wait_or_screenshot(driver, ui_mode, screenshot_dir, method):
-    wait_driver = WebDriverWait(driver, 10)
+    wait_driver = WebDriverWait(driver, 30)
     try:
         wait_driver.until(method)
     except Exception as e:
