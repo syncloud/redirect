@@ -115,6 +115,7 @@ def test_devices(driver, ui_mode, screenshot_dir):
 
 
 def test_password_reset(driver, ui_mode, screenshot_dir):
+    driver.implicitly_wait(20) 
     menu(driver, ui_mode)
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'logout')))
     screenshots(driver, screenshot_dir, 'logout-' + ui_mode)
