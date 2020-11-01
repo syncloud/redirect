@@ -34,7 +34,8 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
     request.addfinalizer(module_teardown)
 
 
-def test_start(module_setup, device_host, domain):
+def test_start(module_setup, device_host, domain, driver):
+    driver.implicitly_wait(10) 
     check_output('apt-get update', shell=True)
     check_output('apt-get install -y mysql-client', shell=True)
     add_host_alias_by_ip('app', 'www', device_host, domain)
@@ -163,10 +164,8 @@ def test_account(driver, ui_mode, screenshot_dir):
 def wait_or_screenshot(driver, ui_mode, screenshot_dir, method):
     wait_driver = WebDriverWait(driver, 10)
     try:
-        print('browser url: ' + driver.current_url)
         wait_driver.until(method)
     except Exception as e:
-        print('browser url: ' + driver.current_url)
         screenshots(driver, screenshot_dir, 'exception-' + ui_mode)
         raise e
 
