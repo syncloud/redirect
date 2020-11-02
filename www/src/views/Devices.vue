@@ -114,18 +114,18 @@ function fullUrl (address, port) {
   return result
 }
 
-function niceTimestamp (ds) {
+function niceTimestamp (ds, today) {
   if (ds === null) {
     return 'never'
   }
   const d = new Date(Date.parse(ds))
-  const today = new Date()
   const isSameDay = sameDay(today, d)
-  let dateFormat = 'MMM d, yyyy'
+  let momentDate = moment(d);
   if (isSameDay) {
-    dateFormat = '"Today" hh:mm'
+    return 'Today ' + momentDate.format('H:mm')
+  } else {
+    return momentDate.format('MMM D, yyyy')
   }
-  return moment(d).format(dateFormat)
 }
 
 function online (ds) {
@@ -151,7 +151,7 @@ function convert (domain) {
   domain.ipv6_address = 'https://[' + domain.ipv6 + ']'
   domain.has_ipv6_address = domain.ipv6 !== null
   domain.online = online(domain.last_update)
-  domain.nice_last_update = niceTimestamp(domain.last_update)
+  domain.nice_last_update = niceTimestamp(domain.last_update, new Date())
   return domain
 }
 
@@ -170,6 +170,9 @@ export default {
     this.reload()
   },
   methods: {
+    timestamp: function (ds, today) {
+      return niceTimestamp(ds, today)
+    },
     reload: function () {
       axios.get('/api/user/get')
         .then(response => {
