@@ -6,6 +6,7 @@
 import axios from 'axios'
 import Menu from '@/components/Menu'
 
+// TODO: migrate to any Material Design UI frameworks for Vue v3 when they become available.
 global.jQuery = require('jquery')
 var $ = global.jQuery
 window.jQuery = window.$ = $
