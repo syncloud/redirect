@@ -166,8 +166,6 @@ def menu(driver, ui_mode, screenshot_dir, element_id):
                 navbar = driver.find_element_by_id('navbar')
                 navbar.click()
         except Exception as e:
-            retry += 1
-            print('error (attempt {0}/{1}): {2}'.format(retry, retries, e.message))
+            print('error (attempt {0}/{1}): {2}'.format(retry + 1, retries, e.message))
             time.sleep(1)
-
-
+        retry += 1
