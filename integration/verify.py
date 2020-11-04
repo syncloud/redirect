@@ -879,3 +879,7 @@ def test_status(domain):
     assert response.status_code == 200
     assert 'OK' in response.text
 
+
+def test_backup(device):
+    device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
+
