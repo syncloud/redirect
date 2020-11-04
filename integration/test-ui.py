@@ -1,3 +1,4 @@
+import time
 from os.path import dirname
 from subprocess import check_output
 
@@ -55,10 +56,7 @@ def test_index(driver, screenshot_dir, ui_mode, domain):
 
 
 def test_register(driver, ui_mode, screenshot_dir):
-    menu(driver, ui_mode)
-    register = driver.find_element_by_id('register')
-    register.click()
-    menu(driver, ui_mode)
+    menu(driver, ui_mode, screenshot_dir, 'register')
 
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'register_email')))
     screenshots(driver, screenshot_dir, 'register-' + ui_mode)
@@ -80,11 +78,7 @@ def test_register(driver, ui_mode, screenshot_dir):
 
 
 def test_login(driver, ui_mode, screenshot_dir):
-    menu(driver, ui_mode)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'login')))
-    login = driver.find_element_by_id('login')
-    login.click()
-    menu(driver, ui_mode)
+    menu(driver, ui_mode, screenshot_dir, 'login')
 
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'email')))
 
@@ -102,11 +96,7 @@ def test_login(driver, ui_mode, screenshot_dir):
 
 
 def test_devices(driver, ui_mode, screenshot_dir):
-    menu(driver, ui_mode)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.element_to_be_clickable((By.ID, 'devices')))
-    devices = driver.find_element_by_id('devices')
-    devices.click()
-    menu(driver, ui_mode)
+    menu(driver, ui_mode, screenshot_dir, 'devices')
 
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'no_domains')))
     screenshots(driver, screenshot_dir, 'devices-' + ui_mode)
@@ -114,12 +104,7 @@ def test_devices(driver, ui_mode, screenshot_dir):
 
 
 def test_password_reset(driver, ui_mode, screenshot_dir):
-    menu(driver, ui_mode)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.element_to_be_clickable((By.ID, 'logout')))
-    screenshots(driver, screenshot_dir, 'logout-' + ui_mode)
-    logout = driver.find_element_by_id('logout')
-    logout.click()
-    menu(driver, ui_mode)
+    menu(driver, ui_mode, screenshot_dir, 'logout')
 
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'forgot')))
     forgot = driver.find_element_by_id('forgot')
@@ -148,11 +133,7 @@ def test_password_reset(driver, ui_mode, screenshot_dir):
 
 
 def test_account(driver, ui_mode, screenshot_dir):
-    menu(driver, ui_mode)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'account')))
-    account = driver.find_element_by_id('account')
-    account.click()
-    menu(driver, ui_mode)
+    menu(driver, ui_mode, screenshot_dir, 'account')
 
     delete_btn_xpath = "//button[text()='Delete']"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, delete_btn_xpath)))
@@ -169,7 +150,24 @@ def wait_or_screenshot(driver, ui_mode, screenshot_dir, method):
         raise e
 
 
-def menu(driver, ui_mode):
-    if ui_mode == "mobile":
-        navbar = driver.find_element_by_id('navbar')
-        navbar.click()
+def menu(driver, ui_mode, screenshot_dir, element_id):
+    retries = 5
+    retry = 0
+    while retry < retries:
+        try:
+            if ui_mode == "mobile":
+                navbar = driver.find_element_by_id('navbar')
+                navbar.click()
+            wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.element_to_be_clickable((By.ID, element_id)))
+            screenshots(driver, screenshot_dir, element_id + '-' + ui_mode)
+            element = driver.find_element_by_id(element_id)
+            element.click()
+            if ui_mode == "mobile":
+                navbar = driver.find_element_by_id('navbar')
+                navbar.click()
+        except Exception as e:
+            retry += 1
+            print('error (attempt {0}/{1}): {2}'.format(retry, retries, e.message))
+            time.sleep(1)
+
+
