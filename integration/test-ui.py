@@ -165,6 +165,7 @@ def menu(driver, ui_mode, screenshot_dir, element_id):
             if ui_mode == "mobile":
                 navbar = driver.find_element_by_id('navbar')
                 navbar.click()
+            return
         except Exception as e:
             print('error (attempt {0}/{1}): {2}'.format(retry + 1, retries, e.message))
             time.sleep(1)
