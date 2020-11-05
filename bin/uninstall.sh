@@ -6,4 +6,5 @@ service apache2 restart
 
 systemctl stop redirect
 systemctl disable redirect
+crontab -r
 rm /lib/systemd/system/redirect.service
