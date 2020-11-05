@@ -48,7 +48,7 @@ def test_start(module_setup, device, device_host, domain, build_number):
     device.run_ssh('mkdir {0}'.format(TMP_DIR))
     device.run_ssh("snap remove platform")
     device.run_ssh("apt-get update")
-    device.run_ssh("apt-get install -y default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(TMP_DIR))
+    device.run_ssh("apt-get install -y mysql-client default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(TMP_DIR))
     device.scp_to_device("fakecertificate.sh", "/")
     device.run_ssh("/fakecertificate.sh")
     device.scp_to_device("../artifact/redirect-{0}.tar.gz".format(build_number), "/")
