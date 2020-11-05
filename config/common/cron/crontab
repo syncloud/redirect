@@ -1,1 +1,2 @@
 0 23 * * * /var/www/redirect/current/bin/redirectdb backup redirect /home/redirect/database-backup.sql> /home/redirect/backupdb.log 2>&1
+
