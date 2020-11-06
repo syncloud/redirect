@@ -31,6 +31,6 @@ a2enmod proxy
 a2enmod proxy_http
 echo "export SYNCLOUD_DOMAIN=${SYNCLOUD_DOMAIN}" >> /etc/apache2/envvars
 grep SYNCLOUD_DOMAIN /etc/apache2/envvars
-crontab ${CURRENT}/config/common/cron/crontab
-crontab -l
+crontab -u redirect ${CURRENT}/config/common/cron/crontab
+crontab -u redirect -l
 service apache2 restart
