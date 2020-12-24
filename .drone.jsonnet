@@ -24,7 +24,7 @@ local build(arch) = {
         },
         {
             name: "build backend",
-            image: "golang:1.14",
+            image: "golang:1.15.6",
             commands: [
                 "cd backend",
                 "go test ./... -cover",
