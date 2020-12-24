@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/syncloud/redirect/model"
 	"log"
+	"time"
 )
 import _ "github.com/go-sql-driver/mysql"
 
@@ -22,6 +23,7 @@ func (mysql *MySql) Connect(host string, database string, user string, password 
 	if err != nil {
 		log.Println("Cannot connect to db: ", err)
 	}
+	db.SetConnMaxIdleTime(time.Hour)
 	mysql.db = db
 }
 
