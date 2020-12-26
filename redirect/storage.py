@@ -128,7 +128,7 @@ class SessionContextFactory:
 
 
 def get_session_maker(database_spec):
-    engine = create_engine(database_spec)
+    engine = create_engine(database_spec, pool_pre_ping=True)
     maker = sessionmaker(expire_on_commit = False)
     maker.configure(bind=engine)
     Base.metadata.create_all(engine)

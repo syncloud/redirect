@@ -3,7 +3,7 @@ Flask==0.12.4
 flask-cors==1.2.1
 flask-login==0.2.10
 MySQL-python==1.2.3
-SQLAlchemy==1.1.15
+SQLAlchemy==1.2.19
 boto==2.32.0
 requests==2.10.0
 configobj==4.7.2
