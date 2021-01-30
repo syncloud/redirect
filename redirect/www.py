@@ -5,7 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 from syncloudlib.json import convertible
 
 import ioc
-from redirect.backend_proxy import backend_request
+from backend_proxy import backend_request
 from servicesexceptions import ServiceException, ParametersException
 
 the_ioc = ioc.Ioc()
