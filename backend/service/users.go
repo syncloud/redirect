@@ -32,6 +32,15 @@ func (u *Users) Authenticate(email *string, password *string) (*model.User, erro
 	return user, nil
 }
 
+func (u *Users) Subscribe(subscribed bool, userEmail string) error {
+	user, err := u.db.GetUserByEmail(userEmail)
+	if err != nil {
+		return &model.ServiceError{InternalError: fmt.Errorf("unknown user")}
+	}
+	user.Unsubscribed = !subscribed
+	return u.db.UpdateUser(user)
+}
+
 func hash(password string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
 }

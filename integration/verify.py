@@ -1,9 +1,10 @@
+import json
 import time
 from os import environ
 from os.path import dirname
-from subprocess import check_output
 from os.path import join
-import json
+from subprocess import check_output
+
 import pytest
 import requests
 from syncloudlib.integration.hosts import add_host_alias_by_ip
@@ -18,7 +19,6 @@ TMP_DIR = '/tmp/syncloud'
 @pytest.fixture(scope="session")
 def module_setup(request, log_dir, artifact_dir, device):
     def module_teardown():
-
         device.run_ssh('cp /var/log/apache2/error.log {0}'.format(TMP_DIR), throw=False)
         device.run_ssh('cp /var/log/apache2/redirect_rest-error.log {0}'.format(TMP_DIR), throw=False)
         device.run_ssh('cp /var/log/apache2/redirect_rest-access.log {0}'.format(TMP_DIR), throw=False)
@@ -30,7 +30,7 @@ def module_setup(request, log_dir, artifact_dir, device):
         device.run_ssh('ls -la /var/log > {0}/var.log.ls.log'.format(TMP_DIR), throw=False)
         device.run_ssh('ls -la /var/run > {0}/var.run.ls.log'.format(TMP_DIR), throw=False)
         device.run_ssh('journalctl | tail -500 > {0}/journalctl.log'.format(TMP_DIR), throw=False)
-    
+
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
         db.recreate()
@@ -39,7 +39,6 @@ def module_setup(request, log_dir, artifact_dir, device):
 
 
 def test_start(module_setup, device, device_host, domain, build_number):
-
     check_output('apt-get update', shell=True)
     check_output('apt-get install -y mysql-client', shell=True)
 
@@ -48,15 +47,21 @@ def test_start(module_setup, device, device_host, domain, build_number):
     device.run_ssh('mkdir {0}'.format(TMP_DIR))
     device.run_ssh("snap remove platform")
     device.run_ssh("apt-get update")
-    device.run_ssh("apt-get install -y mysql-client default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(TMP_DIR))
+    device.run_ssh(
+        "apt-get install -y mysql-client default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(
+            TMP_DIR))
     device.scp_to_device("fakecertificate.sh", "/")
     device.run_ssh("/fakecertificate.sh")
     device.scp_to_device("../artifact/redirect-{0}.tar.gz".format(build_number), "/")
     device.scp_to_device("../ci/deploy", "/")
     device.run_ssh("cd / && /deploy {0} integration syncloud.test > {1}/deploy.log 2>&1".format(build_number, TMP_DIR))
-    device.run_ssh("sed -i 's#@access_key_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['access_key_id']), debug=False)
-    device.run_ssh("sed -i 's#@secret_access_key@#{0}#g' /var/www/redirect/secret.cfg".format(environ['secret_access_key']), debug=False)
-    device.run_ssh("sed -i 's#@hosted_zone_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['hosted_zone_id']), debug=False)
+    device.run_ssh("sed -i 's#@access_key_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['access_key_id']),
+                   debug=False)
+    device.run_ssh(
+        "sed -i 's#@secret_access_key@#{0}#g' /var/www/redirect/secret.cfg".format(environ['secret_access_key']),
+        debug=False)
+    device.run_ssh("sed -i 's#@hosted_zone_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['hosted_zone_id']),
+                   debug=False)
     device.run_ssh("systemctl restart redirect")
 
 
@@ -73,7 +78,7 @@ def test_index(domain, artifact_dir):
     response = requests.get('https://www.{0}'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 200, response.text
     with open(join(artifact_dir, 'index.html.log'), 'w') as f:
-       f.write(str(response.text))
+        f.write(str(response.text))
 
 
 def test_user_create_special_symbols_in_password(domain):
@@ -173,8 +178,8 @@ def test_get_user_data(domain):
     }
 
     response = requests.post('https://api.{0}/domain/update'.format(domain),
-                  json=update_data,
-                  verify=False)
+                             json=update_data,
+                             verify=False)
     assert response.status_code == 200, response.text
 
     response_data = json.loads(response.text)
@@ -489,6 +494,7 @@ def test_domain_twice(domain):
     data.pop('last_update', None)
     assert expected_data == data
 
+
 def test_domain_wrong_mac_address_format(domain):
     email = 'test_domain_wrong_mac_address_format@syncloud.test'
     password = 'pass123456_'
@@ -706,6 +712,7 @@ def test_domain_update_ip_changed(domain):
     domain_data.pop('last_update', None)
     assert expected_data == domain_data
 
+
 def test_domain_update_platform_version(domain):
     email = 'test_domain_update_platform_version@syncloud.test'
     password = 'pass123456'
@@ -882,4 +889,3 @@ def test_status(domain):
 
 def test_backup(device):
     device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
-

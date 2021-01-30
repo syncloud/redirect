@@ -36,8 +36,8 @@
               <div class="panel-body">
                 <h4>Email</h4>
                 <div class="pull-left">
-                <input v-model="subscribed" type="checkbox" id="chk_email">
-                Email me Syncloud notifications, including releases announcements.
+                  <input v-model="subscribed" type="checkbox" id="chk_email">
+                  <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me Syncloud notifications, including releases announcements</label>
                 </div>
                 <button type="button" class="btn btn-default pull-right" @click="accountSave">
                   <span class="glyphicon glyphicon-ok"></span>  Save
@@ -73,7 +73,6 @@
 
 <script>
 import axios from 'axios'
-import querystring from 'querystring'
 
 export default {
   name: 'Account',
@@ -105,7 +104,7 @@ export default {
         })
     },
     accountSave: function () {
-      axios.post('api/set_subscribed', querystring.stringify({ subscribed: this.subscribed }))
+      axios.post('api/subscription', { subscribed: this.subscribed })
         .then(_ => {
           this.reload()
         })

@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 from syncloudlib.json import convertible
 
 import ioc
+from redirect.backend_proxy import backend_request
 from servicesexceptions import ServiceException, ParametersException
 
 the_ioc = ioc.Ioc()
@@ -106,15 +107,6 @@ def user_delete():
     return 'User deleted', 200
 
 
-@app.route("/set_subscribed", methods=["POST"])
-@login_required
-def user_unsubscribe():
-    statsd_client.incr('www.user.unsubscribe')
-    user = current_user.user
-    users_manager.user_set_subscribed(request.form, user.email)
-    return 'Successfully set', 200
-
-
 @app.route("/domain_delete", methods=["POST"])
 @login_required
 def domain_delete():
@@ -122,6 +114,13 @@ def domain_delete():
     user = current_user.user
     users_manager.user_domain_delete(request.form, user)
     return 'Domain deleted', 200
+
+
+@app.route("/subscription", methods=["POST"])
+@login_required
+def backend_proxy():
+    response = backend_request(request.method, '/web' + request.full_path, request.json, current_user.user.email)
+    return response.text, response.status_code
 
 
 @app.errorhandler(Exception)

@@ -16,10 +16,11 @@ import (
 type Api struct {
 	statsdClient *statsd.Client
 	service      *service.Domains
+	users        *service.Users
 }
 
-func NewApi(statsdClient *statsd.Client, service *service.Domains) *Api {
-	return &Api{statsdClient, service}
+func NewApi(statsdClient *statsd.Client, service *service.Domains, users *service.Users) *Api {
+	return &Api{statsdClient, service, users}
 }
 func (a *Api) Start(socket string) {
 	http.HandleFunc("/status", Handle("GET", a.Status))
@@ -27,6 +28,7 @@ func (a *Api) Start(socket string) {
 	http.HandleFunc("/domain/get", Handle("GET", a.DomainGet))
 	http.HandleFunc("/domain/acquire", a.DomainAcquireV1)
 	http.HandleFunc("/domain/acquire_v2", Handle("POST", a.DomainAcquireV2))
+	http.HandleFunc("/web/subscription", Handle("POST", a.WebSubscription))
 	server := http.Server{}
 	if _, err := os.Stat(socket); err == nil {
 		err := os.Remove(socket)
@@ -181,6 +183,22 @@ func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
 		return nil, err
 	}
 	return domain, nil
+}
+
+func (a *Api) WebSubscription(req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("www.user.unsubscribe", 1)
+	request := model.SubscriptionRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse subscription request", err)
+		return nil, errors.New("invalid request")
+	}
+	userEmail := req.Header.Get("RedirectUserEmail")
+	if userEmail == "" {
+		log.Println("no user session", err)
+		return nil, errors.New("invalid request")
+	}
+	return "OK", a.users.Subscribe(request.Subscribed, userEmail)
 }
 
 func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {

@@ -88,6 +88,38 @@ func (mysql *MySql) GetUserByEmail(email string) (*model.User, error) {
 	return user, nil
 }
 
+func (mysql *MySql) UpdateUser(user *model.User) error {
+	stmt, err := mysql.db.Prepare(
+		"UPDATE user SET " +
+			"email = ?, " +
+			"password_hash = ?, " +
+			"active = ?, " +
+			"update_token = ?, " +
+			"unsubscribed = ?, " +
+			"timestamp = ? " +
+			"WHERE id = ?")
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	now := time.Now()
+	_, err = stmt.Exec(
+		user.Email,
+		user.PasswordHash,
+		user.Active,
+		user.UpdateToken,
+		user.Unsubscribed,
+		&now,
+		user.Id,
+	)
+	if err != nil {
+		log.Println("sql error: ", err)
+		return err
+	}
+	defer stmt.Close()
+	return nil
+}
+
 func (mysql *MySql) GetDomainByToken(token string) (*model.Domain, error) {
 	row := mysql.db.QueryRow(
 		"SELECT "+

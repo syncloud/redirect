@@ -1,5 +1,5 @@
 let state = {
-  loggedIn: false,
+  loggedIn: true,
   credentials: {
     user: '11',
     password: '2'
@@ -8,36 +8,36 @@ let state = {
     active: true,
     domains: [
       {
-        device_mac_address: "111",
-        device_name: "syncloud",
-        device_title: "Syncloud",
-        dkim_key: "dkim",
-        ip: "111.111.111.111",
+        device_mac_address: '111',
+        device_name: 'syncloud',
+        device_title: 'Syncloud',
+        dkim_key: 'dkim',
+        ip: '111.111.111.111',
         ipv6: null,
-        last_update: "Mon, 19 Oct 2020 19:31:49 GMT",
-        local_ip: "192.168.1.1",
+        last_update: 'Mon, 19 Oct 2020 19:31:49 GMT',
+        local_ip: '192.168.1.1',
         map_local_address: false,
-        platform_version: "2",
-        user_domain: "test",
+        platform_version: '2',
+        user_domain: 'test',
         web_local_port: 443,
         web_port: 443,
-        web_protocol: "https"
+        web_protocol: 'https'
       },
       {
-        device_mac_address: "00:11:22:33:44:ff",
-        device_name: "odroid-xu3and4",
-        device_title: "ODROID-XU",
+        device_mac_address: '00:11:22:33:44:ff',
+        device_name: 'odroid-xu3and4',
+        device_title: 'ODROID-XU',
         dkim_key: null,
-        ip: "111.222.333.444",
-        ipv6: "[::1]",
-        last_update: "Mon, 19 Oct 2020 18:51:18 GMT",
-        local_ip: "192.168.1.2",
+        ip: '111.222.333.444',
+        ipv6: '[::1]',
+        last_update: 'Mon, 19 Oct 2020 18:51:18 GMT',
+        local_ip: '192.168.1.2',
         map_local_address: false,
-        platform_version: "2",
-        user_domain: "test1",
+        platform_version: '2',
+        user_domain: 'test1',
         web_local_port: 443,
         web_port: 10001,
-        web_protocol: "https"
+        web_protocol: 'https'
       }],
     email: 'test@example.com',
     unsubscribed: false,
@@ -45,19 +45,19 @@ let state = {
   }
 }
 
-var express = require('express')
-var bodyparser = require('body-parser')
+const express = require('express')
+const bodyparser = require('body-parser')
 const mock = function (app, server, compiler) {
   app.use(express.urlencoded())
-  app.use(bodyparser.json());
+  app.use(bodyparser.json())
   app.post('/api/login', function (req, res) {
     if (state.credentials.user === req.body.email && state.credentials.password === req.body.password) {
       state.loggedIn = true
-      res.json({message: 'OK'})
+      res.json({ message: 'OK' })
     } else {
       if (req.body.email.length < 2) {
         res.status(400).json({
-          message: "There's an error in parameters",
+          message: 'There\'s an error in parameters',
           parameters_messages: [
             {
               messages: [
@@ -68,14 +68,14 @@ const mock = function (app, server, compiler) {
           ]
         })
       } else {
-        res.status(400).json({message: 'Authentication failed'})
+        res.status(400).json({ message: 'Authentication failed' })
       }
     }
   })
   app.post('/api/user/create', function (req, res) {
     if (req.body.email.length < 2) {
       res.status(400).json({
-        message: "There's an error in parameters",
+        message: 'There\'s an error in parameters',
         parameters_messages: [
           {
             messages: [
@@ -86,7 +86,7 @@ const mock = function (app, server, compiler) {
         ]
       })
     } else {
-      res.json({success: true, message: 'OK'})
+      res.json({ success: true, message: 'OK' })
     }
   })
   app.get('/api/user/get', function (req, res) {
@@ -106,7 +106,7 @@ const mock = function (app, server, compiler) {
     })
     res.json({})
   })
-  app.post('/api/set_subscribed', function (req, res) {
+  app.post('/api/subscription', function (req, res) {
     state.user.unsubscribed = !req.body.subscribed
     res.json({})
   })
@@ -119,9 +119,9 @@ const mock = function (app, server, compiler) {
   })
   app.post('/api/user/activate', function (req, res) {
     if (req.body.token === '1') {
-      res.status(400).json({ message: "No such token" })
+      res.status(400).json({ message: 'No such token' })
     } else {
-      res.json({message: "Activated"})
+      res.json({ message: 'Activated' })
     }
   })
   app.post('/api/user/set_password', function (req, res) {
@@ -129,9 +129,9 @@ const mock = function (app, server, compiler) {
     console.log(req.body.token)
     if (req.body.token === '1') {
       console.log('set_password failed')
-      res.status(400).json({ message: "No such token" })
+      res.status(400).json({ message: 'No such token' })
     } else {
-      res.json({message: "Activated"})
+      res.json({ message: 'Activated' })
     }
   })
 }

@@ -119,12 +119,10 @@ function niceTimestamp (ds, today) {
     return 'never'
   }
   const d = new Date(Date.parse(ds))
-  const isSameDay = sameDay(today, d)
-  let momentDate = moment(d);
-  if (isSameDay) {
-    return 'Today ' + momentDate.format('H:mm')
+  if (sameDay(today, d)) {
+    return 'Today ' + moment(d).format('H:mm')
   } else {
-    return momentDate.format('MMM D, yyyy')
+    return moment(d).format('MMM D, yyyy')
   }
 }
 
