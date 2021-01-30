@@ -135,10 +135,20 @@ def test_password_reset(driver, ui_mode, screenshot_dir):
 def test_account(driver, ui_mode, screenshot_dir):
     menu(driver, ui_mode, screenshot_dir, 'account')
 
-    delete_btn_xpath = "//button[text()='Delete']"
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, delete_btn_xpath)))
+    header_xpath = "//h2[text()='Account']"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, header_xpath)))
 
     screenshots(driver, screenshot_dir, 'account-' + ui_mode)
+
+
+def test_account_notification(driver, ui_mode, screenshot_dir):
+    driver.find_element_by_id("chk_email").click()
+    driver.find_element_by_id("save").click()
+    screenshots(driver, screenshot_dir, 'account-notification-off-' + ui_mode)
+
+    driver.find_element_by_id("chk_email").click()
+    driver.find_element_by_id("save").click()
+    screenshots(driver, screenshot_dir, 'account-notification-on-' + ui_mode)
 
 
 def wait_or_screenshot(driver, ui_mode, screenshot_dir, method):

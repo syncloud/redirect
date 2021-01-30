@@ -12,7 +12,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger" data-dismiss="modal" @click="accountDelete">Delete</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal" @click="accountDelete" id="delete-confirm">Delete</button>
         </div>
       </div>
     </div>
@@ -39,8 +39,8 @@
                   <input v-model="subscribed" type="checkbox" id="chk_email">
                   <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me Syncloud notifications, including releases announcements</label>
                 </div>
-                <button type="button" class="btn btn-default pull-right" @click="accountSave">
-                  <span class="glyphicon glyphicon-ok"></span>  Save
+                <button type="button" class="btn btn-default pull-right" @click="accountSave" id="save">
+                  <span class="glyphicon glyphicon-ok" style="padding-right: 5px"></span>Save
                 </button>
               </div>
             </div>
@@ -58,8 +58,8 @@
                 <div class="pull-left">
                   Delete your account all domains and personal data.
                 </div>
-                <button type="button" class="btn btn-default pull-right" data-toggle="modal" data-target="#modalDeleteAccount">
-                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
+                <button type="button" class="btn btn-default pull-right" data-toggle="modal" data-target="#modalDeleteAccount" id="delete">
+                  <span class="glyphicon glyphicon-remove" aria-hidden="true" style="padding-right: 5px"></span>Delete
                 </button>
               </div>
             </div>
