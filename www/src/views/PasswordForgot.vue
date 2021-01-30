@@ -32,7 +32,6 @@
 
 <script>
 import axios from 'axios'
-import querystring from 'querystring'
 
 export default {
   name: 'PasswordForgot',
@@ -43,7 +42,7 @@ export default {
   },
   methods: {
     reset: function (event) {
-      axios.post('api/user/reset_password', querystring.stringify({ email: this.email }))
+      axios.post('api/user/reset_password', { email: this.email })
         .then(_ => {
           this.$router.push('/login')
         })

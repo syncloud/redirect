@@ -27,6 +27,7 @@ func init() {
 
 type Dns interface {
 	UpdateDomain(mainDomain string, domain *model.Domain) error
+	DeleteDomain(mainDomain string, domain *model.Domain) error
 }
 
 type AmazonDns struct {
@@ -56,7 +57,7 @@ func (a *AmazonDns) UpdateDomain(mainDomain string, domain *model.Domain) error 
 	spf := "\"v=spf1 a mx -all\""
 	mx := fmt.Sprintf("1 %s", fullDomain)
 	dkim := domain.DkimKey
-	err := a.deleteDomain(fullDomain, a.hostedZoneId)
+	err := a.delete(fullDomain, a.hostedZoneId)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,12 @@ func (a *AmazonDns) UpdateDomain(mainDomain string, domain *model.Domain) error 
 	return nil
 }
 
-func (a *AmazonDns) deleteDomain(fullDomain string, hostedZoneId string) error {
+func (a *AmazonDns) DeleteDomain(mainDomain string, domain *model.Domain) error {
+	fullDomain := domain.DnsName(mainDomain)
+	return a.delete(fullDomain, a.hostedZoneId)
+}
+
+func (a *AmazonDns) delete(fullDomain string, hostedZoneId string) error {
 	err := a.actionDomain(fullDomain, &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", hostedZoneId)
 	if err != nil {
 		return err
@@ -135,13 +141,11 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
 		HostedZoneId: aws.String(hostedZoneId),
 	}
-	result, err := a.client.ChangeResourceRecordSets(input)
+	_, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {
 		a.statsdClient.Incr("dns.ip.error", 1)
 		return err
 	}
-
-	fmt.Println(result)
 
 	a.statsdClient.Incr("dns.ip.commit", 1)
 	return nil

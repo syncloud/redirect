@@ -16,7 +16,7 @@ local build(arch) = {
                 "mkdir build",
                 "cd www",
                 "npm install",
-                "npm run test:unit",
+                "npm run test",
                 "npm run lint",
                 "npm run build",
                 "cp -r dist ../build/www"
@@ -39,6 +39,7 @@ local build(arch) = {
                 "cp -r redirect build",
                 "cp requirements.txt build",
                 "cp -r config build",
+                "cp -r db build",
                 "cp -r emails build",
                 "cp redirect_*.wsgi build",
                 "mkdir artifact",
@@ -49,7 +50,14 @@ local build(arch) = {
             name: "test",
             image: "syncloud/build-deps-" + arch,
             commands: [
-                "./test.deps.sh",
+                "apt-get update -qq",
+                "apt-get install -y -qq mysql-client libmysqlclient-dev",
+                "pip install -r requirements.txt",
+                "pip install -r dev_requirements.txt",
+                "adduser --disabled-password --gecos \"\" test",
+                "mkdir mail.root",
+                "chown test. mail.root",
+                "./ci/recreatedb",
                 "py.test --cov redirect"
             ]
         },

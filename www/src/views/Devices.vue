@@ -119,12 +119,10 @@ function niceTimestamp (ds, today) {
     return 'never'
   }
   const d = new Date(Date.parse(ds))
-  const isSameDay = sameDay(today, d)
-  let momentDate = moment(d);
-  if (isSameDay) {
-    return 'Today ' + momentDate.format('H:mm')
+  if (sameDay(today, d)) {
+    return 'Today ' + moment(d).format('H:mm')
   } else {
-    return momentDate.format('MMM D, yyyy')
+    return moment(d).format('MMM D, yyyy')
   }
 }
 
@@ -174,13 +172,13 @@ export default {
       return niceTimestamp(ds, today)
     },
     reload: function () {
-      axios.get('/api/user/get')
+      axios.get('/api/domains')
         .then(response => {
-          if (response.data.domains.length > 0) {
+          if (response.data.length > 0) {
             this.hasDomains = true
             let group = []
             const groups = []
-            response.data.domains.forEach(domain => {
+            response.data.forEach(domain => {
               group.push(convert(domain))
               if (group.length === 2) {
                 groups.push(group)

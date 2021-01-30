@@ -14,7 +14,6 @@
 
 <script>
 import axios from 'axios'
-import querystring from 'querystring'
 
 export default {
   name: 'Activate',
@@ -33,18 +32,15 @@ export default {
   },
   methods: {
     activate: function (token) {
-      console.log('activating with token: ' + token)
-      axios.post('api/user/activate', querystring.stringify({ token: token }))
+      axios.post('api/user/activate', { token: token })
         .then(response => {
-          console.log('activated')
-          if ('message' in response.data) {
-            this.message = response.data.message
+          if (response.data.data) {
+            this.message = response.data.data
           }
         })
         .catch(err => {
-          console.log('activate error')
           if (err.response.status === 400) {
-            if ('message' in err.response.data) {
+            if (err.response.data.message) {
               this.message = err.response.data.message
               return
             }

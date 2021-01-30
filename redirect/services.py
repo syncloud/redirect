@@ -61,48 +61,6 @@ class Users(UsersRead):
 
         return user
 
-    def create_new_user(self, request):
-        validator = Validator(request)
-        email = validator.email()
-        password = validator.new_password()
-        check_validator(validator)
-
-        user = None
-        action = None
-        with self.create_storage() as storage:
-            by_email = storage.get_user_by_email(email)
-            if by_email and by_email.email == email:
-                raise servicesexceptions.parameter_error('email', 'Email is already registered')
-
-            user = User(email, util.hash(password), not self.activate_by_email)
-
-            if self.activate_by_email:
-                action = user.enable_action(ActionType.ACTIVATE)
-
-            storage.add(user)
-
-        if self.activate_by_email:
-            self.mail.send_activate(self.main_domain, user.email, action.token)
-
-        return user
-
-    def activate(self, request):
-        validator = Validator(request)
-        token = validator.token()
-        check_validator(validator)
-
-        with self.create_storage() as storage:
-            user = storage.get_user_by_activate_token(token)
-            if not user:
-                raise servicesexceptions.bad_request('Invalid activation token')
-
-            if user.active:
-                raise servicesexceptions.bad_request('User is active already')
-
-            user.active = True
-
-        return True
-
     def drop_device(self, request):
         self.authenticate(request)
         validator = Validator(request)
@@ -126,7 +84,6 @@ class Users(UsersRead):
 
             return domain
 
-
     def domain_delete(self, request):
         user = self.authenticate(request)
         self.user_domain_delete(request, user)
@@ -146,45 +103,6 @@ class Users(UsersRead):
 
             storage.delete_domain(domain)
 
-    def user_set_subscribed(self, request, user_email):
-        validator = Validator(request)
-        subscribed = validator.boolean('subscribed', required=True)
-        check_validator(validator)
-
-        with self.create_storage() as storage:
-            user = storage.get_user_by_email(user_email)
-            if not user:
-                raise servicesexceptions.bad_request('Unknown user')
-            user.unsubscribed = not subscribed
-
-    def delete_user(self, request):
-        validator = Validator(request)
-        email = validator.email()
-        password = validator.password()
-        check_validator(validator)
-
-        with self.create_storage() as storage:
-            user = storage.get_user_by_email(email)
-
-            if not user or not user.active or not util.hash(password) == user.password_hash:
-                raise servicesexceptions.bad_request('Authentication failed')
-
-            for domain in user.domains:
-                self.dns.delete_domain(self.main_domain, domain)
-
-            storage.delete_user(user)
-
-    def do_delete_user(self, email):
-        with self.create_storage() as storage:
-            user = storage.get_user_by_email(email)
-
-            if not user:
-                raise servicesexceptions.bad_request('Authentication failed')
-
-            for domain in user.domains:
-                self.dns.delete_domain(self.main_domain, domain)
-
-            storage.delete_user(user)
 
     def do_user_domain_delete(self, user_domain):
         with self.create_storage() as storage:
@@ -197,18 +115,6 @@ class Users(UsersRead):
 
             storage.delete_domain(domain)
 
-    def user_reset_password(self, request):
-        validator = Validator(request)
-        email = validator.email()
-        check_validator(validator)
-
-        with self.create_storage() as storage:
-            user = storage.get_user_by_email(email)
-
-            if user and user.active:
-                action = user.enable_action(ActionType.PASSWORD)
-
-                self.mail.send_reset_password(user.email, action.token)
 
     def user_log(self, request):
         validator = Validator(request)

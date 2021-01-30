@@ -1,9 +1,10 @@
+import json
 import time
 from os import environ
 from os.path import dirname
-from subprocess import check_output
 from os.path import join
-import json
+from subprocess import check_output
+
 import pytest
 import requests
 from syncloudlib.integration.hosts import add_host_alias_by_ip
@@ -18,7 +19,6 @@ TMP_DIR = '/tmp/syncloud'
 @pytest.fixture(scope="session")
 def module_setup(request, log_dir, artifact_dir, device):
     def module_teardown():
-
         device.run_ssh('cp /var/log/apache2/error.log {0}'.format(TMP_DIR), throw=False)
         device.run_ssh('cp /var/log/apache2/redirect_rest-error.log {0}'.format(TMP_DIR), throw=False)
         device.run_ssh('cp /var/log/apache2/redirect_rest-access.log {0}'.format(TMP_DIR), throw=False)
@@ -30,7 +30,10 @@ def module_setup(request, log_dir, artifact_dir, device):
         device.run_ssh('ls -la /var/log > {0}/var.log.ls.log'.format(TMP_DIR), throw=False)
         device.run_ssh('ls -la /var/run > {0}/var.run.ls.log'.format(TMP_DIR), throw=False)
         device.run_ssh('journalctl | tail -500 > {0}/journalctl.log'.format(TMP_DIR), throw=False)
-    
+        device.run_ssh('cp /var/log/syslog {0}/syslog.log'.format(TMP_DIR), throw=False)
+        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from user' > {0}/db-user.log".format(artifact_dir), shell=True)
+        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from action' > {0}/db-action.log".format(artifact_dir), shell=True)
+
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
         db.recreate()
@@ -39,7 +42,6 @@ def module_setup(request, log_dir, artifact_dir, device):
 
 
 def test_start(module_setup, device, device_host, domain, build_number):
-
     check_output('apt-get update', shell=True)
     check_output('apt-get install -y mysql-client', shell=True)
 
@@ -48,15 +50,23 @@ def test_start(module_setup, device, device_host, domain, build_number):
     device.run_ssh('mkdir {0}'.format(TMP_DIR))
     device.run_ssh("snap remove platform")
     device.run_ssh("apt-get update")
-    device.run_ssh("apt-get install -y mysql-client default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(TMP_DIR))
+    device.run_ssh(
+        "apt-get install -y mysql-client default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(
+            TMP_DIR))
     device.scp_to_device("fakecertificate.sh", "/")
     device.run_ssh("/fakecertificate.sh")
     device.scp_to_device("../artifact/redirect-{0}.tar.gz".format(build_number), "/")
     device.scp_to_device("../ci/deploy", "/")
+    # test clean deploy
+    check_output("mysql --host=mysql --user=root --password=root -e 'drop DATABASE redirect'", shell=True)
     device.run_ssh("cd / && /deploy {0} integration syncloud.test > {1}/deploy.log 2>&1".format(build_number, TMP_DIR))
-    device.run_ssh("sed -i 's#@access_key_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['access_key_id']), debug=False)
-    device.run_ssh("sed -i 's#@secret_access_key@#{0}#g' /var/www/redirect/secret.cfg".format(environ['secret_access_key']), debug=False)
-    device.run_ssh("sed -i 's#@hosted_zone_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['hosted_zone_id']), debug=False)
+    device.run_ssh("sed -i 's#@access_key_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['access_key_id']),
+                   debug=False)
+    device.run_ssh(
+        "sed -i 's#@secret_access_key@#{0}#g' /var/www/redirect/secret.cfg".format(environ['secret_access_key']),
+        debug=False)
+    device.run_ssh("sed -i 's#@hosted_zone_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['hosted_zone_id']),
+                   debug=False)
     device.run_ssh("systemctl restart redirect")
 
 
@@ -73,13 +83,13 @@ def test_index(domain, artifact_dir):
     response = requests.get('https://www.{0}'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 200, response.text
     with open(join(artifact_dir, 'index.html.log'), 'w') as f:
-       f.write(str(response.text))
+        f.write(str(response.text))
 
 
 def test_user_create_special_symbols_in_password(domain):
     email = 'symbols_in_password@mail.com'
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
-                             data={'email': email, 'password': r'pass12& ^%"'},
+                             json={'email': email, 'password': r'pass12& ^%"'},
                              verify=False)
     assert response.status_code == 200, response.text
     assert len(smtp.emails()) == 1
@@ -88,7 +98,7 @@ def test_user_create_special_symbols_in_password(domain):
 
 def create_user(domain, email, password):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
-                             data={'email': email, 'password': password}, verify=False)
+                             json={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
 
     activate_user(domain)
@@ -114,13 +124,28 @@ def test_create_user_api_for_mobile_app(domain):
     assert response.status_code == 200, response.text
 
 
+def test_create_user_api_for_mobile_app_v2(domain):
+    email = 'mobile_create_user_v2@syncloud.test'
+    password = 'pass123456'
+    response = requests.post('https://api.{0}/user/create_v2'.format(domain),
+                             json={'email': email, 'password': password}, verify=False)
+    assert response.status_code == 200, response.text
+
+    activate_user(domain)
+
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': password},
+                            verify=False)
+    assert response.status_code == 200, response.text
+
+
 def activate_user(domain):
     assert len(smtp.emails()) == 1
     activate_token = smtp.get_token(smtp.emails()[0])
     response = requests.post('https://www.{0}/api/user/activate'.format(domain),
-                             data={'token': activate_token},
+                             json={'token': activate_token},
                              verify=False)
-    assert response.status_code == 200, response.text
+    assert response.status_code == 200, (response.text, activate_token)
     smtp.clear()
 
 
@@ -151,7 +176,7 @@ def test_user_create_existing_case_difference(domain):
     email2 = 'Case_test@syncloud.test'
     create_user(domain, email1, 'pass123456')
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
-                             data={'email': email2, 'password': 'pass123456'}, verify=False)
+                             json={'email': email2, 'password': 'pass123456'}, verify=False)
     assert response.status_code == 400, response.text
     assert "already registered" in response.text, response.text
 
@@ -173,8 +198,8 @@ def test_get_user_data(domain):
     }
 
     response = requests.post('https://api.{0}/domain/update'.format(domain),
-                  json=update_data,
-                  verify=False)
+                             json=update_data,
+                             verify=False)
     assert response.status_code == 200, response.text
 
     response_data = json.loads(response.text)
@@ -217,36 +242,14 @@ def test_get_user_data(domain):
     assert expected == user_data
 
 
-def test_user_delete(domain):
-    email = 'test_user_delete@syncloud.test'
-    password = 'pass123456'
-    create_user(domain, email, password)
-
-    update_token_1 = acquire_domain(domain, email, password, "user_domain_1")
-    update_token_2 = acquire_domain(domain, email, password, "user_domain_2")
-
-    response = requests.post('https://api.{0}/user/delete'.format(domain),
-                             data={'email': email, 'password': password}, verify=False)
-    assert response.status_code == 200
-
-    response = requests.get('https://api.{0}/domain/get'.format(domain),
-                            params={'token': update_token_1}, verify=False)
-    assert response.status_code == 400
-
-    response = requests.get('https://api.{0}/domain/get'.format(domain),
-                            params={'token': update_token_2},
-                            verify=False)
-    assert response.status_code == 400
-
-
 def test_user_reset_password_sent_mail(domain):
     email = 'test_user_reset_password_sent_mail@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password)
 
     response = requests.post('https://www.{0}/api/user/reset_password'.format(domain),
-                             data={'email': email}, verify=False)
-    assert response.status_code == 200
+                             json={'email': email}, verify=False)
+    assert response.status_code == 200, response.text
 
     assert len(smtp.emails()) > 0, 'Server should send email with link to reset password'
     token = smtp.get_token(smtp.emails()[0])
@@ -254,14 +257,15 @@ def test_user_reset_password_sent_mail(domain):
     assert token is not None
 
 
-def test_user_reset_password_set_new(domain):
+def test_user_reset_password_set_new(domain, artifact_dir):
     email = 'test_user_reset_password_set_new@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password)
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), data={'email': email},
+    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
-    token = smtp.get_token(smtp.emails()[0])
+    email_body = smtp.emails(artifact_dir)[0]
+    token = smtp.get_token(email_body)
 
     smtp.clear()
 
@@ -269,9 +273,9 @@ def test_user_reset_password_set_new(domain):
     response = requests.post('https://www.{0}/api/user/set_password'.format(domain),
                              data={'token': token, 'password': new_password},
                              verify=False)
-    assert response.status_code == 200, response.text
+    assert response.status_code == 200, (response.text, token, email_body)
 
-    assert len(smtp.emails()) > 0, 'Server should send email when setting new password'
+    assert len(smtp.emails(artifact_dir)) > 0, 'Server should send email when setting new password'
 
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': new_password},
@@ -285,13 +289,13 @@ def test_user_reset_password_set_with_old_token(domain):
     password = 'pass123456'
     create_user(domain, email, password)
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), data={'email': email},
+    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
     token_old = smtp.get_token(smtp.emails()[0])
 
     smtp.clear()
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), data={'email': email},
+    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
     token = smtp.get_token(smtp.emails()[0])
     smtp.clear()
@@ -309,7 +313,7 @@ def test_user_reset_password_set_twice(domain):
     password = 'pass123456'
     create_user(domain, email, password)
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), data={'email': email},
+    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
     token = smtp.get_token(smtp.emails()[0])
     smtp.clear()
@@ -489,6 +493,7 @@ def test_domain_twice(domain):
     data.pop('last_update', None)
     assert expected_data == data
 
+
 def test_domain_wrong_mac_address_format(domain):
     email = 'test_domain_wrong_mac_address_format@syncloud.test'
     password = 'pass123456_'
@@ -551,7 +556,7 @@ def test_domain_delete(domain):
     create_user(domain, email, password)
 
     user_domain = "test_domain_delete"
-    update_token = acquire_domain(domain, email, password, user_domain)
+    acquire_domain(domain, email, password, user_domain)
 
     delete_data = {'user_domain': user_domain, 'email': email, 'password': password}
 
@@ -705,6 +710,7 @@ def test_domain_update_ip_changed(domain):
     domain_data = get_domain(update_token, domain)
     domain_data.pop('last_update', None)
     assert expected_data == domain_data
+
 
 def test_domain_update_platform_version(domain):
     email = 'test_domain_update_platform_version@syncloud.test'
@@ -882,4 +888,3 @@ def test_status(domain):
 
 def test_backup(device):
     device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
-

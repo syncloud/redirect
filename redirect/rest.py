@@ -1,14 +1,14 @@
-from flask import Flask, request, jsonify
-from flask_cors import cross_origin
-from servicesexceptions import ServiceException, ParametersException
+import json
+import logging
 import sys
 import traceback
-import json
+
+from flask import Flask, request, jsonify
+from flask_cors import cross_origin
 from syncloudlib.json import convertible
-import config
-import logging
+
 import ioc
-from socket import gethostname
+from servicesexceptions import ServiceException, ParametersException
 
 the_ioc = ioc.Ioc()
 statsd_client = the_ioc.statsd_client
@@ -23,15 +23,6 @@ def user_get():
     user = users_manager.authenticate(request.args)
     user_data = convertible.to_dict(user)
     return jsonify(success=True, message='User provided', data=user_data), 200
-
-
-@app.route('/user/create', methods=["POST"])
-@cross_origin()
-def user_create():
-    statsd_client.incr('rest.user.create')
-    user = users_manager.create_new_user(request.form)
-    user_data = convertible.to_dict(user)
-    return jsonify(success=True, message='User was created', data=user_data), 200
 
 
 @app.route('/domain/drop_device', methods=["POST"])
@@ -50,14 +41,6 @@ def domain_delete():
     request_data = json.loads(request.data)
     users_manager.domain_delete(request_data)
     return jsonify(success=True, message='Domain was deleted'), 200
-
-
-@app.route('/user/delete', methods=["POST"])
-@cross_origin()
-def user_delete():
-    statsd_client.incr('rest.user.update')
-    users_manager.delete_user(request.form)
-    return jsonify(success=True, message='User deleted'), 200
 
 
 @app.route('/user/log', methods=["POST"])

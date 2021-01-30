@@ -45,28 +45,6 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
             read = storage.get_user_by_email(user.email)
             self.assertUser(user, read)
 
-    def test_user_delete(self):
-        user = generate_user()
-        with self.create_storage() as storage:
-            storage.add(user)
-        with self.create_storage() as storage:
-            user = storage.get_user_by_email(user.email)
-            storage.delete_user(user)
-            after_delete = storage.get_user_by_email(user.email)
-            self.assertUser(None, after_delete)
-
-    def test_by_activate_token_not_existing(self):
-        with self.create_storage() as storage:
-            user = storage.get_user_by_activate_token(u'token_not_existing')
-            self.assertUser(None, user)
-
-    def test_by_activate_token_existing(self):
-        with self.create_storage() as storage:
-            user = generate_user()
-            storage.add(user)
-            read = storage.get_user_by_activate_token(user.token(ActionType.ACTIVATE))
-            self.assertUser(user, read)
-
     def test_user_password_hash_fits_column(self):
         with self.create_storage() as storage:
             user = generate_user()

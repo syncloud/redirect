@@ -24,7 +24,7 @@ type (
 		WebProtocol      *string    `json:"web_protocol,omitempty"`
 		WebPort          *int       `json:"web_port,omitempty"`
 		WebLocalPort     *int       `json:"web_local_port,omitempty"`
-		UserId           uint64     `json:"-"`
+		UserId           int64     `json:"-"`
 		HostedZoneId     uint64     `json:"-"`
 	}
 )
@@ -67,3 +67,4 @@ func (d *Domain) DnsIpv4() *string {
 	}
 	return nil
 }
+

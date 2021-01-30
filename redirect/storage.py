@@ -11,11 +11,6 @@ class Storage:
     def __init__(self, session):
         self.session = session
 
-    def delete_user(self, user):
-        for domain in user.domains:
-            self.delete_domain(domain)
-        self.delete(user)
-
     def delete_domain(self, domain):
         self.delete(domain)
 
@@ -32,9 +27,6 @@ class Storage:
         if user and not user.update_token:
             user.update_token = util.create_token()
         return user
-
-    def get_user_by_activate_token(self, activate_token):
-        return self.get_user_by_token(ActionType.ACTIVATE, activate_token)
 
     def get_user_by_token(self, type, token):
         user = self.session\

@@ -67,58 +67,145 @@ func (config *Config) GetMySqlDB() string {
 }
 
 func (config *Config) GetApiSocket() string {
-	socket, err := config.parser.Get("api", "socket")
+	value, err := config.parser.Get("api", "socket")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
-	return socket
+	return value
 }
 
 func (config *Config) AwsAccessKeyId() string {
-	socket, err := config.parser.Get("aws", "access_key_id")
+	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
-	return socket
+	return value
 }
 
 func (config *Config) AwsSecretAccessKey() string {
-	socket, err := config.parser.Get("aws", "secret_access_key")
+	value, err := config.parser.Get("aws", "secret_access_key")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
-	return socket
+	return value
 }
 
 func (config *Config) AwsHostedZoneId() string {
-	socket, err := config.parser.Get("aws", "hosted_zone_id")
+	value, err := config.parser.Get("aws", "hosted_zone_id")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
-	return socket
+	return value
 }
 
 func (config *Config) StatsdServer() string {
-	socket, err := config.parser.Get("stats", "server")
+	value, err := config.parser.Get("stats", "server")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
-	return socket
+	return value
 }
 func (config *Config) StatsdPrefix() string {
-	socket, err := config.parser.Get("stats", "prefix")
+	value, err := config.parser.Get("stats", "prefix")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
-	return socket
+	return value
 }
 
 func (config *Config) Domain() string {
-	socket, err := config.parser.Get("redirect", "domain")
+	value, err := config.parser.Get("redirect", "domain")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
-	return socket
+	return value
+}
+
+func (config *Config) SmtpHost() string {
+	value, err := config.parser.Get("smtp", "host")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) SmtpPort() int {
+	value, err := config.parser.GetInt64("smtp", "port")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return int(value)
+}
+
+func (config *Config) SmtpTls() bool {
+	contains, err := config.parser.HasOption("smtp", "use_tls")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	if !contains {
+		return false
+	}
+	value, err := config.parser.GetBool("smtp", "use_tls")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) SmtpLogin() string {
+	value, err := config.parser.Get("smtp", "login")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) SmtpPassword() string {
+	value, err := config.parser.Get("smtp", "password")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) MailPasswordUrlTemplate() string {
+	value, err := config.parser.Get("mail", "password_url_template")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) MailFrom() string {
+	value, err := config.parser.Get("mail", "from")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) MailDeviceErrorTo() string {
+	value, err := config.parser.Get("mail", "device_error")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) MailActivateUrlTemplate() string {
+	value, err := config.parser.Get("mail", "activate_url_template")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) ActivateByEmail() bool {
+	value, err := config.parser.GetBool("redirect", "activate_by_email")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
 }
 
 func (config *Config) MockDns() bool {

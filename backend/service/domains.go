@@ -45,6 +45,33 @@ func (d *Domains) GetDomain(token string) (*model.Domain, error) {
 	return domain, nil
 }
 
+func (d *Domains) GetDomains(user *model.User) ([]*model.Domain, error) {
+	domains, err := d.db.GetUserDomains(user.Id)
+	if err != nil {
+		return nil, err
+	}
+	return domains, nil
+}
+
+func (d *Domains) DeleteAllDomains(userId int64) error {
+	domains, err := d.db.GetUserDomains(userId)
+	if err != nil {
+		return err
+	}
+
+	for _, domain := range domains {
+		err = d.amazonDns.DeleteDomain(d.domain, domain)
+		if err != nil {
+			return err
+		}
+	}
+	err = d.db.DeleteAllDomains(userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (d *Domains) DomainAcquire(request model.DomainAcquireRequest) (*model.Domain, error) {
 
 	user, err := d.users.Authenticate(request.Email, request.Password)
@@ -73,7 +100,6 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest) (*model.Doma
 		}}}
 	}
 	updateToken := utils.Uuid()
-	log.Println("uuid", updateToken)
 	if domain == nil {
 		domain = &model.Domain{
 			UserDomain:       *userDomain,

@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 from syncloudlib.json import convertible
 
 import ioc
+from backend_proxy import backend_request
 from servicesexceptions import ServiceException, ParametersException
 
 the_ioc = ioc.Ioc()
@@ -25,13 +26,13 @@ class UserFlask:
         return True
 
     def is_active(self):
-        return self.user.active
+        return True
 
     def is_anonymous(self):
         return False
 
     def get_id(self):
-        return unicode(self.user.email)
+        return unicode(self.user)
 
 
 @login_manager.user_loader
@@ -46,7 +47,7 @@ def load_user(email):
 def login():
     statsd_client.incr('www.user.login')
     user = users_manager.authenticate(request.form)
-    user_flask = UserFlask(user)
+    user_flask = UserFlask(user.email)
     login_user(user_flask, remember=False)
     return 'User logged in', 200
 
@@ -59,60 +60,11 @@ def logout():
     return 'User logged out', 200
 
 
-@app.route("/user/get", methods=["GET"])
-@login_required
-def user():
-    statsd_client.incr('www.user.get')
-    user = current_user.user
-    user_data = convertible.to_dict(user)
-    return jsonify(user_data), 200
-
-
-@app.route('/user/create', methods=["POST"])
-def user_create():
-    statsd_client.incr('www.user.create')
-    user = users_manager.create_new_user(request.form)
-    user_data = convertible.to_dict(user)
-    return jsonify(success=True, message='User was created', data=user_data), 200
-
-
-@app.route('/user/reset_password', methods=["POST"])
-def user_reset_password():
-    statsd_client.incr('www.user.reset_password')
-    users_manager.user_reset_password(request.form)
-    return jsonify(success=True, message='Reset password requested'), 200
-
-
 @app.route('/user/set_password', methods=["POST"])
 def user_set_password():
     statsd_client.incr('rest.user.set_password')
     users_manager.user_set_password(request.form)
     return jsonify(success=True, message='Password was set successfully'), 200
-
-
-@app.route('/user/activate', methods=["POST"])
-def user_activate():
-    statsd_client.incr('rest.user.activate')
-    users_manager.activate(request.form)
-    return jsonify(success=True, message='User was activated'), 200
-
-
-@app.route("/user_delete", methods=["POST"])
-@login_required
-def user_delete():
-    statsd_client.incr('www.user.delete')
-    user = current_user.user
-    users_manager.do_delete_user(user.email)
-    return 'User deleted', 200
-
-
-@app.route("/set_subscribed", methods=["POST"])
-@login_required
-def user_unsubscribe():
-    statsd_client.incr('www.user.unsubscribe')
-    user = current_user.user
-    users_manager.user_set_subscribed(request.form, user.email)
-    return 'Successfully set', 200
 
 
 @app.route("/domain_delete", methods=["POST"])
@@ -122,6 +74,38 @@ def domain_delete():
     user = current_user.user
     users_manager.user_domain_delete(request.form, user)
     return 'Domain deleted', 200
+
+
+@app.route('/user/reset_password', methods=["POST"])
+@app.route('/user/activate', methods=["POST"])
+@app.route('/user/create', methods=["POST"])
+def backend_proxy_public():
+    response = backend_request(request.method, '/web' + request.full_path, request.json, headers={})
+    return response.text, response.status_code
+
+
+@app.route("/notification/subscribe", methods=["POST"])
+@app.route("/notification/unsubscribe", methods=["POST"])
+@app.route("/user", methods=["GET"])
+@app.route("/domains", methods=["GET"])
+@app.route("/premium/request", methods=["POST"])
+@login_required
+def backend_proxy_private():
+    response = backend_request(request.method, '/web' + request.full_path, request.json,
+                               headers={'RedirectUserEmail': current_user.user.email})
+    return response.text, response.status_code
+
+
+@app.route("/user", methods=["DELETE"])
+@login_required
+def backend_proxy_user_delete():
+    response = backend_request(request.method, '/web' + request.full_path, request.json,
+                               headers={'RedirectUserEmail': current_user.user.email})
+    if response.status_code != 200:
+        return response.text, response.status_code
+    else:
+        logout_user()
+    return 'OK'
 
 
 @app.errorhandler(Exception)

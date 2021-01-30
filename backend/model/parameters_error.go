@@ -12,3 +12,9 @@ type ParameterMessages struct {
 func (p *ParameterError) Error() string {
 	return "There's an error in parameters"
 }
+
+func SingleParameterError(parameter string, message string) *ParameterError {
+	return &ParameterError{ParameterErrors: &[]ParameterMessages{{
+		Parameter: parameter, Messages: []string{message},
+	}}}
+}

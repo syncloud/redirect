@@ -4,4 +4,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 mysql --host=mysql --user=root --password=root -e "drop DATABASE if exists redirect"
 mysql --host=mysql --user=root --password=root -e "CREATE DATABASE redirect"
 mysql --host=mysql --user=root --password=root redirect < ${DIR}/../db/init.sql
+if [[ -f ${DIR}/../db/update.sql ]]; then
+  mysql --host=mysql --user=root --password=root redirect < ${DIR}/../db/update.sql
+fi
 

@@ -44,7 +44,6 @@
 
 <script>
 import axios from 'axios'
-import querystring from 'querystring'
 
 function showError (component, error) {
   if ('parameters_messages' in error) {
@@ -84,7 +83,7 @@ export default {
   methods: {
     register: function (event) {
       this.isError = false
-      axios.post('/api/user/create', querystring.stringify({ email: this.email, password: this.password }))
+      axios.post('/api/user/create', { email: this.email, password: this.password })
         .then(_ => {
           this.$router.push('/login')
         })

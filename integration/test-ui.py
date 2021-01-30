@@ -28,6 +28,8 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
         device.run_ssh('cp /var/log/apache2/redirect_rest-access.log {0}/{1}-rest-access.log'.format(TMP_DIR, ui_mode), throw=False)
         device.run_ssh('cp /var/log/apache2/redirect_ssl_web-access.log {0}/{1}-web-access.log'.format(TMP_DIR, ui_mode), throw=False)
         device.run_ssh('cp /var/log/apache2/redirect_ssl_web-error.log {0}/{1}-web-error.log'.format(TMP_DIR, ui_mode), throw=False)
+        device.run_ssh('journalctl | tail -500 > {0}/{1}-journalctl.log'.format(TMP_DIR, ui_mode), throw=False)
+        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from user' > {0}/{1}-db-user.log".format(artifact_dir, ui_mode), shell=True)
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('cp -R {0} {1}'.format(log_dir, artifact_dir), shell=True)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
@@ -135,10 +137,42 @@ def test_password_reset(driver, ui_mode, screenshot_dir):
 def test_account(driver, ui_mode, screenshot_dir):
     menu(driver, ui_mode, screenshot_dir, 'account')
 
-    delete_btn_xpath = "//button[text()='Delete']"
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, delete_btn_xpath)))
+    header_xpath = "//h2[text()='Account']"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, header_xpath)))
 
     screenshots(driver, screenshot_dir, 'account-' + ui_mode)
+
+
+def test_account_notification(driver, ui_mode, screenshot_dir):
+    driver.find_element_by_id("chk_email").click()
+    driver.find_element_by_id("save").click()
+    screenshots(driver, screenshot_dir, 'account-notification-off-' + ui_mode)
+
+    driver.find_element_by_id("chk_email").click()
+    driver.find_element_by_id("save").click()
+    screenshots(driver, screenshot_dir, 'account-notification-on-' + ui_mode)
+
+
+def test_account_premium_request(driver, ui_mode, screenshot_dir):
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'request_premium')))
+    driver.find_element_by_id("request_premium").click()
+
+    confirm_xpath = "//div[@id='premium_confirmation']//button[contains(text(), 'Yes')]"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, confirm_xpath)))
+    driver.find_element_by_xpath(confirm_xpath).click()
+
+    screenshots(driver, screenshot_dir, 'account-premium' + ui_mode)
+
+
+def test_account_delete(driver, ui_mode, screenshot_dir):
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'delete')))
+    driver.find_element_by_id("delete").click()
+
+    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(text(), 'Yes')]"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, confirm_xpath)))
+    driver.find_element_by_xpath(confirm_xpath).click()
+
+    screenshots(driver, screenshot_dir, 'account-delete' + ui_mode)
 
 
 def wait_or_screenshot(driver, ui_mode, screenshot_dir, method):
@@ -167,6 +201,6 @@ def menu(driver, ui_mode, screenshot_dir, element_id):
                 navbar.click()
             return
         except Exception as e:
-            print('error (attempt {0}/{1}): {2}'.format(retry + 1, retries, e.message))
+            print('error (attempt {0}/{1}): {2}'.format(retry + 1, retries, str(e)))
             time.sleep(1)
         retry += 1

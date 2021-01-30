@@ -105,16 +105,6 @@ class Mail:
     def send_letter(self, email_to, full_email_path, substitutions={}):
         send_letter(self.smtp, self.from_email, email_to, full_email_path, substitutions)
 
-    def send_activate(self, main_domain, email_to, token):
-        url = self.activate_url_template.format(token)
-        full_email_path = self.email_path('activate.txt')
-        self.send_letter(email_to, full_email_path, dict(main_domain=main_domain, url=url))
-
-    def send_reset_password(self, email_to, token):
-        url = self.password_url_template.format(token)
-        full_email_path = self.email_path('reset_password.txt')
-        self.send_letter(email_to, full_email_path, dict(url=url))
-
     def send_set_password(self, email_to):
         full_email_path = self.email_path('set_password.txt')
         self.send_letter(email_to, full_email_path)

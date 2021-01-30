@@ -87,7 +87,6 @@ export default {
   },
   methods: {
     login: function (event) {
-      console.log('login click')
       this.isError = false
       axios.post('/api/login', querystring.stringify({ email: this.email, password: this.password }))
         .then(response => {

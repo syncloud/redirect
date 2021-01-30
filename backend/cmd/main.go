@@ -7,31 +7,36 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
+	"github.com/syncloud/redirect/smtp"
 	"github.com/syncloud/redirect/utils"
 	"log"
 	"os"
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		log.Println("usage: ", os.Args[0], "config.cfg", "secret.cfg")
+	if len(os.Args) < 4 {
+		log.Println("usage: ", os.Args[0], "config.cfg", "secret.cfg", "mail_dir")
 		return
 	}
 
 	config := utils.NewConfig()
 	config.Load(os.Args[1], os.Args[2])
+	mailPath := os.Args[3]
 	database := db.NewMySql()
 	database.Connect(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
 
 	statsdClient := statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
 		statsd.MaxPacketSize(1400),
 		statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
-
 	dnsImp := dns.New(statsdClient, config.AwsAccessKeyId(), config.AwsSecretAccessKey(), config.AwsHostedZoneId())
-
-	users := service.NewUsers(database)
+	actions := service.NewActions(database)
+	smtpClient := smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
+		config.SmtpLogin(), config.SmtpPassword())
+	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailPasswordUrlTemplate(),
+		config.MailActivateUrlTemplate(), config.MailDeviceErrorTo(), config.Domain())
+	users := service.NewUsers(database, config.ActivateByEmail(), actions, mail)
 	domains := service.NewDomains(dnsImp, database, config.Domain(), users)
 
-	api := rest.NewApi(statsdClient, domains)
+	api := rest.NewApi(statsdClient, domains, users, actions, mail)
 	api.Start(config.GetApiSocket())
 }

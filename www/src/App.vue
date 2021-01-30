@@ -40,7 +40,7 @@ export default {
   },
   methods: {
     checkUserSession: function () {
-      axios.get('/api/user/get')
+      axios.get('/api/user')
         .then(response => {
           this.email = response.data.email
           this.loggedIn = true
