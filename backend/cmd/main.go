@@ -32,6 +32,6 @@ func main() {
 	users := service.NewUsers(database)
 	domains := service.NewDomains(dnsImp, database, config.Domain(), users)
 
-	api := rest.NewApi(statsdClient, domains)
+	api := rest.NewApi(statsdClient, domains, users)
 	api.Start(config.GetApiSocket())
 }
