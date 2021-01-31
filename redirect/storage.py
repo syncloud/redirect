@@ -11,11 +11,6 @@ class Storage:
     def __init__(self, session):
         self.session = session
 
-    def delete_user(self, user):
-        for domain in user.domains:
-            self.delete_domain(domain)
-        self.delete(user)
-
     def delete_domain(self, domain):
         self.delete(domain)
 

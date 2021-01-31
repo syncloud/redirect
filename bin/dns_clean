@@ -15,7 +15,7 @@ if __name__=='__main__':
     limit = args.limit
 
     manager = ioc.manager()
-    create_storage =  manager.create_storage
+    create_storage = manager.create_storage
     dns = manager.dns
     with create_storage() as storage:
         for domain in storage.get_domains_last_updated_before(date, limit):

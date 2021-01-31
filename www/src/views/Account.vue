@@ -117,7 +117,7 @@ export default {
         })
     },
     accountDelete: function () {
-      axios.post('api/user_delete')
+      axios.delete('api/user')
         .then(_ => {
           this.onLogout()
         })

@@ -98,15 +98,6 @@ def user_activate():
     return jsonify(success=True, message='User was activated'), 200
 
 
-@app.route("/user_delete", methods=["POST"])
-@login_required
-def user_delete():
-    statsd_client.incr('www.user.delete')
-    user = current_user.user
-    users_manager.do_delete_user(user.email)
-    return 'User deleted', 200
-
-
 @app.route("/domain_delete", methods=["POST"])
 @login_required
 def domain_delete():
@@ -117,6 +108,7 @@ def domain_delete():
 
 
 @app.route("/subscription", methods=["POST"])
+@app.route("/user", methods=["DELETE"])
 @login_required
 def backend_proxy():
     response = backend_request(request.method, '/web' + request.full_path, request.json, current_user.user.email)

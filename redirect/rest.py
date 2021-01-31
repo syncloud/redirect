@@ -52,13 +52,6 @@ def domain_delete():
     return jsonify(success=True, message='Domain was deleted'), 200
 
 
-@app.route('/user/delete', methods=["POST"])
-@cross_origin()
-def user_delete():
-    statsd_client.incr('rest.user.update')
-    users_manager.delete_user(request.form)
-    return jsonify(success=True, message='User deleted'), 200
-
 
 @app.route('/user/log', methods=["POST"])
 @cross_origin()

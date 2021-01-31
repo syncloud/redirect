@@ -41,6 +41,14 @@ func (u *Users) Subscribe(subscribed bool, userEmail string) error {
 	return u.db.UpdateUser(user)
 }
 
+func (u *Users) GetUserByEmail(userEmail string) (*model.User, error) {
+	return u.db.GetUserByEmail(userEmail)
+}
+
+func (u *Users) Delete(user *model.User) error {
+	return u.db.DeleteUser(user)
+}
+
 func hash(password string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
 }

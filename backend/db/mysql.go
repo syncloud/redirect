@@ -120,6 +120,22 @@ func (mysql *MySql) UpdateUser(user *model.User) error {
 	return nil
 }
 
+func (mysql *MySql) DeleteUser(user *model.User) error {
+
+	stmt, err := mysql.db.Prepare("DELETE FROM user WHERE id = ?")
+	if err != nil {
+		log.Println("Cannot delete user: ", user.Id, err)
+		return fmt.Errorf("DB error")
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(user.Id)
+	if err != nil {
+		log.Println("Cannot delete user: ", user.Id, err)
+		return fmt.Errorf("DB error")
+	}
+	return nil
+}
+
 func (mysql *MySql) GetDomainByToken(token string) (*model.Domain, error) {
 	row := mysql.db.QueryRow(
 		"SELECT "+
@@ -240,6 +256,91 @@ func (mysql *MySql) GetDomainByUserDomain(userDomain string) (*model.Domain, err
 	}
 
 	return domain, nil
+}
+
+func (mysql *MySql) DeleteAllDomains(user *model.User) error {
+
+	stmt, err := mysql.db.Prepare("DELETE FROM domain WHERE user_id = ?")
+	if err != nil {
+		log.Println("Cannot delete domains for user: ", user.Id, err)
+		return fmt.Errorf("DB error")
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(user.Id)
+	if err != nil {
+		log.Println("Cannot delete domains for user: ", user.Id, err)
+		return fmt.Errorf("DB error")
+	}
+	return nil
+}
+
+func (mysql *MySql) GetUserDomains(user *model.User) ([]*model.Domain, error) {
+	domains := make([]*model.Domain, 0)
+	rows, err := mysql.db.Query(
+		"SELECT "+
+			"id, "+
+			"user_domain, "+
+			"ip, "+
+			"ipv6, "+
+			"dkim_key, "+
+			"local_ip, "+
+			"map_local_address, "+
+			"update_token, "+
+			"user_id, "+
+			"device_mac_address, "+
+			"device_name, "+
+			"device_title, "+
+			"platform_version, "+
+			"web_protocol, "+
+			"web_port, "+
+			"web_local_port, "+
+			"last_update "+
+			"FROM domain "+
+			"WHERE user_id = ?", user.Id)
+	if err != nil {
+		log.Println("Cannot select domains for user: ", user.Id, err)
+		return nil, fmt.Errorf("DB error")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var mapLocalAddress *bool
+		domain := &model.Domain{}
+		err := rows.Scan(
+			&domain.Id,
+			&domain.UserDomain,
+			&domain.Ip,
+			&domain.Ipv6,
+			&domain.DkimKey,
+			&domain.LocalIp,
+			&mapLocalAddress,
+			&domain.UpdateToken,
+			&domain.UserId,
+			&domain.DeviceMacAddress,
+			&domain.DeviceName,
+			&domain.DeviceTitle,
+			&domain.PlatformVersion,
+			&domain.WebProtocol,
+			&domain.WebPort,
+			&domain.WebLocalPort,
+			&domain.LastUpdate,
+		)
+		if err != nil {
+			log.Println("Cannot scan domains for user: ", user.Id, err)
+			return nil, fmt.Errorf("DB error")
+		}
+		if mapLocalAddress != nil {
+			domain.MapLocalAddress = *mapLocalAddress
+		} else {
+			domain.MapLocalAddress = false
+		}
+		domains = append(domains, domain)
+	}
+	if err := rows.Err(); err != nil {
+		log.Println("Cannot process domains for user: ", user.Id, err)
+		return nil, fmt.Errorf("DB error")
+	}
+	return domains, nil
 }
 
 func (mysql *MySql) UpdateDomain(domain *model.Domain) error {

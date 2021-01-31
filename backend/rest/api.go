@@ -15,7 +15,7 @@ import (
 
 type Api struct {
 	statsdClient *statsd.Client
-	service      *service.Domains
+	domains      *service.Domains
 	users        *service.Users
 }
 
@@ -29,6 +29,7 @@ func (a *Api) Start(socket string) {
 	http.HandleFunc("/domain/acquire", a.DomainAcquireV1)
 	http.HandleFunc("/domain/acquire_v2", Handle("POST", a.DomainAcquireV2))
 	http.HandleFunc("/web/subscription", Handle("POST", a.WebSubscription))
+	http.HandleFunc("/user", Handle("DELETE", a.WebUserDelete))
 	server := http.Server{}
 	if _, err := os.Stat(socket); err == nil {
 		err := os.Remove(socket)
@@ -150,7 +151,7 @@ func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 	if deviceTitle := req.PostForm.Get("device_title"); deviceTitle != "" {
 		request.DeviceTitle = &deviceTitle
 	}
-	domain, err := a.service.DomainAcquire(request)
+	domain, err := a.domains.DomainAcquire(request)
 	if err != nil {
 		fail(w, err)
 		return
@@ -178,7 +179,7 @@ func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
 		log.Println("unable to parse domain acquire request", err)
 		return nil, errors.New("invalid request")
 	}
-	domain, err := a.service.DomainAcquire(request)
+	domain, err := a.domains.DomainAcquire(request)
 	if err != nil {
 		return nil, err
 	}
@@ -195,10 +196,38 @@ func (a *Api) WebSubscription(req *http.Request) (interface{}, error) {
 	}
 	userEmail := req.Header.Get("RedirectUserEmail")
 	if userEmail == "" {
-		log.Println("no user session", err)
+		log.Println("no user session")
 		return nil, errors.New("invalid request")
 	}
 	return "OK", a.users.Subscribe(request.Subscribed, userEmail)
+}
+
+func (a *Api) WebUserDelete(req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("www.user.delete", 1)
+	userEmail := req.Header.Get("RedirectUserEmail")
+	if userEmail == "" {
+		log.Println("no user session")
+		return nil, errors.New("invalid request")
+	}
+	user, err := a.users.GetUserByEmail(userEmail)
+	if err != nil {
+		log.Println("unable to get a user", err)
+		return nil, errors.New("invalid request")
+	}
+
+	err = a.domains.DeleteAllDomains(user)
+	if err != nil {
+		log.Println("unable to get domains for a user", err)
+		return nil, errors.New("invalid request")
+	}
+
+	err = a.users.Delete(user)
+	if err != nil {
+		log.Println("unable to delete a user", err)
+		return nil, errors.New("invalid request")
+	}
+
+	return "OK", nil
 }
 
 func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {
@@ -209,7 +238,7 @@ func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {
 		log.Println("unable to parse domain update request", err)
 		return nil, errors.New("invalid request")
 	}
-	domain, err := a.service.Update(request, a.requestIp(req))
+	domain, err := a.domains.Update(request, a.requestIp(req))
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +252,7 @@ func (a *Api) DomainGet(req *http.Request) (interface{}, error) {
 		return nil, errors.New("no token")
 	}
 
-	domain, err := a.service.GetDomain(keys[0])
+	domain, err := a.domains.GetDomain(keys[0])
 	if err != nil {
 		return nil, err
 	}
