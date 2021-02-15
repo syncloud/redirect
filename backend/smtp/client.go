@@ -2,7 +2,6 @@ package smtp
 
 import (
     "gopkg.in/gomail.v2"
-    "log"
 )
 
 type Smtp struct {

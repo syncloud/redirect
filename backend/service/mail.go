@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/syncloud/redirect/smtp"
 	"io/ioutil"
-	"log"
 	"strings"
 )
 
