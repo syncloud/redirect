@@ -13,40 +13,42 @@ let state = {
       update_token: '0a'
     }
   },
-  domains: [
-    {
-      device_mac_address: '111',
-      device_name: 'syncloud',
-      device_title: 'Syncloud',
-      dkim_key: 'dkim',
-      ip: '111.111.111.111',
-      ipv6: null,
-      last_update: 'Mon, 19 Oct 2020 19:31:49 GMT',
-      local_ip: '192.168.1.1',
-      map_local_address: false,
-      platform_version: '2',
-      user_domain: 'test',
-      web_local_port: 443,
-      web_port: 443,
-      web_protocol: 'https'
-    },
-    {
-      device_mac_address: '00:11:22:33:44:ff',
-      device_name: 'odroid-xu3and4',
-      device_title: 'ODROID-XU',
-      dkim_key: null,
-      ip: '111.222.333.444',
-      ipv6: '[::1]',
-      last_update: 'Mon, 19 Oct 2020 18:51:18 GMT',
-      local_ip: '192.168.1.2',
-      map_local_address: false,
-      platform_version: '2',
-      user_domain: 'test1',
-      web_local_port: 443,
-      web_port: 10001,
-      web_protocol: 'https'
-    }
-  ]
+  domains: {
+    data: [
+      {
+        device_mac_address: '111',
+        device_name: 'syncloud',
+        device_title: 'Syncloud',
+        dkim_key: 'dkim',
+        ip: '111.111.111.111',
+        ipv6: null,
+        last_update: 'Mon, 19 Oct 2020 19:31:49 GMT',
+        local_ip: '192.168.1.1',
+        map_local_address: false,
+        platform_version: '2',
+        user_domain: 'test',
+        web_local_port: 443,
+        web_port: 443,
+        web_protocol: 'https'
+      },
+      {
+        device_mac_address: '00:11:22:33:44:ff',
+        device_name: 'odroid-xu3and4',
+        device_title: 'ODROID-XU',
+        dkim_key: null,
+        ip: '111.222.333.444',
+        ipv6: '[::1]',
+        last_update: 'Mon, 19 Oct 2020 18:51:18 GMT',
+        local_ip: '192.168.1.2',
+        map_local_address: false,
+        platform_version: '2',
+        user_domain: 'test1',
+        web_local_port: 443,
+        web_port: 10001,
+        web_protocol: 'https'
+      }
+    ]
+  }
 }
 
 const express = require('express')

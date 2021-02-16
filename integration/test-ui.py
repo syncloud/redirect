@@ -118,7 +118,7 @@ def test_devices(domain, driver, ui_mode, screenshot_dir):
 
     menu(driver, ui_mode, screenshot_dir, 'devices')
 
-    device_label = "//span[text()='Some Device']"
+    device_label = "//h3[text()='Some Device']"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, device_label)))
     by_xpath = driver.find_element_by_xpath(device_label)
     screenshots(driver, screenshot_dir, 'devices-' + ui_mode)

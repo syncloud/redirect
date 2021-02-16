@@ -29,9 +29,9 @@
               <div class="panel-heading">
                 <div class="panel-title">
                   <h3 style="margin-top: 5px; margin-bottom: 5px">
-                <span>
-                    {{ domain.domain_name }}
-                </span>
+                    <span>
+                      {{ domain.domain_name }}
+                    </span>
                     <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
                   </h3>
                 </div>
@@ -174,11 +174,12 @@ export default {
     reload: function () {
       axios.get('/api/domains')
         .then(response => {
-          if (response.data.length > 0) {
+          const domains = response.data.data
+          if (domains.length > 0) {
             this.hasDomains = true
             let group = []
             const groups = []
-            response.data.forEach(domain => {
+            domains.forEach(domain => {
               group.push(convert(domain))
               if (group.length === 2) {
                 groups.push(group)
