@@ -1,8 +1,10 @@
+import json
 import time
 from os.path import dirname
 from subprocess import check_output
 
 import pytest
+import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,8 +16,8 @@ import smtp
 import db
 
 DIR = dirname(__file__)
-DEVICE_USER="user@example.com"
-DEVICE_PASSWORD="password"
+DEVICE_USER = "user@example.com"
+DEVICE_PASSWORD = "password"
 TMP_DIR = '/tmp/syncloud'
 
 
@@ -97,12 +99,30 @@ def test_login(driver, ui_mode, screenshot_dir):
     assert "You do not have any activated devices" in driver.page_source.encode("utf-8")
 
 
-def test_devices(driver, ui_mode, screenshot_dir):
+def test_devices(domain, driver, ui_mode, screenshot_dir):
+
+    acquire_data = {
+        'user_domain': ui_mode,
+        'email': DEVICE_USER,
+        'password': DEVICE_PASSWORD,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device',
+    }
+    response = requests.post('https://api.{0}/domain/acquire'.format(domain),
+                             data=acquire_data,
+                             verify=False)
+    domain_data = json.loads(response.text)
+    assert 'update_token' in domain_data, response.text
+    update_token = domain_data['update_token']
+
     menu(driver, ui_mode, screenshot_dir, 'devices')
 
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'no_domains')))
+    device_label = "//span[text()='Some Device']"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, device_label)))
+    by_xpath = driver.find_element_by_xpath(device_label)
     screenshots(driver, screenshot_dir, 'devices-' + ui_mode)
-    assert "You do not have any activated devices" in driver.page_source.encode("utf-8")
+    assert by_xpath is not None
 
 
 def test_password_reset(driver, ui_mode, screenshot_dir):
