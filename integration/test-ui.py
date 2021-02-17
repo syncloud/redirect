@@ -113,7 +113,9 @@ def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
     response = requests.post('https://api.{0}/domain/acquire'.format(domain),
                              data=acquire_data,
                              verify=False)
-    domain_data = json.loads(response.text)
+    acquire_response = json.loads(response.text)
+    assert acquire_response['success'], response.text
+    domain_data = acquire_response['data']
     assert 'update_token' in domain_data, response.text
     update_token = domain_data['update_token']
 
