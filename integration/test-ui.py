@@ -115,9 +115,7 @@ def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
                              verify=False)
     acquire_response = json.loads(response.text)
     assert acquire_response['success'], response.text
-    domain_data = acquire_response['data']
-    assert 'update_token' in domain_data, response.text
-    update_token = domain_data['update_token']
+    assert acquire_response['update_token'], response.text
 
     driver.get("https://www.{0}/api/domains".format(domain))
     with open(join(artifact_dir, '{}-api-domains.log'.format(ui_mode)), 'w') as f:
