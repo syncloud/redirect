@@ -157,7 +157,23 @@ def test_password_reset(driver, ui_mode, screenshot_dir):
     reset = driver.find_element_by_id('reset')
     reset.click()
 
-    test_login(driver, ui_mode, screenshot_dir)
+    menu(driver, ui_mode, screenshot_dir, 'login')
+
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'email')))
+
+    screenshots(driver, screenshot_dir, 'reset-login-' + ui_mode)
+    user = driver.find_element_by_id("email")
+    user.send_keys(DEVICE_USER)
+    password = driver.find_element_by_id("password")
+    password.send_keys(DEVICE_PASSWORD)
+    screenshots(driver, screenshot_dir, 'reset-login-credentials-' + ui_mode)
+    password.send_keys(Keys.RETURN)
+    screenshots(driver, screenshot_dir, 'reset-login-progress-' + ui_mode)
+    device_label = "//h3[text()='Some Device']"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, device_label)))
+    by_xpath = driver.find_element_by_xpath(device_label)
+    screenshots(driver, screenshot_dir, 'reset-devices-' + ui_mode)
+    assert by_xpath is not None
 
 
 def test_account(driver, ui_mode, screenshot_dir):
