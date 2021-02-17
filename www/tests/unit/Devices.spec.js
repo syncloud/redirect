@@ -17,7 +17,6 @@ describe('timestamp', () => {
 })
 
 test('Show devices', async () => {
-
   const mock = new MockAdapter(axios)
   mock.onGet('/api/domains').reply(200,
     {

@@ -120,6 +120,7 @@ def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
     driver.get("https://www.{0}/api/domains".format(domain))
     with open(join(artifact_dir, '{}-api-domains.log'.format(ui_mode)), 'w') as f:
         f.write(str(driver.page_source.encode("utf-8")))
+    driver.get("https://www.{0}".format(domain))
 
     menu(driver, ui_mode, screenshot_dir, 'devices')
 
