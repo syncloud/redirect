@@ -1,6 +1,6 @@
 import json
 import time
-from os.path import dirname
+from os.path import dirname, join
 from subprocess import check_output
 
 import pytest
@@ -100,7 +100,7 @@ def test_login(driver, ui_mode, screenshot_dir):
     assert "You do not have any activated devices" in driver.page_source.encode("utf-8")
 
 
-def test_devices(domain, driver, ui_mode, screenshot_dir):
+def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
 
     acquire_data = {
         'user_domain': ui_mode,
@@ -116,6 +116,10 @@ def test_devices(domain, driver, ui_mode, screenshot_dir):
     domain_data = json.loads(response.text)
     assert 'update_token' in domain_data, response.text
     update_token = domain_data['update_token']
+
+    driver.get("https://www.{0}/api/domains".format(domain))
+    with open(join(artifact_dir, '{}-api-domains.log'.format(ui_mode)), 'w') as f:
+        f.write(str(driver.page_source.encode("utf-8")))
 
     menu(driver, ui_mode, screenshot_dir, 'devices')
 
