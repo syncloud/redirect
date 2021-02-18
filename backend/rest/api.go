@@ -237,7 +237,7 @@ func (a *Api) WebNotificationSubscribe(req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	user.Unsubscribed = true
+	user.Unsubscribed = false
 	return "OK", a.users.Save(user)
 }
 
@@ -247,7 +247,7 @@ func (a *Api) WebNotificationUnsubscribe(req *http.Request) (interface{}, error)
 	if err != nil {
 		return nil, err
 	}
-	user.Unsubscribed = false
+	user.Unsubscribed = true
 	return "OK", a.users.Save(user)
 }
 
