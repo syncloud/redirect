@@ -54,7 +54,7 @@
               <div class="panel-body">
                 <h4>Email</h4>
                 <div class="pull-left">
-                  <input v-model="subscribed" type="checkbox" id="chk_email">
+                  <input v-model="subscribed" type="checkbox" id="chk_email" :value="subscribed">
                   <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me Syncloud notifications,
                     including releases announcements</label>
                 </div>
