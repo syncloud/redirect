@@ -188,13 +188,13 @@ def test_account(driver, ui_mode, screenshot_dir):
 def test_account_notification(driver, ui_mode, screenshot_dir):
     driver.find_element_by_id("chk_email").click()
     driver.find_element_by_id("save").click()
-    switch = "//input[@d='chk_email' and not(@checked)]"
+    switch = "//input[@id='chk_email' and not(@checked)]"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, switch)))
     screenshots(driver, screenshot_dir, 'account-notification-off-' + ui_mode)
 
     driver.find_element_by_id("chk_email").click()
     driver.find_element_by_id("save").click()
-    switch = "//input[@d='chk_email' and @checked]"
+    switch = "//input[@id='chk_email' and @checked]"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, switch)))
     screenshots(driver, screenshot_dir, 'account-notification-on-' + ui_mode)
 
