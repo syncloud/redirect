@@ -26,8 +26,8 @@ func init() {
 }
 
 type Dns interface {
-	UpdateDomain(mainDomain string, domain *model.Domain) error
-	DeleteDomain(mainDomain string, domain *model.Domain) error
+	UpdateDomain(domain *model.Domain) error
+	DeleteDomain(domain *model.Domain) error
 }
 
 type AmazonDns struct {
@@ -50,35 +50,32 @@ func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string
 	}
 }
 
-func (a *AmazonDns) UpdateDomain(mainDomain string, domain *model.Domain) error {
-	fullDomain := domain.DnsName(mainDomain)
-	ipv4 := domain.DnsIpv4()
-	ipv6 := domain.DnsIpv6()
-	spf := "\"v=spf1 a mx -all\""
-	mx := fmt.Sprintf("1 %s", fullDomain)
-	dkim := domain.DkimKey
-	err := a.delete(fullDomain, a.hostedZoneId)
+func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {
+	err := a.DeleteDomain(domain)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(fullDomain, ipv4, ipv6, dkim, spf, mx, "CREATE", a.hostedZoneId)
+	err = a.actionDomain(
+		domain.FQDN(),
+		domain.DnsIpv4(),
+		domain.DnsIpv6(),
+		domain.DkimKey,
+		"\"v=spf1 a mx -all\"",
+		fmt.Sprintf("1 %s", domain.FQDN()),
+		"CREATE",
+		a.hostedZoneId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *AmazonDns) DeleteDomain(mainDomain string, domain *model.Domain) error {
-	fullDomain := domain.DnsName(mainDomain)
-	return a.delete(fullDomain, a.hostedZoneId)
-}
-
-func (a *AmazonDns) delete(fullDomain string, hostedZoneId string) error {
-	err := a.actionDomain(fullDomain, &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", hostedZoneId)
+func (a *AmazonDns) DeleteDomain(domain *model.Domain) error {
+	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", a.hostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(fullDomain, &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", hostedZoneId)
+	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", a.hostedZoneId)
 	if err != nil {
 		return err
 	}
@@ -122,7 +119,6 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 	var changes []*route53.Change
 
 	if ipv6 != nil {
-
 		changes = append(changes, a.changeAAAA(*ipv6, domain, action))
 		changes = append(changes, a.changeAAAA(*ipv6, fmt.Sprintf("*.%s", domain), action))
 	}

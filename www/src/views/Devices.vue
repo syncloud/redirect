@@ -138,10 +138,9 @@ function online (ds) {
 }
 
 function convert (domain) {
-  domain.domain_name = domain.user_domain + '.syncloud.it'
   domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port
-  domain.domain_address = fullUrl(domain.domain_name, domain.domain_address_port)
-  domain.has_domain_address = domain.domain_name !== null
+  domain.domain_address = fullUrl(domain.full_domain, domain.domain_address_port)
+  domain.has_domain_address = domain.full_domain !== null
   domain.external_address = fullUrl(domain.ip, domain.web_port)
   domain.has_external_address = domain.ip !== null
   domain.internal_address = 'https://' + domain.local_ip

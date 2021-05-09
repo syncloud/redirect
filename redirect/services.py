@@ -61,33 +61,6 @@ class Users(UsersRead):
 
         return user
 
-    def drop_device(self, request):
-        self.authenticate(request)
-        validator = Validator(request)
-        user_domain = validator.new_user_domain()
-        check_validator(validator)
-
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_name(user_domain)
-
-            if not domain or not domain.user.active:
-                raise servicesexceptions.bad_request('Unknown domain')
-
-            domain.update_token = None
-            domain.device_mac_address = None
-            domain.device_name = None
-            domain.device_title = None
-            domain.ip = None
-            domain.local_ip = None
-
-            self.dns.delete_domain(self.main_domain, domain)
-
-            return domain
-
-    def domain_delete(self, request):
-        user = self.authenticate(request)
-        self.user_domain_delete(request, user)
-
     def user_domain_delete(self, request, user):
         validator = Validator(request)
         user_domain = validator.user_domain()
@@ -102,30 +75,6 @@ class Users(UsersRead):
             self.dns.delete_domain(self.main_domain, domain)
 
             storage.delete_domain(domain)
-
-
-    def do_user_domain_delete(self, user_domain):
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_name(user_domain)
-
-            if not domain:
-                raise servicesexceptions.bad_request('Unknown domain')
-
-            self.dns.delete_domain(self.main_domain, domain)
-
-            storage.delete_domain(domain)
-
-
-    def user_log(self, request):
-        validator = Validator(request)
-        token = validator.token()
-        data = validator.string('data')
-        include_support = validator.boolean('include_support', False, True)
-        with self.create_storage() as storage:
-            user = storage.get_user_by_update_token(token)
-            if not user:
-                raise servicesexceptions.bad_request('Invalid update token')
-            self.mail.send_logs(user.email, data, include_support)
 
     def user_set_password(self, request):
         validator = Validator(request)
@@ -145,31 +94,3 @@ class Users(UsersRead):
 
             action = storage.get_action(token)
             storage.delete(action)
-
-    def port_probe(self, request, request_ip):
-        validator = Validator(request)
-        token = validator.token()
-        port = validator.port('port', True)
-        protocol = validator.string('protocol', False)
-        ip = validator.string('ip', False)
-        check_validator(validator)
-        domain = None
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_update_token(token)
-
-        if not domain or not domain.user.active:
-            raise servicesexceptions.bad_request('Unknown domain update token')
-
-        try:
-            if ip:
-                request_ip = ip
-            
-            response = requests.get('{0}://{1}:{2}/ping'.format(protocol, request_ip, port),
-                                    timeout=1, verify=False, allow_redirects=False)
-            if response.status_code == 200:
-                return {'message': response.text, 'device_ip': request_ip}, 200
-
-        except Exception, e:
-            pass
-
-        return {'message': 'Port is not reachable', 'device_ip': request_ip}, 404

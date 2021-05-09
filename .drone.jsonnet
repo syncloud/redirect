@@ -11,7 +11,7 @@ local build(arch) = {
     steps: [
         {
             name: "build web",
-            image: "node",
+            image: "node:16.1.0",
             commands: [
                 "mkdir build",
                 "cd www",
@@ -63,7 +63,7 @@ local build(arch) = {
         },
         {
             name: "test-integration",
-            image: "syncloud/build-deps-" + arch,
+            image: "python:3.9-buster",
             environment: {
                 access_key_id: {
                   from_secret: "access_key_id"
@@ -76,23 +76,38 @@ local build(arch) = {
                 },
             },
             commands: [
+                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
 	            "pip install -r dev_requirements.txt",
                 "cd integration",
-                "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=device --build-number=${DRONE_BUILD_NUMBER}"
+                "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ]
         },
         {
-            name: "test-ui",
-            image: "syncloud/build-deps-" + arch,
+            name: "test-ui-desktop",
+            image: "python:3.9-buster",
             commands: [
-	            "pip install -r dev_requirements.txt",
-                "cd integration",
-                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=device",
-                "xvfb-run -l --server-args='-screen 0, 1024x4096x24' py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=device",
+              "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
+              "pip install -r dev_requirements.txt",
+              "cd integration",
+              "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test ",
             ],
             volumes: [{
-              name: "shm",
-              path: "/dev/shm"
+                name: "shm",
+                path: "/dev/shm"
+            }]
+        },
+        {
+            name: "test-ui-mobile",
+            image: "python:3.9-buster",
+            commands: [
+              "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
+              "pip install -r dev_requirements.txt",
+              "cd integration",
+              "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test ",
+            ],
+            volumes: [{
+                name: "shm",
+                path: "/dev/shm"
             }]
         },
         {
@@ -137,7 +152,15 @@ local build(arch) = {
             }
         },
         {
-            name: "device",
+            name: "selenium",
+            image: "selenium/standalone-firefox:4.0.0-beta-3-prerelease-20210402",
+            volumes: [{
+                name: "shm",
+                path: "/dev/shm"
+            }]
+        },
+        {
+            name: "www.syncloud.test",
             image: "syncloud/platform-jessie-amd64",
             privileged: true,
             volumes: [

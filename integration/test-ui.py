@@ -1,4 +1,6 @@
 import json
+import socket
+
 import time
 from os.path import dirname, join
 from subprocess import check_output
@@ -40,15 +42,14 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
     request.addfinalizer(module_teardown)
 
 
-def test_start(module_setup, device_host, domain, driver):
-    check_output('apt-get update', shell=True)
-    check_output('apt-get install -y mysql-client', shell=True)
-    add_host_alias_by_ip('app', 'www', device_host, domain)
+def test_start(module_setup, device_host, domain):
     add_host_alias_by_ip('app', 'api', device_host, domain)
     db.recreate()
 
 
 def test_error(driver, screenshot_dir, ui_mode, domain):
+    ip = socket.gethostbyname('www.syncloud.test')
+    print('domain ip: ' + ip)
     driver.get("https://www.{0}/error".format(domain))
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'error')))
     screenshots(driver, screenshot_dir, 'error-' + ui_mode)
@@ -97,7 +98,7 @@ def test_login(driver, ui_mode, screenshot_dir):
     screenshots(driver, screenshot_dir, 'login-progress-' + ui_mode)
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'no_domains')))
     screenshots(driver, screenshot_dir, 'default-' + ui_mode)
-    assert "You do not have any activated devices" in driver.page_source.encode("utf-8")
+    assert "You do not have any activated devices" in driver.page_source
 
 
 def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
@@ -176,6 +177,22 @@ def test_password_reset(driver, ui_mode, screenshot_dir):
     assert by_xpath is not None
 
 
+def test_domain_delete(driver, ui_mode, screenshot_dir):
+    deactivate_xpath = "//div[contains(@class, 'panel')]//button[contains(text(), 'Deactivate')]"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, deactivate_xpath)))
+    driver.find_element_by_xpath(deactivate_xpath).click()
+
+    confirm_xpath = "//div[contains(@class, 'modal-dialog')]//button[contains(text(), 'Deactivate')]"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, confirm_xpath)))
+    driver.find_element_by_xpath(confirm_xpath).click()
+
+    device_label = "//h3[text()='Some Device']"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.invisibility_of_element_located((By.XPATH, device_label)))
+    by_xpath = driver.find_element_by_xpath(device_label)
+    screenshots(driver, screenshot_dir, 'devices-removed-' + ui_mode)
+    assert by_xpath is not None
+
+
 def test_account(driver, ui_mode, screenshot_dir):
     menu(driver, ui_mode, screenshot_dir, 'account')
 
@@ -219,6 +236,10 @@ def test_account_delete(driver, ui_mode, screenshot_dir):
     driver.find_element_by_xpath(confirm_xpath).click()
 
     screenshots(driver, screenshot_dir, 'account-delete' + ui_mode)
+
+
+def test_teardown(driver):
+    driver.quit()
 
 
 def wait_or_screenshot(driver, ui_mode, screenshot_dir, method):

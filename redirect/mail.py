@@ -53,22 +53,7 @@ def read_letter(filepath):
 
 
 def send_letter(smtp, email_from, email_to, full_email_path, substitutions={}):
-    format = 'plain'
-    _, extension = splitext(full_email_path)
-    if extension == '.html':
-        format = 'html'
-    subject, letter = read_letter(full_email_path)
-
-    if substitutions:
-        content = letter.format(**substitutions)
-    else:
-        content = letter
-
-    msg = MIMEText(content, format)
-    msg['Subject'] = subject
-    msg['From'] = email_from
-    msg['To'] = email_to
-    smtp.send(email_from, [email_to], msg.as_string())
+    send_letter_to_many(smtp, email_from, [email_to], full_email_path, substitutions)
 
 
 def send_letter_to_many(smtp, email_from, emails_to, full_email_path, substitutions={}):
@@ -109,18 +94,3 @@ class Mail:
         full_email_path = self.email_path('set_password.txt')
         self.send_letter(email_to, full_email_path)
 
-    def send_logs(self, user_email, data, include_support):
-        fd, filename = tempfile.mkstemp()
-        with os.fdopen(fd, 'w') as f:
-            f.write('Device error report\n')
-            f.write('Thank you for sharing Syncloud device error info, Syncloud support will get back to you shortly.\n')
-            f.write('If you need to add more details just reply to this email.\n\n')
-            f.write(data.encode('utf-8'))
-        try:
-            from_email = self.device_error_email
-            to_email = [user_email]
-            if include_support:
-                to_email.append(self.device_error_email)
-            send_letter_to_many(self.smtp, from_email, to_email, filename)
-        finally:
-            os.unlink(filename)

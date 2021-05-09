@@ -12,6 +12,10 @@ type UsersDbStub struct {
 	action *model.Action
 }
 
+func (db *UsersDbStub) GetUserByUpdateToken(updateToken string) (*model.User, error) {
+	panic("implement me")
+}
+
 func (db *UsersDbStub) GetUserByEmail(_ string) (*model.User, error) {
 	return db.user, nil
 

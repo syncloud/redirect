@@ -14,7 +14,7 @@ type (
 		Ipv6             *string    `json:"ipv6,omitempty"`
 		DkimKey          *string    `json:"dkim_key,omitempty"`
 		LocalIp          *string    `json:"local_ip,omitempty"`
-		MapLocalAddress  bool       `json:"map_local_address,omitempty"`
+		MapLocalAddress  bool       `json:"map_local_address"`
 		UpdateToken      *string    `json:"update_token,omitempty"`
 		LastUpdate       *time.Time `json:"last_update,omitempty"`
 		DeviceMacAddress *string    `json:"device_mac_address,omitempty"`
@@ -24,13 +24,14 @@ type (
 		WebProtocol      *string    `json:"web_protocol,omitempty"`
 		WebPort          *int       `json:"web_port,omitempty"`
 		WebLocalPort     *int       `json:"web_local_port,omitempty"`
-		UserId           int64     `json:"-"`
+		UserId           int64      `json:"-"`
 		HostedZoneId     uint64     `json:"-"`
+		FullDomain       string     `json:"full_domain,omitempty"`
 	}
 )
 
-func (d *Domain) DnsName(mainDomain string) string {
-	return fmt.Sprintf("%s.%s.", d.UserDomain, mainDomain)
+func (d *Domain) FQDN() string {
+	return fmt.Sprintf("%s.", d.FullDomain)
 }
 
 func (d *Domain) accessIp() *string {
@@ -67,4 +68,3 @@ func (d *Domain) DnsIpv4() *string {
 	}
 	return nil
 }
-

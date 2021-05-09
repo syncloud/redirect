@@ -29,7 +29,8 @@ let state = {
         user_domain: 'test',
         web_local_port: 443,
         web_port: 443,
-        web_protocol: 'https'
+        web_protocol: 'https',
+        full_domain: 'test.syncloud.test'
       },
       {
         device_mac_address: '00:11:22:33:44:ff',
@@ -45,7 +46,8 @@ let state = {
         user_domain: 'test1',
         web_local_port: 443,
         web_port: 10001,
-        web_protocol: 'https'
+        web_protocol: 'https',
+        full_domain: 'test1.syncloud.test'
       }
     ]
   }

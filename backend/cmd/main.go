@@ -22,7 +22,7 @@ func main() {
 	config := utils.NewConfig()
 	config.Load(os.Args[1], os.Args[2])
 	mailPath := os.Args[3]
-	database := db.NewMySql()
+	database := db.NewMySql(config.Domain())
 	database.Connect(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
 
 	statsdClient := statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
@@ -35,8 +35,8 @@ func main() {
 	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailPasswordUrlTemplate(),
 		config.MailActivateUrlTemplate(), config.MailDeviceErrorTo(), config.Domain())
 	users := service.NewUsers(database, config.ActivateByEmail(), actions, mail)
-	domains := service.NewDomains(dnsImp, database, config.Domain(), users)
-
-	api := rest.NewApi(statsdClient, domains, users, actions, mail)
+	domains := service.NewDomains(dnsImp, database, users)
+	probe := service.NewPortProbe(database)
+	api := rest.NewApi(statsdClient, domains, users, actions, mail, probe)
 	api.Start(config.GetApiSocket())
 }

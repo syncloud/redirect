@@ -16,6 +16,7 @@ const (
 
 type UsersDb interface {
 	GetUserByEmail(email string) (*model.User, error)
+	GetUserByUpdateToken(updateToken string) (*model.User, error)
 	InsertUser(user *model.User) (int64, error)
 	GetUser(id int64) (*model.User, error)
 	UpdateUser(user *model.User) error
@@ -90,6 +91,10 @@ func (u *Users) Save(user *model.User) error {
 
 func (u *Users) GetUserByEmail(userEmail string) (*model.User, error) {
 	return u.db.GetUserByEmail(userEmail)
+}
+
+func (u *Users) GetUserByUpdateToken(updateToken string) (*model.User, error) {
+	return u.db.GetUserByUpdateToken(updateToken)
 }
 
 func (u *Users) Delete(userId int64) error {

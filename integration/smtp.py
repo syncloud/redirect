@@ -1,10 +1,11 @@
+
 import datetime
 import json
 import quopri
 import time
 from os.path import join
 
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 import requests
 
@@ -27,7 +28,7 @@ def try_emails(artifact_dir):
         with open(join(artifact_dir, 'mails-{}.log'.format(datetime.datetime.now().microsecond)), 'w') as f:
             f.write(str(response.text))
 
-    return [quopri.decodestring(message['Content']['Body']) for message in json.loads(response.text)]
+    return [quopri.decodestring(message['Content']['Body']).decode("utf-8") for message in json.loads(response.text)]
 
 
 def clear():

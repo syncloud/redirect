@@ -84,6 +84,16 @@ func (m *Mail) SendPremiumRequest(to string) error {
 	return err
 }
 
+func (m *Mail) SendLogs(to string, data string, includeSupport bool) error {
+	data += "Thank you for sharing Syncloud device error info, Syncloud support will get back to you shortly.\n"
+	data += "If you need to add more details just reply to this email.\n\n"
+
+	if includeSupport {
+		to += ", " + m.deviceErrorTo
+	}
+	return m.smtp.Send(m.from, to, "text/plain", data, "Device error report")
+}
+
 func ParseUrl(template string, token string) string {
 	return strings.ReplaceAll(template, "{0}", token)
 }
