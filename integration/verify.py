@@ -31,8 +31,8 @@ def module_setup(request, log_dir, artifact_dir, device):
         device.run_ssh('ls -la /var/run > {0}/var.run.ls.log'.format(TMP_DIR), throw=False)
         device.run_ssh('journalctl | tail -500 > {0}/journalctl.log'.format(TMP_DIR), throw=False)
         device.run_ssh('cp /var/log/syslog {0}/syslog.log'.format(TMP_DIR), throw=False)
-        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from user' > {0}/db-user.log".format(artifact_dir), shell=True)
-        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from action' > {0}/db-action.log".format(artifact_dir), shell=True)
+        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from user' > {0}/db-user.log || true".format(artifact_dir), shell=True)
+        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from action' > {0}/db-action.log || true".format(artifact_dir), shell=True)
 
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
@@ -240,6 +240,44 @@ def test_get_user_data(domain):
     }
 
     assert expected == user_data
+
+
+def test_domain_availability(domain):
+    email = 'test_domain_availability@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+
+    user_domain = "domain_availability"
+    request = {
+        'user_domain': user_domain,
+        'email': email,
+        'password': password,
+    }
+
+    response = requests.post('https://api.{0}/domain/availability'.format(domain),
+                             json=request,
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    acquire_domain(domain, email, password, user_domain)
+
+    response = requests.post('https://api.{0}/domain/availability'.format(domain),
+                             json=request,
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    email = 'test_domain_availability_other@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password)
+    request = {
+        'user_domain': user_domain,
+        'email': email,
+        'password': password,
+    }
+    response = requests.post('https://api.{0}/domain/availability'.format(domain),
+                             json=request,
+                             verify=False)
+    assert response.status_code == 400, response.text
 
 
 def test_user_reset_password_sent_mail(domain):

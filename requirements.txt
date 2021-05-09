@@ -12,5 +12,5 @@ statsd==3.2.1
 syncloud-lib==185
 IPy==0.83
 sql-to-graphite==0.0.6
-requests-unixsocket==0.1.5
+requests-unixsocket==0.2.0
 configparser==4.0.2

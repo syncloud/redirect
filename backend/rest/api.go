@@ -33,6 +33,7 @@ func (a *Api) Start(socket string) {
 	r.HandleFunc("/domain/get", Handle(a.DomainGet)).Methods("GET")
 	r.HandleFunc("/domain/acquire", a.DomainAcquireV1).Methods("POST")
 	r.HandleFunc("/domain/acquire_v2", Handle(a.DomainAcquireV2)).Methods("POST")
+	r.HandleFunc("/domain/availability", Handle(a.DomainAvailability)).Methods("POST")
 	r.HandleFunc("/user/create", Handle(a.UserCreate)).Methods("POST")
 	r.HandleFunc("/user/create_v2", Handle(a.UserCreateV2)).Methods("POST")
 	r.HandleFunc("/web/notification/subscribe", Handle(a.WebNotificationSubscribe)).Methods("POST")
@@ -225,6 +226,21 @@ func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
 		return nil, errors.New("invalid request")
 	}
 	domain, err := a.domains.DomainAcquire(request)
+	if err != nil {
+		return nil, err
+	}
+	return domain, nil
+}
+
+func (a *Api) DomainAvailability(req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.domain.availability", 1)
+	request := model.DomainAvailabilityRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse request", err)
+		return nil, errors.New("invalid request")
+	}
+	domain, err := a.domains.Availability(request)
 	if err != nil {
 		return nil, err
 	}

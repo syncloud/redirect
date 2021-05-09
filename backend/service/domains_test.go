@@ -1,9 +1,81 @@
 package service
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/dns"
+	"github.com/syncloud/redirect/model"
 	"testing"
 )
+
+type DnsStub struct {
+}
+
+func (dns *DnsStub) UpdateDomain(mainDomain string, domain *model.Domain) error {
+	return nil
+}
+
+func (dns *DnsStub) DeleteDomain(mainDomain string, domain *model.Domain) error {
+	return nil
+}
+
+var _ dns.Dns = (*DnsStub)(nil)
+
+type DomainsDbStub struct {
+	userId   int64
+	found    bool
+	updated  bool
+	inserted bool
+}
+
+func (db *DomainsDbStub) GetDomainByToken(token string) (*model.Domain, error) {
+	return nil, nil
+}
+func (db *DomainsDbStub) GetUserDomains(userId int64) ([]*model.Domain, error) {
+	return nil, nil
+
+}
+func (db *DomainsDbStub) GetUser(id int64) (*model.User, error) {
+	return nil, nil
+
+}
+func (db *DomainsDbStub) DeleteAllDomains(userId int64) error {
+	return nil
+
+}
+func (db *DomainsDbStub) GetDomainByUserDomain(userDomain string) (*model.Domain, error) {
+	if db.found {
+		return &model.Domain{UserDomain: userDomain, UserId: db.userId}, nil
+	}
+	return nil, nil
+
+}
+func (db *DomainsDbStub) InsertDomain(domain *model.Domain) error {
+	db.inserted = true
+	return nil
+
+}
+func (db *DomainsDbStub) UpdateDomain(domain *model.Domain) error {
+	db.updated = true
+	return nil
+
+}
+
+var _ DomainsDb = (*DomainsDbStub)(nil)
+
+type DomainsUsersStub struct {
+	userId        int64
+	authenticated bool
+}
+
+func (users *DomainsUsersStub) Authenticate(email *string, password *string) (*model.User, error) {
+	if users.authenticated {
+		return &model.User{Id: users.userId, Email: *email, Active: true}, nil
+	}
+	return nil, fmt.Errorf("authentication failed")
+}
+
+var _ DomainsUsers = (*DomainsUsersStub)(nil)
 
 func TestNotChanged(t *testing.T) {
 	ip := "1"
@@ -121,4 +193,111 @@ func TestEquals(t *testing.T) {
 	assert.True(t, Equals(nil, nil))
 	assert.False(t, Equals(&ip, nil))
 	assert.False(t, Equals(nil, &ip))
+}
+
+func TestAcquireDomain_ExistingMine(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, "test.com", users)
+	userDomain := "boris"
+	password := "password"
+	email := "test@example.com"
+	mac := "11:22:33:44:55:66"
+	deviceName := "name"
+	deviceTitle := "title"
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, UserDomain: &userDomain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request)
+
+	assert.Nil(t, err)
+	assert.True(t, db.updated)
+	assert.False(t, db.inserted)
+}
+
+func TestAcquireDomain_ExistingNotMine(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 2}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, "test.com", users)
+	userDomain := "boris"
+	password := "password"
+	email := "test@example.com"
+	mac := "11:22:33:44:55:66"
+	deviceName := "name"
+	deviceTitle := "title"
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, UserDomain: &userDomain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request)
+
+	assert.NotNil(t, err)
+	assert.False(t, db.updated)
+	assert.False(t, db.inserted)
+
+}
+
+func TestAcquireDomain_Available(t *testing.T) {
+	db := &DomainsDbStub{found: false}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, "test.com", users)
+	userDomain := "boris"
+	password := "password"
+	email := "test@example.com"
+	mac := "11:22:33:44:55:66"
+	deviceName := "name"
+	deviceTitle := "title"
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, UserDomain: &userDomain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request)
+
+	assert.Nil(t, err)
+	assert.False(t, db.updated)
+	assert.True(t, db.inserted)
+
+}
+
+func TestAvailability_SameUser(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, "test.com", users)
+	userDomain := "boris"
+	password := "password"
+	email := "test@example.com"
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, UserDomain: &userDomain}
+	domain, err := domains.Availability(request)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, domain)
+
+}
+
+func TestAvailability_OtherUser(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 2}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, "test.com", users)
+	userDomain := "boris"
+	password := "password"
+	email := "test@example.com"
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, UserDomain: &userDomain}
+	domain, err := domains.Availability(request)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, domain)
+
+}
+
+func TestAvailability_Available(t *testing.T) {
+	db := &DomainsDbStub{found: false}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, "test.com", users)
+	userDomain := "boris"
+	password := "password"
+	email := "test@example.com"
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, UserDomain: &userDomain}
+	domain, err := domains.Availability(request)
+
+	assert.Nil(t, err)
+	assert.Nil(t, domain)
+
 }

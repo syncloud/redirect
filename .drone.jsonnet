@@ -11,7 +11,7 @@ local build(arch) = {
     steps: [
         {
             name: "build web",
-            image: "node",
+            image: "node:16.1.0",
             commands: [
                 "mkdir build",
                 "cd www",

@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
@@ -12,12 +11,26 @@ import (
 
 type Domains struct {
 	amazonDns dns.Dns
-	db        *db.MySql
+	db        DomainsDb
 	domain    string
-	users     *Users
+	users     DomainsUsers
 }
 
-func NewDomains(dnsImpl dns.Dns, db *db.MySql, domain string, users *Users) *Domains {
+type DomainsDb interface {
+	GetDomainByToken(token string) (*model.Domain, error)
+	GetUserDomains(userId int64) ([]*model.Domain, error)
+	GetUser(id int64) (*model.User, error)
+	DeleteAllDomains(userId int64) error
+	GetDomainByUserDomain(userDomain string) (*model.Domain, error)
+	InsertDomain(domain *model.Domain) error
+	UpdateDomain(domain *model.Domain) error
+}
+
+type DomainsUsers interface {
+	Authenticate(email *string, password *string) (*model.User, error)
+}
+
+func NewDomains(dnsImpl dns.Dns, db DomainsDb, domain string, users DomainsUsers) *Domains {
 	return &Domains{amazonDns: dnsImpl, db: db, domain: domain, users: users}
 }
 
@@ -72,6 +85,38 @@ func (d *Domains) DeleteAllDomains(userId int64) error {
 	return nil
 }
 
+func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
+	user, err := d.users.Authenticate(request.Email, request.Password)
+	if err != nil {
+		return nil, err
+	}
+	domain, err := d.find(request.UserDomain, user)
+	if err != nil {
+		return nil, err
+	}
+	return domain, nil
+}
+
+func (d *Domains) find(userDomain *string, user *model.User) (*model.Domain, error) {
+	validator := NewValidator()
+	userDomainValidated := validator.newUserDomain(userDomain)
+	if validator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	}
+
+	foundDomain, err := d.db.GetDomainByUserDomain(*userDomainValidated)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("domain: %v, user: %v\n", foundDomain, user)
+	if foundDomain != nil && foundDomain.UserId != user.Id {
+		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
+			Parameter: "user_domain", Messages: []string{"User domain name is already in use"},
+		}}}
+	}
+	return foundDomain, err
+}
+
 func (d *Domains) DomainAcquire(request model.DomainAcquireRequest) (*model.Domain, error) {
 
 	user, err := d.users.Authenticate(request.Email, request.Password)
@@ -89,15 +134,9 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest) (*model.Doma
 		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
 	}
 
-	domain, err := d.db.GetDomainByUserDomain(*userDomain)
+	domain, err := d.find(request.UserDomain, user)
 	if err != nil {
 		return nil, err
-	}
-	log.Printf("domain: %v, user: %v\n", domain, user)
-	if domain != nil && domain.UserId != user.Id {
-		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
-			Parameter: "user_domain", Messages: []string{"User domain name is already in use"},
-		}}}
 	}
 	updateToken := utils.Uuid()
 	if domain == nil {
