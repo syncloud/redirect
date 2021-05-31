@@ -29,8 +29,8 @@
               <div class="panel-heading">
                 <div class="panel-title">
                   <h3 style="margin-top: 5px; margin-bottom: 5px">
-                    <span>
-                      {{ domain.domain_name }}
+                    <span id="name">
+                      {{ domain.full_domain }}
                     </span>
                     <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
                   </h3>
@@ -38,7 +38,7 @@
               </div>
               <ul class="list-group">
                 <li class="list-group-item clearfix">
-                  <h3 class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
+                  <h3 id="title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
 
                   <button type="button" class="btn btn-default pull-right" data-toggle="modal" v-bind:data-target="'#modalDeactivateDomain_' + index">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate

@@ -12,7 +12,6 @@ test('timestamp format', () => {
   expect(wrapper.vm.timestamp('Sun, 02 Nov 2020 22:07:36 GMT', new Date(2020, 10, 2))).toMatch('Today 22:07')
 })
 
-
 test('Show devices', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/domains').reply(200,
@@ -32,7 +31,8 @@ test('Show devices', async () => {
           user_domain: 'test',
           web_local_port: 443,
           web_port: 443,
-          web_protocol: 'https'
+          web_protocol: 'https',
+          full_domain: 'test.example.com'
         },
         {
           device_mac_address: '00:11:22:33:44:ff',
@@ -48,7 +48,8 @@ test('Show devices', async () => {
           user_domain: 'test1',
           web_local_port: 443,
           web_port: 10001,
-          web_protocol: 'https'
+          web_protocol: 'https',
+          full_domain: 'test1.example.com'
         }
       ]
     }
@@ -65,8 +66,11 @@ test('Show devices', async () => {
 
   await flushPromises()
 
-  const deviceNames = await wrapper.findAll('li > h3')
-  expect(deviceNames[0].text()).toBe('Syncloud')
-  expect(deviceNames[1].text()).toBe('ODROID-XU')
+  const deviceTitles = await wrapper.findAll('#title')
+  expect(deviceTitles[0].text()).toBe('Syncloud')
+  expect(deviceTitles[1].text()).toBe('ODROID-XU')
+  const deviceNames = await wrapper.findAll('#name')
+  expect(deviceNames[0].text()).toBe('test.example.com')
+  expect(deviceNames[1].text()).toBe('test1.example.com')
   wrapper.unmount()
 })
