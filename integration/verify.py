@@ -892,11 +892,31 @@ def test_user_log(domain, artifact_dir):
     token = create_user(domain, email, password, artifact_dir)
 
     response = requests.post('https://api.{0}/user/log'.format(domain),
-                             data={'token': token, 'data': 'test log', 'include_support': True},
+                             data={'token': token,
+                                   'data': 'test_user_log',
+                                   'include_support': False},
                              verify=False)
     assert response.status_code == 200, response.text
 
     assert len(smtp.emails()) > 0, 'Server should send email with log'
     email = smtp.emails()[0]
     smtp.clear()
-    assert 'test log' in email
+    assert 'test_user_log' in email
+
+
+def test_user_log_include_support(domain, artifact_dir):
+    email = 'test_user_log_include_support@syncloud.test'
+    password = 'pass123456'
+    token = create_user(domain, email, password, artifact_dir)
+
+    response = requests.post('https://api.{0}/user/log'.format(domain),
+                             data={'token': token,
+                                   'data': 'test_user_log_include_support',
+                                   'include_support': True},
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    assert len(smtp.emails()) > 0, 'Server should send email with log'
+    email = smtp.emails()[0]
+    smtp.clear()
+    assert 'test_user_log_include_support' in email
