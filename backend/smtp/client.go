@@ -1,7 +1,7 @@
 package smtp
 
 import (
-    "gopkg.in/gomail.v2"
+	"gopkg.in/gomail.v2"
 )
 
 type Smtp struct {
@@ -22,10 +22,10 @@ func NewSmtp(host string, port int, tls bool, login string, password string) *Sm
 	}
 }
 
-func (s Smtp) Send(from string, to string, contentType string, body string, subject string) error {
+func (s Smtp) Send(from string, contentType string, body string, subject string, to ...string) error {
 	message := gomail.NewMessage()
 	message.SetHeader("From", from)
-	message.SetHeader("To", to)
+	message.SetHeader("To", to...)
 	message.SetHeader("Subject", subject)
 	message.SetBody(contentType, body)
 	dialer := gomail.Dialer{Host: s.host, Port: s.port}
