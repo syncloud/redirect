@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/syncloud/redirect/smtp"
 	"io/ioutil"
+	"log"
 	"strings"
 )
 
@@ -88,6 +89,7 @@ func (m *Mail) SendLogs(to string, data string, includeSupport bool) error {
 	data += "Thank you for sharing Syncloud device error info, Syncloud support will get back to you shortly.\n"
 	data += "If you need to add more details just reply to this email.\n\n"
 
+	log.Printf("sending logs, include support: %v\n", includeSupport)
 	if includeSupport {
 		to += ", " + m.deviceErrorTo
 	}
