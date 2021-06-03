@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Api struct {
@@ -495,7 +496,7 @@ func (a *Api) UserLog(req *http.Request) (interface{}, error) {
 
 	token := req.PostForm.Get("token")
 	data := req.PostForm.Get("data")
-	includeSupport := req.PostForm.Get("include_support") == "true"
+	includeSupport := strings.ToLower(req.PostForm.Get("include_support")) == "true"
 	user, err := a.users.GetUserByUpdateToken(token)
 	if err != nil {
 		return nil, fmt.Errorf("user token: %s, error: %s", token, err)
