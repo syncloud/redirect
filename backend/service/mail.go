@@ -52,7 +52,7 @@ func (m *Mail) SendResetPassword(to string, token string) error {
 	if err != nil {
 		return err
 	}
-	err = m.smtp.Send(m.from, to, "text/plain", body, subject)
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
 	return err
 }
 
@@ -67,7 +67,7 @@ func (m *Mail) SendActivate(to string, token string) error {
 	if err != nil {
 		return err
 	}
-	err = m.smtp.Send(m.from, to, "text/plain", body, subject)
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
 	return err
 }
 
@@ -81,7 +81,7 @@ func (m *Mail) SendPremiumRequest(to string) error {
 	if err != nil {
 		return err
 	}
-	err = m.smtp.Send(m.from, to, "text/plain", body, subject)
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
 	return err
 }
 
@@ -90,10 +90,11 @@ func (m *Mail) SendLogs(to string, data string, includeSupport bool) error {
 	data += "If you need to add more details just reply to this email.\n\n"
 
 	log.Printf("sending logs, include support: %v\n", includeSupport)
+	recipients := []string{to}
 	if includeSupport {
-		to += ", " + m.deviceErrorTo
+		recipients = append(recipients, m.deviceErrorTo)
 	}
-	return m.smtp.Send(m.from, to, "text/plain", data, "Device error report")
+	return m.smtp.Send(m.from, "text/plain", data, "Device error report", recipients...)
 }
 
 func ParseUrl(template string, token string) string {
