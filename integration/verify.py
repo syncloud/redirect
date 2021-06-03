@@ -892,7 +892,7 @@ def test_user_log(domain, artifact_dir):
     token = create_user(domain, email, password, artifact_dir)
 
     response = requests.post('https://api.{0}/user/log'.format(domain),
-                             data={'token': token, 'data': 'test log'},
+                             data={'token': token, 'data': 'test log', 'include_support': True},
                              verify=False)
     assert response.status_code == 200, response.text
 
