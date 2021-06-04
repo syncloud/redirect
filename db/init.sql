@@ -1,3 +1,12 @@
+CREATE TABLE premium_status (
+  `id` integer PRIMARY KEY,
+  `name` varchar(100) NOT NULL
+);
+
+insert into premium_status (id, name) values (1, 'inactive');
+insert into premium_status (id, name) values (2, 'pending');
+insert into premium_status (id, name) values (3, 'active');
+
 CREATE TABLE `user` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
   `email` varchar(100) NOT NULL UNIQUE,
@@ -5,7 +14,9 @@ CREATE TABLE `user` (
   `active` BOOLEAN NOT NULL DEFAULT 0,
   `update_token` char(36) UNIQUE,
   `unsubscribed` BOOLEAN NOT NULL DEFAULT 0,
-  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `premium_status_id` integer NOT NULL DEFAULT 1,
+  FOREIGN KEY (premium_status_id) REFERENCES premium_status(id)
 );
 
 CREATE TABLE `domain` (
@@ -49,8 +60,8 @@ insert into action_type (id, name) values (1, 'activate');
 insert into action_type (id, name) values (2, 'password');
 
 create table db_version (
-    version varchar(10) not null,
-    `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `version` varchar(10) not null,
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('008');
+insert into db_version (version) values ('009');
