@@ -36,18 +36,10 @@ class Storage:
             .filter(Action.token == token).first()
         return user
 
-    def get_domain_by_update_token(self, update_token):
-        domain = self.session.query(Domain).filter(Domain.update_token == update_token).first()
-        return domain
-
     def get_domain_by_name(self, user_domain):
         domain = self.session.query(Domain).filter(Domain.user_domain == user_domain).first()
         return domain
 
-    def domains_iterate(self):
-        for domain in self.session.query(Domain).yield_per(10):
-            yield domain
-    
     def get_domains_last_updated_before(self, date, limit):
         return self.session.query(Domain).filter(Domain.last_update < date).filter(Domain.ip != None).order_by(Domain.last_update).limit(limit)
 
