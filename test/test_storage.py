@@ -1,6 +1,6 @@
 import unittest
 
-from helpers import generate_user, generate_domain, ModelsAssertionsMixin
+from helpers import generate_user, ModelsAssertionsMixin
 from redirect.models import ActionType
 
 from redirect.util import hash
@@ -68,55 +68,8 @@ class TestStorageUser(ModelsAssertionsMixin, unittest.TestCase):
             read = storage.get_user_by_email(user.email)
             self.assertTrue(read.active)
 
-    def test_domain_by_update_token_not_existing(self):
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_update_token(u'token_not_existing')
-            self.assertDomain(None, domain)
-
-    def test_domain_by_update_token_existing(self):
-        user = generate_user()
-        domain = generate_domain()
-        domain.user = user
-        with self.create_storage() as storage:
-            storage.add(user, domain)
-        with self.create_storage() as storage:
-            read = storage.get_domain_by_update_token(domain.update_token)
-        self.assertDomain(domain, read)
-        self.assertUser(user, read.user)
-
-    def test_domain_by_name_not_existing(self):
-        with self.create_storage() as storage:
-            domain = storage.get_domain_by_name(u'domain_not_existing')
-            self.assertUser(None, domain)
-
-    def test_domain_by_name_existing(self):
-        user = generate_user()
-        domain = generate_domain()
-        domain.user = user
-        with self.create_storage() as storage:
-            storage.add(user, domain)
-        with self.create_storage() as storage:
-            read = storage.get_domain_by_name(domain.user_domain)
-        self.assertDomain(domain, read)
-        self.assertUser(user, read.user)
-
-    def test_clear(self):
-        user = generate_user()
-        domain = generate_domain()
-        domain.user = user
-        with self.create_storage() as storage:
-            storage.add(user, domain)
-
-        with self.create_storage() as storage:
-            storage.clear()
-
-        with self.create_storage() as storage:
-            read_domain = storage.get_domain_by_name(domain.user_domain)
-            read_user = storage.get_user_by_email(user.email)
-
-        self.assertUser(None, read_user)
-        self.assertDomain(None, read_domain)
-
+  
+    
     def test_iterate_one_user(self):
         user = generate_user()
         with self.create_storage() as storage:
