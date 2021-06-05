@@ -23,10 +23,11 @@ type Api struct {
 	actions      *service.Actions
 	mail         *service.Mail
 	probe        *service.PortProbe
+	domain       string
 }
 
-func NewApi(statsdClient *statsd.Client, service *service.Domains, users *service.Users, actions *service.Actions, mail *service.Mail, probe *service.PortProbe) *Api {
-	return &Api{statsdClient: statsdClient, domains: service, users: users, actions: actions, mail: mail, probe: probe}
+func NewApi(statsdClient *statsd.Client, service *service.Domains, users *service.Users, actions *service.Actions, mail *service.Mail, probe *service.PortProbe, domain string) *Api {
+	return &Api{statsdClient: statsdClient, domains: service, users: users, actions: actions, mail: mail, probe: probe, domain: domain}
 }
 
 func (a *Api) Start(socket string) {
@@ -74,9 +75,9 @@ func (a *Api) Start(socket string) {
 }
 
 type DomainAcquireResponse struct {
-	Success     bool   `json:"success"`
-	UserDomain  string `json:"user_domain,omitempty"`
-	UpdateToken string `json:"update_token,omitempty"`
+	Success              bool   `json:"success"`
+	DeprecatedUserDomain string `json:"user_domain,omitempty"`
+	UpdateToken          string `json:"update_token,omitempty"`
 }
 
 type Response struct {
@@ -157,7 +158,8 @@ func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 	}
 	request := model.DomainAcquireRequest{}
 	if userDomain := req.PostForm.Get("user_domain"); userDomain != "" {
-		request.UserDomain = &userDomain
+		request.DeprecatedUserDomain = &userDomain
+		request.ForwardCompatibleDomain(a.domain)
 	}
 	if password := req.PostForm.Get("password"); password != "" {
 		request.Password = &password
@@ -174,15 +176,15 @@ func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 	if deviceTitle := req.PostForm.Get("device_title"); deviceTitle != "" {
 		request.DeviceTitle = &deviceTitle
 	}
-	domain, err := a.domains.DomainAcquire(request)
+	domain, err := a.domains.DomainAcquire(request, "user_domain")
 	if err != nil {
 		fail(w, err)
 		return
 	}
 	response := DomainAcquireResponse{
-		Success:     true,
-		UpdateToken: *domain.UpdateToken,
-		UserDomain:  domain.UserDomain,
+		Success:              true,
+		UpdateToken:          *domain.UpdateToken,
+		DeprecatedUserDomain: domain.DeprecatedUserDomain,
 	}
 	w.Header().Add("Content-Type", "application/json")
 	responseJson, err := json.Marshal(response)
@@ -232,7 +234,7 @@ func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
 		log.Println("unable to parse domain acquire request", err)
 		return nil, errors.New("invalid request")
 	}
-	domain, err := a.domains.DomainAcquire(request)
+	domain, err := a.domains.DomainAcquire(request, "domain")
 	if err != nil {
 		return nil, err
 	}

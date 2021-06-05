@@ -5,6 +5,7 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
+	"github.com/syncloud/redirect/validator"
 	"log"
 	"time"
 )
@@ -13,6 +14,7 @@ type Domains struct {
 	amazonDns dns.Dns
 	db        DomainsDb
 	users     DomainsUsers
+	domain    string
 }
 
 type DomainsDb interface {
@@ -20,7 +22,7 @@ type DomainsDb interface {
 	GetUserDomains(userId int64) ([]*model.Domain, error)
 	GetUser(id int64) (*model.User, error)
 	DeleteAllDomains(userId int64) error
-	GetDomainByUserDomain(userDomain string) (*model.Domain, error)
+	GetDomainByField(field string, value string) (*model.Domain, error)
 	InsertDomain(domain *model.Domain) error
 	UpdateDomain(domain *model.Domain) error
 }
@@ -29,15 +31,15 @@ type DomainsUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 }
 
-func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers) *Domains {
-	return &Domains{amazonDns: dnsImpl, db: db, users: users}
+func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string) *Domains {
+	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
-	validator := NewValidator()
-	validator.Token(&token)
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	fieldValidator := validator.New()
+	fieldValidator.Token(&token)
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 	domain, err := d.db.GetDomainByToken(token)
 	if err != nil {
@@ -89,58 +91,62 @@ func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.
 	if err != nil {
 		return nil, err
 	}
-	domain, err := d.find(request.UserDomain, user)
+
+	fieldValidator := validator.New()
+	domainField := "domain"
+	domainName := fieldValidator.Domain(request.Domain, domainField, d.domain)
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
+	}
+
+	domain, err := d.find(domainName, user, domainField)
 	if err != nil {
 		return nil, err
 	}
 	return domain, nil
 }
 
-func (d *Domains) find(userDomain *string, user *model.User) (*model.Domain, error) {
-	validator := NewValidator()
-	userDomainValidated := validator.newUserDomain(userDomain)
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
-	}
-
-	foundDomain, err := d.db.GetDomainByUserDomain(*userDomainValidated)
+func (d *Domains) find(domain *string, user *model.User, field string) (*model.Domain, error) {
+	foundDomain, err := d.db.GetDomainByField(*domain, field)
 	if err != nil {
 		return nil, err
 	}
 	log.Printf("domain: %v, user: %v\n", foundDomain, user)
 	if foundDomain != nil && foundDomain.UserId != user.Id {
 		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
-			Parameter: "user_domain", Messages: []string{"User domain name is already in use"},
+			Parameter: field, Messages: []string{"User domain name is already in use"},
 		}}}
 	}
 	return foundDomain, err
 }
 
-func (d *Domains) DomainAcquire(request model.DomainAcquireRequest) (*model.Domain, error) {
+func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField string) (*model.Domain, error) {
 
 	user, err := d.users.Authenticate(request.Email, request.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	validator := NewValidator()
-	userDomain := validator.newUserDomain(request.UserDomain)
-	deviceMacAddress := validator.deviceMacAddress(request.DeviceMacAddress)
-	validator.deviceName(request.DeviceName)
-	validator.deviceTitle(request.DeviceTitle)
+	fieldValidator := validator.New()
 
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	domainName := fieldValidator.Domain(request.Domain, domainField, d.domain)
+
+	deviceMacAddress := fieldValidator.DeviceMacAddress(request.DeviceMacAddress)
+	fieldValidator.DeviceName(request.DeviceName)
+	fieldValidator.DeviceTitle(request.DeviceTitle)
+
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
-	domain, err := d.find(request.UserDomain, user)
+	domain, err := d.find(domainName, user, domainField)
 	if err != nil {
 		return nil, err
 	}
 	updateToken := utils.Uuid()
 	if domain == nil {
 		domain = &model.Domain{
-			UserDomain:       *userDomain,
+			Domain:           *domainName,
 			DeviceMacAddress: deviceMacAddress,
 			DeviceName:       request.DeviceName,
 			DeviceTitle:      request.DeviceTitle,
@@ -164,25 +170,26 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest) (*model.Doma
 		}
 
 	}
+	domain.BackwardCompatibleDomain(d.domain)
 	log.Println("domain acquired")
 	return domain, nil
 }
 
 func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (*model.Domain, error) {
-	validator := NewValidator()
-	validator.Token(request.Token)
-	ip := validator.Ip(request.Ip, requestIp)
+	fieldValidator := validator.New()
+	fieldValidator.Token(request.Token)
+	ip := fieldValidator.Ip(request.Ip, requestIp)
 	ipv6 := request.Ipv6
 	dkimKey := request.DkimKey
-	validator.localIp(request.LocalIp)
+	fieldValidator.LocalIp(request.LocalIp)
 	mapLocalAddress := request.MapLocalAddress
 	platformVersion := request.PlatformVersion
-	webProtocol := validator.webProtocol(request.WebProtocol)
-	webLocalPort := validator.webLocalPort(request.WebLocalPort)
+	webProtocol := fieldValidator.WebProtocol(request.WebProtocol)
+	webLocalPort := fieldValidator.WebLocalPort(request.WebLocalPort)
 	webPort := request.WebPort
 
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
 	domain, err := d.db.GetDomainByToken(*request.Token)
@@ -228,6 +235,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	if err != nil {
 		return nil, err
 	}
+	domain.BackwardCompatibleDomain(d.domain)
 
 	return domain, nil
 }

@@ -17,17 +17,6 @@ class Validator:
             self.fields_errors[field] = []
         self.fields_errors[field].append(error)
 
-    def new_user_domain(self, error_if_missing=True):
-        user_domain = self.user_domain(error_if_missing)
-        if user_domain is not None:
-            if not re.match("^[\w-]+$", user_domain):
-                self.add_field_error("user_domain", "Invalid characters")
-            if len(user_domain) < 5:
-                self.add_field_error("user_domain", "Too short (< 5)")
-            if len(user_domain) > 50:
-                self.add_field_error("user_domain", "Too long (> 50)")
-        return user_domain
-
     def user_domain(self, error_if_missing=True):
         if 'user_domain' in self.params:
             return self.params['user_domain']
@@ -59,34 +48,6 @@ class Validator:
             self.add_field_error('password', 'Missing')
             return None
         return self.params['password']
-
-    def web_protocol(self, required=True):
-        parameter = 'web_protocol'
-        if 'web_protocol' not in self.params:
-            if required:
-                self.add_field_error(parameter, 'Missing')
-            return None
-        protocol = self.params[parameter]
-        protocol_lower = protocol.lower()
-        if protocol_lower != 'http' and protocol_lower != 'https':
-            self.add_field_error(parameter, 'Protocol should be either http or https')
-            return None
-        return protocol_lower
-
-    def port(self, port_parameter, required=True):
-        if port_parameter not in self.params or not self.params[port_parameter]:
-            if required:
-                self.add_field_error(port_parameter, 'Missing')
-            return None
-        try:
-            port_num = int(self.params[port_parameter])
-        except:
-            self.add_field_error(port_parameter, 'Should be a number')
-            return None
-        if port_num < 1 or port_num > 65535:
-            self.add_field_error(port_parameter, 'Should be between 1 and 65535')
-            return None
-        return port_num
 
     def token(self, token='token'):
         if token not in self.params:

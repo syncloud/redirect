@@ -1,4 +1,4 @@
-package service
+package validator
 
 import (
 	"fmt"
@@ -9,16 +9,16 @@ import (
 	"strings"
 )
 
-type Validator struct {
+type FieldValidator struct {
 	errors       []string
 	fieldsErrors map[string][]string
 }
 
-func NewValidator() *Validator {
-	return &Validator{nil, make(map[string][]string)}
+func New() *FieldValidator {
+	return &FieldValidator{nil, make(map[string][]string)}
 }
 
-func (v *Validator) ToParametersMessages() *[]model.ParameterMessages {
+func (v *FieldValidator) ToParametersMessages() *[]model.ParameterMessages {
 	var messages []model.ParameterMessages
 	for k, v := range v.fieldsErrors {
 		messages = append(messages, model.ParameterMessages{Parameter: k, Messages: v})
@@ -26,11 +26,11 @@ func (v *Validator) ToParametersMessages() *[]model.ParameterMessages {
 	return &messages
 }
 
-func (v *Validator) HasErrors() bool {
+func (v *FieldValidator) HasErrors() bool {
 	return len(v.fieldsErrors) > 0
 }
 
-func (v *Validator) addFieldError(field string, error string) {
+func (v *FieldValidator) addFieldError(field string, error string) {
 	v.errors = append(v.errors, fmt.Sprintf("%s %s", field, error))
 	newErrors := []string{error}
 	if val, ok := v.fieldsErrors[field]; ok {
@@ -39,30 +39,34 @@ func (v *Validator) addFieldError(field string, error string) {
 	v.fieldsErrors[field] = newErrors
 }
 
-func (v *Validator) newUserDomain(userDomain *string) *string {
-	var valid = regexp.MustCompile(`^[\w-]+$`)
-	v.userDomain(userDomain)
-	if userDomain != nil {
-		if !valid.MatchString(*userDomain) {
-			v.addFieldError("user_domain", "Invalid characters")
-		}
-		if len(*userDomain) < 5 {
-			v.addFieldError("user_domain", "Too short (< 5)")
-		}
-		if len(*userDomain) > 50 {
-			v.addFieldError("user_domain", "Too long (> 50)")
+func (v *FieldValidator) Domain(domain *string, field string, mainDomain string) *string {
+	if domain == nil {
+		v.addFieldError(field, "Missing")
+	} else {
+		if *domain == mainDomain {
+			v.addFieldError(field, "Invalid characters")
+		} else {
+			suffix := fmt.Sprintf(".%s", mainDomain)
+			if strings.HasSuffix(*domain, suffix) {
+				parts := strings.Split(*domain, suffix)
+				subDomain := parts[0]
+				var valid = regexp.MustCompile(`^[\w-]+$`)
+				if !valid.MatchString(subDomain) {
+					v.addFieldError(field, "Invalid characters")
+				}
+				if len(subDomain) < 5 {
+					v.addFieldError(field, "Too short (< 5)")
+				}
+				if len(subDomain) > 50 {
+					v.addFieldError(field, "Too long (> 50)")
+				}
+			}
 		}
 	}
-	return userDomain
+	return domain
 }
 
-func (v *Validator) userDomain(userDomain *string) {
-	if userDomain == nil {
-		v.addFieldError("user_domain", "Missing")
-	}
-}
-
-func (v *Validator) email(email *string) *string {
+func (v *FieldValidator) Email(email *string) *string {
 	var valid = regexp.MustCompile(`[^@]+@[^@]+\.[^@]+`)
 	if email != nil {
 		if !valid.MatchString(*email) {
@@ -77,8 +81,8 @@ func (v *Validator) email(email *string) *string {
 	return nil
 }
 
-func (v *Validator) newPassword(newPassword *string) *string {
-	password := v.password(newPassword)
+func (v *FieldValidator) NewPassword(newPassword *string) *string {
+	password := v.Password(newPassword)
 	if password != nil {
 		if len(*password) < 7 {
 			v.addFieldError("password", "Should be 7 or more characters")
@@ -87,14 +91,14 @@ func (v *Validator) newPassword(newPassword *string) *string {
 	return password
 }
 
-func (v *Validator) password(password *string) *string {
+func (v *FieldValidator) Password(password *string) *string {
 	if password == nil {
 		v.addFieldError("password", "Missing")
 	}
 	return password
 }
 
-func (v *Validator) webProtocol(webProtocol *string) *string {
+func (v *FieldValidator) WebProtocol(webProtocol *string) *string {
 	if webProtocol == nil {
 		v.addFieldError("web_protocol", "Missing")
 		return nil
@@ -108,15 +112,15 @@ func (v *Validator) webProtocol(webProtocol *string) *string {
 	return &protocolLower
 }
 
-func (v *Validator) webLocalPort(webLocalPort *int) *int {
+func (v *FieldValidator) WebLocalPort(webLocalPort *int) *int {
 	return v.validatePort(webLocalPort, "web_local_port")
 }
 
-func (v *Validator) webPort(webPort *int) *int {
+func (v *FieldValidator) webPort(webPort *int) *int {
 	return v.validatePort(webPort, "web_port")
 }
 
-func (v *Validator) validatePort(port *int, field string) *int {
+func (v *FieldValidator) validatePort(port *int, field string) *int {
 	if port == nil {
 		v.addFieldError(field, "Missing")
 		return nil
@@ -129,31 +133,31 @@ func (v *Validator) validatePort(port *int, field string) *int {
 	return port
 }
 
-func (v *Validator) Token(token *string) {
+func (v *FieldValidator) Token(token *string) {
 	if token == nil {
 		v.addFieldError("token", "Missing")
 	}
 }
 
-func (v *Validator) deviceName(deviceName *string) {
+func (v *FieldValidator) DeviceName(deviceName *string) {
 	if deviceName == nil {
 		v.addFieldError("device_name", "Missing")
 	}
 }
 
-func (v *Validator) deviceTitle(deviceTitle *string) {
+func (v *FieldValidator) DeviceTitle(deviceTitle *string) {
 	if deviceTitle == nil {
 		v.addFieldError("device_title", "Missing")
 	}
 }
 
-func (v *Validator) checkIpAddress(name string, ip string) {
+func (v *FieldValidator) checkIpAddress(name string, ip string) {
 	if net.ParseIP(ip) == nil {
 		v.addFieldError(name, "Invalid IP address")
 	}
 }
 
-func (v *Validator) Ip(requestIp *string, defaultIp *string) *string {
+func (v *FieldValidator) Ip(requestIp *string, defaultIp *string) *string {
 	ip := defaultIp
 	if requestIp != nil {
 		ip = requestIp
@@ -166,13 +170,13 @@ func (v *Validator) Ip(requestIp *string, defaultIp *string) *string {
 	return ip
 }
 
-func (v *Validator) localIp(localIp *string) {
+func (v *FieldValidator) LocalIp(localIp *string) {
 	if localIp != nil {
 		v.checkIpAddress("local_ip", *localIp)
 	}
 }
 
-func (v *Validator) deviceMacAddress(deviceMacAddress *string) *string {
+func (v *FieldValidator) DeviceMacAddress(deviceMacAddress *string) *string {
 	field := "device_mac_address"
 	var pattern = regexp.MustCompile(`^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$`)
 	if deviceMacAddress == nil {
@@ -187,7 +191,7 @@ func (v *Validator) deviceMacAddress(deviceMacAddress *string) *string {
 	return deviceMacAddress
 }
 
-/*func (v *Validator) string(parameter string, required bool) {
+/*func (v *FieldValidator) string(parameter string, required bool) {
 	if val, ok := v.request.:
 		if required:
 			self.add_field_error(parameter, 'Missing')
@@ -196,7 +200,7 @@ func (v *Validator) deviceMacAddress(deviceMacAddress *string) *string {
 }
 */
 /*
-func (v *Validator) boolean(parameter, required=False, default=None) {
+func (v *FieldValidator) boolean(parameter, required=False, default=None) {
 	if parameter not
 	in
 	self.params:

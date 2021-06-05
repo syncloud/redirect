@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
+	"github.com/syncloud/redirect/validator"
 	"time"
 )
 
@@ -45,12 +46,12 @@ func NewUsers(db UsersDb, activateByEmail bool, actions UsersActions, usersMail 
 }
 
 func (u *Users) Authenticate(email *string, password *string) (*model.User, error) {
-	validator := NewValidator()
+	fieldValidator := validator.New()
 
-	emailLower := validator.email(email)
-	passwordChecked := validator.password(password)
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	emailLower := fieldValidator.Email(email)
+	passwordChecked := fieldValidator.Password(password)
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
 	user, err := u.db.GetUserByEmail(*emailLower)
@@ -106,11 +107,11 @@ func (u *Users) Delete(userId int64) error {
 }
 
 func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, error) {
-	validator := NewValidator()
-	email := validator.email(request.Email)
-	password := validator.newPassword(request.Password)
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	fieldValidator := validator.New()
+	email := fieldValidator.Email(request.Email)
+	password := fieldValidator.NewPassword(request.Password)
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 	userByEmail, err := u.db.GetUserByEmail(*email)
 	if err != nil {

@@ -11,13 +11,6 @@ valid_params = {
 
 class TestValidation(unittest.TestCase):
 
-    def assertUsernameError(self, params):
-
-        validator = Validator(params)
-        value = validator.new_user_domain()
-        self.assertEqual(len(validator.errors), 1)
-        return value
-
     def assertEmailError(self, params):
 
         validator = Validator(params)
@@ -31,34 +24,6 @@ class TestValidation(unittest.TestCase):
         value = validator.new_password()
         self.assertEqual(len(validator.errors), 1)
         return value
-
-    def assertPortError(self, params):
-
-        validator = Validator(params)
-        value = validator.port('port')
-        self.assertEqual(len(validator.errors), 1)
-        return value
-
-    def test_new_user_domain_missing(self):
-
-        params = {}
-        user_domain = self.assertUsernameError(params)
-        self.assertIsNone(user_domain)
-
-    def test_new_user_domain_invalid(self):
-
-        params = {'user_domain': 'user.name'}
-        self.assertUsernameError(params)
-
-    def test_user_domain_short(self):
-
-        params = {'user_domain': 'use'}
-        self.assertUsernameError(params)
-
-    def test_user_domain_long(self):
-
-        params = {'user_domain': '12345678901234567890123456789012345678901234567890_'}
-        self.assertUsernameError(params)
 
     def test_email_missing(self):
 
@@ -102,26 +67,6 @@ class TestValidation(unittest.TestCase):
         validator = Validator(params)
         ip = validator.ip()
         self.assertEqual(len(validator.errors), 1)
-
-    def test_port_missing(self):
-
-        params = {}
-        self.assertPortError(params)
-
-    def test_port_small(self):
-
-        params = {'port': '0'}
-        self.assertPortError(params)
-
-    def test_port_big(self):
-
-        params = {'port': '65536'}
-        self.assertPortError(params)
-
-    def test_port_non_int(self):
-
-        params = {'port': 'abc'}
-        self.assertPortError(params)
 
     def test_errors_aggregated(self):
 

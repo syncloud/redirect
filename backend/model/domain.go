@@ -3,35 +3,44 @@ package model
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 )
 
 type (
 	Domain struct {
-		Id               uint64     `json:"-"`
-		UserDomain       string     `json:"user_domain,omitempty"`
-		Ip               *string    `json:"ip,omitempty"`
-		Ipv6             *string    `json:"ipv6,omitempty"`
-		DkimKey          *string    `json:"dkim_key,omitempty"`
-		LocalIp          *string    `json:"local_ip,omitempty"`
-		MapLocalAddress  bool       `json:"map_local_address"`
-		UpdateToken      *string    `json:"update_token,omitempty"`
-		LastUpdate       *time.Time `json:"last_update,omitempty"`
-		DeviceMacAddress *string    `json:"device_mac_address,omitempty"`
-		DeviceName       *string    `json:"device_name,omitempty"`
-		DeviceTitle      *string    `json:"device_title,omitempty"`
-		PlatformVersion  *string    `json:"platform_version,omitempty"`
-		WebProtocol      *string    `json:"web_protocol,omitempty"`
-		WebPort          *int       `json:"web_port,omitempty"`
-		WebLocalPort     *int       `json:"web_local_port,omitempty"`
-		UserId           int64      `json:"-"`
-		HostedZoneId     uint64     `json:"-"`
-		FullDomain       string     `json:"full_domain,omitempty"`
+		Id                   uint64     `json:"-"`
+		DeprecatedUserDomain string     `json:"user_domain,omitempty"`
+		Ip                   *string    `json:"ip,omitempty"`
+		Ipv6                 *string    `json:"ipv6,omitempty"`
+		DkimKey              *string    `json:"dkim_key,omitempty"`
+		LocalIp              *string    `json:"local_ip,omitempty"`
+		MapLocalAddress      bool       `json:"map_local_address"`
+		UpdateToken          *string    `json:"update_token,omitempty"`
+		LastUpdate           *time.Time `json:"last_update,omitempty"`
+		DeviceMacAddress     *string    `json:"device_mac_address,omitempty"`
+		DeviceName           *string    `json:"device_name,omitempty"`
+		DeviceTitle          *string    `json:"device_title,omitempty"`
+		PlatformVersion      *string    `json:"platform_version,omitempty"`
+		WebProtocol          *string    `json:"web_protocol,omitempty"`
+		WebPort              *int       `json:"web_port,omitempty"`
+		WebLocalPort         *int       `json:"web_local_port,omitempty"`
+		UserId               int64      `json:"-"`
+		HostedZoneId         uint64     `json:"-"`
+		Domain               string     `json:"domain,omitempty"`
 	}
 )
 
+func (d *Domain) BackwardCompatibleDomain(mainDomain string) {
+	if strings.HasSuffix(d.Domain, mainDomain) {
+		suffix := fmt.Sprintf(".%s", mainDomain)
+		parts := strings.Split(d.Domain, suffix)
+		d.DeprecatedUserDomain = parts[0]
+	}
+}
+
 func (d *Domain) FQDN() string {
-	return fmt.Sprintf("%s.", d.FullDomain)
+	return fmt.Sprintf("%s.", d.Domain)
 }
 
 func (d *Domain) accessIp() *string {

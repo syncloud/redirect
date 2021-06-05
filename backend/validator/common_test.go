@@ -1,4 +1,4 @@
-package service
+package validator
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -7,70 +7,78 @@ import (
 )
 
 func TestEmailMissing(t *testing.T) {
-	validator := NewValidator()
-	_ = validator.email(nil)
+	validator := New()
+	_ = validator.Email(nil)
 	assert.Equal(t, len(validator.errors), 1)
 }
 
 func TestEmailInvalid(t *testing.T) {
-	validator := NewValidator()
+	validator := New()
 	email := "invalid.email"
-	_ = validator.email(&email)
+	_ = validator.Email(&email)
 	assert.Equal(t, len(validator.errors), 1)
 }
 
-func TestNewUserDomainMissing(t *testing.T) {
+func TestDomainMissing(t *testing.T) {
 
-	request := model.DomainAcquireRequest{}
-
-	validator := NewValidator()
-	result := validator.newUserDomain(request.UserDomain)
+	validator := New()
+	result := validator.Domain(nil, "", "syncloud.it")
 	assert.Equal(t, len(validator.errors), 1)
 	assert.Nil(t, result)
 }
 
-func TestNewUserDomainInvalid(t *testing.T) {
-	domain := "user.name"
-	request := model.DomainAcquireRequest{UserDomain: &domain}
-	validator := NewValidator()
-	_ = validator.newUserDomain(request.UserDomain)
+func TestFreeDomainInvalid(t *testing.T) {
+	domain := "user.name.syncloud.it"
+	validator := New()
+	_ = validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, len(validator.errors), 1)
 }
 
-func TestUserDomainShort(t *testing.T) {
-	domain := "use"
-	request := model.DomainAcquireRequest{UserDomain: &domain}
-	validator := NewValidator()
-	_ = validator.newUserDomain(request.UserDomain)
+func TestFreeDomainShort(t *testing.T) {
+	domain := "use.syncloud.it"
+	validator := New()
+	_ = validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, len(validator.errors), 1)
 }
 
-func TestUserDomainLong(t *testing.T) {
+func TestFreeDomainLong(t *testing.T) {
+	domain := "12345678901234567890123456789012345678901234567890_.syncloud.it"
+	validator := New()
+	_ = validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, 1, len(validator.errors))
+}
 
-	domain := "12345678901234567890123456789012345678901234567890_"
-	request := model.DomainAcquireRequest{UserDomain: &domain}
-	validator := NewValidator()
-	_ = validator.newUserDomain(request.UserDomain)
-	assert.Equal(t, len(validator.errors), 1)
+func TestFreeDomainEmpty(t *testing.T) {
+	domain := ".syncloud.it"
+	validator := New()
+	_ = validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, 2, len(validator.errors))
+}
+
+func TestManagedEqualsFreeDomain(t *testing.T) {
+	domain := "syncloud.it"
+	validator := New()
+	_ = validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, 1, len(validator.errors))
 }
 
 func TestPasswordMissing(t *testing.T) {
-	validator := NewValidator()
-	result := validator.newPassword(nil)
+	validator := New()
+	result := validator.NewPassword(nil)
 	assert.Equal(t, 1, len(validator.errors))
 	assert.Nil(t, result)
 }
 
 func TestPasswordShort(t *testing.T) {
-	validator := NewValidator()
+	validator := New()
 	password := "123456"
-	result := validator.newPassword(&password)
+	result := validator.NewPassword(&password)
 	assert.Equal(t, 1, len(validator.errors))
 	assert.Equal(t, "123456", *result)
 }
 
 func TestIpMissing(t *testing.T) {
-	validator := NewValidator()
+	validator := New()
 	result := validator.Ip(nil, nil)
 	assert.Equal(t, 1, len(validator.errors))
 	assert.Nil(t, result)
@@ -78,7 +86,7 @@ func TestIpMissing(t *testing.T) {
 
 func TestIpDefault(t *testing.T) {
 	defaultIp := "192.168.0.2"
-	validator := NewValidator()
+	validator := New()
 	result := validator.Ip(nil, &defaultIp)
 	assert.Equal(t, 0, len(validator.errors))
 	assert.Equal(t, *result, "192.168.0.2")
@@ -86,14 +94,14 @@ func TestIpDefault(t *testing.T) {
 
 func TestIpInvalid(t *testing.T) {
 	ip := "256.256.256.256"
-	validator := NewValidator()
+	validator := New()
 	_ = validator.Ip(&ip, nil)
 	assert.Equal(t, 1, len(validator.errors))
 }
 
 func TestPortMissing(t *testing.T) {
 	request := model.DomainUpdateRequest{}
-	validator := NewValidator()
+	validator := New()
 	_ = validator.webPort(request.WebPort)
 	assert.Equal(t, 1, len(validator.errors))
 }
@@ -101,7 +109,7 @@ func TestPortMissing(t *testing.T) {
 func TestPortTooSmall(t *testing.T) {
 	port := 0
 	request := model.DomainUpdateRequest{WebPort: &port}
-	validator := NewValidator()
+	validator := New()
 	_ = validator.webPort(request.WebPort)
 	assert.Equal(t, 1, len(validator.errors))
 }
@@ -109,31 +117,30 @@ func TestPortTooSmall(t *testing.T) {
 func TestPortTooBig(t *testing.T) {
 	port := 65536
 	request := model.DomainUpdateRequest{WebPort: &port}
-	validator := NewValidator()
+	validator := New()
 	_ = validator.webPort(request.WebPort)
 	assert.Equal(t, 1, len(validator.errors))
 }
 
 func TestErrorsAggregated(t *testing.T) {
-
-	validator := NewValidator()
-	validator.userDomain(nil)
-	validator.password(nil)
+	validator := New()
+	validator.Domain(nil, "", "syncloud.it")
+	validator.Password(nil)
 	assert.Equal(t, 2, len(validator.errors))
 }
 
 func TestWrongMacAddress(t *testing.T) {
 
-	validator := NewValidator()
+	validator := New()
 	mac := "wrong_mac"
-	validator.deviceMacAddress(&mac)
+	validator.DeviceMacAddress(&mac)
 	assert.Equal(t, 1, len(validator.errors))
 }
 
 func TestGoodMacAddress(t *testing.T) {
 
-	validator := NewValidator()
+	validator := New()
 	mac := "11:22:33:44:55:66"
-	validator.deviceMacAddress(&mac)
+	validator.DeviceMacAddress(&mac)
 	assert.Equal(t, 0, len(validator.errors))
 }

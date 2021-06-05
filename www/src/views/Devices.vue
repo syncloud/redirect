@@ -30,7 +30,7 @@
                 <div class="panel-title">
                   <h3 style="margin-top: 5px; margin-bottom: 5px">
                     <span id="name">
-                      {{ domain.full_domain }}
+                      {{ domain.domain }}
                     </span>
                     <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
                   </h3>
@@ -139,8 +139,8 @@ function online (ds) {
 
 function convert (domain) {
   domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port
-  domain.domain_address = fullUrl(domain.full_domain, domain.domain_address_port)
-  domain.has_domain_address = domain.full_domain !== null
+  domain.domain_address = fullUrl(domain.domain, domain.domain_address_port)
+  domain.has_domain_address = domain.domain !== null
   domain.external_address = fullUrl(domain.ip, domain.web_port)
   domain.has_external_address = domain.ip !== null
   domain.internal_address = 'https://' + domain.local_ip

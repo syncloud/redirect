@@ -26,11 +26,10 @@ let state = {
         local_ip: '192.168.1.1',
         map_local_address: false,
         platform_version: '2',
-        user_domain: 'test',
         web_local_port: 443,
         web_port: 443,
         web_protocol: 'https',
-        full_domain: 'test.syncloud.test'
+        domain: 'test.syncloud.test'
       },
       {
         device_mac_address: '00:11:22:33:44:ff',
@@ -43,11 +42,10 @@ let state = {
         local_ip: '192.168.1.2',
         map_local_address: false,
         platform_version: '2',
-        user_domain: 'test1',
         web_local_port: 443,
         web_port: 10001,
         web_protocol: 'https',
-        full_domain: 'test1.syncloud.test'
+        domain: 'test1.syncloud.test'
       }
     ]
   }
