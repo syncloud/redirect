@@ -4,7 +4,7 @@ ENV=$1
 SYNCLOUD_DOMAIN=$2
 
 CURRENT=/var/www/redirect/current
-DB_VERSION=009
+DB_VERSION=010
 
 pip install -r ${CURRENT}/requirements.txt
 apt install confget
