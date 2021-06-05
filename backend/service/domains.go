@@ -107,7 +107,7 @@ func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.
 }
 
 func (d *Domains) find(domain *string, user *model.User, field string) (*model.Domain, error) {
-	foundDomain, err := d.db.GetDomainByField(*domain, field)
+	foundDomain, err := d.db.GetDomainByField(field, *domain)
 	if err != nil {
 		return nil, err
 	}
