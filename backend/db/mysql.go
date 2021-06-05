@@ -202,7 +202,7 @@ func (mysql *MySql) GetDomainByField(field string, value string) (*model.Domain,
 		&domain.WebPort,
 		&domain.WebLocalPort,
 		&domain.LastUpdate,
-		domain.Domain,
+		&domain.Domain,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
