@@ -33,6 +33,7 @@ def module_setup(request, log_dir, artifact_dir, device):
         device.run_ssh('cp /var/log/syslog {0}/syslog.log'.format(TMP_DIR), throw=False)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from user' > {0}/db-user.log || true".format(artifact_dir), shell=True)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from action' > {0}/db-action.log || true".format(artifact_dir), shell=True)
+        check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from domain' > {0}/db-domain.log || true".format(artifact_dir), shell=True)
 
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
@@ -63,7 +64,8 @@ def test_start(module_setup, device, device_host, domain, build_number):
         debug=False)
     device.run_ssh("sed -i 's#@hosted_zone_id@#{0}#g' /var/www/redirect/secret.cfg".format(environ['hosted_zone_id']),
                    debug=False)
-    device.run_ssh("systemctl restart redirect")
+    device.run_ssh("systemctl restart redirect.api")
+    device.run_ssh("systemctl restart redirect.www")
 
 
 def get_domain(update_token, domain):
