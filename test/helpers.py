@@ -1,8 +1,10 @@
 import os
+
 import ConfigParser
+
 from redirect.db_helper import get_storage_creator
+from redirect.models import User, ActionType
 from redirect.util import create_token, hash
-from redirect.models import User, Domain, ActionType
 
 
 def get_test_storage_creator():
@@ -21,13 +23,6 @@ def generate_user():
     user = User(email, hash('pass1234'), False)
     user.enable_action(ActionType.ACTIVATE)
     return user
-
-
-def generate_domain():
-    domain = create_token()
-    update_token = create_token()
-    domain = Domain(domain, '00:00:00:00:00:00', 'some-device', 'Some Device', update_token=update_token)
-    return domain
 
 
 class ModelsAssertionsMixin:

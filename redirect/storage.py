@@ -1,9 +1,11 @@
 import logging
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, lazyload
 from sqlalchemy import func
-from models import User, Domain, Base, Action, ActionType
+from sqlalchemy.orm import sessionmaker, lazyload
+
 import util
+from models import User, Base, Action
 
 
 class Storage:
@@ -59,7 +61,6 @@ class Storage:
             self.session.flush()
 
     def clear(self):
-        self.session.query(Domain).delete()
         self.session.query(Action).delete()
         self.session.query(User).delete()
 

@@ -1,10 +1,7 @@
-from datetime import datetime
-
-from models import User, Domain, ActionType
-from validation import Validator
 import servicesexceptions
 import util
-import requests
+from models import ActionType
+from validation import Validator
 
 
 def check_validator(validator):
