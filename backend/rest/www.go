@@ -36,6 +36,7 @@ func (w *Www) StartWww(socket string) {
 	r.HandleFunc("/web/domains", Handle(w.WebDomains)).Methods("GET")
 	r.HandleFunc("/web/premium/request", Handle(w.WebPremiumRequest)).Methods("POST")
 	r.HandleFunc("/web/user/reset_password", Handle(w.WebUserPasswordReset)).Methods("POST")
+	r.HandleFunc("/web/user/set_password", Handle(w.UserSetPassword)).Methods("POST")
 	r.HandleFunc("/web/user/activate", Handle(w.WebUserActivate)).Methods("POST")
 	r.HandleFunc("/web/user/create", Handle(w.UserCreateV2)).Methods("POST")
 	r.HandleFunc("/web/domain", Handle(w.DomainDelete)).Methods("DELETE")
@@ -255,4 +256,16 @@ func (w *Www) DomainDelete(req *http.Request) (interface{}, error) {
 	}
 	err = w.domains.DeleteDomain(user.Id, *request.Domain)
 	return "Domain deleted", err
+}
+
+func (w *Www) UserSetPassword(req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.user.set_password", 1)
+	request := &model.UserPasswordSetRequest{}
+	err := json.NewDecoder(req.Body).Decode(request)
+	if err != nil {
+		log.Println("unable to parse user set password request", err)
+		return nil, errors.New("invalid request")
+	}
+	err = w.users.UserSetPassword(request)
+	return "Password was set successfully", err
 }

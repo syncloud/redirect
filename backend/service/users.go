@@ -28,12 +28,16 @@ type UsersActions interface {
 	GetActivateAction(token string) (*model.Action, error)
 	UpsertActivateAction(userId int64) (*model.Action, error)
 	DeleteActions(userId int64) error
+	GetPasswordAction(token string) (*model.Action, error)
+	DeleteAction(actionId uint64) error
 }
 
 type UsersMail interface {
 	SendActivate(to string, token string) error
 	SendPremiumRequest(to string) error
+	SendSetPassword(to string) error
 }
+
 type Users struct {
 	db              UsersDb
 	activateByEmail bool
@@ -83,6 +87,10 @@ func (u *Users) Activate(token string) error {
 
 	user.Active = true
 	err = u.db.UpdateUser(user)
+	if err != nil {
+		return err
+	}
+	err = u.actions.DeleteAction(action.Id)
 	return err
 }
 
@@ -153,6 +161,36 @@ func (u *Users) RequestPremiumAccount(user *model.User) error {
 		return err
 	}
 	return u.usersMail.SendPremiumRequest(user.Email)
+}
+
+func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
+	fieldValidator := validator.New()
+	fieldValidator.Token(request.Token)
+	password := fieldValidator.NewPassword(request.Password)
+	if fieldValidator.HasErrors() {
+		return &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
+	}
+
+	action, err := u.actions.GetPasswordAction(*request.Token)
+	if err != nil {
+		return err
+	}
+
+	user, err := u.db.GetUser(action.UserId)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return &model.ServiceError{InternalError: fmt.Errorf("invalid password token")}
+	}
+	user.PasswordHash = hash(*password)
+	err = u.usersMail.SendSetPassword(user.Email)
+	if err != nil {
+		return err
+	}
+
+	err = u.actions.DeleteAction(action.Id)
+	return err
 }
 
 func hash(password string) string {

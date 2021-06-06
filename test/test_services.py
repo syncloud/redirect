@@ -1,7 +1,6 @@
 import unittest
 
 import smtp
-from redirect.mail import Smtp, Mail
 from redirect.models import User, ActionType
 from redirect.services import Users
 from redirect.servicesexceptions import ServiceException
@@ -12,9 +11,6 @@ from test.helpers import get_test_storage_creator
 class TestUsers(unittest.TestCase):
 
     def setUp(self):
-        self.activate_url_template = 'http://redirect.com?activate?token={0}'
-
-        self.mail = Mail(Smtp('mail', 1025), 'support@redirect.com', self.activate_url_template, None, None)
         self.create_storage = get_test_storage_creator()
         with self.create_storage() as storage:
             storage.clear()
@@ -32,8 +28,8 @@ class TestUsers(unittest.TestCase):
         with self.create_storage() as storage:
             return storage.get_user_by_email(email)
 
-    def get_users_service(self, activate_by_email=True):
-        return Users(self.create_storage, activate_by_email, self.mail)
+    def get_users_service(self):
+        return Users(self.create_storage)
 
     def test_user_authenticate_success(self):
         users = self.get_users_service()

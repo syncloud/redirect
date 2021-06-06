@@ -11,6 +11,7 @@ import (
 type Mail struct {
 	smtp                       *smtp.Smtp
 	resetPasswordTemplatePath  string
+	setPasswordTemplatePath    string
 	activateTemplatePath       string
 	premiumRequestTemplatePath string
 	from                       string
@@ -31,6 +32,7 @@ func NewMail(smtp *smtp.Smtp,
 	return &Mail{
 		smtp:                       smtp,
 		resetPasswordTemplatePath:  mailPath + "/reset_password.txt",
+		setPasswordTemplatePath:    mailPath + "/set_password.txt",
 		activateTemplatePath:       mailPath + "/activate.txt",
 		premiumRequestTemplatePath: mailPath + "/premium_request.txt",
 		from:                       from,
@@ -49,6 +51,20 @@ func (m *Mail) SendResetPassword(to string, token string) error {
 	}
 	template := string(buf)
 	subject, body, err := ParseBody(template, map[string]string{"url": url})
+	if err != nil {
+		return err
+	}
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
+	return err
+}
+
+func (m *Mail) SendSetPassword(to string) error {
+	buf, err := ioutil.ReadFile(m.setPasswordTemplatePath)
+	if err != nil {
+		return err
+	}
+	template := string(buf)
+	subject, body, err := ParseBody(template, map[string]string{})
 	if err != nil {
 		return err
 	}

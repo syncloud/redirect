@@ -60,16 +60,10 @@ def logout():
     return 'User logged out', 200
 
 
-@app.route('/user/set_password', methods=["POST"])
-def user_set_password():
-    statsd_client.incr('rest.user.set_password')
-    users_manager.user_set_password(request.form)
-    return jsonify(success=True, message='Password was set successfully'), 200
-
-
 @app.route('/user/reset_password', methods=["POST"])
 @app.route('/user/activate', methods=["POST"])
 @app.route('/user/create', methods=["POST"])
+@app.route('/user/set_password', methods=["POST"])
 def backend_proxy_public():
     response = backend_request(request.method, '/web' + request.full_path, request.json, headers={})
     return response.text, response.status_code

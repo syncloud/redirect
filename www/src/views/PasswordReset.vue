@@ -33,7 +33,6 @@
 
 <script>
 import axios from 'axios'
-import querystring from 'querystring'
 
 export default {
   name: 'PasswordReset',
@@ -57,7 +56,7 @@ export default {
     reset: function (event) {
       const token = this.getToken()
       if (token !== undefined) {
-        axios.post('api/user/set_password', querystring.stringify({ token: token, password: this.password }))
+        axios.post('api/user/set_password', { token: token, password: this.password })
           .then(_ => {
             this.$router.push('/login')
           })

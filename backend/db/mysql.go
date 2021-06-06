@@ -523,6 +523,22 @@ func (mysql *MySql) DeleteActions(userId int64) error {
 	return nil
 }
 
+func (mysql *MySql) DeleteAction(actionId uint64) error {
+
+	stmt, err := mysql.db.Prepare("DELETE FROM action WHERE action_id = ?")
+	if err != nil {
+		log.Println("Cannot delete action (prepare): ", actionId, err)
+		return fmt.Errorf("DB error")
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(actionId)
+	if err != nil {
+		log.Println("Cannot delete action (exec): ", actionId, err)
+		return fmt.Errorf("DB error")
+	}
+	return nil
+}
+
 func (mysql *MySql) getDomainsLastUpdatedBefore() error {
 	//return self.session.query(Domain).filter(Domain.last_update < date).filter(Domain.ip != None).order_by(Domain.last_update).limit(limit)
 	return fmt.Errorf("not implemented")
