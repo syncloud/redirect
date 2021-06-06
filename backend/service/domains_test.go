@@ -31,24 +31,28 @@ type DomainsDbStub struct {
 func (db *DomainsDbStub) GetDomainByToken(token string) (*model.Domain, error) {
 	return nil, nil
 }
+
 func (db *DomainsDbStub) GetUserDomains(userId int64) ([]*model.Domain, error) {
 	return nil, nil
-
 }
+
 func (db *DomainsDbStub) GetUser(id int64) (*model.User, error) {
 	return nil, nil
-
 }
+
 func (db *DomainsDbStub) DeleteAllDomains(userId int64) error {
 	return nil
-
 }
+
+func (db *DomainsDbStub) DeleteDomain(domainId uint64) error {
+	return nil
+}
+
 func (db *DomainsDbStub) GetDomainByField(field string, value string) (*model.Domain, error) {
 	if db.found {
 		return &model.Domain{Domain: value, UserId: db.userId}, nil
 	}
 	return nil, nil
-
 }
 func (db *DomainsDbStub) InsertDomain(domain *model.Domain) error {
 	db.inserted = true

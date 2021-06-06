@@ -30,7 +30,7 @@ func NewApi(statsdClient *statsd.Client, service *service.Domains, users *servic
 	return &Api{statsdClient: statsdClient, domains: service, users: users, actions: actions, mail: mail, probe: probe, domain: domain}
 }
 
-func (a *Api) Start(socket string) {
+func (a *Api) StartApi(socket string) {
 	r := mux.NewRouter()
 	r.HandleFunc("/status", Handle(a.Status)).Methods("GET")
 	r.HandleFunc("/domain/update", Handle(a.DomainUpdate)).Methods("POST")
@@ -43,16 +43,6 @@ func (a *Api) Start(socket string) {
 	r.HandleFunc("/user/get", Handle(a.UserGet)).Methods("GET")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
-
-	r.HandleFunc("/web/notification/subscribe", Handle(a.WebNotificationSubscribe)).Methods("POST")
-	r.HandleFunc("/web/notification/unsubscribe", Handle(a.WebNotificationUnsubscribe)).Methods("POST")
-	r.HandleFunc("/web/user", Handle(a.WebUserDelete)).Methods("DELETE")
-	r.HandleFunc("/web/user", Handle(a.WebUser)).Methods("GET")
-	r.HandleFunc("/web/domains", Handle(a.WebDomains)).Methods("GET")
-	r.HandleFunc("/web/premium/request", Handle(a.WebPremiumRequest)).Methods("POST")
-	r.HandleFunc("/web/user/reset_password", Handle(a.WebUserPasswordReset)).Methods("POST")
-	r.HandleFunc("/web/user/activate", Handle(a.WebUserActivate)).Methods("POST")
-	r.HandleFunc("/web/user/create", Handle(a.UserCreateV2)).Methods("POST")
 
 	r.Use(middleware)
 
@@ -72,73 +62,6 @@ func (a *Api) Start(socket string) {
 	log.Println("Started backend")
 	_ = http.Serve(unixListener, r)
 
-}
-
-type DomainAcquireResponse struct {
-	Success              bool   `json:"success"`
-	DeprecatedUserDomain string `json:"user_domain,omitempty"`
-	UpdateToken          string `json:"update_token,omitempty"`
-}
-
-type Response struct {
-	Success            bool                       `json:"success"`
-	Message            string                     `json:"message,omitempty"`
-	Data               *interface{}               `json:"data,omitempty"`
-	ParametersMessages *[]model.ParameterMessages `json:"parameters_messages,omitempty"`
-}
-
-func fail(w http.ResponseWriter, err error) {
-	response, statusCode := ErrorToResponse(err)
-	responseJson, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, err.Error(), statusCode)
-	} else {
-		http.Error(w, string(responseJson), statusCode)
-	}
-}
-
-func ErrorToResponse(err error) (Response, int) {
-	response := Response{Success: false, Message: "Unknown Error"}
-	statusCode := 500
-	switch v := err.(type) {
-	case *model.ParameterError:
-		response.ParametersMessages = v.ParameterErrors
-		statusCode = 400
-	case *model.ServiceError:
-		statusCode = 400
-	}
-	response.Message = err.Error()
-	return response, statusCode
-}
-func success(w http.ResponseWriter, data interface{}) {
-	response := Response{
-		Success: true,
-		Data:    &data,
-	}
-	responseJson, err := json.Marshal(response)
-	if err != nil {
-		fail(w, err)
-	} else {
-		_, _ = fmt.Fprintf(w, string(responseJson))
-	}
-}
-
-func middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Type", "application/json")
-		next.ServeHTTP(w, r)
-	})
-}
-
-func Handle(f func(req *http.Request) (interface{}, error)) func(w http.ResponseWriter, req *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		data, err := f(req)
-		if err != nil {
-			fail(w, err)
-		} else {
-			success(w, data)
-		}
-	}
 }
 
 func (a *Api) Status(req *http.Request) (interface{}, error) {
@@ -256,139 +179,6 @@ func (a *Api) DomainAvailability(req *http.Request) (interface{}, error) {
 	return domain, nil
 }
 
-func (a *Api) WebNotificationSubscribe(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("www.user.subscribe", 1)
-	user, err := a.getAuthenticatedUser(req)
-	if err != nil {
-		return nil, err
-	}
-	user.Unsubscribed = false
-	return "OK", a.users.Save(user)
-}
-
-func (a *Api) WebNotificationUnsubscribe(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("www.user.unsubscribe", 1)
-	user, err := a.getAuthenticatedUser(req)
-	if err != nil {
-		return nil, err
-	}
-	user.Unsubscribed = true
-	return "OK", a.users.Save(user)
-}
-
-func (a *Api) WebUserDelete(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("www.user.delete", 1)
-	user, err := a.getAuthenticatedUser(req)
-	if err != nil {
-		return nil, err
-	}
-
-	err = a.domains.DeleteAllDomains(user.Id)
-	if err != nil {
-		log.Println("unable to delete domains for a user", err)
-		return nil, errors.New("invalid request")
-	}
-	err = a.actions.DeleteActions(user.Id)
-	if err != nil {
-		log.Println("unable to delete actions for a user", err)
-		return nil, errors.New("invalid request")
-	}
-
-	err = a.users.Delete(user.Id)
-	if err != nil {
-		log.Println("unable to delete a user", err)
-		return nil, errors.New("invalid request")
-	}
-
-	return "OK", nil
-}
-
-func (a *Api) WebUser(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("www.user.get", 1)
-	user, err := a.getAuthenticatedUser(req)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-func (a *Api) WebDomains(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("www.domains", 1)
-	user, err := a.getAuthenticatedUser(req)
-	if err != nil {
-		return nil, err
-	}
-	domains, err := a.domains.GetDomains(user)
-	if err != nil {
-		log.Println("unable to get domains for a user", err)
-		return nil, errors.New("invalid request")
-	}
-
-	return domains, nil
-}
-
-func (a *Api) WebPremiumRequest(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("www.premium.request", 1)
-	user, err := a.getAuthenticatedUser(req)
-	if err != nil {
-		return nil, err
-	}
-
-	err = a.users.RequestPremiumAccount(user)
-	if err != nil {
-		log.Println("unable to request premium account for a user", err)
-		return nil, errors.New("invalid request")
-	}
-
-	return "OK", nil
-}
-
-func (a *Api) WebUserPasswordReset(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("www.user.reset_password", 1)
-	request := model.UserPasswordResetRequest{}
-	err := json.NewDecoder(req.Body).Decode(&request)
-	if err != nil {
-		log.Println("unable to parse domain acquire request", err)
-		return nil, errors.New("invalid request")
-	}
-	user, err := a.users.GetUserByEmail(request.Email)
-	if err != nil {
-		log.Println("unable to get a user", err)
-		return nil, errors.New("invalid request")
-	}
-
-	if user != nil && user.Active {
-		action, err := a.actions.UpsertPasswordAction(user.Id)
-		if err != nil {
-			log.Println("unable to upsert action", err)
-			return nil, errors.New("invalid request")
-		}
-		err = a.mail.SendResetPassword(user.Email, action.Token)
-		if err != nil {
-			log.Println("unable to send mail", err)
-			return nil, errors.New("invalid request")
-		}
-	}
-
-	return "Reset password requested", nil
-}
-
-func (a *Api) WebUserActivate(req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.user.activate", 1)
-	request := model.UserActivateRequest{}
-	err := json.NewDecoder(req.Body).Decode(&request)
-	if err != nil {
-		log.Println("unable to parse user activate request", err)
-		return nil, errors.New("invalid request")
-	}
-	err = a.users.Activate(request.Token)
-	if err != nil {
-		log.Println("unable to activate user", err)
-		return nil, errors.New("invalid request")
-	}
-	return "User was activated", nil
-}
-
 func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.update", 1)
 	request := model.DomainUpdateRequest{MapLocalAddress: false}
@@ -436,23 +226,6 @@ func (a *Api) requestIp(req *http.Request) (*string, error) {
 		return nil, err
 	}
 	return &ip, nil
-}
-
-func (a *Api) getAuthenticatedUser(req *http.Request) (*model.User, error) {
-	userEmail := req.Header.Get("RedirectUserEmail")
-	if userEmail == "" {
-		log.Println("no user session")
-		return nil, errors.New("invalid request")
-	}
-	user, err := a.users.GetUserByEmail(userEmail)
-	if err != nil {
-		log.Println("unable to get a user", err)
-		return nil, errors.New("invalid request")
-	}
-	if user == nil {
-		return nil, errors.New("user not found")
-	}
-	return user, nil
 }
 
 func (a *Api) UserGet(req *http.Request) (interface{}, error) {

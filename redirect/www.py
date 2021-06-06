@@ -67,15 +67,6 @@ def user_set_password():
     return jsonify(success=True, message='Password was set successfully'), 200
 
 
-@app.route("/domain_delete", methods=["POST"])
-@login_required
-def domain_delete():
-    statsd_client.incr('www.domain.delete')
-    user = current_user.user
-    users_manager.user_domain_delete(request.form, user)
-    return 'Domain deleted', 200
-
-
 @app.route('/user/reset_password', methods=["POST"])
 @app.route('/user/activate', methods=["POST"])
 @app.route('/user/create', methods=["POST"])
@@ -89,6 +80,7 @@ def backend_proxy_public():
 @app.route("/user", methods=["GET"])
 @app.route("/domains", methods=["GET"])
 @app.route("/premium/request", methods=["POST"])
+@app.route("/domain", methods=["DELETE"])
 @login_required
 def backend_proxy_private():
     response = backend_request(request.method, '/web' + request.full_path, request.json,

@@ -11,14 +11,14 @@
               <div class="modal-content">
                 <div class="modal-header">
                   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                  <h4 class="modal-title">Deactivate {{ domain.user_domain }}</h4>
+                  <h4 class="modal-title">Deactivate {{ domain.domain }}</h4>
                 </div>
                 <div class="modal-body">
                   Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                  <button type="button" class="btn btn-danger" data-dismiss="modal" @click="domain_delete(domain.user_domain)">Deactivate</button>
+                  <button type="button" class="btn btn-danger" data-dismiss="modal" @click="domain_delete(domain.domain)">Deactivate</button>
                 </div>
               </div>
             </div>
@@ -98,7 +98,6 @@
 <script>
 import axios from 'axios'
 import moment from 'moment'
-import querystring from 'querystring'
 
 function sameDay (date1, date2) {
   return (date1.getDate() === date2.getDate() &&
@@ -201,8 +200,8 @@ export default {
           }
         })
     },
-    domain_delete: function (userDomain) {
-      axios.post('api/domain_delete', querystring.stringify({ user_domain: userDomain }))
+    domain_delete: function (domain) {
+      axios.delete('api/domain', { data: { domain: domain } })
         .then(_ => {
           this.reload()
         })

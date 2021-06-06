@@ -11,9 +11,6 @@ class Storage:
     def __init__(self, session):
         self.session = session
 
-    def delete_domain(self, domain):
-        self.delete(domain)
-
     def get_users_emails(self, query):
         emails = []
         result = self.session.execute(query)
@@ -36,12 +33,6 @@ class Storage:
             .filter(Action.token == token).first()
         return user
 
-    def get_domain_by_name(self, user_domain):
-        domain = self.session.query(Domain).filter(Domain.user_domain == user_domain).first()
-        return domain
-
-    def get_domains_last_updated_before(self, date, limit):
-        return self.session.query(Domain).filter(Domain.last_update < date).filter(Domain.ip != None).order_by(Domain.last_update).limit(limit)
 
     def users_iterate(self, include_unsubscribed=False):
         if include_unsubscribed:

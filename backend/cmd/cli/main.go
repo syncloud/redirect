@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-import sys
-from os.path import dirname, join, normpath
+package cli
+
+// TODO: port dns clean
+
+/*
 sys.path.append(normpath(join(dirname(__file__), '..')))
 from redirect import ioc
 import argparse
@@ -22,3 +24,5 @@ if __name__=='__main__':
             print('ip: {0}, last update: {1}'.format(domain.ip, domain.last_update))
             dns.delete_domain(manager.main_domain, domain)
             domain.ip = None
+
+*/

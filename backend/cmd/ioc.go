@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -13,10 +13,16 @@ import (
 	"os"
 )
 
-func main() {
+type Main struct {
+	config *utils.Config
+	api    *rest.Api
+	www    *rest.Www
+}
+
+func NewMain() *Main {
 	if len(os.Args) < 4 {
 		log.Println("usage: ", os.Args[0], "config.cfg", "secret.cfg", "mail_dir")
-		return
+		return nil
 	}
 
 	config := utils.NewConfig()
@@ -38,5 +44,15 @@ func main() {
 	domains := service.NewDomains(dnsImp, database, users, config.Domain())
 	probe := service.NewPortProbe(database)
 	api := rest.NewApi(statsdClient, domains, users, actions, mail, probe, config.Domain())
-	api.Start(config.GetApiSocket())
+	www := rest.NewWww(statsdClient, domains, users, actions, mail, probe, config.Domain())
+	return &Main{config: config, api: api, www: www}
+
+}
+
+func (m *Main) StartApi() {
+	m.api.StartApi(m.config.GetApiSocket())
+}
+
+func (m *Main) StartWww() {
+	m.www.StartWww(m.config.GetApiSocket())
 }

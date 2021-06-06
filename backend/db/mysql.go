@@ -221,6 +221,21 @@ func (mysql *MySql) GetDomainByField(field string, value string) (*model.Domain,
 	return domain, nil
 }
 
+func (mysql *MySql) DeleteDomain(domainId uint64) error {
+	stmt, err := mysql.db.Prepare("DELETE FROM domain WHERE id = ?")
+	if err != nil {
+		log.Println("Cannot delete domain (prepare): ", domainId, err)
+		return fmt.Errorf("DB error")
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(domainId)
+	if err != nil {
+		log.Println("Cannot delete domain (exec): ", domainId, err)
+		return fmt.Errorf("DB error")
+	}
+	return nil
+}
+
 func (mysql *MySql) DeleteAllDomains(userId int64) error {
 
 	stmt, err := mysql.db.Prepare("DELETE FROM domain WHERE user_id = ?")
@@ -506,4 +521,9 @@ func (mysql *MySql) DeleteActions(userId int64) error {
 		return fmt.Errorf("DB error")
 	}
 	return nil
+}
+
+func (mysql *MySql) getDomainsLastUpdatedBefore() error {
+	//return self.session.query(Domain).filter(Domain.last_update < date).filter(Domain.ip != None).order_by(Domain.last_update).limit(limit)
+	return fmt.Errorf("not implemented")
 }

@@ -1,6 +1,6 @@
 import requests_unixsocket
 
-socket_file = '/var/run/redirect.socket'
+socket_file = '/var/run/redirect.www.socket'
 socket = 'http+unix://{0}'.format(socket_file.replace('/', '%2F'))
 
 

@@ -1,9 +1,0 @@
-[Unit]
-Description=Redirect
-
-[Service]
-ExecStart=/var/www/redirect/current/bin/redirect /var/www/redirect/config.cfg /var/www/redirect/secret.cfg /var/www/redirect/current/emails
-Restart=always
-
-[Install]
-WantedBy=multi-user.target

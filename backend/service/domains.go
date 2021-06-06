@@ -25,6 +25,7 @@ type DomainsDb interface {
 	GetDomainByField(field string, value string) (*model.Domain, error)
 	InsertDomain(domain *model.Domain) error
 	UpdateDomain(domain *model.Domain) error
+	DeleteDomain(domainId uint64) error
 }
 
 type DomainsUsers interface {
@@ -84,6 +85,21 @@ func (d *Domains) DeleteAllDomains(userId int64) error {
 		return err
 	}
 	return nil
+}
+
+func (d *Domains) DeleteDomain(userId int64, domainName string) error {
+	domain, err := d.db.GetDomainByField("domain", domainName)
+	if err != nil {
+		return err
+	}
+	if domain == nil || domain.UserId != userId {
+		return fmt.Errorf("not found")
+	}
+	err = d.amazonDns.DeleteDomain(domain)
+	if err != nil {
+		return err
+	}
+	return d.db.DeleteDomain(domain.Id)
 }
 
 func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {

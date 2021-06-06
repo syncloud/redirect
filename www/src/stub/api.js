@@ -109,9 +109,9 @@ const mock = function (app, server, compiler) {
     state.loggedIn = false
     res.json({})
   })
-  app.post('/api/domain_delete', function (req, res) {
+  app.delete('/api/domain', function (req, res) {
     state.domains = state.domains.filter(v => {
-      return v.user_domain !== req.body.user_domain
+      return v.domain !== req.body.domain
     })
     res.json({})
   })
