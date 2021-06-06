@@ -86,7 +86,7 @@ def test_index(domain, artifact_dir):
 
 def test_user_create_special_symbols_in_password(domain):
     email = 'symbols_in_password@mail.com'
-    response = requests.post('https://www.{0}/api/user/create'.format(domain),
+    response = requests.post('https://www.{0}/user/create'.format(domain),
                              json={'email': email, 'password': r'pass12& ^%"'},
                              verify=False)
     assert response.status_code == 200, response.text
@@ -95,7 +95,7 @@ def test_user_create_special_symbols_in_password(domain):
 
 
 def create_user(domain, email, password, artifact_dir):
-    response = requests.post('https://www.{0}/api/user/create'.format(domain),
+    response = requests.post('https://www.{0}/user/create'.format(domain),
                              json={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
 
@@ -146,7 +146,7 @@ def test_create_user_api_for_mobile_app_v2(domain, artifact_dir):
 def activate_user(domain, artifact_dir):
     assert len(smtp.emails(artifact_dir)) == 1
     activate_token = smtp.get_token(smtp.emails()[0])
-    response = requests.post('https://www.{0}/api/user/activate'.format(domain),
+    response = requests.post('https://www.{0}/user/activate'.format(domain),
                              json={'token': activate_token},
                              verify=False)
     assert response.status_code == 200, (response.text, activate_token)
@@ -179,7 +179,7 @@ def test_user_create_existing_case_difference(domain, artifact_dir):
     email1 = 'case_test@syncloud.test'
     email2 = 'Case_test@syncloud.test'
     create_user(domain, email1, 'pass123456', artifact_dir)
-    response = requests.post('https://www.{0}/api/user/create'.format(domain),
+    response = requests.post('https://www.{0}/user/create'.format(domain),
                              json={'email': email2, 'password': 'pass123456'}, verify=False)
     assert response.status_code == 400, response.text
     assert "already registered" in response.text, response.text
@@ -285,7 +285,7 @@ def test_user_reset_password_sent_mail(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    response = requests.post('https://www.{0}/api/user/reset_password'.format(domain),
+    response = requests.post('https://www.{0}/user/reset_password'.format(domain),
                              json={'email': email}, verify=False)
     assert response.status_code == 200, response.text
 
@@ -300,7 +300,7 @@ def test_user_reset_password_set_new(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
+    requests.post('https://www.{0}/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
     email_body = smtp.emails(artifact_dir)[0]
     token = smtp.get_token(email_body)
@@ -308,7 +308,7 @@ def test_user_reset_password_set_new(domain, artifact_dir):
     smtp.clear()
 
     new_password = 'new_password'
-    response = requests.post('https://www.{0}/api/user/set_password'.format(domain),
+    response = requests.post('https://www.{0}/user/set_password'.format(domain),
                              json={'token': token, 'password': new_password},
                              verify=False)
     assert response.status_code == 200, (response.text, token, email_body)
@@ -327,19 +327,19 @@ def test_user_reset_password_set_with_old_token(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
+    requests.post('https://www.{0}/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
     token_old = smtp.get_token(smtp.emails()[0])
 
     smtp.clear()
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
+    requests.post('https://www.{0}/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
     token = smtp.get_token(smtp.emails()[0])
     smtp.clear()
 
     new_password = 'new_password'
-    response = requests.post('https://www.{0}/api/user/set_password'.format(domain),
+    response = requests.post('https://www.{0}/user/set_password'.format(domain),
                              json={'token': token_old, 'password': new_password},
                              verify=False)
     assert response.status_code == 400, response.text
@@ -351,19 +351,19 @@ def test_user_reset_password_set_twice(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
+    requests.post('https://www.{0}/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
     token = smtp.get_token(smtp.emails()[0])
     smtp.clear()
 
     new_password = 'new_password'
-    response = requests.post('https://www.{0}/api/user/set_password'.format(domain),
+    response = requests.post('https://www.{0}/user/set_password'.format(domain),
                              josn={'token': token, 'password': new_password},
                              verify=False)
     assert response.status_code == 200, response.text
 
     new_password = 'new_password2'
-    response = requests.post('https://www.{0}/api/user/set_password'.format(domain),
+    response = requests.post('https://www.{0}/user/set_password'.format(domain),
                              json={'token': token, 'password': new_password},
                              verify=False)
     assert response.status_code == 400, response.text
