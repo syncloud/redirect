@@ -28,7 +28,7 @@ local build(arch) = {
             commands: [
                 "cd backend",
                 "go test ./... -cover",
-                "go build -o ../build/bin/api cmd/api/main.go"
+                "go build -o ../build/bin/api cmd/api/main.go",
                 "go build -o ../build/bin/www cmd/www/main.go"
             ]
         },
