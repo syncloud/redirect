@@ -239,7 +239,7 @@ func (a *Api) UserGet(req *http.Request) (interface{}, error) {
 	if !ok {
 		return nil, errors.New("no password")
 	}
-	request := model.UserGetRequest{Email: &emails[0], Password: &passwords[0]}
+	request := model.UserAuthenticateRequest{Email: &emails[0], Password: &passwords[0]}
 	user, err := a.users.Authenticate(request.Email, request.Password)
 	if err != nil {
 		log.Println("unable to get a user", err)

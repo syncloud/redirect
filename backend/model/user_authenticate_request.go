@@ -1,6 +1,6 @@
 package model
 
-type UserGetRequest struct {
+type UserAuthenticateRequest struct {
 	Email    *string `json:"email"`
 	Password *string `json:"password"`
 }

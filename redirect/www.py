@@ -2,10 +2,10 @@ import traceback
 
 from flask import Flask, request, jsonify
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-from syncloudlib.json import convertible
 
 import ioc
 from backend_proxy import backend_request
+from redirect import servicesexceptions
 from servicesexceptions import ServiceException, ParametersException
 
 the_ioc = ioc.Ioc()
@@ -46,8 +46,10 @@ def load_user(email):
 @app.route("/login", methods=["POST"])
 def login():
     statsd_client.incr('www.user.login')
-    user = users_manager.authenticate(request.form)
-    user_flask = UserFlask(user.email)
+    response = backend_request(request.method, '/web' + request.full_path, request.json, headers={})
+    if response.status_code != 200:
+        raise servicesexceptions.bad_request('Authentication failed')
+    user_flask = UserFlask(request.json['email'])
     login_user(user_flask, remember=False)
     return 'User logged in', 200
 

@@ -39,6 +39,7 @@ func (w *Www) StartWww(socket string) {
 	r.HandleFunc("/web/user/set_password", Handle(w.UserSetPassword)).Methods("POST")
 	r.HandleFunc("/web/user/activate", Handle(w.WebUserActivate)).Methods("POST")
 	r.HandleFunc("/web/user/create", Handle(w.UserCreateV2)).Methods("POST")
+	r.HandleFunc("/web/user/login", Handle(w.UserCreateV2)).Methods("POST")
 	r.HandleFunc("/web/domain", Handle(w.DomainDelete)).Methods("DELETE")
 
 	r.Use(middleware)
@@ -268,4 +269,19 @@ func (w *Www) UserSetPassword(req *http.Request) (interface{}, error) {
 	}
 	err = w.users.UserSetPassword(request)
 	return "Password was set successfully", err
+}
+
+func (w *Www) UserLogin(req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.user.login", 1)
+	request := &model.UserAuthenticateRequest{}
+	err := json.NewDecoder(req.Body).Decode(request)
+	if err != nil {
+		log.Println("unable to parse user set password request", err)
+		return nil, errors.New("invalid request")
+	}
+	_, err = w.users.Authenticate(request.Email, request.Password)
+	if err != nil {
+		return nil, err
+	}
+	return "User logged in", nil
 }

@@ -54,5 +54,5 @@ func (m *Main) StartApi() {
 }
 
 func (m *Main) StartWww() {
-	m.www.StartWww(m.config.GetApiSocket())
+	m.www.StartWww(m.config.GetWwwSocket())
 }
