@@ -1,12 +1,12 @@
 import unittest
-from mock import MagicMock
-from redirect.models import User, Action, ActionType
-from redirect.util import hash
+
+import smtp
 from redirect.mail import Smtp, Mail
+from redirect.models import User, ActionType
 from redirect.services import Users
 from redirect.servicesexceptions import ServiceException
+from redirect.util import hash
 from test.helpers import get_test_storage_creator
-import smtp
 
 
 class TestUsers(unittest.TestCase):
@@ -15,7 +15,6 @@ class TestUsers(unittest.TestCase):
         self.activate_url_template = 'http://redirect.com?activate?token={0}'
 
         self.mail = Mail(Smtp('mail', 1025), 'support@redirect.com', self.activate_url_template, None, None)
-        self.dns = MagicMock()
         self.create_storage = get_test_storage_creator()
         with self.create_storage() as storage:
             storage.clear()
@@ -34,7 +33,7 @@ class TestUsers(unittest.TestCase):
             return storage.get_user_by_email(email)
 
     def get_users_service(self, activate_by_email=True):
-        return Users(self.create_storage, activate_by_email, self.mail, self.dns, 'redirect.com')
+        return Users(self.create_storage, activate_by_email, self.mail)
 
     def test_user_authenticate_success(self):
         users = self.get_users_service()

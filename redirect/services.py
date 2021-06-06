@@ -11,8 +11,7 @@ def check_validator(validator):
 
 class UsersRead:
 
-    def __init__(self, create_storage, domain):
-        self.main_domain = domain
+    def __init__(self, create_storage):
         self.create_storage = create_storage
 
     def get_user(self, email):
@@ -34,12 +33,10 @@ class UsersRead:
 
 class Users(UsersRead):
 
-    def __init__(self, create_storage, activate_by_email, mail, dns, domain):
-        UsersRead.__init__(self, create_storage, domain)
+    def __init__(self, create_storage, activate_by_email, mail):
+        UsersRead.__init__(self)
         self.activate_by_email = activate_by_email
         self.mail = mail
-        self.dns = dns
-        self.main_domain = domain
         self.create_storage = create_storage
 
     def get_user(self, email):

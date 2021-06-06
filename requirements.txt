@@ -4,9 +4,7 @@ flask-cors==1.2.1
 flask-login==0.2.10
 MySQL-python==1.2.3
 SQLAlchemy==1.2.19
-boto==2.32.0
 requests==2.10.0
-mock==1.0.1
 jsonpickle==0.7.1
 statsd==3.2.1
 syncloud-lib==185
