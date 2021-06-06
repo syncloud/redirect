@@ -5,8 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 
 import ioc
 from backend_proxy import backend_request
-from redirect import servicesexceptions
-from servicesexceptions import ServiceException, ParametersException
+from servicesexceptions import ServiceException, ParametersException, bad_request
 
 the_ioc = ioc.Ioc()
 statsd_client = the_ioc.statsd_client
@@ -48,7 +47,7 @@ def login():
     statsd_client.incr('www.user.login')
     response = backend_request(request.method, '/web' + request.full_path, request.json, headers={})
     if response.status_code != 200:
-        raise servicesexceptions.bad_request('Authentication failed')
+        raise bad_request('Authentication failed')
     user_flask = UserFlask(request.json['email'])
     login_user(user_flask, remember=False)
     return 'User logged in', 200
