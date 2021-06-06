@@ -55,9 +55,26 @@ func (a *UsersActionsStub) DeleteActions(_ int64) error {
 	return nil
 }
 
+func (a *UsersActionsStub) SendSetPassword(to string) error {
+	panic("implement me")
+}
+
+func (a *UsersActionsStub) GetPasswordAction(token string) (*model.Action, error) {
+	panic("implement me")
+}
+
+func (a *UsersActionsStub) DeleteAction(actionId uint64) error {
+	a.action = nil
+	return nil
+}
+
 type UsersMailStub struct {
 	sentEmail *string
 	sentToken *string
+}
+
+func (a *UsersMailStub) SendSetPassword(to string) error {
+	panic("implement me")
 }
 
 func (a *UsersMailStub) SendActivate(to string, token string) error {
@@ -70,8 +87,6 @@ func (a *UsersMailStub) SendPremiumRequest(to string) error {
 	a.sentEmail = &to
 	return nil
 }
-
-var _ UsersMail = (*UsersMailStub)(nil)
 
 func TestActivateSuccess(t *testing.T) {
 	db := &UsersDbStub{}
