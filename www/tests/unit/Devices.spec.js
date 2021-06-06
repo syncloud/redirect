@@ -31,7 +31,7 @@ test('Show devices', async () => {
           web_local_port: 443,
           web_port: 443,
           web_protocol: 'https',
-          domain: 'test.example.com'
+          name: 'test.example.com'
         },
         {
           device_mac_address: '00:11:22:33:44:ff',
@@ -47,7 +47,7 @@ test('Show devices', async () => {
           web_local_port: 443,
           web_port: 10001,
           web_protocol: 'https',
-          domain: 'test1.example.com'
+          name: 'test1.example.com'
         }
       ]
     }

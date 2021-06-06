@@ -29,7 +29,7 @@ let state = {
         web_local_port: 443,
         web_port: 443,
         web_protocol: 'https',
-        domain: 'test.syncloud.test'
+        name: 'test.syncloud.test'
       },
       {
         device_mac_address: '00:11:22:33:44:ff',
@@ -45,7 +45,7 @@ let state = {
         web_local_port: 443,
         web_port: 10001,
         web_protocol: 'https',
-        domain: 'test1.syncloud.test'
+        name: 'test1.syncloud.test'
       }
     ]
   }
@@ -111,7 +111,7 @@ const mock = function (app, server, compiler) {
   })
   app.delete('/api/domain', function (req, res) {
     state.domains = state.domains.filter(v => {
-      return v.domain !== req.body.domain
+      return v.name !== req.body.domain
     })
     res.json({})
   })

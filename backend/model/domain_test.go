@@ -6,20 +6,20 @@ import (
 )
 
 func TestBackwardCompatibleDomain_Free(t *testing.T) {
-	domain := &Domain{Domain: "test123.syncloud.it"}
+	domain := &Domain{Name: "test123.syncloud.it"}
 	domain.BackwardCompatibleDomain("syncloud.it")
 	assert.Equal(t, "test123", domain.DeprecatedUserDomain)
 }
 
 func TestBackwardCompatibleDomain_Managed(t *testing.T) {
-	domain := &Domain{Domain: "test123.com"}
+	domain := &Domain{Name: "test123.com"}
 	domain.BackwardCompatibleDomain("syncloud.it")
 	assert.Equal(t, "", domain.DeprecatedUserDomain)
 }
 
 func TestIpv6(t *testing.T) {
 	ipv6 := "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-	domain := &Domain{Domain: "domain", Ipv6: &ipv6}
+	domain := &Domain{Name: "domain", Ipv6: &ipv6}
 	assert.Equal(t, ipv6, *domain.DnsIpv6())
 	assert.Nil(t, domain.DnsIpv4())
 }

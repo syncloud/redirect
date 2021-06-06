@@ -11,14 +11,14 @@
               <div class="modal-content">
                 <div class="modal-header">
                   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                  <h4 class="modal-title">Deactivate {{ domain.domain }}</h4>
+                  <h4 class="modal-title">Deactivate {{ domain.name }}</h4>
                 </div>
                 <div class="modal-body">
                   Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                  <button type="button" class="btn btn-danger" data-dismiss="modal" @click="domain_delete(domain.domain)">Deactivate</button>
+                  <button type="button" class="btn btn-danger" data-dismiss="modal" @click="domain_delete(domain.name)">Deactivate</button>
                 </div>
               </div>
             </div>
@@ -30,7 +30,7 @@
                 <div class="panel-title">
                   <h3 style="margin-top: 5px; margin-bottom: 5px">
                     <span id="name">
-                      {{ domain.domain }}
+                      {{ domain.name }}
                     </span>
                     <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
                   </h3>
@@ -138,8 +138,8 @@ function online (ds) {
 
 function convert (domain) {
   domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port
-  domain.domain_address = fullUrl(domain.domain, domain.domain_address_port)
-  domain.has_domain_address = domain.domain !== null
+  domain.domain_address = fullUrl(domain.name, domain.domain_address_port)
+  domain.has_domain_address = domain.name !== null
   domain.external_address = fullUrl(domain.ip, domain.web_port)
   domain.has_external_address = domain.ip !== null
   domain.internal_address = 'https://' + domain.local_ip

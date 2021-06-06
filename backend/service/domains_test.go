@@ -48,9 +48,9 @@ func (db *DomainsDbStub) DeleteDomain(domainId uint64) error {
 	return nil
 }
 
-func (db *DomainsDbStub) GetDomainByField(field string, value string) (*model.Domain, error) {
+func (db *DomainsDbStub) GetDomainByName(value string) (*model.Domain, error) {
 	if db.found {
-		return &model.Domain{Domain: value, UserId: db.userId}, nil
+		return &model.Domain{Name: value, UserId: db.userId}, nil
 	}
 	return nil, nil
 }

@@ -22,7 +22,7 @@ type DomainsDb interface {
 	GetUserDomains(userId int64) ([]*model.Domain, error)
 	GetUser(id int64) (*model.User, error)
 	DeleteAllDomains(userId int64) error
-	GetDomainByField(field string, value string) (*model.Domain, error)
+	GetDomainByName(name string) (*model.Domain, error)
 	InsertDomain(domain *model.Domain) error
 	UpdateDomain(domain *model.Domain) error
 	DeleteDomain(domainId uint64) error
@@ -88,7 +88,7 @@ func (d *Domains) DeleteAllDomains(userId int64) error {
 }
 
 func (d *Domains) DeleteDomain(userId int64, domainName string) error {
-	domain, err := d.db.GetDomainByField("domain", domainName)
+	domain, err := d.db.GetDomainByName(domainName)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.
 }
 
 func (d *Domains) find(domain *string, user *model.User, field string) (*model.Domain, error) {
-	foundDomain, err := d.db.GetDomainByField(field, *domain)
+	foundDomain, err := d.db.GetDomainByName(*domain)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 	updateToken := utils.Uuid()
 	if domain == nil {
 		domain = &model.Domain{
-			Domain:           *domainName,
+			Name:             *domainName,
 			DeviceMacAddress: deviceMacAddress,
 			DeviceName:       request.DeviceName,
 			DeviceTitle:      request.DeviceTitle,

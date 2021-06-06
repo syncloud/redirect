@@ -27,20 +27,20 @@ type (
 		WebLocalPort         *int       `json:"web_local_port,omitempty"`
 		UserId               int64      `json:"-"`
 		HostedZoneId         uint64     `json:"-"`
-		Domain               string     `json:"domain,omitempty"`
+		Name                 string     `json:"name,omitempty"`
 	}
 )
 
 func (d *Domain) BackwardCompatibleDomain(mainDomain string) {
-	if strings.HasSuffix(d.Domain, mainDomain) {
+	if strings.HasSuffix(d.Name, mainDomain) {
 		suffix := fmt.Sprintf(".%s", mainDomain)
-		parts := strings.Split(d.Domain, suffix)
+		parts := strings.Split(d.Name, suffix)
 		d.DeprecatedUserDomain = parts[0]
 	}
 }
 
 func (d *Domain) FQDN() string {
-	return fmt.Sprintf("%s.", d.Domain)
+	return fmt.Sprintf("%s.", d.Name)
 }
 
 func (d *Domain) accessIp() *string {

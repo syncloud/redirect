@@ -157,10 +157,14 @@ func (mysql *MySql) DeleteUser(userId int64) error {
 }
 
 func (mysql *MySql) GetDomainByToken(token string) (*model.Domain, error) {
-	return mysql.GetDomainByField("update_token", token)
+	return mysql.getDomainByField("update_token", token)
 }
 
-func (mysql *MySql) GetDomainByField(field string, value string) (*model.Domain, error) {
+func (mysql *MySql) GetDomainByName(name string) (*model.Domain, error) {
+	return mysql.getDomainByField("name", name)
+}
+
+func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain, error) {
 	row := mysql.db.QueryRow(
 		"SELECT "+
 			"id, "+
@@ -179,7 +183,7 @@ func (mysql *MySql) GetDomainByField(field string, value string) (*model.Domain,
 			"web_port, "+
 			"web_local_port, "+
 			"last_update, "+
-			"domain "+
+			"name "+
 			"FROM domain "+
 			"WHERE "+field+" = ?", value)
 
@@ -202,7 +206,7 @@ func (mysql *MySql) GetDomainByField(field string, value string) (*model.Domain,
 		&domain.WebPort,
 		&domain.WebLocalPort,
 		&domain.LastUpdate,
-		&domain.Domain,
+		&domain.Name,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -257,7 +261,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 	rows, err := mysql.db.Query(
 		"SELECT "+
 			"id, "+
-			"domain, "+
+			"name, "+
 			"ip, "+
 			"ipv6, "+
 			"dkim_key, "+
@@ -286,7 +290,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 		domain := &model.Domain{}
 		err := rows.Scan(
 			&domain.Id,
-			&domain.Domain,
+			&domain.Name,
 			&domain.Ip,
 			&domain.Ipv6,
 			&domain.DkimKey,
@@ -324,7 +328,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"UPDATE domain SET " +
-			"domain = ?, " +
+			"name = ?, " +
 			"ip = ?, " +
 			"ipv6 = ?, " +
 			"dkim_key = ?, " +
@@ -346,7 +350,7 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 		return err
 	}
 	_, err = stmt.Exec(
-		domain.Domain,
+		domain.Name,
 		domain.Ip,
 		domain.Ipv6,
 		domain.DkimKey,
@@ -375,7 +379,7 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"INSERT into domain (" +
-			"domain, " +
+			"name, " +
 			"update_token, " +
 			"user_id, " +
 			"device_mac_address, " +
@@ -388,7 +392,7 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 		return err
 	}
 	_, err = stmt.Exec(
-		domain.Domain,
+		domain.Name,
 		domain.UpdateToken,
 		domain.UserId,
 		domain.DeviceMacAddress,
