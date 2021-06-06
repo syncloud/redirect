@@ -34,7 +34,7 @@ class UsersRead:
 class Users(UsersRead):
 
     def __init__(self, create_storage, activate_by_email, mail):
-        UsersRead.__init__(self)
+        UsersRead.__init__(self, create_storage)
         self.activate_by_email = activate_by_email
         self.mail = mail
         self.create_storage = create_storage
