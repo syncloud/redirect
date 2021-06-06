@@ -224,3 +224,72 @@ func TestPremiumRequestAlreadyRequested(t *testing.T) {
 	assert.Equal(t, PremiumStatusPending, user.PremiumStatusId)
 	assert.Nil(t, mail.sentEmail)
 }
+
+func TestUserAuthenticateSuccess(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	password := "password"
+	user := &model.User{Email: email, PasswordHash: hash(password), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	authenticatedUser, err := users.Authenticate(&email, &password)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, authenticatedUser)
+}
+
+func TestUserAuthenticateWrongPassword(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	user := &model.User{Email: email, PasswordHash: hash("otherpassword"), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	password := "password"
+	_, err := users.Authenticate(&email, &password)
+
+	assert.NotNil(t, err)
+}
+
+func TestUserAuthenticateNotExisting(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	password := "password"
+	_, err := users.Authenticate(&email, &password)
+
+	assert.NotNil(t, err)
+
+}
+
+func TestUserAuthenticateNonActive(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	user := &model.User{Email: email, PasswordHash: hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	password := "password"
+	_, err := users.Authenticate(&email, &password)
+
+	assert.NotNil(t, err)
+}
+
+func TestUserAuthenticateMissingPassword(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	user := &model.User{Email: email, PasswordHash: hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	_, err := users.Authenticate(&email, nil)
+
+	assert.NotNil(t, err)
+}

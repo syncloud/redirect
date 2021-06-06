@@ -525,7 +525,7 @@ func (mysql *MySql) DeleteActions(userId int64) error {
 
 func (mysql *MySql) DeleteAction(actionId uint64) error {
 
-	stmt, err := mysql.db.Prepare("DELETE FROM action WHERE action_id = ?")
+	stmt, err := mysql.db.Prepare("DELETE FROM action WHERE id = ?")
 	if err != nil {
 		log.Println("Cannot delete action (prepare): ", actionId, err)
 		return fmt.Errorf("DB error")

@@ -51,7 +51,6 @@ func NewUsers(db UsersDb, activateByEmail bool, actions UsersActions, usersMail 
 
 func (u *Users) Authenticate(email *string, password *string) (*model.User, error) {
 	fieldValidator := validator.New()
-
 	emailLower := fieldValidator.Email(email)
 	passwordChecked := fieldValidator.Password(password)
 	if fieldValidator.HasErrors() {
