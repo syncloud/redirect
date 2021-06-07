@@ -247,8 +247,9 @@ def test_domain_availability(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
+    full_domain = 'domain_availability.syncloud.test'
     request = {
-        'domain': 'domain_availability.syncloud.test',
+        'domain': full_domain,
         'email': email,
         'password': password,
     }
@@ -269,7 +270,7 @@ def test_domain_availability(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
     request = {
-        'domain': 'domain_availability.syncloud.test',
+        'domain': full_domain,
         'email': email,
         'password': password,
     }

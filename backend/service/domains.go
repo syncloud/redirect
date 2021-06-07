@@ -130,7 +130,7 @@ func (d *Domains) find(domain *string, user *model.User, field string) (*model.D
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("domain: %v, user: %v\n", foundDomain, user)
+	log.Printf("domain: %v, found: %v, user: %v\n", *domain, foundDomain, user)
 	if foundDomain != nil && foundDomain.UserId != user.Id {
 		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
 			Parameter: field, Messages: []string{"User domain name is already in use"},
