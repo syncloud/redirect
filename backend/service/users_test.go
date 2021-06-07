@@ -22,7 +22,16 @@ func (db *UsersDbStub) GetUserByEmail(_ string) (*model.User, error) {
 }
 
 func (db *UsersDbStub) GetUser(_ int64) (*model.User, error) {
-	return db.user, nil
+	return &model.User{
+		Id:              db.user.Id,
+		Email:           db.user.Email,
+		PasswordHash:    db.user.PasswordHash,
+		Active:          db.user.Active,
+		UpdateToken:     db.user.UpdateToken,
+		Unsubscribed:    db.user.Unsubscribed,
+		PremiumStatusId: db.user.PremiumStatusId,
+		Timestamp:       db.user.Timestamp,
+	}, nil
 }
 
 func (db *UsersDbStub) UpdateUser(user *model.User) error {
@@ -60,12 +69,17 @@ func (a *UsersActionsStub) SendSetPassword(to string) error {
 }
 
 func (a *UsersActionsStub) GetPasswordAction(token string) (*model.Action, error) {
-	panic("implement me")
+	return a.action, nil
 }
 
 func (a *UsersActionsStub) DeleteAction(actionId uint64) error {
 	a.action = nil
 	return nil
+}
+
+func (a *UsersActionsStub) UpsertPasswordAction(userId int64) (*model.Action, error) {
+	a.action = &model.Action{Id: 1, ActionTypeId: ActionPassword, UserId: userId, Token: "token", Timestamp: time.Now()}
+	return a.action, nil
 }
 
 type UsersMailStub struct {
@@ -74,7 +88,7 @@ type UsersMailStub struct {
 }
 
 func (a *UsersMailStub) SendSetPassword(to string) error {
-	panic("implement me")
+	return nil
 }
 
 func (a *UsersMailStub) SendActivate(to string, token string) error {
@@ -85,6 +99,10 @@ func (a *UsersMailStub) SendActivate(to string, token string) error {
 
 func (a *UsersMailStub) SendPremiumRequest(to string) error {
 	a.sentEmail = &to
+	return nil
+}
+
+func (a *UsersMailStub) SendResetPassword(to string, token string) error {
 	return nil
 }
 
@@ -292,4 +310,25 @@ func TestUserAuthenticateMissingPassword(t *testing.T) {
 	_, err := users.Authenticate(&email, nil)
 
 	assert.NotNil(t, err)
+}
+
+func TestPasswordReset(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	password1 := "password1"
+	user := &model.User{Email: email, PasswordHash: hash(password1), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	_, err := users.Authenticate(&email, &password1)
+	assert.Nil(t, err)
+	token, err := users.RequestPasswordReset(email)
+	assert.Nil(t, err)
+	password2 := "password2"
+	request := &model.UserPasswordSetRequest{Token: token, Password: &password2}
+	err = users.UserSetPassword(request)
+	assert.Nil(t, err)
+	_, err = users.Authenticate(&email, &password2)
+	assert.Nil(t, err)
 }

@@ -2,10 +2,12 @@ package service
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/validator"
+	"log"
 	"time"
 )
 
@@ -30,12 +32,14 @@ type UsersActions interface {
 	DeleteActions(userId int64) error
 	GetPasswordAction(token string) (*model.Action, error)
 	DeleteAction(actionId uint64) error
+	UpsertPasswordAction(userId int64) (*model.Action, error)
 }
 
 type UsersMail interface {
 	SendActivate(to string, token string) error
 	SendPremiumRequest(to string) error
 	SendSetPassword(to string) error
+	SendResetPassword(to string, token string) error
 }
 
 type Users struct {
@@ -162,6 +166,29 @@ func (u *Users) RequestPremiumAccount(user *model.User) error {
 	return u.usersMail.SendPremiumRequest(user.Email)
 }
 
+func (u *Users) RequestPasswordReset(email string) (*string, error) {
+	user, err := u.GetUserByEmail(email)
+	if err != nil {
+		log.Println("unable to get a user", err)
+		return nil, errors.New("invalid request")
+	}
+
+	if user != nil && user.Active {
+		action, err := u.actions.UpsertPasswordAction(user.Id)
+		if err != nil {
+			log.Println("unable to upsert action", err)
+			return nil, errors.New("invalid request")
+		}
+		err = u.usersMail.SendResetPassword(user.Email, action.Token)
+		if err != nil {
+			log.Println("unable to send mail", err)
+			return nil, errors.New("invalid request")
+		}
+		return &action.Token, nil
+	}
+	return nil, nil
+}
+
 func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
 	fieldValidator := validator.New()
 	fieldValidator.Token(request.Token)
@@ -183,11 +210,14 @@ func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
 		return &model.ServiceError{InternalError: fmt.Errorf("invalid password token")}
 	}
 	user.PasswordHash = hash(*password)
+	err = u.db.UpdateUser(user)
+	if err != nil {
+		return err
+	}
 	err = u.usersMail.SendSetPassword(user.Email)
 	if err != nil {
 		return err
 	}
-
 	err = u.actions.DeleteAction(action.Id)
 	return err
 }
