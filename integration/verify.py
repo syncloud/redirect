@@ -358,7 +358,7 @@ def test_user_reset_password_set_twice(domain, artifact_dir):
 
     new_password = 'new_password'
     response = requests.post('https://www.{0}/api/user/set_password'.format(domain),
-                             josn={'token': token, 'password': new_password},
+                             json={'token': token, 'password': new_password},
                              verify=False)
     assert response.status_code == 200, response.text
 
