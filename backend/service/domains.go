@@ -56,7 +56,7 @@ func (d *Domains) GetDomain(token string) (*model.Domain, error) {
 	if user == nil || !user.Active {
 		return nil, &model.ServiceError{InternalError: fmt.Errorf("unknown domain update token")}
 	}
-
+	domain.BackwardCompatibleDomain(d.domain)
 	return domain, nil
 }
 
