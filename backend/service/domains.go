@@ -65,6 +65,9 @@ func (d *Domains) GetDomains(user *model.User) ([]*model.Domain, error) {
 	if err != nil {
 		return nil, err
 	}
+	for _, domain := range domains {
+		domain.BackwardCompatibleDomain(d.domain)
+	}
 	return domains, nil
 }
 
