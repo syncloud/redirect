@@ -247,9 +247,8 @@ def test_domain_availability(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    user_domain = "domain_availability.syncloud.test"
     request = {
-        'domain': user_domain,
+        'domain': 'domain_availability.syncloud.test',
         'email': email,
         'password': password,
     }
@@ -259,7 +258,7 @@ def test_domain_availability(domain, artifact_dir):
                              verify=False)
     assert response.status_code == 200, response.text
 
-    acquire_domain(domain, email, password, user_domain)
+    acquire_domain(domain, email, password, 'domain_availability')
 
     response = requests.post('https://api.{0}/domain/availability'.format(domain),
                              json=request,
@@ -270,7 +269,7 @@ def test_domain_availability(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
     request = {
-        'domain': user_domain,
+        'domain': 'domain_availability.syncloud.test',
         'email': email,
         'password': password,
     }

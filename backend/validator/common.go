@@ -44,7 +44,7 @@ func (v *FieldValidator) Domain(domain *string, field string, mainDomain string)
 		v.addFieldError(field, "Missing")
 	} else {
 		if *domain == mainDomain {
-			v.addFieldError(field, "Invalid characters")
+			v.addFieldError(field, "Invalid domain")
 		} else {
 			suffix := fmt.Sprintf(".%s", mainDomain)
 			if strings.HasSuffix(*domain, suffix) {
