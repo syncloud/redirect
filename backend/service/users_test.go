@@ -22,16 +22,21 @@ func (db *UsersDbStub) GetUserByEmail(_ string) (*model.User, error) {
 }
 
 func (db *UsersDbStub) GetUser(_ int64) (*model.User, error) {
-	return &model.User{
-		Id:              db.user.Id,
-		Email:           db.user.Email,
-		PasswordHash:    db.user.PasswordHash,
-		Active:          db.user.Active,
-		UpdateToken:     db.user.UpdateToken,
-		Unsubscribed:    db.user.Unsubscribed,
-		PremiumStatusId: db.user.PremiumStatusId,
-		Timestamp:       db.user.Timestamp,
-	}, nil
+	user := db.user
+	if user != nil {
+		//copy
+		user = &model.User{
+			Id:              db.user.Id,
+			Email:           db.user.Email,
+			PasswordHash:    db.user.PasswordHash,
+			Active:          db.user.Active,
+			UpdateToken:     db.user.UpdateToken,
+			Unsubscribed:    db.user.Unsubscribed,
+			PremiumStatusId: db.user.PremiumStatusId,
+			Timestamp:       db.user.Timestamp,
+		}
+	}
+	return user, nil
 }
 
 func (db *UsersDbStub) UpdateUser(user *model.User) error {
