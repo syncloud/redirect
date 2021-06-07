@@ -235,7 +235,7 @@ def test_get_user_data(domain, artifact_dir):
             'device_title': 'Some Device',
             'last_update': user_data["domains"][0]["last_update"],
             'update_token': update_token,
-            'domain': 'test_get_user_data.syncloud.info'
+            'name': 'test_get_user_data.syncloud.info'
         }]
     }
 
@@ -399,7 +399,7 @@ def test_domain_new(domain, artifact_dir):
         'device_name': 'my-super-board',
         'map_local_address': False,
         'device_title': 'My Super Board',
-        'domain': 'test_domain_new.syncloud.info'
+        'name': 'test_domain_new.syncloud.info'
     }
 
     data = get_domain(update_token, domain)
@@ -436,7 +436,7 @@ def test_domain_new_v2(domain, artifact_dir):
         'device_name': 'my-super-board',
         'device_title': 'My Super Board',
         'map_local_address': False,
-        'domain': request_domain
+        'name': request_domain
     }
 
     data = get_domain(update_token, domain)
@@ -484,7 +484,7 @@ def test_domain_existing(domain, artifact_dir):
         'device_name': 'my-super-board',
         'device_title': 'My Super Board',
         'map_local_address': False,
-        'domain': 'test_domain_existing.syncloud.info'
+        'name': 'test_domain_existing.syncloud.info'
     }
 
     data = get_domain(update_token, domain)
@@ -532,7 +532,7 @@ def test_domain_twice(domain, artifact_dir):
         'device_name': 'my-super-board-2',
         'device_title': 'My Super Board 2',
         'map_local_address': False,
-        'domain': 'test_domain_twice.syncloud.info'
+        'name': 'test_domain_twice.syncloud.info'
     }
 
     data = get_domain(update_token2, domain)
@@ -644,7 +644,7 @@ def test_domain_update_web_updated(domain, artifact_dir):
         'device_name': 'some-device',
         'device_title': 'Some Device',
         'map_local_address': False,
-        'domain': 'test_domain_update_web_updated.syncloud.info'
+        'name': 'test_domain_update_web_updated.syncloud.info'
     }
 
     domain_data = get_domain(update_token, domain)
@@ -695,7 +695,7 @@ def test_domain_update_ip_changed(domain, artifact_dir):
         'web_port': 10001,
         'web_protocol': 'http',
         'map_local_address': False,
-        'domain': 'test_domain_update_ip_changed.syncloud.info'
+        'name': 'test_domain_update_ip_changed.syncloud.info'
     }
 
     domain_data = get_domain(update_token, domain)
@@ -736,7 +736,7 @@ def test_domain_update_platform_version(domain, artifact_dir):
         'web_port': 10001,
         'web_protocol': 'http',
         'map_local_address': False,
-        'domain': 'test_domain_update_platform_version.syncloud.info'
+        'name': 'test_domain_update_platform_version.syncloud.info'
     }
     domain_data = get_domain(update_token, domain)
     domain_data.pop('last_update', None)
@@ -790,7 +790,7 @@ def test_domain_update_local_ip_changed(domain, artifact_dir):
         'web_port': 10001,
         'web_protocol': 'http',
         'map_local_address': False,
-        'domain': 'test_domain_update_local_ip_changed.syncloud.info'
+        'name': 'test_domain_update_local_ip_changed.syncloud.info'
     }
     domain_data = get_domain(update_token, domain)
     domain_data.pop('last_update', None)
@@ -827,7 +827,7 @@ def test_domain_update_server_side_client_ip(domain, artifact_dir):
         'device_name': 'some-device',
         'device_title': 'Some Device',
         'map_local_address': False,
-        'domain': 'test_domain_update_server_side_client_ip.syncloud.info'
+        'name': 'test_domain_update_server_side_client_ip.syncloud.info'
     }
 
     domain_data = get_domain(update_token, domain)
@@ -870,7 +870,7 @@ def test_domain_update_map_local_address(domain, artifact_dir):
         'web_protocol': 'http',
         'web_port': 10001,
         'web_local_port': 80,
-        'domain': 'test_domain_update_map_local_address.syncloud.info'
+        'name': 'test_domain_update_map_local_address.syncloud.info'
     }
 
     domain_data = get_domain(update_token, domain)
