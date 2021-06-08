@@ -33,10 +33,11 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
         device.run_ssh('cp /var/log/apache2/redirect_ssl_web-access.log {0}/{1}/web-access.log'.format(TMP_DIR, ui_mode), throw=False)
         device.run_ssh('cp /var/log/apache2/redirect_ssl_web-error.log {0}/{1}/web-error.log'.format(TMP_DIR, ui_mode), throw=False)
         device.run_ssh('journalctl | tail -500 > {0}/{1}/journalctl.log'.format(TMP_DIR, ui_mode), throw=False)
+        device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
+        check_output('mkdir {0}/{1}'.format(artifact_dir, ui_mode), throw=False)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from action' > {0}/{1}/db-action.log || true".format(artifact_dir, ui_mode), shell=True)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from user' > {0}/{1}/db-user.log".format(artifact_dir, ui_mode), shell=True)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from domain' > {0}/{1}/db-domain.log".format(artifact_dir, ui_mode), shell=True)
-        device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
         check_output('cp -R {0} {1}'.format(log_dir, artifact_dir), shell=True)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
 
