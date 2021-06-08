@@ -34,7 +34,7 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
         device.run_ssh('cp /var/log/apache2/redirect_ssl_web-error.log {0}/{1}/web-error.log'.format(TMP_DIR, ui_mode), throw=False)
         device.run_ssh('journalctl | tail -500 > {0}/{1}/journalctl.log'.format(TMP_DIR, ui_mode), throw=False)
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
-        check_output('mkdir {0}/{1}'.format(artifact_dir, ui_mode), throw=False)
+        check_output('mkdir {0}/{1}'.format(artifact_dir, ui_mode), shell=True)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from action' > {0}/{1}/db-action.log || true".format(artifact_dir, ui_mode), shell=True)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from user' > {0}/{1}/db-user.log".format(artifact_dir, ui_mode), shell=True)
         check_output("mysql --host=mysql --user=root --password=root redirect -e 'select * from domain' > {0}/{1}/db-domain.log".format(artifact_dir, ui_mode), shell=True)
@@ -273,3 +273,4 @@ def menu(driver, ui_mode, screenshot_dir, element_id):
             print('error (attempt {0}/{1}): {2}'.format(retry + 1, retries, str(e)))
             time.sleep(1)
         retry += 1
+
