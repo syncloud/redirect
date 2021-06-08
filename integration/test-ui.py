@@ -183,7 +183,7 @@ def test_domain_delete(driver, ui_mode, screenshot_dir):
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, deactivate_xpath)))
     driver.find_element_by_xpath(deactivate_xpath).click()
 
-    confirm_xpath = "//div[contains(@class, 'modal-dialog')]//button[contains(text(), 'Deactivate')]"
+    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(text(), 'Yes')]"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, confirm_xpath)))
     driver.find_element_by_xpath(confirm_xpath).click()
 
