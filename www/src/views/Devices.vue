@@ -201,7 +201,7 @@ export default {
         })
     },
     domain_delete: function (domain) {
-      axios.delete('api/domain', { data: { domain: domain } })
+      axios.delete('api/domain', { params: { domain: domain } })
         .then(_ => {
           this.reload()
         })
