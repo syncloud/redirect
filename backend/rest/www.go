@@ -39,7 +39,7 @@ func (w *Www) StartWww(socket string) {
 	r.HandleFunc("/web/user/set_password", Handle(w.UserSetPassword)).Methods("POST")
 	r.HandleFunc("/web/user/activate", Handle(w.WebUserActivate)).Methods("POST")
 	r.HandleFunc("/web/user/create", Handle(w.UserCreateV2)).Methods("POST")
-	r.HandleFunc("/web/user/login", Handle(w.UserCreateV2)).Methods("POST")
+	r.HandleFunc("/web/user/login", Handle(w.UserLogin)).Methods("POST")
 	r.HandleFunc("/web/domain", Handle(w.DomainDelete)).Methods("DELETE")
 
 	r.Use(middleware)
