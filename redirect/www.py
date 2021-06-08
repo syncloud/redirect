@@ -42,7 +42,7 @@ def load_user(email):
     return UserFlask(user)
 
 
-@app.route("/login", methods=["POST"])
+@app.route("/user/login", methods=["POST"])
 def login():
     statsd_client.incr('www.user.login')
     response = backend_request(request.method, '/web' + request.full_path, request.json, headers={})

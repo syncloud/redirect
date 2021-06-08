@@ -56,7 +56,7 @@ const bodyparser = require('body-parser')
 const mock = function (app, server, compiler) {
   app.use(express.urlencoded())
   app.use(bodyparser.json())
-  app.post('/api/login', function (req, res) {
+  app.post('/api/user/login', function (req, res) {
     if (state.credentials.user === req.body.email && state.credentials.password === req.body.password) {
       state.loggedIn = true
       res.json({ message: 'OK' })

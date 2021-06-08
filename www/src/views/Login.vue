@@ -87,7 +87,7 @@ export default {
   methods: {
     login: function (event) {
       this.isError = false
-      axios.post('/api/login', { email: this.email, password: this.password })
+      axios.post('/api/user/login', { email: this.email, password: this.password })
         .then(_ => {
           this.onLogin()
           this.$router.push('/')
