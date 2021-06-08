@@ -6,24 +6,6 @@
       <div v-for="(domains, group_index) in domainGroups" :key="group_index">
         <div class="row">
           <div v-for="(domain, index) in domains" :key="index">
-          <div class="modal fade" v-bind:id="'modalDeactivateDomain_' + index" tabindex="-1" role="dialog" v-bind:aria-labelledby="'modalDeactivateDomain_' + index">
-            <div class="modal-dialog" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                  <h4 class="modal-title">Deactivate {{ domain.name }}</h4>
-                </div>
-                <div class="modal-body">
-                  Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                  <button type="button" class="btn btn-danger" data-dismiss="modal" @click="domain_delete(domain.name)">Deactivate</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -40,7 +22,7 @@
                 <li class="list-group-item clearfix">
                   <h3 id="title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
 
-                  <button type="button" class="btn btn-default pull-right" data-toggle="modal" v-bind:data-target="'#modalDeactivateDomain_' + index">
+                  <button type="button" class="btn btn-default pull-right" id="delete" @click="domainDeleteConfirm(domain.name)">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate
                   </button>
 
@@ -93,11 +75,21 @@
       </div>
     </div>
   </div>
+
+  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="domainDelete">
+    <template v-slot:title>
+      Deactivate {{ domainToDelete }}
+    </template>
+    <template v-slot:text>
+      Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
+    </template>
+  </Confirmation>
 </template>
 
 <script>
 import axios from 'axios'
 import moment from 'moment'
+import Confirmation from '@/components/Confirmation'
 
 function sameDay (date1, date2) {
   return (date1.getDate() === date2.getDate() &&
@@ -153,13 +145,17 @@ function convert (domain) {
 
 export default {
   name: 'Devices',
+  components: {
+    Confirmation
+  },
   props: {
     onLogin: Function
   },
   data () {
     return {
       hasDomains: Boolean,
-      domainGroups: Array
+      domainGroups: Array,
+      domainToDelete: ''
     }
   },
   mounted () {
@@ -200,8 +196,12 @@ export default {
           }
         })
     },
-    domain_delete: function (domain) {
-      axios.delete('/api/domain', { data: { domain: domain } })
+    domainDeleteConfirm: function (domainName) {
+      this.domainToDelete = domainName
+      this.$refs.delete_confirmation.show()
+    },
+    domainDelete: function () {
+      axios.delete('/api/domain', { params: { domain: this.domainToDelete } })
         .then(_ => {
           this.reload()
         })
@@ -235,4 +235,3 @@ export default {
   display: none;
 }
 </style>
-

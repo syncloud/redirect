@@ -241,21 +241,15 @@ func (w *Www) UserCreateV2(req *http.Request) (interface{}, error) {
 
 func (w *Www) DomainDelete(req *http.Request) (interface{}, error) {
 	w.statsdClient.Incr("www.domain.delete", 1)
-	request := model.DomainDeleteRequest{}
-	err := json.NewDecoder(req.Body).Decode(&request)
-	if err != nil {
-		log.Println("unable to parse domain delete request", err)
-		return nil, errors.New("invalid request")
-	}
-	if request.Domain == nil {
+	domain := req.URL.Query().Get("domain")
+	if domain == "" {
 		return nil, errors.New("missing domain")
 	}
-
 	user, err := w.getAuthenticatedUser(req)
 	if err != nil {
 		return nil, err
 	}
-	err = w.domains.DeleteDomain(user.Id, *request.Domain)
+	err = w.domains.DeleteDomain(user.Id, domain)
 	return "Domain deleted", err
 }
 

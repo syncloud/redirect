@@ -110,8 +110,8 @@ const mock = function (app, server, compiler) {
     res.json({})
   })
   app.delete('/api/domain', function (req, res) {
-    state.domains = state.domains.filter(v => {
-      return v.name !== req.body.domain
+    state.domains.data = state.domains.data.filter(v => {
+      return v.name !== req.query.domain
     })
     res.json({})
   })
