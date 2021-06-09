@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy import create_engine
 from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker, lazyload
+from sqlalchemy.orm import sessionmaker
 
 import util
 from models import User, Base, Action
@@ -13,52 +13,17 @@ class Storage:
     def __init__(self, session):
         self.session = session
 
-    def get_users_emails(self, query):
-        emails = []
-        result = self.session.execute(query)
-        for row in result:
-            email = row[0]
-            emails.append(email)
-        return emails
-
     def get_user_by_email(self, email):
         user = self.session.query(User).filter(func.lower(User.email) == func.lower(email)).first()
         if user and not user.update_token:
             user.update_token = util.create_token()
         return user
 
-    def get_user_by_token(self, type, token):
-        user = self.session\
-            .query(User)\
-            .join(Action)\
-            .filter(Action.action_type_id == type)\
-            .filter(Action.token == token).first()
-        return user
-
-
-    def users_iterate(self, include_unsubscribed=False):
-        if include_unsubscribed:
-            for user in self.session.query(User).options(lazyload('*')).yield_per(10):
-                yield user
-        else:
-            for user in self.session.query(User).options(lazyload('*')).filter(User.unsubscribed == False).yield_per(10):
-                yield user
-
-    def get_action(self, token):
-        return self.session.query(Action).filter(Action.token == token).first()
-
     def add(self, *args):
         if len(args) > 0 and isinstance(args[0], list):
             args = args[0]
         for obj in args:
             self.session.add(obj)
-
-    def delete(self, *args):
-        if len(args) > 0 and isinstance(args[0], list):
-            args = args[0]
-        for obj in args:
-            self.session.delete(obj)
-            self.session.flush()
 
     def clear(self):
         self.session.query(Action).delete()
@@ -101,7 +66,7 @@ class SessionContextFactory:
 
 def get_session_maker(database_spec):
     engine = create_engine(database_spec, pool_pre_ping=True)
-    maker = sessionmaker(expire_on_commit = False)
+    maker = sessionmaker(expire_on_commit=False)
     maker.configure(bind=engine)
     Base.metadata.create_all(engine)
     return maker

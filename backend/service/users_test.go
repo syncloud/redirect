@@ -255,7 +255,7 @@ func TestUserAuthenticateSuccess(t *testing.T) {
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
 	password := "password"
-	user := &model.User{Email: email, PasswordHash: hash(password), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash(password), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
 	_ = users.Save(user)
 	authenticatedUser, err := users.Authenticate(&email, &password)
 
@@ -269,7 +269,7 @@ func TestUserAuthenticateWrongPassword(t *testing.T) {
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
-	user := &model.User{Email: email, PasswordHash: hash("otherpassword"), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
 	_ = users.Save(user)
 	password := "password"
 	_, err := users.Authenticate(&email, &password)
@@ -296,7 +296,7 @@ func TestUserAuthenticateNonActive(t *testing.T) {
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
-	user := &model.User{Email: email, PasswordHash: hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
 	_ = users.Save(user)
 	password := "password"
 	_, err := users.Authenticate(&email, &password)
@@ -310,7 +310,7 @@ func TestUserAuthenticateMissingPassword(t *testing.T) {
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
-	user := &model.User{Email: email, PasswordHash: hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
 	_ = users.Save(user)
 	_, err := users.Authenticate(&email, nil)
 
@@ -324,7 +324,7 @@ func TestPasswordReset(t *testing.T) {
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
 	password1 := "password1"
-	user := &model.User{Email: email, PasswordHash: hash(password1), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash(password1), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
 	_ = users.Save(user)
 	_, err := users.Authenticate(&email, &password1)
 	assert.Nil(t, err)
@@ -336,4 +336,21 @@ func TestPasswordReset(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = users.Authenticate(&email, &password2)
 	assert.Nil(t, err)
+}
+
+func TestHashNotEmpty(t *testing.T) {
+	hash := Hash("non empty string")
+	assert.NotEmpty(t, hash)
+}
+
+func TestEqualInput(t *testing.T) {
+	h1 := Hash("some string")
+	h2 := Hash("some string")
+	assert.Equal(t, h1, h2)
+}
+
+func testNotEqualInput(t *testing.T) {
+	h1 := Hash("some string")
+	h2 := Hash("some other string")
+	assert.NotEqual(t, h1, h2)
 }

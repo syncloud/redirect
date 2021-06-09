@@ -62,7 +62,7 @@ func (u *Users) Authenticate(email *string, password *string) (*model.User, erro
 	}
 
 	user, err := u.db.GetUserByEmail(*emailLower)
-	if err != nil || user == nil || !user.Active || hash(*passwordChecked) != user.PasswordHash {
+	if err != nil || user == nil || !user.Active || Hash(*passwordChecked) != user.PasswordHash {
 		return nil, &model.ServiceError{InternalError: fmt.Errorf("authentication failed")}
 	}
 
@@ -133,7 +133,7 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	}
 
 	updateToken := utils.Uuid()
-	user := &model.User{Email: *email, PasswordHash: hash(*password), Active: !u.activateByEmail, UpdateToken: updateToken, PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Email: *email, PasswordHash: Hash(*password), Active: !u.activateByEmail, UpdateToken: updateToken, PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
 
 	userId, err := u.db.InsertUser(user)
 	if err != nil {
@@ -209,7 +209,7 @@ func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
 	if user == nil {
 		return &model.ServiceError{InternalError: fmt.Errorf("invalid password token")}
 	}
-	user.PasswordHash = hash(*password)
+	user.PasswordHash = Hash(*password)
 	err = u.db.UpdateUser(user)
 	if err != nil {
 		return err
@@ -222,6 +222,6 @@ func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
 	return err
 }
 
-func hash(password string) string {
+func Hash(password string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
 }
