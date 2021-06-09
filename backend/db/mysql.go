@@ -10,12 +10,11 @@ import (
 import _ "github.com/go-sql-driver/mysql"
 
 type MySql struct {
-	db     *sql.DB
-	domain string
+	db *sql.DB
 }
 
-func NewMySql(domain string) *MySql {
-	return &MySql{domain: domain}
+func NewMySql() *MySql {
+	return &MySql{}
 }
 
 func (mysql *MySql) Connect(host string, database string, user string, password string) {
@@ -161,15 +160,14 @@ func (mysql *MySql) GetDomainByToken(token string) (*model.Domain, error) {
 	return mysql.getDomainByField("update_token", token)
 }
 
-func (mysql *MySql) GetDomainByUserDomain(userDomain string) (*model.Domain, error) {
-	return mysql.getDomainByField("user_domain", userDomain)
+func (mysql *MySql) GetDomainByName(name string) (*model.Domain, error) {
+	return mysql.getDomainByField("name", name)
 }
 
 func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain, error) {
 	row := mysql.db.QueryRow(
 		"SELECT "+
 			"id, "+
-			"user_domain, "+
 			"ip, "+
 			"ipv6, "+
 			"dkim_key, "+
@@ -184,7 +182,8 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 			"web_protocol, "+
 			"web_port, "+
 			"web_local_port, "+
-			"last_update "+
+			"last_update, "+
+			"name "+
 			"FROM domain "+
 			"WHERE "+field+" = ?", value)
 
@@ -192,7 +191,6 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 	domain := &model.Domain{}
 	err := row.Scan(
 		&domain.Id,
-		&domain.UserDomain,
 		&domain.Ip,
 		&domain.Ipv6,
 		&domain.DkimKey,
@@ -208,6 +206,7 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 		&domain.WebPort,
 		&domain.WebLocalPort,
 		&domain.LastUpdate,
+		&domain.Name,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -222,9 +221,23 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 	} else {
 		domain.MapLocalAddress = false
 	}
-	domain.FullDomain = fmt.Sprintf("%s.%s", domain.UserDomain, mysql.domain)
 
 	return domain, nil
+}
+
+func (mysql *MySql) DeleteDomain(domainId uint64) error {
+	stmt, err := mysql.db.Prepare("DELETE FROM domain WHERE id = ?")
+	if err != nil {
+		log.Println("Cannot delete domain (prepare): ", domainId, err)
+		return fmt.Errorf("DB error")
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(domainId)
+	if err != nil {
+		log.Println("Cannot delete domain (exec): ", domainId, err)
+		return fmt.Errorf("DB error")
+	}
+	return nil
 }
 
 func (mysql *MySql) DeleteAllDomains(userId int64) error {
@@ -248,7 +261,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 	rows, err := mysql.db.Query(
 		"SELECT "+
 			"id, "+
-			"user_domain, "+
+			"name, "+
 			"ip, "+
 			"ipv6, "+
 			"dkim_key, "+
@@ -277,7 +290,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 		domain := &model.Domain{}
 		err := rows.Scan(
 			&domain.Id,
-			&domain.UserDomain,
+			&domain.Name,
 			&domain.Ip,
 			&domain.Ipv6,
 			&domain.DkimKey,
@@ -303,7 +316,6 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 		} else {
 			domain.MapLocalAddress = false
 		}
-		domain.FullDomain = fmt.Sprintf("%s.%s", domain.UserDomain, mysql.domain)
 		domains = append(domains, domain)
 	}
 	if err := rows.Err(); err != nil {
@@ -316,7 +328,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"UPDATE domain SET " +
-			"user_domain = ?, " +
+			"name = ?, " +
 			"ip = ?, " +
 			"ipv6 = ?, " +
 			"dkim_key = ?, " +
@@ -338,7 +350,7 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 		return err
 	}
 	_, err = stmt.Exec(
-		domain.UserDomain,
+		domain.Name,
 		domain.Ip,
 		domain.Ipv6,
 		domain.DkimKey,
@@ -367,7 +379,7 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 	stmt, err := mysql.db.Prepare(
 		"INSERT into domain (" +
-			"user_domain, " +
+			"name, " +
 			"update_token, " +
 			"user_id, " +
 			"device_mac_address, " +
@@ -380,7 +392,7 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 		return err
 	}
 	_, err = stmt.Exec(
-		domain.UserDomain,
+		domain.Name,
 		domain.UpdateToken,
 		domain.UserId,
 		domain.DeviceMacAddress,
@@ -513,4 +525,25 @@ func (mysql *MySql) DeleteActions(userId int64) error {
 		return fmt.Errorf("DB error")
 	}
 	return nil
+}
+
+func (mysql *MySql) DeleteAction(actionId uint64) error {
+
+	stmt, err := mysql.db.Prepare("DELETE FROM action WHERE id = ?")
+	if err != nil {
+		log.Println("Cannot delete action (prepare): ", actionId, err)
+		return fmt.Errorf("DB error")
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(actionId)
+	if err != nil {
+		log.Println("Cannot delete action (exec): ", actionId, err)
+		return fmt.Errorf("DB error")
+	}
+	return nil
+}
+
+func (mysql *MySql) getDomainsLastUpdatedBefore() error {
+	//return self.session.query(Domain).filter(Domain.last_update < date).filter(Domain.ip != None).order_by(Domain.last_update).limit(limit)
+	return fmt.Errorf("not implemented")
 }

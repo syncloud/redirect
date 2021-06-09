@@ -44,12 +44,11 @@
 
 <script>
 import axios from 'axios'
-import querystring from 'querystring'
 
 function showError (component, error) {
   if ('parameters_messages' in error) {
-    for (var i = 0; i < error.parameters_messages.length; i++) {
-      var pm = error.parameters_messages[i]
+    for (let i = 0; i < error.parameters_messages.length; i++) {
+      const pm = error.parameters_messages[i]
       switch (pm.parameter) {
         case 'email':
           component.emailError = pm.messages.join('\n')
@@ -88,8 +87,8 @@ export default {
   methods: {
     login: function (event) {
       this.isError = false
-      axios.post('/api/login', querystring.stringify({ email: this.email, password: this.password }))
-        .then(response => {
+      axios.post('/api/user/login', { email: this.email, password: this.password })
+        .then(_ => {
           this.onLogin()
           this.$router.push('/')
         })

@@ -6,31 +6,13 @@
       <div v-for="(domains, group_index) in domainGroups" :key="group_index">
         <div class="row">
           <div v-for="(domain, index) in domains" :key="index">
-          <div class="modal fade" v-bind:id="'modalDeactivateDomain_' + index" tabindex="-1" role="dialog" v-bind:aria-labelledby="'modalDeactivateDomain_' + index">
-            <div class="modal-dialog" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                  <h4 class="modal-title">Deactivate {{ domain.user_domain }}</h4>
-                </div>
-                <div class="modal-body">
-                  Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                  <button type="button" class="btn btn-danger" data-dismiss="modal" @click="domain_delete(domain.user_domain)">Deactivate</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
                   <h3 style="margin-top: 5px; margin-bottom: 5px">
                     <span id="name">
-                      {{ domain.full_domain }}
+                      {{ domain.name }}
                     </span>
                     <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
                   </h3>
@@ -40,7 +22,7 @@
                 <li class="list-group-item clearfix">
                   <h3 id="title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
 
-                  <button type="button" class="btn btn-default pull-right" data-toggle="modal" v-bind:data-target="'#modalDeactivateDomain_' + index">
+                  <button type="button" class="btn btn-default pull-right" id="delete" @click="domainDeleteConfirm(domain.name)">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate
                   </button>
 
@@ -93,12 +75,21 @@
       </div>
     </div>
   </div>
+
+  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="domainDelete">
+    <template v-slot:title>
+      Deactivate {{ domainToDelete }}
+    </template>
+    <template v-slot:text>
+      Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
+    </template>
+  </Confirmation>
 </template>
 
 <script>
 import axios from 'axios'
 import moment from 'moment'
-import querystring from 'querystring'
+import Confirmation from '@/components/Confirmation'
 
 function sameDay (date1, date2) {
   return (date1.getDate() === date2.getDate() &&
@@ -139,8 +130,8 @@ function online (ds) {
 
 function convert (domain) {
   domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port
-  domain.domain_address = fullUrl(domain.full_domain, domain.domain_address_port)
-  domain.has_domain_address = domain.full_domain !== null
+  domain.domain_address = fullUrl(domain.name, domain.domain_address_port)
+  domain.has_domain_address = domain.name !== null
   domain.external_address = fullUrl(domain.ip, domain.web_port)
   domain.has_external_address = domain.ip !== null
   domain.internal_address = 'https://' + domain.local_ip
@@ -154,13 +145,17 @@ function convert (domain) {
 
 export default {
   name: 'Devices',
+  components: {
+    Confirmation
+  },
   props: {
     onLogin: Function
   },
   data () {
     return {
       hasDomains: Boolean,
-      domainGroups: Array
+      domainGroups: Array,
+      domainToDelete: ''
     }
   },
   mounted () {
@@ -201,8 +196,12 @@ export default {
           }
         })
     },
-    domain_delete: function (userDomain) {
-      axios.post('api/domain_delete', querystring.stringify({ user_domain: userDomain }))
+    domainDeleteConfirm: function (domainName) {
+      this.domainToDelete = domainName
+      this.$refs.delete_confirmation.show()
+    },
+    domainDelete: function () {
+      axios.delete('/api/domain', { params: { domain: this.domainToDelete } })
         .then(_ => {
           this.reload()
         })

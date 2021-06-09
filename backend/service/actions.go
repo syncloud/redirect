@@ -18,6 +18,7 @@ type ActionsDb interface {
 	InsertAction(action *model.Action) error
 	UpdateAction(action *model.Action) error
 	DeleteActions(userId int64) error
+	DeleteAction(actionId uint64) error
 }
 
 type Actions struct {
@@ -39,12 +40,27 @@ func (a *Actions) GetActivateAction(token string) (*model.Action, error) {
 	return action, err
 }
 
+func (a *Actions) GetPasswordAction(token string) (*model.Action, error) {
+	action, err := a.db.GetActionByToken(token, ActionPassword)
+	if err != nil {
+		return nil, err
+	}
+	if action == nil {
+		return nil, &model.ServiceError{InternalError: fmt.Errorf("invalid password token")}
+	}
+	return action, err
+}
+
 func (a *Actions) UpsertActivateAction(userId int64) (*model.Action, error) {
 	return a.upsertAction(userId, ActionActivate)
 }
 
 func (a *Actions) DeleteActions(userId int64) error {
 	return a.db.DeleteActions(userId)
+}
+
+func (a *Actions) DeleteAction(actionId uint64) error {
+	return a.db.DeleteAction(actionId)
 }
 
 func (a *Actions) UpsertPasswordAction(userId int64) (*model.Action, error) {

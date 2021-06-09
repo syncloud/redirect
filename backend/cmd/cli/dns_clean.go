@@ -1,3 +1,8 @@
+package cli
+
+// TODO: port notification
+
+/*
 #!/usr/bin/env python
 import sys
 from os.path import dirname, join, normpath, exists
@@ -78,3 +83,6 @@ if __name__ == '__main__':
         print("Error happened while sending emails")
         traceback.print_exc()
         exit(1)
+
+
+*/

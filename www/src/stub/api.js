@@ -26,11 +26,10 @@ let state = {
         local_ip: '192.168.1.1',
         map_local_address: false,
         platform_version: '2',
-        user_domain: 'test',
         web_local_port: 443,
         web_port: 443,
         web_protocol: 'https',
-        full_domain: 'test.syncloud.test'
+        name: 'test.syncloud.test'
       },
       {
         device_mac_address: '00:11:22:33:44:ff',
@@ -43,11 +42,10 @@ let state = {
         local_ip: '192.168.1.2',
         map_local_address: false,
         platform_version: '2',
-        user_domain: 'test1',
         web_local_port: 443,
         web_port: 10001,
         web_protocol: 'https',
-        full_domain: 'test1.syncloud.test'
+        name: 'test1.syncloud.test'
       }
     ]
   }
@@ -58,7 +56,7 @@ const bodyparser = require('body-parser')
 const mock = function (app, server, compiler) {
   app.use(express.urlencoded())
   app.use(bodyparser.json())
-  app.post('/api/login', function (req, res) {
+  app.post('/api/user/login', function (req, res) {
     if (state.credentials.user === req.body.email && state.credentials.password === req.body.password) {
       state.loggedIn = true
       res.json({ message: 'OK' })
@@ -111,9 +109,9 @@ const mock = function (app, server, compiler) {
     state.loggedIn = false
     res.json({})
   })
-  app.post('/api/domain_delete', function (req, res) {
-    state.domains = state.domains.filter(v => {
-      return v.user_domain !== req.body.user_domain
+  app.delete('/api/domain', function (req, res) {
+    state.domains.data = state.domains.data.filter(v => {
+      return v.name !== req.query.domain
     })
     res.json({})
   })

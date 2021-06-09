@@ -31,24 +31,28 @@ type DomainsDbStub struct {
 func (db *DomainsDbStub) GetDomainByToken(token string) (*model.Domain, error) {
 	return nil, nil
 }
+
 func (db *DomainsDbStub) GetUserDomains(userId int64) ([]*model.Domain, error) {
 	return nil, nil
-
 }
+
 func (db *DomainsDbStub) GetUser(id int64) (*model.User, error) {
 	return nil, nil
-
 }
+
 func (db *DomainsDbStub) DeleteAllDomains(userId int64) error {
 	return nil
-
 }
-func (db *DomainsDbStub) GetDomainByUserDomain(userDomain string) (*model.Domain, error) {
+
+func (db *DomainsDbStub) DeleteDomain(domainId uint64) error {
+	return nil
+}
+
+func (db *DomainsDbStub) GetDomainByName(value string) (*model.Domain, error) {
 	if db.found {
-		return &model.Domain{UserDomain: userDomain, UserId: db.userId}, nil
+		return &model.Domain{Name: value, UserId: db.userId}, nil
 	}
 	return nil, nil
-
 }
 func (db *DomainsDbStub) InsertDomain(domain *model.Domain) error {
 	db.inserted = true
@@ -199,15 +203,15 @@ func TestAcquireDomain_ExistingMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users)
-	userDomain := "boris"
+	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
 	mac := "11:22:33:44:55:66"
 	deviceName := "name"
 	deviceTitle := "title"
-	request := model.DomainAcquireRequest{Email: &email, Password: &password, UserDomain: &userDomain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
-	_, err := domains.DomainAcquire(request)
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, Domain: &domain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request, "")
 
 	assert.Nil(t, err)
 	assert.True(t, db.updated)
@@ -218,15 +222,15 @@ func TestAcquireDomain_ExistingNotMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users)
-	userDomain := "boris"
+	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	userDomain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
 	mac := "11:22:33:44:55:66"
 	deviceName := "name"
 	deviceTitle := "title"
-	request := model.DomainAcquireRequest{Email: &email, Password: &password, UserDomain: &userDomain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
-	_, err := domains.DomainAcquire(request)
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, DeprecatedUserDomain: &userDomain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request, "")
 
 	assert.NotNil(t, err)
 	assert.False(t, db.updated)
@@ -238,15 +242,15 @@ func TestAcquireDomain_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users)
-	userDomain := "boris"
+	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
 	mac := "11:22:33:44:55:66"
 	deviceName := "name"
 	deviceTitle := "title"
-	request := model.DomainAcquireRequest{Email: &email, Password: &password, UserDomain: &userDomain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
-	_, err := domains.DomainAcquire(request)
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, Domain: &domain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request, "")
 
 	assert.Nil(t, err)
 	assert.False(t, db.updated)
@@ -258,15 +262,15 @@ func TestAvailability_SameUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users)
-	userDomain := "boris"
+	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
-	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, UserDomain: &userDomain}
-	domain, err := domains.Availability(request)
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, Domain: &domain}
+	result, err := domains.Availability(request)
 
 	assert.Nil(t, err)
-	assert.NotNil(t, domain)
+	assert.NotNil(t, result)
 
 }
 
@@ -274,15 +278,15 @@ func TestAvailability_OtherUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users)
-	userDomain := "boris"
+	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
-	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, UserDomain: &userDomain}
-	domain, err := domains.Availability(request)
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, Domain: &domain}
+	result, err := domains.Availability(request)
 
 	assert.NotNil(t, err)
-	assert.Nil(t, domain)
+	assert.Nil(t, result)
 
 }
 
@@ -290,14 +294,14 @@ func TestAvailability_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users)
-	userDomain := "boris"
+	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
-	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, UserDomain: &userDomain}
-	domain, err := domains.Availability(request)
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, Domain: &domain}
+	result, err := domains.Availability(request)
 
 	assert.Nil(t, err)
-	assert.Nil(t, domain)
+	assert.Nil(t, result)
 
 }

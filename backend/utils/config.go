@@ -74,6 +74,14 @@ func (config *Config) GetApiSocket() string {
 	return value
 }
 
+func (config *Config) GetWwwSocket() string {
+	value, err := config.parser.Get("www", "socket")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {

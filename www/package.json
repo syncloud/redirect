@@ -10,20 +10,18 @@
   },
   "dependencies": {
     "axios": "^0.20.0",
-    "axios-mock-adapter": "^1.19.0",
     "body-parser": "^1.19.0",
     "bootstrap": "^3.3.5",
     "core-js": "^3.6.5",
     "flush-promises": "^1.0.2",
     "jquery": "^3.5.1",
     "moment": "^2.29.1",
-    "moxios": "^0.4.0",
     "popper.js": "^1.16.1",
-    "querystring": "^0.2.0",
     "vue": "^3.0.0",
     "vue-router": "^4.0.0-0"
   },
   "devDependencies": {
+    "axios-mock-adapter": "^1.19.0",
     "@vue/cli-plugin-babel": "~4.5.0",
     "@vue/cli-plugin-eslint": "~4.5.0",
     "@vue/cli-plugin-router": "~4.5.0",

@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -13,16 +13,22 @@ import (
 	"os"
 )
 
-func main() {
+type Main struct {
+	config *utils.Config
+	api    *rest.Api
+	www    *rest.Www
+}
+
+func NewMain() *Main {
 	if len(os.Args) < 4 {
 		log.Println("usage: ", os.Args[0], "config.cfg", "secret.cfg", "mail_dir")
-		return
+		return nil
 	}
 
 	config := utils.NewConfig()
 	config.Load(os.Args[1], os.Args[2])
 	mailPath := os.Args[3]
-	database := db.NewMySql(config.Domain())
+	database := db.NewMySql()
 	database.Connect(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
 
 	statsdClient := statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
@@ -35,8 +41,18 @@ func main() {
 	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailPasswordUrlTemplate(),
 		config.MailActivateUrlTemplate(), config.MailDeviceErrorTo(), config.Domain())
 	users := service.NewUsers(database, config.ActivateByEmail(), actions, mail)
-	domains := service.NewDomains(dnsImp, database, users)
+	domains := service.NewDomains(dnsImp, database, users, config.Domain())
 	probe := service.NewPortProbe(database)
-	api := rest.NewApi(statsdClient, domains, users, actions, mail, probe)
-	api.Start(config.GetApiSocket())
+	api := rest.NewApi(statsdClient, domains, users, actions, mail, probe, config.Domain())
+	www := rest.NewWww(statsdClient, domains, users, actions, mail, probe, config.Domain())
+	return &Main{config: config, api: api, www: www}
+
+}
+
+func (m *Main) StartApi() {
+	m.api.StartApi(m.config.GetApiSocket())
+}
+
+func (m *Main) StartWww() {
+	m.www.StartWww(m.config.GetWwwSocket())
 }

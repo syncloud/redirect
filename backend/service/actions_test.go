@@ -35,6 +35,11 @@ func (db *ActionsDbStub) DeleteActions(_ int64) error {
 	return nil
 }
 
+func (db *ActionsDbStub) DeleteAction(actionId uint64) error {
+	db.action = nil
+	return nil
+}
+
 func TestUpsert(t *testing.T) {
 
 	db := &ActionsDbStub{nil}

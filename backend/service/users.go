@@ -2,9 +2,12 @@ package service
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
+	"github.com/syncloud/redirect/validator"
+	"log"
 	"time"
 )
 
@@ -27,12 +30,18 @@ type UsersActions interface {
 	GetActivateAction(token string) (*model.Action, error)
 	UpsertActivateAction(userId int64) (*model.Action, error)
 	DeleteActions(userId int64) error
+	GetPasswordAction(token string) (*model.Action, error)
+	DeleteAction(actionId uint64) error
+	UpsertPasswordAction(userId int64) (*model.Action, error)
 }
 
 type UsersMail interface {
 	SendActivate(to string, token string) error
 	SendPremiumRequest(to string) error
+	SendSetPassword(to string) error
+	SendResetPassword(to string, token string) error
 }
+
 type Users struct {
 	db              UsersDb
 	activateByEmail bool
@@ -45,16 +54,15 @@ func NewUsers(db UsersDb, activateByEmail bool, actions UsersActions, usersMail 
 }
 
 func (u *Users) Authenticate(email *string, password *string) (*model.User, error) {
-	validator := NewValidator()
-
-	emailLower := validator.email(email)
-	passwordChecked := validator.password(password)
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	fieldValidator := validator.New()
+	emailLower := fieldValidator.Email(email)
+	passwordChecked := fieldValidator.Password(password)
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
 	user, err := u.db.GetUserByEmail(*emailLower)
-	if err != nil || user == nil || !user.Active || hash(*passwordChecked) != user.PasswordHash {
+	if err != nil || user == nil || !user.Active || Hash(*passwordChecked) != user.PasswordHash {
 		return nil, &model.ServiceError{InternalError: fmt.Errorf("authentication failed")}
 	}
 
@@ -82,6 +90,10 @@ func (u *Users) Activate(token string) error {
 
 	user.Active = true
 	err = u.db.UpdateUser(user)
+	if err != nil {
+		return err
+	}
+	err = u.actions.DeleteAction(action.Id)
 	return err
 }
 
@@ -106,11 +118,11 @@ func (u *Users) Delete(userId int64) error {
 }
 
 func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, error) {
-	validator := NewValidator()
-	email := validator.email(request.Email)
-	password := validator.newPassword(request.Password)
-	if validator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
+	fieldValidator := validator.New()
+	email := fieldValidator.Email(request.Email)
+	password := fieldValidator.NewPassword(request.Password)
+	if fieldValidator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 	userByEmail, err := u.db.GetUserByEmail(*email)
 	if err != nil {
@@ -121,7 +133,7 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	}
 
 	updateToken := utils.Uuid()
-	user := &model.User{Email: *email, PasswordHash: hash(*password), Active: !u.activateByEmail, UpdateToken: updateToken, PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Email: *email, PasswordHash: Hash(*password), Active: !u.activateByEmail, UpdateToken: updateToken, PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
 
 	userId, err := u.db.InsertUser(user)
 	if err != nil {
@@ -154,6 +166,62 @@ func (u *Users) RequestPremiumAccount(user *model.User) error {
 	return u.usersMail.SendPremiumRequest(user.Email)
 }
 
-func hash(password string) string {
+func (u *Users) RequestPasswordReset(email string) (*string, error) {
+	user, err := u.GetUserByEmail(email)
+	if err != nil {
+		log.Println("unable to get a user", err)
+		return nil, errors.New("invalid request")
+	}
+
+	if user != nil && user.Active {
+		action, err := u.actions.UpsertPasswordAction(user.Id)
+		if err != nil {
+			log.Println("unable to upsert action", err)
+			return nil, errors.New("invalid request")
+		}
+		err = u.usersMail.SendResetPassword(user.Email, action.Token)
+		if err != nil {
+			log.Println("unable to send mail", err)
+			return nil, errors.New("invalid request")
+		}
+		return &action.Token, nil
+	}
+	return nil, nil
+}
+
+func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
+	fieldValidator := validator.New()
+	fieldValidator.Token(request.Token)
+	password := fieldValidator.NewPassword(request.Password)
+	if fieldValidator.HasErrors() {
+		return &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
+	}
+
+	action, err := u.actions.GetPasswordAction(*request.Token)
+	if err != nil {
+		return err
+	}
+
+	user, err := u.db.GetUser(action.UserId)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return &model.ServiceError{InternalError: fmt.Errorf("invalid password token")}
+	}
+	user.PasswordHash = Hash(*password)
+	err = u.db.UpdateUser(user)
+	if err != nil {
+		return err
+	}
+	err = u.usersMail.SendSetPassword(user.Email)
+	if err != nil {
+		return err
+	}
+	err = u.actions.DeleteAction(action.Id)
+	return err
+}
+
+func Hash(password string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
 }

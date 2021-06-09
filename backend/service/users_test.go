@@ -22,7 +22,21 @@ func (db *UsersDbStub) GetUserByEmail(_ string) (*model.User, error) {
 }
 
 func (db *UsersDbStub) GetUser(_ int64) (*model.User, error) {
-	return db.user, nil
+	user := db.user
+	if user != nil {
+		//copy
+		user = &model.User{
+			Id:              db.user.Id,
+			Email:           db.user.Email,
+			PasswordHash:    db.user.PasswordHash,
+			Active:          db.user.Active,
+			UpdateToken:     db.user.UpdateToken,
+			Unsubscribed:    db.user.Unsubscribed,
+			PremiumStatusId: db.user.PremiumStatusId,
+			Timestamp:       db.user.Timestamp,
+		}
+	}
+	return user, nil
 }
 
 func (db *UsersDbStub) UpdateUser(user *model.User) error {
@@ -55,9 +69,31 @@ func (a *UsersActionsStub) DeleteActions(_ int64) error {
 	return nil
 }
 
+func (a *UsersActionsStub) SendSetPassword(to string) error {
+	panic("implement me")
+}
+
+func (a *UsersActionsStub) GetPasswordAction(token string) (*model.Action, error) {
+	return a.action, nil
+}
+
+func (a *UsersActionsStub) DeleteAction(actionId uint64) error {
+	a.action = nil
+	return nil
+}
+
+func (a *UsersActionsStub) UpsertPasswordAction(userId int64) (*model.Action, error) {
+	a.action = &model.Action{Id: 1, ActionTypeId: ActionPassword, UserId: userId, Token: "token", Timestamp: time.Now()}
+	return a.action, nil
+}
+
 type UsersMailStub struct {
 	sentEmail *string
 	sentToken *string
+}
+
+func (a *UsersMailStub) SendSetPassword(to string) error {
+	return nil
 }
 
 func (a *UsersMailStub) SendActivate(to string, token string) error {
@@ -71,7 +107,9 @@ func (a *UsersMailStub) SendPremiumRequest(to string) error {
 	return nil
 }
 
-var _ UsersMail = (*UsersMailStub)(nil)
+func (a *UsersMailStub) SendResetPassword(to string, token string) error {
+	return nil
+}
 
 func TestActivateSuccess(t *testing.T) {
 	db := &UsersDbStub{}
@@ -208,4 +246,111 @@ func TestPremiumRequestAlreadyRequested(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, PremiumStatusPending, user.PremiumStatusId)
 	assert.Nil(t, mail.sentEmail)
+}
+
+func TestUserAuthenticateSuccess(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	password := "password"
+	user := &model.User{Email: email, PasswordHash: Hash(password), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	authenticatedUser, err := users.Authenticate(&email, &password)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, authenticatedUser)
+}
+
+func TestUserAuthenticateWrongPassword(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	password := "password"
+	_, err := users.Authenticate(&email, &password)
+
+	assert.NotNil(t, err)
+}
+
+func TestUserAuthenticateNotExisting(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	password := "password"
+	_, err := users.Authenticate(&email, &password)
+
+	assert.NotNil(t, err)
+
+}
+
+func TestUserAuthenticateNonActive(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	password := "password"
+	_, err := users.Authenticate(&email, &password)
+
+	assert.NotNil(t, err)
+}
+
+func TestUserAuthenticateMissingPassword(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	_, err := users.Authenticate(&email, nil)
+
+	assert.NotNil(t, err)
+}
+
+func TestPasswordReset(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, false, actions, mail}
+	email := "test@example.com"
+	password1 := "password1"
+	user := &model.User{Email: email, PasswordHash: Hash(password1), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	_ = users.Save(user)
+	_, err := users.Authenticate(&email, &password1)
+	assert.Nil(t, err)
+	token, err := users.RequestPasswordReset(email)
+	assert.Nil(t, err)
+	password2 := "password2"
+	request := &model.UserPasswordSetRequest{Token: token, Password: &password2}
+	err = users.UserSetPassword(request)
+	assert.Nil(t, err)
+	_, err = users.Authenticate(&email, &password2)
+	assert.Nil(t, err)
+}
+
+func TestHashNotEmpty(t *testing.T) {
+	hash := Hash("non empty string")
+	assert.NotEmpty(t, hash)
+}
+
+func TestEqualInput(t *testing.T) {
+	h1 := Hash("some string")
+	h2 := Hash("some string")
+	assert.Equal(t, h1, h2)
+}
+
+func testNotEqualInput(t *testing.T) {
+	h1 := Hash("some string")
+	h2 := Hash("some other string")
+	assert.NotEqual(t, h1, h2)
 }
