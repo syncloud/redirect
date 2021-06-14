@@ -34,19 +34,19 @@
                 </li>
                 <li class="list-group-item clearfix">
                   <span>External Address: </span>
-                  <a v-if="domain.has_external_address" :href="domain.external_address">{{ domain.external_address }}</a>
+                  <a id="external_address" v-if="domain.has_external_address" :href="domain.external_address">{{ domain.external_address }}</a>
                   <span v-if="!domain.has_external_address">Not provided</span>
                 </li>
                 <li class="list-group-item clearfix">
                   <span>Internal Address: </span>
-                  <a v-if="domain.has_internal_address" :href="domain.internal_address">{{ domain.internal_address }}</a>
+                  <a id="internal_address" v-if="domain.has_internal_address" :href="domain.internal_address">{{ domain.internal_address }}</a>
                   <span v-if="!domain.has_internal_address">Not provided</span>
                 </li>
                 <li class="list-group-item clearfix">
                   <span>IPv6 Address: </span>
 
-                  <a v-if="domain.has_ipv6_address" :href="domain.ipv6_address">{{ domain.ipv6_address }}</a>
-                  <span v-if="!domain.has_ipv6_address">Not provided</span>
+                  <a id="ipv6_address" v-if="domain.has_ipv6_address" :href="domain.ipv6_address">{{ domain.ipv6_address }}</a>
+                  <span id="ipv6_address" v-if="!domain.has_ipv6_address">Not provided</span>
                 </li>
                 <li class="list-group-item clearfix">
                   <span>Updated: {{ domain.nice_last_update }}</span>
@@ -99,7 +99,7 @@ function sameDay (date1, date2) {
 
 function fullUrl (address, port) {
   let result = 'https://' + address
-  if (port !== 443) {
+  if (port !== undefined && port !== 443) {
     result = result + ':' + port
   }
   return result
@@ -131,13 +131,13 @@ function online (ds) {
 function convert (domain) {
   domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port
   domain.domain_address = fullUrl(domain.name, domain.domain_address_port)
-  domain.has_domain_address = domain.name !== null
+  domain.has_domain_address = domain.name !== undefined
   domain.external_address = fullUrl(domain.ip, domain.web_port)
-  domain.has_external_address = domain.ip !== null
+  domain.has_external_address = domain.ip !== undefined
   domain.internal_address = 'https://' + domain.local_ip
-  domain.has_internal_address = domain.local_ip !== null
+  domain.has_internal_address = domain.local_ip !== undefined
   domain.ipv6_address = 'https://[' + domain.ipv6 + ']'
-  domain.has_ipv6_address = domain.ipv6 !== null
+  domain.has_ipv6_address = domain.ipv6 !== undefined
   domain.online = online(domain.last_update)
   domain.nice_last_update = niceTimestamp(domain.last_update, new Date())
   return domain
