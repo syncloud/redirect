@@ -10,6 +10,8 @@ pip install -r ${CURRENT}/requirements.txt
 apt install confget
 cp -rf ${CURRENT}/config/env/${ENV}/* /var/www/redirect
 
+mkdir -p /var/run/redirect
+chown redirect. /var/run/redirect
 cp ${CURRENT}/config/common/systemd/redirect.api.service /lib/systemd/system/
 cp ${CURRENT}/config/common/systemd/redirect.www.service /lib/systemd/system/
 systemctl enable redirect.api
