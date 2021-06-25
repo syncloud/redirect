@@ -10,8 +10,11 @@ pip install -r ${CURRENT}/requirements.txt
 apt install confget
 cp -rf ${CURRENT}/config/env/${ENV}/* /var/www/redirect
 
+if  ! id -u redirect > /dev/null 2>&1; then
+    adduser --disabled-password --gecos "" redirect
+fi
 mkdir -p /var/run/redirect
-chown redirect.redirect /var/run/redirect
+chown redirect. /var/run/redirect
 cp ${CURRENT}/config/common/systemd/redirect.api.service /lib/systemd/system/
 cp ${CURRENT}/config/common/systemd/redirect.www.service /lib/systemd/system/
 systemctl enable redirect.api
@@ -21,9 +24,6 @@ systemctl start redirect.www
 
 cp ${CURRENT}/config/common/apache/redirect.conf /etc/apache2/sites-available
 
-if  ! id -u redirect > /dev/null 2>&1; then
-    adduser --disabled-password --gecos "" redirect
-fi
 chown -R redirect. ${CURRENT}
 if a2query -s 000-default; then
   a2dissite 000-default
