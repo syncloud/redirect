@@ -10,5 +10,5 @@ type UserResponse struct {
 	Unsubscribed    bool      `json:"unsubscribed"`
 	PremiumStatusId int       `json:"premium_status_id,omitempty"`
 	Timestamp       time.Time `json:"timestamp,omitempty"`
-	Domains         []*Domain `json:"domains,omitempty"`
+	Domains         []*Domain `json:"domains"`
 }

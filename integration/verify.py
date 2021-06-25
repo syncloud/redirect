@@ -242,6 +242,31 @@ def test_get_user_data(domain, artifact_dir):
     assert expected == user_data
 
 
+def test_get_user_no_domains(domain, artifact_dir):
+    email = 'test_get_user_no_domains@syncloud.test'
+    password = 'pass123456'
+    user_token = create_user(domain, email, password, artifact_dir)
+
+    response = requests.get('https://api.{0}/user/get'.format(domain),
+                            params={'email': email, 'password': password},
+                            verify=False)
+
+    response_data = json.loads(response.text)
+    user_data = response_data['data']
+
+    expected = {
+        'active': True,
+        'email': email,
+        'unsubscribed': False,
+        'update_token': user_token,
+        'premium_status_id': 1,
+        'timestamp': user_data["timestamp"],
+        'domains': []
+    }
+
+    assert expected == user_data
+
+
 def test_domain_availability(domain, artifact_dir):
     email = 'test_domain_availability@syncloud.test'
     password = 'pass123456'

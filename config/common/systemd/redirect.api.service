@@ -4,6 +4,7 @@ Description=Redirect
 [Service]
 ExecStart=/var/www/redirect/current/bin/api /var/www/redirect/config.cfg /var/www/redirect/secret.cfg /var/www/redirect/current/emails
 Restart=always
+User=redirect
 
 [Install]
 WantedBy=multi-user.target
