@@ -57,7 +57,7 @@ func (w *Www) StartWww(socket string) {
 	if err := os.Chmod(socket, 0777); err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Started backend")
+	log.Printf("Started backend (%s)\n", socket)
 	_ = http.Serve(unixListener, r)
 
 }
