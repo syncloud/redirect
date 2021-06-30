@@ -21,7 +21,7 @@ CREATE TABLE `user` (
 
 CREATE TABLE `domain` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
-  `user_domain` varchar(100) NOT NULL UNIQUE,
+  `deprecated_user_domain` varchar(100) NOT NULL UNIQUE,
   `ip` varchar(45),
   `ipv6` varchar(45),
   `dkim_key` varchar(256),
@@ -38,6 +38,7 @@ CREATE TABLE `domain` (
   `web_local_port` integer,
   `last_update` DATETIME NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `name` varchar(100) NOT NULL UNIQUE,
   FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
@@ -64,4 +65,4 @@ create table db_version (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('009');
+insert into db_version (version) values ('010');
