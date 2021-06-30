@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type DomainAcquireRequest struct {
 	DeprecatedUserDomain *string `json:"user_domain,omitempty"`
@@ -17,4 +20,8 @@ func (r *DomainAcquireRequest) ForwardCompatibleDomain(mainDomain string) {
 		domain := fmt.Sprintf("%s.%s", *r.DeprecatedUserDomain, mainDomain)
 		r.Domain = &domain
 	}
+}
+
+func (r *DomainAcquireRequest) IsFree(mainDomain string) bool {
+	return strings.HasSuffix(*r.Domain, fmt.Sprintf(".%s", mainDomain))
 }

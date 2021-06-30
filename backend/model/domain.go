@@ -32,8 +32,8 @@ type (
 )
 
 func (d *Domain) BackwardCompatibleDomain(mainDomain string) {
-	if strings.HasSuffix(d.Name, mainDomain) {
-		suffix := fmt.Sprintf(".%s", mainDomain)
+	suffix := fmt.Sprintf(".%s", mainDomain)
+	if strings.HasSuffix(d.Name, suffix) {
 		parts := strings.Split(d.Name, suffix)
 		d.DeprecatedUserDomain = parts[0]
 	}
