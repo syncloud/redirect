@@ -55,15 +55,7 @@ func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(
-		domain.FQDN(),
-		domain.DnsIpv4(),
-		domain.DnsIpv6(),
-		domain.DkimKey,
-		"\"v=spf1 a mx -all\"",
-		fmt.Sprintf("1 %s", domain.FQDN()),
-		"CREATE",
-		a.hostedZoneId)
+	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", fmt.Sprintf("1 %s", domain.FQDN()), "CREATE", a.hostedZoneId)
 	if err != nil {
 		return err
 	}
