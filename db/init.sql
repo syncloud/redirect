@@ -21,7 +21,7 @@ CREATE TABLE `user` (
 
 CREATE TABLE `domain` (
   `id` integer PRIMARY KEY AUTO_INCREMENT,
-  `deprecated_user_domain` varchar(100) NOT NULL UNIQUE,
+  `deprecated_user_domain` varchar(100) NULL,
   `ip` varchar(45),
   `ipv6` varchar(45),
   `dkim_key` varchar(256),
