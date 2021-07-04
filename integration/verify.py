@@ -94,12 +94,17 @@ def test_user_create_special_symbols_in_password(domain):
     smtp.clear()
 
 
-def create_user(domain, email, password, artifact_dir):
+def create_user(domain, email, password, artifact_dir, premium=False):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              json={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
 
     activate_user(domain, artifact_dir)
+
+    if premium:
+        check_output("mysql --host=mysql --user=root --password=root redirect -e "
+                     "'update user set premium_status_id = 3 where email like \'{0}\';'"
+                     " > {1}/db-user-premium.log".format(email, artifact_dir), shell=True)
 
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': password},
@@ -164,6 +169,24 @@ def acquire_domain(domain, email, password, user_domain):
     }
     response = requests.post('https://api.{0}/domain/acquire'.format(domain),
                              data=acquire_data,
+                             verify=False)
+    domain_data = json.loads(response.text)
+    assert 'update_token' in domain_data, response.text
+    update_token = domain_data['update_token']
+    return update_token
+
+
+def acquire_domain_v2(domain, email, password, user_domain):
+    acquire_data = {
+        'domain': user_domain,
+        'email': email,
+        'password': password,
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'some-device',
+        'device_title': 'Some Device',
+    }
+    response = requests.post('https://api.{0}/domain/acquire_v2'.format(domain),
+                             json=acquire_data,
                              verify=False)
     domain_data = json.loads(response.text)
     assert 'update_token' in domain_data, response.text
@@ -267,7 +290,7 @@ def test_get_user_no_domains(domain, artifact_dir):
     assert expected == user_data
 
 
-def test_domain_availability(domain, artifact_dir):
+def test_free_domain_availability(domain, artifact_dir):
     email = 'test_domain_availability@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
@@ -294,6 +317,44 @@ def test_domain_availability(domain, artifact_dir):
     email = 'test_domain_availability_other@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
+    request = {
+        'domain': full_domain,
+        'email': email,
+        'password': password,
+    }
+    response = requests.post('https://api.{0}/domain/availability'.format(domain),
+                             json=request,
+                             verify=False)
+    assert response.status_code == 400, response.text
+
+
+def test_premium_domain_availability(domain, artifact_dir):
+    email = 'test_premium_domain_availability@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir, premium=True)
+
+    full_domain = 'example.com'
+    request = {
+        'domain': full_domain,
+        'email': email,
+        'password': password,
+    }
+
+    response = requests.post('https://api.{0}/domain/availability'.format(domain),
+                             json=request,
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    acquire_domain_v2(domain, email, password, full_domain)
+
+    response = requests.post('https://api.{0}/domain/availability'.format(domain),
+                             json=request,
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    email = 'test_premium_domain_availability_other@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir, premium=True)
     request = {
         'domain': full_domain,
         'email': email,
