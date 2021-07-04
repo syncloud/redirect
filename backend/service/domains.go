@@ -6,7 +6,6 @@ import (
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/validator"
-	"log"
 	"time"
 )
 
@@ -131,7 +130,7 @@ func (d *Domains) findAndCheck(domain *string, isFree bool, user *model.User, fi
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("domain: %v, found: %v, user: %v\n", *domain, foundDomain, user)
+	//log.Printf("domain: %v, found: %v, user: %v\n", *domain, foundDomain, user)
 	if foundDomain != nil {
 		if foundDomain.UserId != user.Id {
 			return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
@@ -174,7 +173,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 	if domain == nil {
 		hostedZoneId := d.hostedZoneId
 		if !request.IsFree(d.domain) {
-			id, err := d.amazonDns.CreateHostedZone(domain.Name)
+			id, err := d.amazonDns.CreateHostedZone(*request.Domain)
 			if err != nil {
 				return nil, err
 			}
@@ -207,7 +206,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 
 	}
 	domain.BackwardCompatibleDomain(d.domain)
-	log.Println("domain acquired")
+	fmt.Println("domain acquired")
 	return domain, nil
 }
 

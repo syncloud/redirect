@@ -205,7 +205,7 @@ func TestEquals(t *testing.T) {
 	assert.False(t, Equals(nil, &ip))
 }
 
-func TestAcquireDomain_ExistingMine(t *testing.T) {
+func TestAcquireFreeDomain_ExistingMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
@@ -224,7 +224,7 @@ func TestAcquireDomain_ExistingMine(t *testing.T) {
 	assert.False(t, db.inserted)
 }
 
-func TestAcquireDomain_ExistingNotMine(t *testing.T) {
+func TestAcquireFreeDomain_ExistingNotMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
@@ -244,12 +244,50 @@ func TestAcquireDomain_ExistingNotMine(t *testing.T) {
 
 }
 
-func TestAcquireDomain_Available(t *testing.T) {
+func TestAcquireFreeDomain_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "test123.syncloud.it"
+	password := "password"
+	email := "test@example.com"
+	mac := "11:22:33:44:55:66"
+	deviceName := "name"
+	deviceTitle := "title"
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, Domain: &domain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request, "")
+
+	assert.Nil(t, err)
+	assert.False(t, db.updated)
+	assert.True(t, db.inserted)
+
+}
+
+func TestAcquirePremiumDomain_FreeUser_NotAvailable(t *testing.T) {
+	db := &DomainsDbStub{found: false}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusInactive}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
+	domain := "example.com"
+	password := "password"
+	email := "test@example.com"
+	mac := "11:22:33:44:55:66"
+	deviceName := "name"
+	deviceTitle := "title"
+	request := model.DomainAcquireRequest{Email: &email, Password: &password, Domain: &domain, DeviceMacAddress: &mac, DeviceName: &deviceName, DeviceTitle: &deviceTitle}
+	_, err := domains.DomainAcquire(request, "")
+
+	assert.NotNil(t, err)
+
+}
+
+func TestAcquirePremiumDomain_PremiumUser_Available(t *testing.T) {
+	db := &DomainsDbStub{found: false}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
+	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
 	mac := "11:22:33:44:55:66"
