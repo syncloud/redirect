@@ -11,6 +11,11 @@ import (
 type DnsStub struct {
 }
 
+func (dns *DnsStub) CreateHostedZone(domain string) (*string, error) {
+	id := "123"
+	return &id, nil
+}
+
 func (dns *DnsStub) UpdateDomain(domain *model.Domain) error {
 	return nil
 }
@@ -70,11 +75,12 @@ var _ DomainsDb = (*DomainsDbStub)(nil)
 type DomainsUsersStub struct {
 	userId        int64
 	authenticated bool
+	premiumStatus int
 }
 
 func (users *DomainsUsersStub) Authenticate(email *string, password *string) (*model.User, error) {
 	if users.authenticated {
-		return &model.User{Id: users.userId, Email: *email, Active: true}, nil
+		return &model.User{Id: users.userId, Email: *email, Active: true, PremiumStatusId: users.premiumStatus}, nil
 	}
 	return nil, fmt.Errorf("authentication failed")
 }
@@ -258,7 +264,7 @@ func TestAcquireDomain_Available(t *testing.T) {
 
 }
 
-func TestAvailability_SameUser(t *testing.T) {
+func TestFreeAvailability_SameUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
@@ -274,7 +280,7 @@ func TestAvailability_SameUser(t *testing.T) {
 
 }
 
-func TestAvailability_OtherUser(t *testing.T) {
+func TestFreeAvailability_OtherUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
@@ -290,12 +296,44 @@ func TestAvailability_OtherUser(t *testing.T) {
 
 }
 
-func TestAvailability_Available(t *testing.T) {
+func TestFreeAvailability_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "test123.syncloud.it"
+	password := "password"
+	email := "test@example.com"
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, Domain: &domain}
+	result, err := domains.Availability(request)
+
+	assert.Nil(t, err)
+	assert.Nil(t, result)
+
+}
+
+func TestPremiumAvailability_FreeUser_NotAvailable(t *testing.T) {
+	db := &DomainsDbStub{found: false}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusInactive}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
+	domain := "example.com"
+	password := "password"
+	email := "test@example.com"
+	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, Domain: &domain}
+	result, err := domains.Availability(request)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, result)
+
+}
+
+func TestPremiumAvailability_PremiumUser_NotAvailable(t *testing.T) {
+	db := &DomainsDbStub{found: false}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
+	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
 	request := model.DomainAvailabilityRequest{Email: &email, Password: &password, Domain: &domain}

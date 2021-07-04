@@ -114,29 +114,36 @@ func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.
 
 	fieldValidator := validator.New()
 	domainField := "domain"
-	domainName := fieldValidator.Domain(request.Domain, domainField, d.domain)
+	fieldValidator.Domain(request.Domain, domainField, d.domain)
 	if fieldValidator.HasErrors() {
 		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
-	domain, err := d.find(domainName, user, domainField)
+	domain, err := d.findAndCheck(request.Domain, request.IsFree(d.domain), user, domainField)
 	if err != nil {
 		return nil, err
 	}
 	return domain, nil
 }
 
-func (d *Domains) find(domain *string, user *model.User, field string) (*model.Domain, error) {
+func (d *Domains) findAndCheck(domain *string, isFree bool, user *model.User, field string) (*model.Domain, error) {
 	foundDomain, err := d.db.GetDomainByName(*domain)
 	if err != nil {
 		return nil, err
 	}
 	log.Printf("domain: %v, found: %v, user: %v\n", *domain, foundDomain, user)
-	if foundDomain != nil && foundDomain.UserId != user.Id {
-		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
-			Parameter: field, Messages: []string{"User domain name is already in use"},
-		}}}
+	if foundDomain != nil {
+		if foundDomain.UserId != user.Id {
+			return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
+				Parameter: field, Messages: []string{"User domain name is already in use"},
+			}}}
+		}
+	} else {
+		if !isFree && user.PremiumStatusId != PremiumStatusActive {
+			return nil, fmt.Errorf("non free domain name requires a premium account")
+		}
 	}
+
 	return foundDomain, err
 }
 
@@ -149,7 +156,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 
 	fieldValidator := validator.New()
 
-	domainName := fieldValidator.Domain(request.Domain, domainField, d.domain)
+	fieldValidator.Domain(request.Domain, domainField, d.domain)
 
 	deviceMacAddress := fieldValidator.DeviceMacAddress(request.DeviceMacAddress)
 	fieldValidator.DeviceName(request.DeviceName)
@@ -159,20 +166,28 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
-	domain, err := d.find(domainName, user, domainField)
+	domain, err := d.findAndCheck(request.Domain, request.IsFree(d.domain), user, domainField)
 	if err != nil {
 		return nil, err
 	}
 	updateToken := utils.Uuid()
 	if domain == nil {
+		hostedZoneId := d.hostedZoneId
+		if !request.IsFree(d.domain) {
+			id, err := d.amazonDns.CreateHostedZone(domain.Name)
+			if err != nil {
+				return nil, err
+			}
+			hostedZoneId = *id
+		}
 		domain = &model.Domain{
-			Name:             *domainName,
+			Name:             *request.Domain,
 			DeviceMacAddress: deviceMacAddress,
 			DeviceName:       request.DeviceName,
 			DeviceTitle:      request.DeviceTitle,
 			UpdateToken:      &updateToken,
 			UserId:           user.Id,
-			HostedZoneId:     d.hostedZoneId,
+			HostedZoneId:     hostedZoneId,
 		}
 		err := d.db.InsertDomain(domain)
 		if err != nil {

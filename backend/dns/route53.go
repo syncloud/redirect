@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/utils"
 )
 
 var defaultIpv4 string
@@ -26,6 +27,7 @@ func init() {
 }
 
 type Dns interface {
+	CreateHostedZone(domain string) (*string, error)
 	UpdateDomain(domain *model.Domain) error
 	DeleteDomain(domain *model.Domain) error
 }
@@ -46,6 +48,18 @@ func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string
 		accessKeyId,
 		secretAccessKey,
 	}
+}
+
+func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
+	zone, err := a.client.CreateHostedZone(&route53.CreateHostedZoneInput{
+		CallerReference:  aws.String(utils.Uuid()),
+		HostedZoneConfig: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)},
+		Name:             aws.String(domain),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return zone.HostedZone.Id, nil
 }
 
 func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {

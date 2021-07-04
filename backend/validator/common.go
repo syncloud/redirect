@@ -39,7 +39,7 @@ func (v *FieldValidator) addFieldError(field string, error string) {
 	v.fieldsErrors[field] = newErrors
 }
 
-func (v *FieldValidator) Domain(domain *string, field string, mainDomain string) *string {
+func (v *FieldValidator) Domain(domain *string, field string, mainDomain string) {
 	if domain == nil {
 		v.addFieldError(field, "Missing")
 	} else {
@@ -63,7 +63,6 @@ func (v *FieldValidator) Domain(domain *string, field string, mainDomain string)
 			}
 		}
 	}
-	return domain
 }
 
 func (v *FieldValidator) Email(email *string) *string {
