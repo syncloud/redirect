@@ -183,7 +183,8 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 			"web_port, "+
 			"web_local_port, "+
 			"last_update, "+
-			"name "+
+			"name, "+
+			"hosted_zone_id "+
 			"FROM domain "+
 			"WHERE "+field+" = ?", value)
 
@@ -207,6 +208,7 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 		&domain.WebLocalPort,
 		&domain.LastUpdate,
 		&domain.Name,
+		&domain.HostedZoneId,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -276,7 +278,8 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 			"web_protocol, "+
 			"web_port, "+
 			"web_local_port, "+
-			"last_update "+
+			"last_update, "+
+			"hosted_zone_id "+
 			"FROM domain "+
 			"WHERE user_id = ?", userId)
 	if err != nil {
@@ -306,6 +309,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 			&domain.WebPort,
 			&domain.WebLocalPort,
 			&domain.LastUpdate,
+			&domain.HostedZoneId,
 		)
 		if err != nil {
 			log.Println("Cannot scan domains for user: ", userId, err)
@@ -385,8 +389,9 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 			"device_mac_address, " +
 			"device_name, " +
 			"device_title, " +
-			"last_update" +
-			") values (?,?,?,?,?,?,?)")
+			"last_update," +
+			"hosted_zone_id" +
+			") values (?,?,?,?,?,?,?,?)")
 	if err != nil {
 		log.Println("unable to insert domain (prepare): ", err)
 		return err
@@ -399,6 +404,7 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 		domain.DeviceName,
 		domain.DeviceTitle,
 		domain.LastUpdate,
+		domain.HostedZoneId,
 	)
 	if err != nil {
 		log.Println("unable to insert domain (exec): ", err)

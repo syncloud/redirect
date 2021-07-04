@@ -55,6 +55,13 @@ func TestFreeDomainEmpty(t *testing.T) {
 	assert.Equal(t, 2, len(validator.errors))
 }
 
+func TestFreeDomainContainsSubdomain(t *testing.T) {
+	domain := "test123.test123.syncloud.it"
+	validator := New()
+	_ = validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, 1, len(validator.errors))
+}
+
 func TestPremiumEqualsFreeDomain(t *testing.T) {
 	domain := "syncloud.it"
 	validator := New()
