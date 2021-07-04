@@ -203,7 +203,7 @@ func TestAcquireDomain_ExistingMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -222,7 +222,7 @@ func TestAcquireDomain_ExistingNotMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	userDomain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -242,7 +242,7 @@ func TestAcquireDomain_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -262,7 +262,7 @@ func TestAvailability_SameUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -278,7 +278,7 @@ func TestAvailability_OtherUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -294,7 +294,7 @@ func TestAvailability_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it")
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"

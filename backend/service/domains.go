@@ -11,10 +11,11 @@ import (
 )
 
 type Domains struct {
-	amazonDns dns.Dns
-	db        DomainsDb
-	users     DomainsUsers
-	domain    string
+	amazonDns    dns.Dns
+	db           DomainsDb
+	users        DomainsUsers
+	domain       string
+	hostedZoneId string
 }
 
 type DomainsDb interface {
@@ -32,8 +33,8 @@ type DomainsUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 }
 
-func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string) *Domains {
-	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain}
+func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string, hostedZoneId string) *Domains {
+	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain, hostedZoneId: hostedZoneId}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
@@ -171,6 +172,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 			DeviceTitle:      request.DeviceTitle,
 			UpdateToken:      &updateToken,
 			UserId:           user.Id,
+			HostedZoneId:     d.hostedZoneId,
 		}
 		err := d.db.InsertDomain(domain)
 		if err != nil {

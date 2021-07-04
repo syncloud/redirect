@@ -26,7 +26,7 @@ type (
 		WebPort              *int       `json:"web_port,omitempty"`
 		WebLocalPort         *int       `json:"web_local_port,omitempty"`
 		UserId               int64      `json:"-"`
-		HostedZoneId         uint64     `json:"-"`
+		HostedZoneId         string     `json:"-"`
 		Name                 string     `json:"name,omitempty"`
 	}
 )

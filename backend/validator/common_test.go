@@ -55,11 +55,18 @@ func TestFreeDomainEmpty(t *testing.T) {
 	assert.Equal(t, 2, len(validator.errors))
 }
 
-func TestManagedEqualsFreeDomain(t *testing.T) {
+func TestPremiumEqualsFreeDomain(t *testing.T) {
 	domain := "syncloud.it"
 	validator := New()
 	_ = validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, 1, len(validator.errors))
+}
+
+func TestPremiumOk(t *testing.T) {
+	domain := "example.com"
+	validator := New()
+	_ = validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, 0, len(validator.errors))
 }
 
 func TestPasswordMissing(t *testing.T) {

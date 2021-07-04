@@ -35,10 +35,9 @@ type AmazonDns struct {
 	statsdClient    *statsd.Client
 	accessKeyId     string
 	secretAccessKey string
-	hostedZoneId    string
 }
 
-func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string, hostedZoneId string) *AmazonDns {
+func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string) *AmazonDns {
 	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(accessKeyId, secretAccessKey, "")}))
 	client := route53.New(mySession)
 	return &AmazonDns{
@@ -46,7 +45,6 @@ func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string
 		statsdClient,
 		accessKeyId,
 		secretAccessKey,
-		hostedZoneId,
 	}
 }
 
@@ -55,7 +53,7 @@ func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", fmt.Sprintf("1 %s", domain.FQDN()), "CREATE", a.hostedZoneId)
+	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", fmt.Sprintf("1 %s", domain.FQDN()), "CREATE", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
@@ -63,11 +61,11 @@ func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {
 }
 
 func (a *AmazonDns) DeleteDomain(domain *model.Domain) error {
-	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", a.hostedZoneId)
+	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", a.hostedZoneId)
+	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
