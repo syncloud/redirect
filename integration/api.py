@@ -16,5 +16,5 @@ def domain_acquire(hostname, domain, email, password):
                              verify=False)
     acquire_response = json.loads(response.text)
     assert acquire_response['success'], response.text
-    assert acquire_response['update_token']['data'], response.text
+    assert acquire_response['data']['update_token'], response.text
     return response
