@@ -103,7 +103,7 @@ def create_user(domain, email, password, artifact_dir, premium=False):
 
     if premium:
         check_output("mysql --host=mysql --user=root --password=root redirect -e "
-                     "'update user set premium_status_id = 3 where email like '{0}';'"
+                     "\"update user set premium_status_id = 3 where email = '{0}';\""
                      " > {1}/db-user-premium.log".format(email, artifact_dir), shell=True)
 
     response = requests.get('https://api.{0}/user/get'.format(domain),
