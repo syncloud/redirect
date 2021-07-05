@@ -16,6 +16,8 @@ from syncloudlib.integration.screenshots import screenshots
 import smtp
 
 import db
+import premium_account
+import api
 
 DIR = dirname(__file__)
 DEVICE_USER = "user@example.com"
@@ -104,17 +106,7 @@ def test_login(driver, ui_mode, screenshot_dir):
 
 def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
 
-    acquire_data = {
-        'user_domain': ui_mode,
-        'email': DEVICE_USER,
-        'password': DEVICE_PASSWORD,
-        'device_mac_address': '00:00:00:00:00:00',
-        'device_name': 'some-device',
-        'device_title': 'Some Device',
-    }
-    response = requests.post('https://api.{0}/domain/acquire'.format(domain),
-                             data=acquire_data,
-                             verify=False)
+    response = api.domain_acquire(domain, '{}-{}'.format(ui_mode, domain), DEVICE_USER, DEVICE_PASSWORD)
     acquire_response = json.loads(response.text)
     assert acquire_response['success'], response.text
     assert acquire_response['update_token'], response.text
@@ -179,6 +171,10 @@ def test_password_reset(driver, ui_mode, screenshot_dir):
 
 
 def test_domain_delete(driver, ui_mode, screenshot_dir):
+    domain_delete(driver, ui_mode, screenshot_dir, 'devices-removed')
+
+
+def domain_delete(driver, ui_mode, screenshot_dir, screenshot):
     deactivate_xpath = "//div[contains(@class, 'panel')]//button[contains(text(), 'Deactivate')]"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, deactivate_xpath)))
     driver.find_element_by_xpath(deactivate_xpath).click()
@@ -190,7 +186,7 @@ def test_domain_delete(driver, ui_mode, screenshot_dir):
     device_label = "//h3[text()='Some Device']"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.invisibility_of_element_located((By.XPATH, device_label)))
     by_xpath = driver.find_element_by_xpath(device_label)
-    screenshots(driver, screenshot_dir, 'devices-removed-' + ui_mode)
+    screenshots(driver, screenshot_dir, '{}-{}'.format(screenshot, ui_mode))
     assert by_xpath is not None
 
 
@@ -226,6 +222,23 @@ def test_account_premium_request(driver, ui_mode, screenshot_dir):
     driver.find_element_by_xpath(confirm_xpath).click()
 
     screenshots(driver, screenshot_dir, 'account-premium' + ui_mode)
+
+
+def test_account_premium_approve(artifact_dir):
+    premium_account.premium_approve(DEVICE_USER, artifact_dir)
+
+
+def test_account_premium_acquire(domain, ui_mode):
+    premium_domain = '{}-syncloudexample.com'.format(ui_mode)
+    response = api.domain_acquire(domain, premium_domain, DEVICE_USER, DEVICE_PASSWORD)
+    acquire_response = json.loads(response.text)
+    assert acquire_response['success'], response.text
+    assert acquire_response['update_token'], response.text
+
+
+def test_account_premium_delete(driver, ui_mode, screenshot_dir):
+    menu(driver, ui_mode, screenshot_dir, 'premium-devices')
+    domain_delete(driver, ui_mode, screenshot_dir, 'premium-devices-removed')
 
 
 def test_account_delete(driver, ui_mode, screenshot_dir):

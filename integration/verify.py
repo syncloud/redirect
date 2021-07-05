@@ -11,6 +11,7 @@ from syncloudlib.integration.hosts import add_host_alias_by_ip
 
 import db
 import smtp
+import premium_account
 
 DIR = dirname(__file__)
 TMP_DIR = '/tmp/syncloud'
@@ -102,10 +103,7 @@ def create_user(domain, email, password, artifact_dir, premium=False):
     activate_user(domain, artifact_dir)
 
     if premium:
-        check_output("mysql --host=mysql --user=root --password=root redirect -e "
-                     "\"update user set premium_status_id = 3 where email = '{0}';\""
-                     " > {1}/db-user-premium.log".format(email, artifact_dir), shell=True)
-
+        premium_account.premium_approve(email, artifact_dir)
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': password},
                             verify=False)
@@ -317,44 +315,6 @@ def test_free_domain_availability(domain, artifact_dir):
     email = 'test_domain_availability_other@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
-    request = {
-        'domain': full_domain,
-        'email': email,
-        'password': password,
-    }
-    response = requests.post('https://api.{0}/domain/availability'.format(domain),
-                             json=request,
-                             verify=False)
-    assert response.status_code == 400, response.text
-
-
-def test_premium_domain_availability(domain, artifact_dir):
-    email = 'test_premium_domain_availability@syncloud.test'
-    password = 'pass123456'
-    create_user(domain, email, password, artifact_dir, premium=True)
-
-    full_domain = 'syncloudexample.com'
-    request = {
-        'domain': full_domain,
-        'email': email,
-        'password': password,
-    }
-
-    response = requests.post('https://api.{0}/domain/availability'.format(domain),
-                             json=request,
-                             verify=False)
-    assert response.status_code == 200, response.text
-
-    acquire_domain_v2(domain, email, password, full_domain)
-
-    response = requests.post('https://api.{0}/domain/availability'.format(domain),
-                             json=request,
-                             verify=False)
-    assert response.status_code == 200, response.text
-
-    email = 'test_premium_domain_availability_other@syncloud.test'
-    password = 'pass123456'
-    create_user(domain, email, password, artifact_dir, premium=True)
     request = {
         'domain': full_domain,
         'email': email,
