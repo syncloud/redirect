@@ -106,7 +106,7 @@ def test_login(driver, ui_mode, screenshot_dir):
 
 def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
 
-    response = api.domain_acquire(domain, '{}-{}'.format(ui_mode, domain), DEVICE_USER, DEVICE_PASSWORD)
+    response = api.domain_acquire(domain, '{}.{}'.format(ui_mode, domain), DEVICE_USER, DEVICE_PASSWORD)
     acquire_response = json.loads(response.text)
     assert acquire_response['success'], response.text
     assert acquire_response['update_token'], response.text
@@ -228,9 +228,8 @@ def test_account_premium_approve(artifact_dir):
     premium_account.premium_approve(DEVICE_USER, artifact_dir)
 
 
-def test_account_premium_acquire(domain, ui_mode):
-    premium_domain = '{}-syncloudexample.com'.format(ui_mode)
-    response = api.domain_acquire(domain, premium_domain, DEVICE_USER, DEVICE_PASSWORD)
+def test_account_premium_acquire(domain):
+    response = api.domain_acquire(domain, 'syncloudexample.com', DEVICE_USER, DEVICE_PASSWORD)
     acquire_response = json.loads(response.text)
     assert acquire_response['success'], response.text
     assert acquire_response['update_token'], response.text
