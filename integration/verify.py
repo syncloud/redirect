@@ -333,7 +333,7 @@ def test_premium_domain_availability(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir, premium=True)
 
-    full_domain = 'example.com'
+    full_domain = 'syncloudexample.com'
     request = {
         'domain': full_domain,
         'email': email,
