@@ -1,4 +1,5 @@
 import requests
+import json
 
 
 def domain_acquire(hostname, domain, email, password):
@@ -13,4 +14,7 @@ def domain_acquire(hostname, domain, email, password):
     response = requests.post('https://api.{0}/domain/acquire_v2'.format(hostname),
                              json=acquire_data,
                              verify=False)
+    acquire_response = json.loads(response.text)
+    assert acquire_response['success'], response.text
+    assert acquire_response['update_token']['data'], response.text
     return response

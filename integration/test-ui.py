@@ -106,10 +106,7 @@ def test_login(driver, ui_mode, screenshot_dir):
 
 def test_devices(domain, driver, ui_mode, screenshot_dir, artifact_dir):
 
-    response = api.domain_acquire(domain, '{}.{}'.format(ui_mode, domain), DEVICE_USER, DEVICE_PASSWORD)
-    acquire_response = json.loads(response.text)
-    assert acquire_response['success'], response.text
-    assert acquire_response['update_token'], response.text
+    api.domain_acquire(domain, '{}.{}'.format(ui_mode, domain), DEVICE_USER, DEVICE_PASSWORD)
 
     driver.get("https://www.{0}/api/domains".format(domain))
     with open(join(artifact_dir, '{}-api-domains.log'.format(ui_mode)), 'w') as f:
@@ -229,10 +226,7 @@ def test_account_premium_approve(artifact_dir):
 
 
 def test_account_premium_acquire(domain):
-    response = api.domain_acquire(domain, 'syncloudexample.com', DEVICE_USER, DEVICE_PASSWORD)
-    acquire_response = json.loads(response.text)
-    assert acquire_response['success'], response.text
-    assert acquire_response['update_token'], response.text
+    api.domain_acquire(domain, 'syncloudexample.com', DEVICE_USER, DEVICE_PASSWORD)
 
 
 def test_account_premium_delete(driver, ui_mode, screenshot_dir):

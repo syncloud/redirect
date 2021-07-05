@@ -174,24 +174,6 @@ def acquire_domain(domain, email, password, user_domain):
     return update_token
 
 
-def acquire_domain_v2(domain, email, password, user_domain):
-    acquire_data = {
-        'domain': user_domain,
-        'email': email,
-        'password': password,
-        'device_mac_address': '00:00:00:00:00:00',
-        'device_name': 'some-device',
-        'device_title': 'Some Device',
-    }
-    response = requests.post('https://api.{0}/domain/acquire_v2'.format(domain),
-                             json=acquire_data,
-                             verify=False)
-    domain_data = json.loads(response.text)
-    assert 'update_token' in domain_data['data'], response.text
-    update_token = domain_data['data']['update_token']
-    return update_token
-
-
 def test_user_create_success(domain, artifact_dir):
     create_user(domain, 'test@syncloud.test', 'pass123456', artifact_dir)
 
