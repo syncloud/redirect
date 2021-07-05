@@ -78,7 +78,7 @@ func (d *Domains) DeleteAllDomains(userId int64) error {
 	}
 
 	for _, domain := range domains {
-		err = d.amazonDns.DeleteDomain(domain)
+		err = d.deleteDomain(domain)
 		if err != nil {
 			return err
 		}
@@ -98,11 +98,19 @@ func (d *Domains) DeleteDomain(userId int64, domainName string) error {
 	if domain == nil || domain.UserId != userId {
 		return fmt.Errorf("not found")
 	}
-	err = d.amazonDns.DeleteDomain(domain)
+	err = d.deleteDomain(domain)
 	if err != nil {
 		return err
 	}
 	return d.db.DeleteDomain(domain.Id)
+}
+
+func (d *Domains) deleteDomain(domain *model.Domain) error {
+	if domain.IsFree(d.domain) {
+		return d.amazonDns.DeleteDomainRecords(domain)
+	} else {
+		return d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
+	}
 }
 
 func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
@@ -165,20 +173,13 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
-	domain, err := d.findAndCheck(request.Domain, request.IsFree(d.domain), user, domainField)
+	isFree := request.IsFree(d.domain)
+	domain, err := d.findAndCheck(request.Domain, isFree, user, domainField)
 	if err != nil {
 		return nil, err
 	}
 	updateToken := utils.Uuid()
 	if domain == nil {
-		hostedZoneId := d.hostedZoneId
-		if !request.IsFree(d.domain) {
-			id, err := d.amazonDns.CreateHostedZone(*request.Domain)
-			if err != nil {
-				return nil, err
-			}
-			hostedZoneId = *id
-		}
 		domain = &model.Domain{
 			Name:             *request.Domain,
 			DeviceMacAddress: deviceMacAddress,
@@ -186,7 +187,14 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 			DeviceTitle:      request.DeviceTitle,
 			UpdateToken:      &updateToken,
 			UserId:           user.Id,
-			HostedZoneId:     hostedZoneId,
+			HostedZoneId:     d.hostedZoneId,
+		}
+		if !isFree {
+			id, err := d.amazonDns.CreateHostedZone(domain.Name)
+			if err != nil {
+				return nil, err
+			}
+			domain.HostedZoneId = *id
 		}
 		err := d.db.InsertDomain(domain)
 		if err != nil {
@@ -258,7 +266,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	domain.WebPort = webPort
 
 	if changed {
-		err := d.amazonDns.UpdateDomain(domain)
+		err := d.amazonDns.UpdateDomainRecords(domain)
 		if err != nil {
 			return nil, err
 		}

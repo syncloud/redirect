@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strings"
 )
 
 type DomainAcquireRequest struct {
@@ -23,5 +22,5 @@ func (r *DomainAcquireRequest) ForwardCompatibleDomain(mainDomain string) {
 }
 
 func (r *DomainAcquireRequest) IsFree(mainDomain string) bool {
-	return strings.HasSuffix(*r.Domain, fmt.Sprintf(".%s", mainDomain))
+	return IsFree(*r.Domain, mainDomain)
 }

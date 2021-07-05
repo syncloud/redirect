@@ -11,16 +11,20 @@ import (
 type DnsStub struct {
 }
 
+func (dns *DnsStub) DeleteHostedZone(hostedZoneId string) error {
+	return nil
+}
+
 func (dns *DnsStub) CreateHostedZone(domain string) (*string, error) {
 	id := "123"
 	return &id, nil
 }
 
-func (dns *DnsStub) UpdateDomain(domain *model.Domain) error {
+func (dns *DnsStub) UpdateDomainRecords(domain *model.Domain) error {
 	return nil
 }
 
-func (dns *DnsStub) DeleteDomain(domain *model.Domain) error {
+func (dns *DnsStub) DeleteDomainRecords(domain *model.Domain) error {
 	return nil
 }
 

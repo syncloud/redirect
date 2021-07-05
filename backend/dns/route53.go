@@ -28,8 +28,9 @@ func init() {
 
 type Dns interface {
 	CreateHostedZone(domain string) (*string, error)
-	UpdateDomain(domain *model.Domain) error
-	DeleteDomain(domain *model.Domain) error
+	DeleteHostedZone(hostedZoneId string) error
+	UpdateDomainRecords(domain *model.Domain) error
+	DeleteDomainRecords(domain *model.Domain) error
 }
 
 type AmazonDns struct {
@@ -62,8 +63,15 @@ func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
 	return zone.HostedZone.Id, nil
 }
 
-func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {
-	err := a.DeleteDomain(domain)
+func (a *AmazonDns) DeleteHostedZone(hostedZoneId string) error {
+	_, err := a.client.DeleteHostedZone(&route53.DeleteHostedZoneInput{
+		Id: aws.String(hostedZoneId),
+	})
+	return err
+}
+
+func (a *AmazonDns) UpdateDomainRecords(domain *model.Domain) error {
+	err := a.DeleteDomainRecords(domain)
 	if err != nil {
 		return err
 	}
@@ -74,7 +82,7 @@ func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {
 	return nil
 }
 
-func (a *AmazonDns) DeleteDomain(domain *model.Domain) error {
+func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
 	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", domain.HostedZoneId)
 	if err != nil {
 		return err
