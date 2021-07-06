@@ -22,44 +22,57 @@ func TestEmailInvalid(t *testing.T) {
 func TestDomainMissing(t *testing.T) {
 
 	validator := New()
-	result := validator.Domain(nil, "", "syncloud.it")
+	validator.Domain(nil, "", "syncloud.it")
 	assert.Equal(t, len(validator.errors), 1)
-	assert.Nil(t, result)
 }
 
 func TestFreeDomainInvalid(t *testing.T) {
 	domain := "user.name.syncloud.it"
 	validator := New()
-	_ = validator.Domain(&domain, "", "syncloud.it")
+	validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, len(validator.errors), 1)
 }
 
 func TestFreeDomainShort(t *testing.T) {
 	domain := "use.syncloud.it"
 	validator := New()
-	_ = validator.Domain(&domain, "", "syncloud.it")
+	validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, len(validator.errors), 1)
 }
 
 func TestFreeDomainLong(t *testing.T) {
 	domain := "12345678901234567890123456789012345678901234567890_.syncloud.it"
 	validator := New()
-	_ = validator.Domain(&domain, "", "syncloud.it")
+	validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, 1, len(validator.errors))
 }
 
 func TestFreeDomainEmpty(t *testing.T) {
 	domain := ".syncloud.it"
 	validator := New()
-	_ = validator.Domain(&domain, "", "syncloud.it")
+	validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, 2, len(validator.errors))
 }
 
-func TestManagedEqualsFreeDomain(t *testing.T) {
+func TestFreeDomainContainsSubdomain(t *testing.T) {
+	domain := "test123.test123.syncloud.it"
+	validator := New()
+	validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, 1, len(validator.errors))
+}
+
+func TestPremiumEqualsFreeDomain(t *testing.T) {
 	domain := "syncloud.it"
 	validator := New()
-	_ = validator.Domain(&domain, "", "syncloud.it")
+	validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, 1, len(validator.errors))
+}
+
+func TestPremiumOk(t *testing.T) {
+	domain := "example.com"
+	validator := New()
+	validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, 0, len(validator.errors))
 }
 
 func TestPasswordMissing(t *testing.T) {

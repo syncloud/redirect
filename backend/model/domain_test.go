@@ -11,6 +11,12 @@ func TestBackwardCompatibleDomain_Free(t *testing.T) {
 	assert.Equal(t, "test123", domain.DeprecatedUserDomain)
 }
 
+func TestBackwardCompatibleDomain_FreeContains(t *testing.T) {
+	domain := &Domain{Name: "test123syncloud.it"}
+	domain.BackwardCompatibleDomain("syncloud.it")
+	assert.Equal(t, "", domain.DeprecatedUserDomain)
+}
+
 func TestBackwardCompatibleDomain_Managed(t *testing.T) {
 	domain := &Domain{Name: "test123.com"}
 	domain.BackwardCompatibleDomain("syncloud.it")

@@ -11,6 +11,7 @@ from syncloudlib.integration.hosts import add_host_alias_by_ip
 
 import db
 import smtp
+import premium_account
 
 DIR = dirname(__file__)
 TMP_DIR = '/tmp/syncloud'
@@ -94,13 +95,15 @@ def test_user_create_special_symbols_in_password(domain):
     smtp.clear()
 
 
-def create_user(domain, email, password, artifact_dir):
+def create_user(domain, email, password, artifact_dir, premium=False):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              json={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
 
     activate_user(domain, artifact_dir)
 
+    if premium:
+        premium_account.premium_approve(email, artifact_dir)
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': password},
                             verify=False)
@@ -267,7 +270,7 @@ def test_get_user_no_domains(domain, artifact_dir):
     assert expected == user_data
 
 
-def test_domain_availability(domain, artifact_dir):
+def test_free_domain_availability(domain, artifact_dir):
     email = 'test_domain_availability@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)

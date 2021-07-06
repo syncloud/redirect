@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/utils"
 )
 
 var defaultIpv4 string
@@ -26,8 +27,10 @@ func init() {
 }
 
 type Dns interface {
-	UpdateDomain(domain *model.Domain) error
-	DeleteDomain(domain *model.Domain) error
+	CreateHostedZone(domain string) (*string, error)
+	DeleteHostedZone(hostedZoneId string) error
+	UpdateDomainRecords(domain *model.Domain) error
+	DeleteDomainRecords(domain *model.Domain) error
 }
 
 type AmazonDns struct {
@@ -35,10 +38,9 @@ type AmazonDns struct {
 	statsdClient    *statsd.Client
 	accessKeyId     string
 	secretAccessKey string
-	hostedZoneId    string
 }
 
-func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string, hostedZoneId string) *AmazonDns {
+func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string) *AmazonDns {
 	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(accessKeyId, secretAccessKey, "")}))
 	client := route53.New(mySession)
 	return &AmazonDns{
@@ -46,36 +48,46 @@ func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string
 		statsdClient,
 		accessKeyId,
 		secretAccessKey,
-		hostedZoneId,
 	}
 }
 
-func (a *AmazonDns) UpdateDomain(domain *model.Domain) error {
-	err := a.DeleteDomain(domain)
+func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
+	zone, err := a.client.CreateHostedZone(&route53.CreateHostedZoneInput{
+		CallerReference:  aws.String(utils.Uuid()),
+		HostedZoneConfig: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)},
+		Name:             aws.String(domain),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return zone.HostedZone.Id, nil
+}
+
+func (a *AmazonDns) DeleteHostedZone(hostedZoneId string) error {
+	_, err := a.client.DeleteHostedZone(&route53.DeleteHostedZoneInput{
+		Id: aws.String(hostedZoneId),
+	})
+	return err
+}
+
+func (a *AmazonDns) UpdateDomainRecords(domain *model.Domain) error {
+	err := a.DeleteDomainRecords(domain)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(
-		domain.FQDN(),
-		domain.DnsIpv4(),
-		domain.DnsIpv6(),
-		domain.DkimKey,
-		"\"v=spf1 a mx -all\"",
-		fmt.Sprintf("1 %s", domain.FQDN()),
-		"CREATE",
-		a.hostedZoneId)
+	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", fmt.Sprintf("1 %s", domain.FQDN()), "CREATE", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *AmazonDns) DeleteDomain(domain *model.Domain) error {
-	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", a.hostedZoneId)
+func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
+	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", a.hostedZoneId)
+	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}

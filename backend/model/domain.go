@@ -26,14 +26,14 @@ type (
 		WebPort              *int       `json:"web_port,omitempty"`
 		WebLocalPort         *int       `json:"web_local_port,omitempty"`
 		UserId               int64      `json:"-"`
-		HostedZoneId         uint64     `json:"-"`
+		HostedZoneId         string     `json:"-"`
 		Name                 string     `json:"name,omitempty"`
 	}
 )
 
 func (d *Domain) BackwardCompatibleDomain(mainDomain string) {
-	if strings.HasSuffix(d.Name, mainDomain) {
-		suffix := fmt.Sprintf(".%s", mainDomain)
+	suffix := fmt.Sprintf(".%s", mainDomain)
+	if strings.HasSuffix(d.Name, suffix) {
 		parts := strings.Split(d.Name, suffix)
 		d.DeprecatedUserDomain = parts[0]
 	}
@@ -76,4 +76,12 @@ func (d *Domain) DnsIpv4() *string {
 		return accessIp
 	}
 	return nil
+}
+
+func (d *Domain) IsFree(mainDomain string) bool {
+	return IsFree(d.Name, mainDomain)
+}
+
+func IsFree(domain string, mainDomain string) bool {
+	return strings.HasSuffix(domain, fmt.Sprintf(".%s", mainDomain))
 }

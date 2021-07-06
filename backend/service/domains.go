@@ -6,15 +6,15 @@ import (
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/validator"
-	"log"
 	"time"
 )
 
 type Domains struct {
-	amazonDns dns.Dns
-	db        DomainsDb
-	users     DomainsUsers
-	domain    string
+	amazonDns    dns.Dns
+	db           DomainsDb
+	users        DomainsUsers
+	domain       string
+	hostedZoneId string
 }
 
 type DomainsDb interface {
@@ -32,8 +32,8 @@ type DomainsUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 }
 
-func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string) *Domains {
-	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain}
+func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string, hostedZoneId string) *Domains {
+	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain, hostedZoneId: hostedZoneId}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
@@ -78,7 +78,7 @@ func (d *Domains) DeleteAllDomains(userId int64) error {
 	}
 
 	for _, domain := range domains {
-		err = d.amazonDns.DeleteDomain(domain)
+		err = d.deleteDomain(domain)
 		if err != nil {
 			return err
 		}
@@ -98,11 +98,19 @@ func (d *Domains) DeleteDomain(userId int64, domainName string) error {
 	if domain == nil || domain.UserId != userId {
 		return fmt.Errorf("not found")
 	}
-	err = d.amazonDns.DeleteDomain(domain)
+	err = d.deleteDomain(domain)
 	if err != nil {
 		return err
 	}
 	return d.db.DeleteDomain(domain.Id)
+}
+
+func (d *Domains) deleteDomain(domain *model.Domain) error {
+	if domain.IsFree(d.domain) {
+		return d.amazonDns.DeleteDomainRecords(domain)
+	} else {
+		return d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
+	}
 }
 
 func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
@@ -113,29 +121,36 @@ func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.
 
 	fieldValidator := validator.New()
 	domainField := "domain"
-	domainName := fieldValidator.Domain(request.Domain, domainField, d.domain)
+	fieldValidator.Domain(request.Domain, domainField, d.domain)
 	if fieldValidator.HasErrors() {
 		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
-	domain, err := d.find(domainName, user, domainField)
+	domain, err := d.findAndCheck(request.Domain, request.IsFree(d.domain), user, domainField)
 	if err != nil {
 		return nil, err
 	}
 	return domain, nil
 }
 
-func (d *Domains) find(domain *string, user *model.User, field string) (*model.Domain, error) {
+func (d *Domains) findAndCheck(domain *string, isFree bool, user *model.User, field string) (*model.Domain, error) {
 	foundDomain, err := d.db.GetDomainByName(*domain)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("domain: %v, found: %v, user: %v\n", *domain, foundDomain, user)
-	if foundDomain != nil && foundDomain.UserId != user.Id {
-		return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
-			Parameter: field, Messages: []string{"User domain name is already in use"},
-		}}}
+	//log.Printf("domain: %v, found: %v, user: %v\n", *domain, foundDomain, user)
+	if foundDomain != nil {
+		if foundDomain.UserId != user.Id {
+			return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
+				Parameter: field, Messages: []string{"User domain name is already in use"},
+			}}}
+		}
+	} else {
+		if !isFree && user.PremiumStatusId != PremiumStatusActive {
+			return nil, fmt.Errorf("non free domain name requires a premium account")
+		}
 	}
+
 	return foundDomain, err
 }
 
@@ -148,7 +163,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 
 	fieldValidator := validator.New()
 
-	domainName := fieldValidator.Domain(request.Domain, domainField, d.domain)
+	fieldValidator.Domain(request.Domain, domainField, d.domain)
 
 	deviceMacAddress := fieldValidator.DeviceMacAddress(request.DeviceMacAddress)
 	fieldValidator.DeviceName(request.DeviceName)
@@ -158,19 +173,28 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
 	}
 
-	domain, err := d.find(domainName, user, domainField)
+	isFree := request.IsFree(d.domain)
+	domain, err := d.findAndCheck(request.Domain, isFree, user, domainField)
 	if err != nil {
 		return nil, err
 	}
 	updateToken := utils.Uuid()
 	if domain == nil {
 		domain = &model.Domain{
-			Name:             *domainName,
+			Name:             *request.Domain,
 			DeviceMacAddress: deviceMacAddress,
 			DeviceName:       request.DeviceName,
 			DeviceTitle:      request.DeviceTitle,
 			UpdateToken:      &updateToken,
 			UserId:           user.Id,
+			HostedZoneId:     d.hostedZoneId,
+		}
+		if !isFree {
+			id, err := d.amazonDns.CreateHostedZone(domain.Name)
+			if err != nil {
+				return nil, err
+			}
+			domain.HostedZoneId = *id
 		}
 		err := d.db.InsertDomain(domain)
 		if err != nil {
@@ -190,7 +214,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 
 	}
 	domain.BackwardCompatibleDomain(d.domain)
-	log.Println("domain acquired")
+	fmt.Println("domain acquired")
 	return domain, nil
 }
 
@@ -242,7 +266,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	domain.WebPort = webPort
 
 	if changed {
-		err := d.amazonDns.UpdateDomain(domain)
+		err := d.amazonDns.UpdateDomainRecords(domain)
 		if err != nil {
 			return nil, err
 		}
