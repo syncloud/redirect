@@ -235,6 +235,7 @@ def test_account_premium_delete(driver, ui_mode, screenshot_dir):
 
 
 def test_account_delete(driver, ui_mode, screenshot_dir):
+    menu(driver, ui_mode, screenshot_dir, 'account')
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'delete')))
     driver.find_element_by_id("delete").click()
 
@@ -278,3 +279,4 @@ def menu(driver, ui_mode, screenshot_dir, element_id):
             print('error (attempt {0}/{1}): {2}'.format(retry + 1, retries, str(e)))
             time.sleep(1)
         retry += 1
+
