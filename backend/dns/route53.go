@@ -9,6 +9,7 @@ import (
 	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
+	"strings"
 )
 
 var defaultIpv4 string
@@ -61,12 +62,13 @@ func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("created hosted zone id: %v\n", zone.HostedZone.Id)
-	return zone.HostedZone.Id, nil
+	id := strings.ReplaceAll(*zone.HostedZone.Id, "/hostedzone/", "")
+	fmt.Printf("created hosted zone id: %s\n", id)
+	return &id, nil
 }
 
 func (a *AmazonDns) DeleteHostedZone(hostedZoneId string) error {
-	fmt.Printf("delete hosted zone: %v\n", hostedZoneId)
+	fmt.Printf("delete hosted zone: %s\n", hostedZoneId)
 	output, err := a.client.DeleteHostedZone(&route53.DeleteHostedZoneInput{
 		Id: aws.String(hostedZoneId),
 	})
