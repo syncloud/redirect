@@ -225,13 +225,13 @@ def test_account_premium_approve(artifact_dir):
     premium_account.premium_approve(DEVICE_USER, artifact_dir)
 
 
-def test_account_premium_acquire(domain, driver, ui_mode, screenshot_dir):
+def test_account_premium_acquire(domain):
     api.domain_acquire(domain, 'syncloudexample.com', DEVICE_USER, DEVICE_PASSWORD)
-    screenshots(driver, screenshot_dir, 'premium-domain-' + ui_mode)
 
 
 def test_account_premium_delete(driver, ui_mode, screenshot_dir):
     menu(driver, ui_mode, screenshot_dir, 'devices')
+    screenshots(driver, screenshot_dir, 'premium-domain-' + ui_mode)
     domain_delete(driver, ui_mode, screenshot_dir, 'premium-devices-removed')
 
 
