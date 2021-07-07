@@ -12,6 +12,7 @@ from syncloudlib.integration.hosts import add_host_alias_by_ip
 import db
 import smtp
 import premium_account
+import api
 
 DIR = dirname(__file__)
 TMP_DIR = '/tmp/syncloud'
@@ -156,24 +157,6 @@ def activate_user(domain, artifact_dir):
     smtp.clear()
 
 
-def acquire_domain(domain, email, password, user_domain):
-    acquire_data = {
-        'user_domain': user_domain,
-        'email': email,
-        'password': password,
-        'device_mac_address': '00:00:00:00:00:00',
-        'device_name': 'some-device',
-        'device_title': 'Some Device',
-    }
-    response = requests.post('https://api.{0}/domain/acquire'.format(domain),
-                             data=acquire_data,
-                             verify=False)
-    domain_data = json.loads(response.text)
-    assert 'update_token' in domain_data, response.text
-    update_token = domain_data['update_token']
-    return update_token
-
-
 def test_user_create_success(domain, artifact_dir):
     create_user(domain, 'test@syncloud.test', 'pass123456', artifact_dir)
 
@@ -194,7 +177,7 @@ def test_get_user_data(domain, artifact_dir):
     user_token = create_user(domain, email, password, artifact_dir)
 
     user_domain = "test_get_user_data"
-    update_token = acquire_domain(domain, email, password, user_domain)
+    update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     update_data = {
         'token': update_token,
@@ -287,7 +270,8 @@ def test_free_domain_availability(domain, artifact_dir):
                              verify=False)
     assert response.status_code == 200, response.text
 
-    acquire_domain(domain, email, password, 'domain_availability')
+    user_domain = 'domain_availability'
+    api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     response = requests.post('https://api.{0}/domain/availability'.format(domain),
                              json=request,
@@ -594,26 +578,12 @@ def test_domain_update_date(domain, artifact_dir):
     create_user(domain, email, password, artifact_dir)
 
     user_domain = "test_domain_update_date"
-
-    update_token = acquire_domain(domain, email, password, user_domain)
-
-    update_data = {
-        'token': update_token,
-        'ip': '127.0.0.1',
-        'web_protocol': 'http',
-        'web_port': 10001,
-        'web_local_port': 80
-    }
-
-    requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                  verify=False)
+    update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
+    api.domain_update(domain, update_token, '127.0.0.1')
     domain_info = get_domain(update_token, domain)
     last_updated1 = domain_info['last_update']
-
     time.sleep(1)
-
-    requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                  verify=False)
+    api.domain_update(domain, update_token, '127.0.0.1')
     domain_info = get_domain(update_token, domain)
     last_updated2 = domain_info['last_update']
 
@@ -621,63 +591,9 @@ def test_domain_update_date(domain, artifact_dir):
 
 
 def test_domain_update_wrong_token(domain):
-    update_data = {'token': 'test_domain_update_wrong_token', 'ip': '127.0.0.1'}
-
-    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                             verify=False)
+    update_token = 'test_domain_update_wrong_token'
+    response = api.domain_update(domain, update_token, '127.0.0.1')
     assert response.status_code == 400, response.text
-
-
-def test_domain_update_web_updated(domain, artifact_dir):
-    email = 'test_domain_update_web_updated@syncloud.test'
-    password = 'pass123456'
-    create_user(domain, email, password, artifact_dir)
-
-    user_domain = "test_domain_update_web_updated"
-    update_token = acquire_domain(domain, email, password, user_domain)
-
-    update_data = {
-        'token': update_token,
-        'ip': '127.0.0.1',
-        'web_protocol': 'http',
-        'web_port': 10001,
-        'web_local_port': 80,
-    }
-
-    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                             verify=False)
-    assert response.status_code == 200
-
-    update_data = {
-        'token': update_token,
-        'ip': '127.0.0.1',
-        'web_protocol': 'https',
-        'web_port': 10002,
-        'web_local_port': 443,
-    }
-
-    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                             verify=False)
-
-    assert response.status_code == 200
-
-    expected_data = {
-        'update_token': update_token,
-        'ip': '127.0.0.1',
-        'user_domain': user_domain,
-        'web_protocol': 'https',
-        'web_port': 10002,
-        'web_local_port': 443,
-        'device_mac_address': '00:00:00:00:00:00',
-        'device_name': 'some-device',
-        'device_title': 'Some Device',
-        'map_local_address': False,
-        'name': 'test_domain_update_web_updated.syncloud.test'
-    }
-
-    domain_data = get_domain(update_token, domain)
-    domain_data.pop('last_update', None)
-    assert expected_data == domain_data
 
 
 def test_domain_update_ip_changed(domain, artifact_dir):
@@ -685,31 +601,10 @@ def test_domain_update_ip_changed(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
     user_domain = "test_domain_update_ip_changed"
-    update_token = acquire_domain(domain, email, password, user_domain)
-
-    update_data = {
-        'token': update_token,
-        'ip': '127.0.0.1',
-        'web_protocol': 'http',
-        'web_port': 10001,
-        'web_local_port': 80,
-    }
-
-    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                             verify=False)
+    update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
+    response = api.domain_update(domain, update_token, '127.0.0.1')
     assert response.status_code == 200
-
-    update_data = {
-        'token': update_token,
-        'ip': '127.0.0.2',
-        'web_protocol': 'http',
-        'web_port': 10001,
-        'web_local_port': 80,
-    }
-
-    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                             verify=False)
-
+    response = api.domain_update(domain, update_token, '127.0.0.2')
     assert response.status_code == 200
 
     expected_data = {
@@ -721,9 +616,10 @@ def test_domain_update_ip_changed(domain, artifact_dir):
         'device_title': 'Some Device',
         'web_local_port': 80,
         'web_port': 10001,
-        'web_protocol': 'http',
+        'web_protocol': 'https',
         'map_local_address': False,
-        'name': 'test_domain_update_ip_changed.syncloud.test'
+        'name': 'test_domain_update_ip_changed.syncloud.test',
+        'platform_version': '1'
     }
 
     domain_data = get_domain(update_token, domain)
@@ -737,19 +633,8 @@ def test_domain_update_platform_version(domain, artifact_dir):
     create_user(domain, email, password, artifact_dir)
     user_domain = "test_domain_update_platform_version"
 
-    update_token = acquire_domain(domain, email, password, user_domain)
-
-    update_data = {
-        'token': update_token,
-        'ip': '127.0.0.1',
-        'platform_version': '366',
-        'web_protocol': 'http',
-        'web_port': 10001,
-        'web_local_port': 80,
-    }
-
-    response = requests.post('https://api.{0}/domain/update'.format(domain), json=update_data,
-                             verify=False)
+    update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
+    response = api.domain_update(domain, update_token, '127.0.0.1', '366')
     assert response.status_code == 200
 
     expected_data = {
@@ -762,7 +647,7 @@ def test_domain_update_platform_version(domain, artifact_dir):
         'user_domain': 'test_domain_update_platform_version',
         'web_local_port': 80,
         'web_port': 10001,
-        'web_protocol': 'http',
+        'web_protocol': 'https',
         'map_local_address': False,
         'name': 'test_domain_update_platform_version.syncloud.test'
     }
@@ -777,7 +662,7 @@ def test_domain_update_local_ip_changed(domain, artifact_dir):
     create_user(domain, email, password, artifact_dir)
     user_domain = "test_domain_update_local_ip_changed"
 
-    update_token = acquire_domain(domain, email, password, user_domain)
+    update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     update_data = {
         'token': update_token,
@@ -831,7 +716,7 @@ def test_domain_update_server_side_client_ip(domain, artifact_dir):
     create_user(domain, email, password, artifact_dir)
     user_domain = "test_domain_update_server_side_client_ip"
 
-    update_token = acquire_domain(domain, email, password, user_domain)
+    update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     update_data = {
         'token': update_token,
@@ -870,7 +755,7 @@ def test_domain_update_map_local_address(domain, artifact_dir):
     create_user(domain, email, password, artifact_dir)
 
     user_domain = "test_domain_update_map_local_address"
-    update_token = acquire_domain(domain, email, password, user_domain)
+    update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     update_data = {
         'token': update_token,

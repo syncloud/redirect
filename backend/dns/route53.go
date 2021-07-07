@@ -9,6 +9,7 @@ import (
 	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
+	"strings"
 )
 
 var defaultIpv4 string
@@ -52,6 +53,7 @@ func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string
 }
 
 func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
+	fmt.Printf("create hosted zone for: %v\n", domain)
 	zone, err := a.client.CreateHostedZone(&route53.CreateHostedZoneInput{
 		CallerReference:  aws.String(utils.Uuid()),
 		HostedZoneConfig: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)},
@@ -60,14 +62,21 @@ func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return zone.HostedZone.Id, nil
+	id := strings.ReplaceAll(*zone.HostedZone.Id, "/hostedzone/", "")
+	fmt.Printf("created hosted zone id: %s\n", id)
+	return &id, nil
 }
 
 func (a *AmazonDns) DeleteHostedZone(hostedZoneId string) error {
-	_, err := a.client.DeleteHostedZone(&route53.DeleteHostedZoneInput{
+	fmt.Printf("delete hosted zone: %s\n", hostedZoneId)
+	output, err := a.client.DeleteHostedZone(&route53.DeleteHostedZoneInput{
 		Id: aws.String(hostedZoneId),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	fmt.Printf("deleted hosted zone output: %v\n", output)
+	return nil
 }
 
 func (a *AmazonDns) UpdateDomainRecords(domain *model.Domain) error {

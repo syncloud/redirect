@@ -8,3 +8,5 @@ _site
 .coverage
 *.iml
 venv
+build
+*.tar.gz
