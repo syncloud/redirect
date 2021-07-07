@@ -225,8 +225,9 @@ def test_account_premium_approve(artifact_dir):
     premium_account.premium_approve(DEVICE_USER, artifact_dir)
 
 
-def test_account_premium_acquire(domain):
+def test_account_premium_acquire(domain, driver, ui_mode, screenshot_dir):
     api.domain_acquire(domain, 'syncloudexample.com', DEVICE_USER, DEVICE_PASSWORD)
+    domain_delete(driver, ui_mode, screenshot_dir, 'premium-devices-removed')
 
 
 def test_account_premium_delete(driver, ui_mode, screenshot_dir):
@@ -243,7 +244,7 @@ def test_account_delete(driver, ui_mode, screenshot_dir):
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, confirm_xpath)))
     driver.find_element_by_xpath(confirm_xpath).click()
 
-    screenshots(driver, screenshot_dir, 'account-delete' + ui_mode)
+    screenshots(driver, screenshot_dir, 'account-delete-' + ui_mode)
 
 
 def test_teardown(driver):
