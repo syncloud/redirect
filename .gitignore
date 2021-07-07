@@ -9,3 +9,4 @@ _site
 *.iml
 venv
 build
+*.tar.gz
