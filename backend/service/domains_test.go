@@ -9,9 +9,12 @@ import (
 )
 
 type DnsStub struct {
+	hostedZoneDeleted        bool
+	freeDomainRecordsDeleted bool
 }
 
 func (dns *DnsStub) DeleteHostedZone(hostedZoneId string) error {
+	dns.hostedZoneDeleted = true
 	return nil
 }
 
@@ -25,16 +28,19 @@ func (dns *DnsStub) UpdateDomainRecords(domain *model.Domain) error {
 }
 
 func (dns *DnsStub) DeleteDomainRecords(domain *model.Domain) error {
+	dns.freeDomainRecordsDeleted = true
 	return nil
 }
 
 var _ dns.Dns = (*DnsStub)(nil)
 
 type DomainsDbStub struct {
-	userId   int64
-	found    bool
-	updated  bool
-	inserted bool
+	userId       int64
+	found        bool
+	updated      bool
+	inserted     bool
+	deleted      bool
+	hostedZoneId string
 }
 
 func (db *DomainsDbStub) GetDomainByToken(token string) (*model.Domain, error) {
@@ -54,12 +60,13 @@ func (db *DomainsDbStub) DeleteAllDomains(userId int64) error {
 }
 
 func (db *DomainsDbStub) DeleteDomain(domainId uint64) error {
+	db.deleted = true
 	return nil
 }
 
 func (db *DomainsDbStub) GetDomainByName(value string) (*model.Domain, error) {
 	if db.found {
-		return &model.Domain{Name: value, UserId: db.userId}, nil
+		return &model.Domain{Name: value, UserId: db.userId, HostedZoneId: db.hostedZoneId}, nil
 	}
 	return nil, nil
 }
@@ -383,5 +390,33 @@ func TestPremiumAvailability_PremiumUser_NotAvailable(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Nil(t, result)
+
+}
+
+func TestDeleteDomain_Free_DeleteRecords(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "1")
+	err := domains.DeleteDomain(1, "test.syncloud.it")
+
+	assert.Nil(t, err)
+	assert.False(t, dnsStub.hostedZoneDeleted)
+	assert.True(t, dnsStub.freeDomainRecordsDeleted)
+	assert.True(t, db.deleted)
+
+}
+
+func TestDeleteDomain_Premium_DeleteHostedZone(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "2")
+	err := domains.DeleteDomain(1, "test.com")
+
+	assert.Nil(t, err)
+	assert.True(t, dnsStub.hostedZoneDeleted)
+	assert.False(t, dnsStub.freeDomainRecordsDeleted)
+	assert.True(t, db.deleted)
 
 }

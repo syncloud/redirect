@@ -6,15 +6,16 @@ import (
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/validator"
+	"log"
 	"time"
 )
 
 type Domains struct {
-	amazonDns    dns.Dns
-	db           DomainsDb
-	users        DomainsUsers
-	domain       string
-	hostedZoneId string
+	amazonDns        dns.Dns
+	db               DomainsDb
+	users            DomainsUsers
+	domain           string
+	freeHostedZoneId string
 }
 
 type DomainsDb interface {
@@ -32,8 +33,8 @@ type DomainsUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 }
 
-func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string, hostedZoneId string) *Domains {
-	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain, hostedZoneId: hostedZoneId}
+func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string, freeHostedZoneId string) *Domains {
+	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain, freeHostedZoneId: freeHostedZoneId}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
@@ -106,7 +107,7 @@ func (d *Domains) DeleteDomain(userId int64, domainName string) error {
 }
 
 func (d *Domains) deleteDomain(domain *model.Domain) error {
-	if domain.IsFree(d.domain) {
+	if d.freeHostedZoneId == domain.HostedZoneId {
 		return d.amazonDns.DeleteDomainRecords(domain)
 	} else {
 		return d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
@@ -138,8 +139,8 @@ func (d *Domains) findAndCheck(domain *string, isFree bool, user *model.User, fi
 	if err != nil {
 		return nil, err
 	}
-	//log.Printf("domain: %v, found: %v, user: %v\n", *domain, foundDomain, user)
 	if foundDomain != nil {
+		log.Printf("domain: %s, found: %s, owner: %d, requester: %d\n", *domain, foundDomain.Name, foundDomain.UserId, user.Id)
 		if foundDomain.UserId != user.Id {
 			return nil, &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
 				Parameter: field, Messages: []string{"User domain name is already in use"},
@@ -187,7 +188,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 			DeviceTitle:      request.DeviceTitle,
 			UpdateToken:      &updateToken,
 			UserId:           user.Id,
-			HostedZoneId:     d.hostedZoneId,
+			HostedZoneId:     d.freeHostedZoneId,
 		}
 		if !isFree {
 			id, err := d.amazonDns.CreateHostedZone(domain.Name)
