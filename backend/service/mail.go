@@ -97,7 +97,7 @@ func (m *Mail) SendPremiumRequest(to string) error {
 	if err != nil {
 		return err
 	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to, m.deviceErrorTo)
 	return err
 }
 
