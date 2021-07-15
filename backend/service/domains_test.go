@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/model"
@@ -11,6 +12,10 @@ import (
 type DnsStub struct {
 	hostedZoneDeleted        bool
 	freeDomainRecordsDeleted bool
+}
+
+func (dns *DnsStub) GetHostedZoneNameServers(id string) ([]*string, error) {
+	return []*string{aws.String("ns1.example.com")}, nil
 }
 
 func (dns *DnsStub) DeleteHostedZone(hostedZoneId string) error {
@@ -48,6 +53,9 @@ func (db *DomainsDbStub) GetDomainByToken(token string) (*model.Domain, error) {
 }
 
 func (db *DomainsDbStub) GetUserDomains(userId int64) ([]*model.Domain, error) {
+	if db.found {
+		return []*model.Domain{{Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId}}, nil
+	}
 	return nil, nil
 }
 
@@ -419,4 +427,26 @@ func TestDeleteDomain_Premium_DeleteHostedZone(t *testing.T) {
 	assert.False(t, dnsStub.freeDomainRecordsDeleted)
 	assert.True(t, db.deleted)
 
+}
+
+func TestGetDomains_Free_NoNameServers(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "1")
+	domains, err := domainService.GetDomains(&model.User{Id: 1})
+
+	assert.Nil(t, err)
+	assert.Empty(t, domains[0].NameServers)
+}
+
+func TestGetDomains_Premium_NameServers(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "2")
+	domains, err := domainService.GetDomains(&model.User{Id: 1})
+
+	assert.Nil(t, err)
+	assert.NotEmpty(t, domains[0].NameServers)
 }

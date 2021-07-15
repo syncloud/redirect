@@ -28,6 +28,7 @@ type (
 		UserId               int64      `json:"-"`
 		HostedZoneId         string     `json:"-"`
 		Name                 string     `json:"name,omitempty"`
+		NameServers          []*string  `json:"name_servers,omitempty"`
 	}
 )
 

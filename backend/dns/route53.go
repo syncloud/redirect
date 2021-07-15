@@ -32,6 +32,7 @@ type Dns interface {
 	DeleteHostedZone(hostedZoneId string) error
 	UpdateDomainRecords(domain *model.Domain) error
 	DeleteDomainRecords(domain *model.Domain) error
+	GetHostedZoneNameServers(id string) ([]*string, error)
 }
 
 type AmazonDns struct {
@@ -65,6 +66,18 @@ func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
 	id := strings.ReplaceAll(*zone.HostedZone.Id, "/hostedzone/", "")
 	fmt.Printf("created hosted zone id: %s\n", id)
 	return &id, nil
+}
+
+func (a *AmazonDns) GetHostedZoneNameServers(id string) ([]*string, error) {
+	fmt.Printf("get hosted zone for: %v\n", id)
+	zone, err := a.client.GetHostedZone(&route53.GetHostedZoneInput{
+		Id: aws.String(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("created hosted zone id: %s\n", id)
+	return zone.DelegationSet.NameServers, nil
 }
 
 func (a *AmazonDns) DeleteHostedZone(hostedZoneId string) error {

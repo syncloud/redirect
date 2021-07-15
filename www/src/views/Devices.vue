@@ -46,7 +46,13 @@
                   <span>IPv6 Address: </span>
 
                   <a id="ipv6_address" v-if="domain.has_ipv6_address" :href="domain.ipv6_address">{{ domain.ipv6_address }}</a>
-                  <span id="ipv6_address" v-if="!domain.has_ipv6_address">Not provided</span>
+                  <span id="ipv6_address_not_available" v-if="!domain.has_ipv6_address">Not provided</span>
+                </li>
+                <li class="list-group-item clearfix" v-if="domain.name_servers">
+                  <span>Name Servers: </span>
+                  <div v-for="(name_server, name_server_index) in domain.name_servers" :key="name_server_index">
+                    <code>{{ name_server }}</code>
+                  </div>
                 </li>
                 <li class="list-group-item clearfix">
                   <span>Updated: {{ domain.nice_last_update }}</span>
@@ -137,7 +143,7 @@ function convert (domain) {
   domain.internal_address = 'https://' + domain.local_ip
   domain.has_internal_address = domain.local_ip !== undefined
   domain.ipv6_address = 'https://[' + domain.ipv6 + ']'
-  domain.has_ipv6_address = domain.ipv6 !== undefined
+  domain.has_ipv6_address = !!domain.ipv6
   domain.online = online(domain.last_update)
   domain.nice_last_update = niceTimestamp(domain.last_update, new Date())
   return domain

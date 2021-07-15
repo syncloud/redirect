@@ -183,7 +183,7 @@ test('No IPv6', async () => {
 
   await flushPromises()
 
-  const address = await wrapper.find('#ipv6_address').text()
+  const address = await wrapper.find('#ipv6_address_not_available').text()
   expect(address).toBe('Not provided')
   wrapper.unmount()
 })

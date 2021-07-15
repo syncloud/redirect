@@ -67,6 +67,13 @@ func (d *Domains) GetDomains(user *model.User) ([]*model.Domain, error) {
 		return nil, err
 	}
 	for _, domain := range domains {
+		if d.freeHostedZoneId != domain.HostedZoneId {
+			nameServers, err := d.amazonDns.GetHostedZoneNameServers(domain.HostedZoneId)
+			if err != nil {
+				return nil, err
+			}
+			domain.NameServers = nameServers
+		}
 		domain.BackwardCompatibleDomain(d.domain)
 	}
 	return domains, nil

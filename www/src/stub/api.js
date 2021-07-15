@@ -45,7 +45,11 @@ let state = {
         web_local_port: 443,
         web_port: 10001,
         web_protocol: 'https',
-        name: 'test1.syncloud.test'
+        name: 'test1.syncloud.test',
+        name_servers: [
+          'ns1.example.com',
+          'ns2.example.com'
+        ]
       }
     ]
   }
