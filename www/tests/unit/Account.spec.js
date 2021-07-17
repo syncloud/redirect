@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
@@ -30,6 +30,9 @@ test('Notifications unsubscribe', async () => {
     {
       attachTo: document.body,
       global: {
+        components: {
+          RouterLink: RouterLinkStub
+        },
         stubs: {
           Confirmation: {
             template: '<button :id="id" />',
@@ -80,6 +83,9 @@ test('Notifications subscribe', async () => {
     {
       attachTo: document.body,
       global: {
+        components: {
+          RouterLink: RouterLinkStub
+        },
         stubs: {
           Confirmation: {
             template: '<button :id="id" />',
@@ -137,6 +143,9 @@ test('Delete', async () => {
         onLogout: jest.fn()
       },
       global: {
+        components: {
+          RouterLink: RouterLinkStub
+        },
         stubs: {
           Confirmation: {
             template: '<button :id="id" />',
@@ -163,55 +172,3 @@ test('Delete', async () => {
   wrapper.unmount()
 })
 
-test('Premium request', async () => {
-  let requested
-
-  const mock = new MockAdapter(axios)
-  mock.onGet('/api/user').reply(200,
-    {
-      data: {
-        active: true,
-        email: 'test@example.com',
-        unsubscribed: false,
-        premium_status_id: 1,
-        update_token: '0a'
-      }
-    }
-  )
-
-  mock.onPost('/api/premium/request').reply(function (_) {
-    requested = true
-    return [200, { success: true }]
-  })
-
-  const wrapper = mount(Account,
-    {
-      attachTo: document.body,
-      props: {
-        onLogout: jest.fn()
-      },
-      global: {
-        stubs: {
-          Confirmation: {
-            template: '<button :id="id" />',
-            props: { id: String },
-            methods: {
-              show () {
-              }
-            }
-          }
-        }
-      }
-    }
-  )
-
-  await flushPromises()
-
-  await wrapper.find('#request_premium').trigger('click')
-  await wrapper.find('#premium_confirmation').trigger('confirm')
-
-  await flushPromises()
-
-  expect(requested).toBe(true)
-  wrapper.unmount()
-})
