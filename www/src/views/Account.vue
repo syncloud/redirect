@@ -19,6 +19,28 @@
                   DNS (*.syncloud.it)
             </div>
           </div>
+          </div>
+          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <div class="panel-title">
+                  Notifications
+                </div>
+              </div>
+              <div class="panel-body">
+                <h4>Email</h4>
+                <div class="pull-left">
+                  <input v-model="subscribed" type="checkbox" id="chk_email" :value="subscribed">
+                  <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me Syncloud notifications,
+                    including releases announcements</label>
+                </div>
+                <button type="button" class="btn btn-default pull-right" @click="notificationSave" id="save">
+                  <span class="glyphicon glyphicon-ok" style="padding-right: 5px"></span>Save
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
@@ -31,6 +53,7 @@
                 <ul style="padding-top: 10px">
                   <li>Automatic IP DNS updates</li>
                   <li>Automatic mail DNS records</li>
+                  <li>There will be more in future ...</li>
                 </ul>
                 <div id="request_premium" v-if="isPremiumInActive">
                   <div>
@@ -66,26 +89,6 @@
                   </ul>
 
                 </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <div class="panel-title">
-                  Notifications
-                </div>
-              </div>
-              <div class="panel-body">
-                <h4>Email</h4>
-                <div class="pull-left">
-                  <input v-model="subscribed" type="checkbox" id="chk_email" :value="subscribed">
-                  <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me Syncloud notifications,
-                    including releases announcements</label>
-                </div>
-                <button type="button" class="btn btn-default pull-right" @click="notificationSave" id="save">
-                  <span class="glyphicon glyphicon-ok" style="padding-right: 5px"></span>Save
-                </button>
               </div>
             </div>
           </div>
