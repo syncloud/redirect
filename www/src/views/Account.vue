@@ -32,13 +32,39 @@
                   <li>Automatic IP DNS updates</li>
                   <li>Automatic mail DNS records</li>
                 </ul>
-                <h3>Subscribe</h3>
-                <div style="max-width: 200px" id="paypal-buttons"
-                     v-if="isPremiumInActive"
-                     :on-approve="onApprove" :create-order="createOrder"></div>
+                <div id="request_premium" v-if="isPremiumInActive">
+                  <div>
+                    What you need to have:
+                  </div>
+                  <ul>
+                    <li>You own a domain (like example.com)</li>
+                    <li>You can change Nameservers for your domain</li>
+                    <li>You are ready to allow Syncloud to manage DNS records for that domain name by setting
+                      Syncloud Name Servers
+                    </li>
+                  </ul>
+                  <div style="margin: auto">
+                    <h4 style="text-align: center" >Subscribe for £5/month</h4>
+                    <div style="margin: auto; max-width: 200px" id="paypal-buttons"
+                         v-if="isPremiumInActive"
+                         :on-approve="onApprove" :create-order="createOrder"></div>
+                  </div>
+                </div>
 
                 <div id="premium_active" v-if="isPremiumActive">
                   <span class="label label-success" style="font-size: 16px;">Active</span>
+                  You can now activate your device in a premium mode<br>
+                  <ul>
+                    <li>Update system on the device from Settings - Updates</li>
+                    <li>ReActivate from Settings - Activation and select a Premium mode</li>
+                    <li>
+                      Copy Name Servers for your <router-link to="/">domain</router-link> (Under this domain Name Servers list)
+                    </li>
+                    <li>
+                      Update Name Servers on your domain registrar page (GoDaddy for example)
+                    </li>
+                  </ul>
+
                 </div>
               </div>
             </div>
@@ -87,25 +113,6 @@
     </div>
   </div>
 
-  <Confirmation ref="premium_confirmation" id="premium_confirmation" @confirm="requestPremiumConfirm" @cancel="reload">
-    <template v-slot:title>Premium account request</template>
-    <template v-slot:text>
-      By confirming the request you agree to the following:<br>
-      <ul>
-        <li>You own a domain (like example.com)</li>
-        <li>You can change Nameservers for your domain</li>
-        <li>You are ready to allow Syncloud to manage DNS records for that domain name by setting
-          Syncloud Nameservers
-        </li>
-      </ul>
-      <div>Service is currently provided for 1 year free with no guarantees and maybe canceled anytime depending on test
-        results.
-      </div>
-      <br>
-      <div>Are you sure?</div>
-    </template>
-  </Confirmation>
-
   <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="accountDeleteConfirm" @cancel="reload">
     <template v-slot:title>Delete Account</template>
     <template v-slot:text>
@@ -127,29 +134,6 @@ import { loadScript } from '@paypal/paypal-js'
 const PREMIUM_STATUS_INACTIVE = 1
 const PREMIUM_STATUS_PENDING = 2
 const PREMIUM_STATUS_ACTIVE = 3
-
-loadScript({
-  'client-id': 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN',
-  vault: true,
-  intent: 'subscription'
-})
-  .then((paypal) => {
-    paypal
-      .Buttons({
-        createSubscription: (data, actions) => {
-          return actions.subscription.create({
-            plan_id: 'P-88T8436193034834XMDZRP4A'
-          })
-        },
-        onApprove: (data, actions) => {
-          console.log(data)
-        }
-      })
-      .render('#paypal-buttons')
-  })
-  .catch((err) => {
-    console.error('failed to load the PayPal JS SDK script', err)
-  })
 
 export default {
   name: 'Account',
@@ -180,6 +164,28 @@ export default {
   },
   mounted () {
     this.reload()
+    loadScript({
+      'client-id': 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN',
+      vault: true,
+      intent: 'subscription'
+    })
+      .then((paypal) => {
+        paypal
+          .Buttons({
+            createSubscription: (data, actions) => {
+              return actions.subscription.create({
+                plan_id: 'P-88T8436193034834XMDZRP4A'
+              })
+            },
+            onApprove: (data, actions) => {
+              console.log(data)
+            }
+          })
+          .render('#paypal-buttons')
+      })
+      .catch((err) => {
+        console.error('failed to load the PayPal JS SDK script', err)
+      })
   },
   methods: {
     reload: function () {
