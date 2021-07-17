@@ -12,34 +12,33 @@
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
-                  Services
+                  Free Services
                 </div>
               </div>
               <div class="panel-body">
-                <div class="pull-left">
-                  <h4>Free services:</h4>
-                  <ul>
-                    <li>DNS (*.syncloud.it)</li>
-                  </ul>
-                  <h4>Premium services:</h4>
-                  <div>Improve Syncloud device experience with cloud support.
-                  </div>
-                  <ul>
-                    <li>Managed DNS (custom domain name IP updates)</li>
-                  </ul>
+                  DNS (*.syncloud.it)
+            </div>
+          </div>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <div class="panel-title">
+                  Premium Services
                 </div>
-
-                <button id="request_premium" type="button" class="btn btn-default pull-right" @click="requestPremium"
-                        v-if="isPremiumInActive">
-                  <span class="glyphicon glyphicon-ok" style="padding-right: 5px"></span>Request Premium
-                </button>
-
-                <div id="premium_pending" v-if="isPremiumPending">
-                  <span class="label label-warning pull-right" style="font-size: 16px;">Pending Premium</span>
+              </div>
+              <div class="panel-body">
+                <div>Improve Syncloud device experience with your domain name (ex. example.com).
                 </div>
+                <ul style="padding-top: 10px">
+                  <li>Automatic IP DNS updates</li>
+                  <li>Automatic mail DNS records</li>
+                </ul>
+                <h3>Subscribe</h3>
+                <div style="max-width: 200px" id="paypal-buttons"
+                     v-if="isPremiumInActive"
+                     :on-approve="onApprove" :create-order="createOrder"></div>
 
                 <div id="premium_active" v-if="isPremiumActive">
-                  <span class="label label-success pull-right" style="font-size: 16px;">Active Premium</span>
+                  <span class="label label-success" style="font-size: 16px;">Active</span>
                 </div>
               </div>
             </div>
@@ -120,14 +119,37 @@
   </Confirmation>
 
 </template>
-
 <script>
 import axios from 'axios'
 import Confirmation from '@/components/Confirmation'
+import { loadScript } from '@paypal/paypal-js'
 
 const PREMIUM_STATUS_INACTIVE = 1
 const PREMIUM_STATUS_PENDING = 2
 const PREMIUM_STATUS_ACTIVE = 3
+
+loadScript({
+  'client-id': 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN',
+  vault: true,
+  intent: 'subscription'
+})
+  .then((paypal) => {
+    paypal
+      .Buttons({
+        createSubscription: (data, actions) => {
+          return actions.subscription.create({
+            plan_id: 'P-88T8436193034834XMDZRP4A'
+          })
+        },
+        onApprove: (data, actions) => {
+          console.log(data)
+        }
+      })
+      .render('#paypal-buttons')
+  })
+  .catch((err) => {
+    console.error('failed to load the PayPal JS SDK script', err)
+  })
 
 export default {
   name: 'Account',
