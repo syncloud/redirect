@@ -53,14 +53,13 @@ func (mysql *MySql) selectUserByField(field string, value interface{}) (*model.U
 			"update_token, "+
 			"notification_enabled, "+
 			"timestamp, "+
-			"premium_status_id, "+
 			"subscription_id "+
 			"FROM user "+
 			"WHERE "+field+" = ?", value)
 
 	user := &model.User{}
 	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
-		&user.NotificationEnabled, &user.Timestamp, &user.PremiumStatusId, &user.SubscriptionId)
+		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -83,9 +82,8 @@ func (mysql *MySql) InsertUser(user *model.User) (int64, error) {
 			"active, " +
 			"update_token, " +
 			"notification_enabled, " +
-			"timestamp, " +
-			"premium_status_id " +
-			") values (?,?,?,?,?,?,?)")
+			"timestamp " +
+			") values (?,?,?,?,?,?)")
 	if err != nil {
 		log.Println("unable to insert user (prepare): ", err)
 		return 0, err
@@ -97,7 +95,6 @@ func (mysql *MySql) InsertUser(user *model.User) (int64, error) {
 		user.UpdateToken,
 		user.NotificationEnabled,
 		user.Timestamp,
-		user.PremiumStatusId,
 	)
 	if err != nil {
 		log.Println("unable to insert user (exec): ", err)
@@ -116,7 +113,6 @@ func (mysql *MySql) UpdateUser(user *model.User) error {
 			"update_token = ?, " +
 			"notification_enabled = ?, " +
 			"timestamp = ?, " +
-			"premium_status_id = ?, " +
 			"subscription_id = ? " +
 			"WHERE id = ?")
 	if err != nil {
@@ -131,7 +127,6 @@ func (mysql *MySql) UpdateUser(user *model.User) error {
 		user.UpdateToken,
 		user.NotificationEnabled,
 		&now,
-		user.PremiumStatusId,
 		user.SubscriptionId,
 		user.Id,
 	)

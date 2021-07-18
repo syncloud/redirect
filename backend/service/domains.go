@@ -154,8 +154,8 @@ func (d *Domains) findAndCheck(domain *string, isFree bool, user *model.User, fi
 			}}}
 		}
 	} else {
-		if !isFree && user.PremiumStatusId != PremiumStatusActive {
-			return nil, fmt.Errorf("non free domain name requires a premium account")
+		if !isFree && user.SubscriptionId == nil {
+			return nil, fmt.Errorf("non free domain name requires a premium subscription")
 		}
 	}
 

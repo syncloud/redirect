@@ -216,7 +216,7 @@ def test_account_premium_request(driver, ui_mode, screenshot_dir):
 
 
 def test_account_premium_approve(driver, ui_mode, screenshot_dir, artifact_dir):
-    premium_account.premium_approve(DEVICE_USER, artifact_dir)
+    premium_account.premium_buy(DEVICE_USER, artifact_dir)
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'request_premium')))
     screenshots(driver, screenshot_dir, 'account-premium-approved' + ui_mode)
 

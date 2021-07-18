@@ -138,7 +138,6 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 		PasswordHash:        Hash(*password),
 		Active:              !u.activateByEmail,
 		UpdateToken:         updateToken,
-		PremiumStatusId:     PremiumStatusInactive,
 		Timestamp:           time.Now(),
 		NotificationEnabled: true,
 	}

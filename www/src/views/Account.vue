@@ -161,7 +161,6 @@ export default {
       axios.get('api/user')
         .then(response => {
           this.notificationEnabled = response.data.data.notification_enabled
-          this.premiumStatusId = response.data.data.premium_status_id
           this.subscriptionId = response.data.data.subscription_id
           this.loadPlan(this.subscriptionId)
         })

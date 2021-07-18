@@ -32,7 +32,6 @@ func (db *UsersDbStub) GetUser(_ int64) (*model.User, error) {
 			Active:              db.user.Active,
 			UpdateToken:         db.user.UpdateToken,
 			NotificationEnabled: db.user.NotificationEnabled,
-			PremiumStatusId:     db.user.PremiumStatusId,
 			Timestamp:           db.user.Timestamp,
 		}
 	}
@@ -113,7 +112,7 @@ func (a *UsersMailStub) SendResetPassword(to string, token string) error {
 
 func TestActivateSuccess(t *testing.T) {
 	db := &UsersDbStub{}
-	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: false, UpdateToken: "update token", Timestamp: time.Now()}
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(user.Id)
 	mail := &UsersMailStub{}
@@ -127,7 +126,7 @@ func TestActivateSuccess(t *testing.T) {
 
 func TestActivateAlreadyActive(t *testing.T) {
 	db := &UsersDbStub{}
-	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(user.Id)
 	mail := &UsersMailStub{}
@@ -140,7 +139,7 @@ func TestActivateAlreadyActive(t *testing.T) {
 
 func TestActivateWrongToken(t *testing.T) {
 	db := &UsersDbStub{}
-	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(user.Id)
 	mail := &UsersMailStub{}
@@ -198,7 +197,7 @@ func TestUserCreateSuccessNoActivation(t *testing.T) {
 
 func TestUserCreateExistingEmail(t *testing.T) {
 	db := &UsersDbStub{}
-	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
@@ -256,7 +255,7 @@ func TestUserAuthenticateSuccess(t *testing.T) {
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
 	password := "password"
-	user := &model.User{Email: email, PasswordHash: Hash(password), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash(password), Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
 	authenticatedUser, err := users.Authenticate(&email, &password)
 
@@ -270,7 +269,7 @@ func TestUserAuthenticateWrongPassword(t *testing.T) {
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
-	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
 	password := "password"
 	_, err := users.Authenticate(&email, &password)
@@ -297,7 +296,7 @@ func TestUserAuthenticateNonActive(t *testing.T) {
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
-	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
 	password := "password"
 	_, err := users.Authenticate(&email, &password)
@@ -311,7 +310,7 @@ func TestUserAuthenticateMissingPassword(t *testing.T) {
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
-	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
 	_, err := users.Authenticate(&email, nil)
 
@@ -325,7 +324,7 @@ func TestPasswordReset(t *testing.T) {
 	users := &Users{db, false, actions, mail}
 	email := "test@example.com"
 	password1 := "password1"
-	user := &model.User{Email: email, PasswordHash: Hash(password1), Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	user := &model.User{Email: email, PasswordHash: Hash(password1), Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
 	_, err := users.Authenticate(&email, &password1)
 	assert.Nil(t, err)

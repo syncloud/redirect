@@ -9,7 +9,6 @@ type User struct {
 	Active              bool      `json:"active,omitempty"`
 	UpdateToken         string    `json:"update_token,omitempty"`
 	NotificationEnabled bool      `json:"notification_enabled"`
-	PremiumStatusId     int       `json:"premium_status_id,omitempty"`
 	Timestamp           time.Time `json:"timestamp,omitempty"`
 	SubscriptionId      *string   `json:"subscription_id,omitempty"`
 }
