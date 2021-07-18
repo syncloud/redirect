@@ -116,7 +116,7 @@ func (mysql *MySql) UpdateUser(user *model.User) error {
 			"update_token = ?, " +
 			"notification_enabled = ?, " +
 			"timestamp = ?, " +
-			"premium_status_id = ? " +
+			"premium_status_id = ?, " +
 			"subscription_id = ? " +
 			"WHERE id = ?")
 	if err != nil {
