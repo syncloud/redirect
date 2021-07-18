@@ -39,7 +39,7 @@ def load_user(email):
     user = users_manager.get_user(email)
     if not user:
         return None
-    return UserFlask(user)
+    return UserFlask(email)
 
 
 @app.route("/user/login", methods=["POST"])
@@ -69,11 +69,12 @@ def backend_proxy_public():
     return response.text, response.status_code
 
 
-@app.route("/notification/subscribe", methods=["POST"])
-@app.route("/notification/unsubscribe", methods=["POST"])
+@app.route("/notification/disable", methods=["POST"])
+@app.route("/notification/enable", methods=["POST"])
 @app.route("/user", methods=["GET"])
 @app.route("/domains", methods=["GET"])
-@app.route("/premium/request", methods=["POST"])
+@app.route("/plan", methods=["GET"])
+@app.route("/plan/subscribe", methods=["POST"])
 @app.route("/domain", methods=["DELETE"])
 @login_required
 def backend_proxy_private():

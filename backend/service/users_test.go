@@ -26,14 +26,14 @@ func (db *UsersDbStub) GetUser(_ int64) (*model.User, error) {
 	if user != nil {
 		//copy
 		user = &model.User{
-			Id:              db.user.Id,
-			Email:           db.user.Email,
-			PasswordHash:    db.user.PasswordHash,
-			Active:          db.user.Active,
-			UpdateToken:     db.user.UpdateToken,
-			Unsubscribed:    db.user.Unsubscribed,
-			PremiumStatusId: db.user.PremiumStatusId,
-			Timestamp:       db.user.Timestamp,
+			Id:                  db.user.Id,
+			Email:               db.user.Email,
+			PasswordHash:        db.user.PasswordHash,
+			Active:              db.user.Active,
+			UpdateToken:         db.user.UpdateToken,
+			NotificationEnabled: db.user.NotificationEnabled,
+			PremiumStatusId:     db.user.PremiumStatusId,
+			Timestamp:           db.user.Timestamp,
 		}
 	}
 	return user, nil
@@ -102,7 +102,7 @@ func (a *UsersMailStub) SendActivate(to string, token string) error {
 	return nil
 }
 
-func (a *UsersMailStub) SendPremiumRequest(to string) error {
+func (a *UsersMailStub) SendPlanSubscribed(to string) error {
 	a.sentEmail = &to
 	return nil
 }
@@ -222,29 +222,30 @@ func TestUserMissingEmail(t *testing.T) {
 
 }
 
-func TestPremiumRequest(t *testing.T) {
+func TestUsers_PlanSubscribe_Good(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
-	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
-	err := users.RequestPremiumAccount(user)
+	err := users.PlanSubscribe(user, "123")
 	assert.Nil(t, err)
-	assert.Equal(t, PremiumStatusPending, user.PremiumStatusId)
+	assert.Equal(t, "123", *user.SubscriptionId)
 	assert.Equal(t, user.Email, *mail.sentEmail)
 }
 
-func TestPremiumRequestAlreadyRequested(t *testing.T) {
+func TestUsers_PlanSubscribe_AlreadySubscribed(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
 	users := &Users{db, false, actions, mail}
-	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", PremiumStatusId: PremiumStatusPending, Timestamp: time.Now()}
+	subscriptionId := "123"
+	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", SubscriptionId: &subscriptionId, Timestamp: time.Now()}
 	_ = users.Save(user)
-	err := users.RequestPremiumAccount(user)
+	err := users.PlanSubscribe(user, "123")
 	assert.NotNil(t, err)
-	assert.Equal(t, PremiumStatusPending, user.PremiumStatusId)
+	assert.Equal(t, "123", *user.SubscriptionId)
 	assert.Nil(t, mail.sentEmail)
 }
 

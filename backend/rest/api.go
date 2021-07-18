@@ -257,7 +257,7 @@ func (a *Api) UserGet(req *http.Request) (interface{}, error) {
 		Email:           user.Email,
 		Active:          user.Active,
 		UpdateToken:     user.UpdateToken,
-		Unsubscribed:    user.Unsubscribed,
+		Unsubscribed:    !user.NotificationEnabled,
 		PremiumStatusId: user.PremiumStatusId,
 		Timestamp:       user.Timestamp,
 		Domains:         domains}, nil

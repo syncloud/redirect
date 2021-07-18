@@ -6,8 +6,8 @@ import Account from '@/views/Account'
 
 jest.setTimeout(30000)
 
-test('Notifications unsubscribe', async () => {
-  let unsubscribed
+test('Notifications disable', async () => {
+  let notificationsEnabled
 
   const mock = new MockAdapter(axios)
   mock.onGet('/api/user').reply(200,
@@ -15,16 +15,18 @@ test('Notifications unsubscribe', async () => {
       data: {
         active: true,
         email: 'test@example.com',
-        unsubscribed: false,
+        notification_enabled: true,
         update_token: '0a'
       }
     }
   )
 
-  mock.onPost('/api/notification/unsubscribe').reply(function (config) {
-    unsubscribed = true
+  mock.onPost('/api/notification/disable').reply(function (config) {
+    notificationsEnabled = false
     return [200, { success: true }]
   })
+
+  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2' } })
 
   const wrapper = mount(Account,
     {
@@ -55,7 +57,7 @@ test('Notifications unsubscribe', async () => {
 
   await flushPromises()
 
-  expect(unsubscribed).toBe(true)
+  expect(notificationsEnabled).toBe(false)
   wrapper.unmount()
 })
 
@@ -68,16 +70,18 @@ test('Notifications subscribe', async () => {
       data: {
         active: true,
         email: 'test@example.com',
-        unsubscribed: true,
+        notification_enabled: false,
         update_token: '0a'
       }
     }
   )
 
-  mock.onPost('/api/notification/subscribe').reply(function (config) {
+  mock.onPost('/api/notification/enable').reply(function (config) {
     subscribed = true
     return [200, { success: true }]
   })
+
+  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2' } })
 
   const wrapper = mount(Account,
     {
@@ -121,7 +125,7 @@ test('Delete', async () => {
       data: {
         active: true,
         email: 'test@example.com',
-        unsubscribed: false,
+        notification_enabled: true,
         update_token: '0a'
       }
     }
@@ -135,6 +139,7 @@ test('Delete', async () => {
   mock.onPost('/api/logout').reply(function (_) {
     return [200, { success: true }]
   })
+  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2' } })
 
   const wrapper = mount(Account,
     {

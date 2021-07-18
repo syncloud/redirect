@@ -37,7 +37,7 @@ type UsersActions interface {
 
 type UsersMail interface {
 	SendActivate(to string, token string) error
-	SendPremiumRequest(to string) error
+	SendPlanSubscribed(to string) error
 	SendSetPassword(to string) error
 	SendResetPassword(to string, token string) error
 }
@@ -154,16 +154,16 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	return user, nil
 }
 
-func (u *Users) RequestPremiumAccount(user *model.User) error {
-	if user.PremiumStatusId != PremiumStatusInactive {
-		return fmt.Errorf("premium account is already requested")
+func (u *Users) PlanSubscribe(user *model.User, subscriptionId string) error {
+	if user.SubscriptionId != nil {
+		return fmt.Errorf("you have existing premium subscrition, please contact support")
 	}
-	user.PremiumStatusId = PremiumStatusPending
+	user.SubscriptionId = &subscriptionId
 	err := u.db.UpdateUser(user)
 	if err != nil {
 		return err
 	}
-	return u.usersMail.SendPremiumRequest(user.Email)
+	return u.usersMail.SendPlanSubscribed(user.Email)
 }
 
 func (u *Users) RequestPasswordReset(email string) (*string, error) {

@@ -8,9 +8,17 @@ let state = {
     data: {
       active: true,
       email: 'test@example.com',
-      unsubscribed: false,
+      notification_enabled: true,
       premium_status_id: 1,
       update_token: '0a'
+      // subscription_id: 'S-1'
+    }
+  },
+  plan: {
+    data: {
+      plan_id: 'P-88T8436193034834XMDZRP4A', // paypal sandbox plan id
+      client_id: 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN', // paypal sandbox client id
+      subscribed: false
     }
   },
   domains: {
@@ -119,12 +127,12 @@ const mock = function (app, server, compiler) {
     })
     res.json({})
   })
-  app.post('/api/notification/subscribe', function (req, res) {
-    state.user.unsubscribed = false
+  app.post('/api/notification/enable', function (req, res) {
+    state.user.data.notification_enabled = true
     res.json({})
   })
-  app.post('/api/notification/unsubscribe', function (req, res) {
-    state.user.unsubscribed = true
+  app.post('/api/notification/disable', function (req, res) {
+    state.user.data.notification_enabled = false
     res.json({})
   })
   app.delete('/api/user', function (req, res) {
@@ -141,9 +149,8 @@ const mock = function (app, server, compiler) {
       res.json({ message: 'Activated' })
     }
   })
-  app.post('/api/premium/request', function (req, res) {
-    req.user.premium_status_id = 3
-    res.json({})
+  app.get('/api/plan', function (req, res) {
+    res.json(state.plan)
   })
   app.post('/api/user/set_password', function (req, res) {
     console.log('set_password')
@@ -154,6 +161,10 @@ const mock = function (app, server, compiler) {
     } else {
       res.json({ message: 'Activated' })
     }
+  })
+  app.post('/api/plan/subscribe', function (req, res) {
+    state.user.data.subscription_id = req.body.subscription_id
+    res.json({ })
   })
 }
 

@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 
 import util
-from models import User, Base, Action
+from models import User, Base
 
 
 class Storage:
@@ -18,17 +18,6 @@ class Storage:
         if user and not user.update_token:
             user.update_token = util.create_token()
         return user
-
-    def add(self, *args):
-        if len(args) > 0 and isinstance(args[0], list):
-            args = args[0]
-        for obj in args:
-            self.session.add(obj)
-
-    def clear(self):
-        self.session.query(Action).delete()
-        self.session.query(User).delete()
-
 
 class SessionContext:
 
