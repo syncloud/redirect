@@ -49,7 +49,7 @@ local build(arch) = {
         },
         {
             name: "test",
-            image: "syncloud/build-deps-" + arch,
+            image: "python:3.9-buster",
             commands: [
                 "apt-get update -qq",
                 "apt-get install -y -qq mysql-client libmysqlclient-dev",
