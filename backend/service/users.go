@@ -133,7 +133,15 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	}
 
 	updateToken := utils.Uuid()
-	user := &model.User{Email: *email, PasswordHash: Hash(*password), Active: !u.activateByEmail, UpdateToken: updateToken, PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{
+		Email:               *email,
+		PasswordHash:        Hash(*password),
+		Active:              !u.activateByEmail,
+		UpdateToken:         updateToken,
+		PremiumStatusId:     PremiumStatusInactive,
+		Timestamp:           time.Now(),
+		NotificationEnabled: true,
+	}
 
 	userId, err := u.db.InsertUser(user)
 	if err != nil {
