@@ -71,7 +71,7 @@ func (w *Www) WebNotificationEnable(req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	user.NotificationEnabled = false
+	user.NotificationEnabled = true
 	return "OK", w.users.Save(user)
 }
 
@@ -81,7 +81,7 @@ func (w *Www) WebNotificationDisable(req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	user.NotificationEnabled = true
+	user.NotificationEnabled = false
 	return "OK", w.users.Save(user)
 }
 

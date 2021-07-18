@@ -18,8 +18,8 @@ login_manager.init_app(app)
 
 
 class UserFlask:
-    def __init__(self, user):
-        self.user = user
+    def __init__(self, email):
+        self.email = email
 
     def is_authenticated(self):
         return True
@@ -31,7 +31,7 @@ class UserFlask:
         return False
 
     def get_id(self):
-        return unicode(self.user)
+        return unicode(self.email)
 
 
 @login_manager.user_loader
@@ -39,7 +39,7 @@ def load_user(email):
     user = users_manager.get_user(email)
     if not user:
         return None
-    return UserFlask(user)
+    return UserFlask(email)
 
 
 @app.route("/user/login", methods=["POST"])
@@ -79,7 +79,7 @@ def backend_proxy_public():
 @login_required
 def backend_proxy_private():
     response = backend_request(request.method, '/web' + request.full_path, request.json,
-                               headers={'RedirectUserEmail': current_user.user.email})
+                               headers={'RedirectUserEmail': current_user.email})
     return response.text, response.status_code
 
 
@@ -87,7 +87,7 @@ def backend_proxy_private():
 @login_required
 def backend_proxy_user_delete():
     response = backend_request(request.method, '/web' + request.full_path, request.json,
-                               headers={'RedirectUserEmail': current_user.user.email})
+                               headers={'RedirectUserEmail': current_user.email})
     if response.status_code != 200:
         return response.text, response.status_code
     else:
