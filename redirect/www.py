@@ -39,7 +39,7 @@ def load_user(email):
     user = users_manager.get_user(email)
     if not user:
         return None
-    return UserFlask(email)
+    return UserFlask(user)
 
 
 @app.route("/user/login", methods=["POST"])
