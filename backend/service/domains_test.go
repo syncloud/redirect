@@ -92,14 +92,14 @@ func (db *DomainsDbStub) UpdateDomain(domain *model.Domain) error {
 var _ DomainsDb = (*DomainsDbStub)(nil)
 
 type DomainsUsersStub struct {
-	userId        int64
-	authenticated bool
-	premiumStatus int
+	userId         int64
+	authenticated  bool
+	subscriptionId *string
 }
 
 func (users *DomainsUsersStub) Authenticate(email *string, password *string) (*model.User, error) {
 	if users.authenticated {
-		return &model.User{Id: users.userId, Email: *email, Active: true, PremiumStatusId: users.premiumStatus}, nil
+		return &model.User{Id: users.userId, Email: *email, Active: true, SubscriptionId: users.subscriptionId}, nil
 	}
 	return nil, fmt.Errorf("authentication failed")
 }
@@ -286,7 +286,7 @@ func TestAcquireFreeDomain_Available(t *testing.T) {
 func TestAcquirePremiumDomain_FreeUser_NotAvailable(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusInactive}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "example.com"
 	password := "password"
@@ -304,7 +304,8 @@ func TestAcquirePremiumDomain_FreeUser_NotAvailable(t *testing.T) {
 func TestAcquirePremiumDomain_PremiumUser_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	subscriptionId := "1"
+	users := &DomainsUsersStub{authenticated: true, userId: 1, subscriptionId: &subscriptionId}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "example.com"
 	password := "password"
@@ -372,7 +373,7 @@ func TestFreeAvailability_Available(t *testing.T) {
 func TestPremiumAvailability_FreeUser_NotAvailable(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusInactive}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "example.com"
 	password := "password"
@@ -388,7 +389,8 @@ func TestPremiumAvailability_FreeUser_NotAvailable(t *testing.T) {
 func TestPremiumAvailability_PremiumUser_NotAvailable(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	subscriptionId := "1"
+	users := &DomainsUsersStub{authenticated: true, userId: 1, subscriptionId: &subscriptionId}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "")
 	domain := "example.com"
 	password := "password"
@@ -404,7 +406,7 @@ func TestPremiumAvailability_PremiumUser_NotAvailable(t *testing.T) {
 func TestDeleteDomain_Free_DeleteRecords(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "1")
 	err := domains.DeleteDomain(1, "test.syncloud.it")
 
@@ -418,7 +420,7 @@ func TestDeleteDomain_Free_DeleteRecords(t *testing.T) {
 func TestDeleteDomain_Premium_DeleteHostedZone(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domains := NewDomains(dnsStub, db, users, "syncloud.it", "2")
 	err := domains.DeleteDomain(1, "test.com")
 
@@ -432,7 +434,7 @@ func TestDeleteDomain_Premium_DeleteHostedZone(t *testing.T) {
 func TestGetDomains_Free_NoNameServers(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "1")
 	domains, err := domainService.GetDomains(&model.User{Id: 1})
 
@@ -443,7 +445,7 @@ func TestGetDomains_Free_NoNameServers(t *testing.T) {
 func TestGetDomains_Premium_NameServers(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
-	users := &DomainsUsersStub{authenticated: true, userId: 1, premiumStatus: PremiumStatusActive}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "2")
 	domains, err := domainService.GetDomains(&model.User{Id: 1})
 

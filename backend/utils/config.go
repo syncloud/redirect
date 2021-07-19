@@ -223,3 +223,19 @@ func (config *Config) MockDns() bool {
 	}
 	return result
 }
+
+func (config *Config) PayPalPlanId() string {
+	result, err := config.parser.Get("paypal", "plan_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
+func (config *Config) PayPalClientId() string {
+	result, err := config.parser.Get("paypal", "client_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}

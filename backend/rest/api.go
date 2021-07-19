@@ -254,13 +254,12 @@ func (a *Api) UserGet(req *http.Request) (interface{}, error) {
 		domains = make([]*model.Domain, 0)
 	}
 	return &model.UserResponse{
-		Email:           user.Email,
-		Active:          user.Active,
-		UpdateToken:     user.UpdateToken,
-		Unsubscribed:    user.Unsubscribed,
-		PremiumStatusId: user.PremiumStatusId,
-		Timestamp:       user.Timestamp,
-		Domains:         domains}, nil
+		Email:        user.Email,
+		Active:       user.Active,
+		UpdateToken:  user.UpdateToken,
+		Unsubscribed: !user.NotificationEnabled,
+		Timestamp:    user.Timestamp,
+		Domains:      domains}, nil
 }
 
 func (a *Api) UserLog(req *http.Request) (interface{}, error) {

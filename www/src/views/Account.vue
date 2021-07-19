@@ -12,35 +12,11 @@
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
-                  Services
+                  Free Services
                 </div>
               </div>
               <div class="panel-body">
-                <div class="pull-left">
-                  <h4>Free services:</h4>
-                  <ul>
-                    <li>DNS (*.syncloud.it)</li>
-                  </ul>
-                  <h4>Premium services:</h4>
-                  <div>Improve Syncloud device experience with cloud support.
-                  </div>
-                  <ul>
-                    <li>Managed DNS (custom domain name IP updates)</li>
-                  </ul>
-                </div>
-
-                <button id="request_premium" type="button" class="btn btn-default pull-right" @click="requestPremium"
-                        v-if="isPremiumInActive">
-                  <span class="glyphicon glyphicon-ok" style="padding-right: 5px"></span>Request Premium
-                </button>
-
-                <div id="premium_pending" v-if="isPremiumPending">
-                  <span class="label label-warning pull-right" style="font-size: 16px;">Pending Premium</span>
-                </div>
-
-                <div id="premium_active" v-if="isPremiumActive">
-                  <span class="label label-success pull-right" style="font-size: 16px;">Active Premium</span>
-                </div>
+                DNS (*.syncloud.it)
               </div>
             </div>
           </div>
@@ -48,19 +24,71 @@
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
-                  Notifications
+                  Email notifications
                 </div>
               </div>
               <div class="panel-body">
-                <h4>Email</h4>
                 <div class="pull-left">
-                  <input v-model="subscribed" type="checkbox" id="chk_email" :value="subscribed">
-                  <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me Syncloud notifications,
-                    including releases announcements</label>
+                  <input v-model="notificationEnabled" type="checkbox" id="chk_email" :value="notificationEnabled">
+                  <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me notifications</label>
                 </div>
                 <button type="button" class="btn btn-default pull-right" @click="notificationSave" id="save">
                   <span class="glyphicon glyphicon-ok" style="padding-right: 5px"></span>Save
                 </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <div class="panel-title">
+                  Premium Services
+                </div>
+              </div>
+              <div class="panel-body">
+                <div>Improve Syncloud device experience with your domain name (ex. example.com).
+                </div>
+                <ul style="padding-top: 10px">
+                  <li>Automatic IP DNS updates</li>
+                  <li>Automatic mail DNS records</li>
+                  <li>There will be more in future ...</li>
+                </ul>
+                <div id="request_premium" v-if="!this.subscriptionId">
+                  <div>
+                    What you need to have:
+                  </div>
+                  <ul>
+                    <li>You own a domain (like example.com)</li>
+                    <li>You can change Nameservers for your domain</li>
+                    <li>You are ready to allow Syncloud to manage DNS records for that domain name by setting
+                      Syncloud Name Servers
+                    </li>
+                  </ul>
+                  <div style="margin: auto">
+                    <h4 style="text-align: center" v-if="this.payPalLoaded">Subscribe for £5/month</h4>
+                    <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
+                  </div>
+                </div>
+
+                <div id="premium_active" v-if="this.subscriptionId">
+                  <span class="label label-success" style="font-size: 16px;padding-top: 8px">Active</span>
+                  <div style="padding-top: 10px">
+                  You can now activate your device in a premium mode:<br>
+                  </div>
+                  <ol>
+                    <li>Update system on the device from Settings - Updates</li>
+                    <li>ReActivate from Settings - Activation and select a Premium mode</li>
+                    <li>
+                      Copy Name Servers for your
+                      <router-link to="/">domain</router-link>
+                      (Under this domain Name Servers list)
+                    </li>
+                    <li>
+                      Update Name Servers on your domain registrar page (GoDaddy for example)
+                    </li>
+                  </ol>
+
+                </div>
               </div>
             </div>
           </div>
@@ -76,7 +104,7 @@
                 <div class="pull-left">
                   Delete your account all domains and personal data.
                 </div>
-                <button type="button" class="btn btn-default pull-right" id="delete" @click="accountDelete">
+                <button type="button" class="btn btn-danger pull-right" id="delete" @click="accountDelete">
                   <span class="glyphicon glyphicon-remove" aria-hidden="true" style="padding-right: 5px"></span>Delete
                 </button>
               </div>
@@ -87,25 +115,6 @@
       </div>
     </div>
   </div>
-
-  <Confirmation ref="premium_confirmation" id="premium_confirmation" @confirm="requestPremiumConfirm" @cancel="reload">
-    <template v-slot:title>Premium account request</template>
-    <template v-slot:text>
-      By confirming the request you agree to the following:<br>
-      <ul>
-        <li>You own a domain (like example.com)</li>
-        <li>You can change Nameservers for your domain</li>
-        <li>You are ready to allow Syncloud to manage DNS records for that domain name by setting
-          Syncloud Nameservers
-        </li>
-      </ul>
-      <div>Service is currently provided for 1 year free with no guarantees and maybe canceled anytime depending on test
-        results.
-      </div>
-      <br>
-      <div>Are you sure?</div>
-    </template>
-  </Confirmation>
 
   <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="accountDeleteConfirm" @cancel="reload">
     <template v-slot:title>Delete Account</template>
@@ -120,14 +129,10 @@
   </Confirmation>
 
 </template>
-
 <script>
 import axios from 'axios'
 import Confirmation from '@/components/Confirmation'
-
-const PREMIUM_STATUS_INACTIVE = 1
-const PREMIUM_STATUS_PENDING = 2
-const PREMIUM_STATUS_ACTIVE = 3
+import { loadScript } from '@paypal/paypal-js'
 
 export default {
   name: 'Account',
@@ -140,53 +145,77 @@ export default {
   },
   data () {
     return {
-      subscribed: Boolean,
+      notificationEnabled: Boolean,
       premiumStatusId: Number,
-      domainGroups: Array
-    }
-  },
-  computed: {
-    isPremiumActive: function () {
-      return this.premiumStatusId === PREMIUM_STATUS_ACTIVE
-    },
-    isPremiumPending: function () {
-      return this.premiumStatusId === PREMIUM_STATUS_PENDING
-    },
-    isPremiumInActive: function () {
-      return this.premiumStatusId === PREMIUM_STATUS_INACTIVE
+      subscriptionId: String,
+      domainGroups: Array,
+      planId: String,
+      clientId: String,
+      payPalLoaded: Boolean
     }
   },
   mounted () {
+    this.subscriptionId = null
+    this.payPalLoaded = false
     this.reload()
   },
   methods: {
     reload: function () {
       axios.get('api/user')
         .then(response => {
-          this.subscribed = !response.data.data.unsubscribed
-          this.premiumStatusId = response.data.data.premium_status_id
+          this.notificationEnabled = response.data.data.notification_enabled
+          this.subscriptionId = response.data.data.subscription_id
+          this.loadPlan(this.subscriptionId)
         })
-        .catch(err => {
-          if (err.response.status === 401) {
-            this.$router.push('/login')
-          } else {
-            this.$router.push('/error')
+        .catch(this.onError)
+    },
+    loadPlan: function (subscriptionId) {
+      axios.get('api/plan')
+        .then(response => {
+          this.planId = response.data.data.plan_id
+          this.clientId = response.data.data.client_id
+          if (!subscriptionId) {
+            this.enablePayPal(this.clientId, this.planId)
           }
+        })
+        .catch(this.onError)
+    },
+    enablePayPal: function (clientId, planId) {
+      loadScript({
+        'client-id': clientId,
+        vault: true,
+        intent: 'subscription'
+      })
+        .then((paypal) => {
+          paypal
+            .Buttons({
+              createSubscription: (data, actions) => {
+                return actions.subscription.create({
+                  plan_id: planId
+                })
+              },
+              onApprove: (data, actions) => {
+                axios.post('api/plan/subscribe', { subscription_id: data.subscriptionID })
+                  .then(_ => {
+                    this.reload()
+                  })
+                  .catch(this.onError)
+              }
+            })
+            .render('#paypal-buttons')
+          this.payPalLoaded = true
+        })
+        .catch((err) => {
+          console.error('failed to load the PayPal JS SDK script', err)
         })
     },
     notificationSave: function () {
-      const action = this.subscribed ? 'subscribe' : 'unsubscribe'
+      const action = this.notificationEnabled ? 'enable' : 'disable'
       axios.post('api/notification/' + action)
         .then(_ => {
           this.reload()
         })
-        .catch(err => {
-          if (err.response.status === 401) {
-            this.$router.push('/login')
-          } else {
-            this.$router.push('/error')
-          }
-        })
+        .catch(this.onError)
     },
     accountDelete: function () {
       this.$refs.delete_confirmation.show()
@@ -196,29 +225,15 @@ export default {
         .then(_ => {
           this.onLogout()
         })
-        .catch(err => {
-          if (err.response.status === 401) {
-            this.$router.push('/login')
-          } else {
-            this.$router.push('/error')
-          }
-        })
+        .catch(this.onError)
     },
-    requestPremium: function () {
-      this.$refs.premium_confirmation.show()
-    },
-    requestPremiumConfirm: function () {
-      axios.post('api/premium/request')
-        .then(_ => {
-          this.reload()
-        })
-        .catch(err => {
-          if (err.response.status === 401) {
-            this.$router.push('/login')
-          } else {
-            this.$router.push('/error')
-          }
-        })
+    onError: function (err) {
+      console.log(err)
+      if (err.response.status === 401) {
+        this.$router.push('/login')
+      } else {
+        this.$router.push('/error')
+      }
     }
   }
 }

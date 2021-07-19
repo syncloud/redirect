@@ -104,7 +104,7 @@ def create_user(domain, email, password, artifact_dir, premium=False):
     activate_user(domain, artifact_dir)
 
     if premium:
-        premium_account.premium_approve(email, artifact_dir)
+        premium_account.premium_buy(email, artifact_dir)
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': password},
                             verify=False)
@@ -207,7 +207,6 @@ def test_get_user_data(domain, artifact_dir):
         'email': email,
         'unsubscribed': False,
         'update_token': user_token,
-        'premium_status_id': 1,
         'timestamp': user_data["timestamp"],
         'domains': [{
             'user_domain': user_domain,
@@ -245,7 +244,6 @@ def test_get_user_no_domains(domain, artifact_dir):
         'email': email,
         'unsubscribed': False,
         'update_token': user_token,
-        'premium_status_id': 1,
         'timestamp': user_data["timestamp"],
         'domains': []
     }

@@ -14,27 +14,30 @@ import (
 )
 
 type Www struct {
-	statsdClient *statsd.Client
-	domains      *service.Domains
-	users        *service.Users
-	actions      *service.Actions
-	mail         *service.Mail
-	probe        *service.PortProbe
-	domain       string
+	statsdClient   *statsd.Client
+	domains        *service.Domains
+	users          *service.Users
+	actions        *service.Actions
+	mail           *service.Mail
+	probe          *service.PortProbe
+	domain         string
+	payPalPlanId   string
+	payPalClientId string
 }
 
-func NewWww(statsdClient *statsd.Client, service *service.Domains, users *service.Users, actions *service.Actions, mail *service.Mail, probe *service.PortProbe, domain string) *Www {
-	return &Www{statsdClient: statsdClient, domains: service, users: users, actions: actions, mail: mail, probe: probe, domain: domain}
+func NewWww(statsdClient *statsd.Client, domains *service.Domains, users *service.Users, actions *service.Actions, mail *service.Mail, probe *service.PortProbe, domain string, payPalPlanId string, payPalClientId string) *Www {
+	return &Www{statsdClient: statsdClient, domains: domains, users: users, actions: actions, mail: mail, probe: probe, domain: domain, payPalPlanId: payPalPlanId, payPalClientId: payPalClientId}
 }
 
 func (w *Www) StartWww(socket string) {
 	r := mux.NewRouter()
-	r.HandleFunc("/web/notification/subscribe", Handle(w.WebNotificationSubscribe)).Methods("POST")
-	r.HandleFunc("/web/notification/unsubscribe", Handle(w.WebNotificationUnsubscribe)).Methods("POST")
+	r.HandleFunc("/web/notification/enable", Handle(w.WebNotificationEnable)).Methods("POST")
+	r.HandleFunc("/web/notification/disable", Handle(w.WebNotificationDisable)).Methods("POST")
 	r.HandleFunc("/web/user", Handle(w.WebUserDelete)).Methods("DELETE")
 	r.HandleFunc("/web/user", Handle(w.WebUser)).Methods("GET")
 	r.HandleFunc("/web/domains", Handle(w.WebDomains)).Methods("GET")
-	r.HandleFunc("/web/premium/request", Handle(w.WebPremiumRequest)).Methods("POST")
+	r.HandleFunc("/web/plan", Handle(w.WebPlan)).Methods("GET")
+	r.HandleFunc("/web/plan/subscribe", Handle(w.WebPlanSubscribe)).Methods("POST")
 	r.HandleFunc("/web/user/reset_password", Handle(w.WebUserPasswordReset)).Methods("POST")
 	r.HandleFunc("/web/user/set_password", Handle(w.UserSetPassword)).Methods("POST")
 	r.HandleFunc("/web/user/activate", Handle(w.WebUserActivate)).Methods("POST")
@@ -62,23 +65,23 @@ func (w *Www) StartWww(socket string) {
 
 }
 
-func (w *Www) WebNotificationSubscribe(req *http.Request) (interface{}, error) {
-	w.statsdClient.Incr("www.user.subscribe", 1)
+func (w *Www) WebNotificationEnable(req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.notification.enable", 1)
 	user, err := w.getAuthenticatedUser(req)
 	if err != nil {
 		return nil, err
 	}
-	user.Unsubscribed = false
+	user.NotificationEnabled = true
 	return "OK", w.users.Save(user)
 }
 
-func (w *Www) WebNotificationUnsubscribe(req *http.Request) (interface{}, error) {
-	w.statsdClient.Incr("www.user.unsubscribe", 1)
+func (w *Www) WebNotificationDisable(req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.notification.disable", 1)
 	user, err := w.getAuthenticatedUser(req)
 	if err != nil {
 		return nil, err
 	}
-	user.Unsubscribed = true
+	user.NotificationEnabled = false
 	return "OK", w.users.Save(user)
 }
 
@@ -133,16 +136,27 @@ func (w *Www) WebDomains(req *http.Request) (interface{}, error) {
 	return domains, nil
 }
 
-func (w *Www) WebPremiumRequest(req *http.Request) (interface{}, error) {
-	w.statsdClient.Incr("www.premium.request", 1)
+func (w *Www) WebPlan(req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.plan.get", 1)
+	return model.PlanResponse{PlanId: w.payPalPlanId, ClientId: w.payPalClientId}, nil
+}
+
+func (w *Www) WebPlanSubscribe(req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.plan.subscribe", 1)
 	user, err := w.getAuthenticatedUser(req)
 	if err != nil {
 		return nil, err
 	}
-
-	err = w.users.RequestPremiumAccount(user)
+	request := model.PlanSubscribeRequest{}
+	err = json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
-		log.Println("unable to request premium account for a user", err)
+		log.Println("unable to parse plan subscribe request", err)
+		return nil, errors.New("invalid request")
+	}
+
+	err = w.users.PlanSubscribe(user, request.SubscriptionId)
+	if err != nil {
+		log.Println("unable to do a plan subscribe for a user", err)
 		return nil, errors.New("invalid request")
 	}
 

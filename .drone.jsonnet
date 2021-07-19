@@ -48,21 +48,6 @@ local build(arch) = {
             ]
         },
         {
-            name: "test",
-            image: "syncloud/build-deps-" + arch,
-            commands: [
-                "apt-get update -qq",
-                "apt-get install -y -qq mysql-client libmysqlclient-dev",
-                "pip install -r requirements.txt",
-                "pip install -r dev_requirements.txt",
-                "adduser --disabled-password --gecos \"\" test",
-                "mkdir mail.root",
-                "chown test. mail.root",
-                "./ci/recreatedb",
-                "py.test --cov redirect"
-            ]
-        },
-        {
             name: "test-integration",
             image: "python:3.9-buster",
             environment: {
@@ -79,6 +64,7 @@ local build(arch) = {
             commands: [
                 "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
 	            "pip install -r dev_requirements.txt",
+	            "./ci/recreatedb",
                 "cd integration",
                 "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ]

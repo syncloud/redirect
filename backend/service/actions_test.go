@@ -45,7 +45,7 @@ func TestUpsert(t *testing.T) {
 	db := &ActionsDbStub{nil}
 	actions := NewActions(db)
 
-	user := &model.User{Id: 1, Email: "test@example.com", PasswordHash: "pass", Active: true, UpdateToken: "token", PremiumStatusId: PremiumStatusInactive, Timestamp: time.Now()}
+	user := &model.User{Id: 1, Email: "test@example.com", PasswordHash: "pass", Active: true, UpdateToken: "token", Timestamp: time.Now()}
 	action, err := actions.UpsertActivateAction(user.Id)
 
 	assert.Nil(t, err)

@@ -9,16 +9,16 @@ import (
 )
 
 type Mail struct {
-	smtp                       *smtp.Smtp
-	resetPasswordTemplatePath  string
-	setPasswordTemplatePath    string
-	activateTemplatePath       string
-	premiumRequestTemplatePath string
-	from                       string
-	passwordUrlTemplate        string
-	activateUrlTemplate        string
-	deviceErrorTo              string
-	mainDomain                 string
+	smtp                      *smtp.Smtp
+	resetPasswordTemplatePath string
+	setPasswordTemplatePath   string
+	activateTemplatePath      string
+	planSubscribeTemplatePath string
+	from                      string
+	passwordUrlTemplate       string
+	activateUrlTemplate       string
+	deviceErrorTo             string
+	mainDomain                string
 }
 
 func NewMail(smtp *smtp.Smtp,
@@ -30,16 +30,16 @@ func NewMail(smtp *smtp.Smtp,
 	mainDomain string) *Mail {
 
 	return &Mail{
-		smtp:                       smtp,
-		resetPasswordTemplatePath:  mailPath + "/reset_password.txt",
-		setPasswordTemplatePath:    mailPath + "/set_password.txt",
-		activateTemplatePath:       mailPath + "/activate.txt",
-		premiumRequestTemplatePath: mailPath + "/premium_request.txt",
-		from:                       from,
-		passwordUrlTemplate:        passwordUrlTemplate,
-		activateUrlTemplate:        activateUrlTemplate,
-		deviceErrorTo:              deviceErrorTo,
-		mainDomain:                 mainDomain,
+		smtp:                      smtp,
+		resetPasswordTemplatePath: mailPath + "/reset_password.txt",
+		setPasswordTemplatePath:   mailPath + "/set_password.txt",
+		activateTemplatePath:      mailPath + "/activate.txt",
+		planSubscribeTemplatePath: mailPath + "/plan_subscribe.txt",
+		from:                      from,
+		passwordUrlTemplate:       passwordUrlTemplate,
+		activateUrlTemplate:       activateUrlTemplate,
+		deviceErrorTo:             deviceErrorTo,
+		mainDomain:                mainDomain,
 	}
 }
 
@@ -87,8 +87,8 @@ func (m *Mail) SendActivate(to string, token string) error {
 	return err
 }
 
-func (m *Mail) SendPremiumRequest(to string) error {
-	buf, err := ioutil.ReadFile(m.premiumRequestTemplatePath)
+func (m *Mail) SendPlanSubscribed(to string) error {
+	buf, err := ioutil.ReadFile(m.planSubscribeTemplatePath)
 	if err != nil {
 		return err
 	}

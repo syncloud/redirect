@@ -212,17 +212,13 @@ def test_account_notification(driver, ui_mode, screenshot_dir):
 
 def test_account_premium_request(driver, ui_mode, screenshot_dir):
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'request_premium')))
-    driver.find_element_by_id("request_premium").click()
-
-    confirm_xpath = "//div[@id='premium_confirmation']//button[contains(text(), 'Yes')]"
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, confirm_xpath)))
-    driver.find_element_by_xpath(confirm_xpath).click()
-
-    screenshots(driver, screenshot_dir, 'account-premium' + ui_mode)
+    screenshots(driver, screenshot_dir, 'account-premium-request' + ui_mode)
 
 
-def test_account_premium_approve(artifact_dir):
-    premium_account.premium_approve(DEVICE_USER, artifact_dir)
+def test_account_premium_approve(driver, ui_mode, screenshot_dir, artifact_dir):
+    premium_account.premium_buy(DEVICE_USER, artifact_dir)
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'request_premium')))
+    screenshots(driver, screenshot_dir, 'account-premium-approved' + ui_mode)
 
 
 def test_account_premium_acquire(domain):
