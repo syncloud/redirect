@@ -10,8 +10,8 @@ import (
 )
 
 type DnsStub struct {
-	hostedZoneDeleted        bool
-	freeDomainRecordsDeleted bool
+	hostedZoneDeleted bool
+	recordsDeleted    bool
 }
 
 func (dns *DnsStub) GetHostedZoneNameServers(id string) ([]*string, error) {
@@ -33,7 +33,7 @@ func (dns *DnsStub) UpdateDomainRecords(domain *model.Domain) error {
 }
 
 func (dns *DnsStub) DeleteDomainRecords(domain *model.Domain) error {
-	dns.freeDomainRecordsDeleted = true
+	dns.recordsDeleted = true
 	return nil
 }
 
@@ -412,12 +412,12 @@ func TestDeleteDomain_Free_DeleteRecords(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.False(t, dnsStub.hostedZoneDeleted)
-	assert.True(t, dnsStub.freeDomainRecordsDeleted)
+	assert.True(t, dnsStub.recordsDeleted)
 	assert.True(t, db.deleted)
 
 }
 
-func TestDeleteDomain_Premium_DeleteHostedZone(t *testing.T) {
+func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
@@ -426,7 +426,7 @@ func TestDeleteDomain_Premium_DeleteHostedZone(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, dnsStub.hostedZoneDeleted)
-	assert.False(t, dnsStub.freeDomainRecordsDeleted)
+	assert.True(t, dnsStub.recordsDeleted)
 	assert.True(t, db.deleted)
 
 }

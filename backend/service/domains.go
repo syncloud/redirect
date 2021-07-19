@@ -114,11 +114,19 @@ func (d *Domains) DeleteDomain(userId int64, domainName string) error {
 }
 
 func (d *Domains) deleteDomain(domain *model.Domain) error {
-	if d.freeHostedZoneId == domain.HostedZoneId {
-		return d.amazonDns.DeleteDomainRecords(domain)
-	} else {
-		return d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
+	err := d.amazonDns.DeleteDomainRecords(domain)
+	if err != nil {
+		return err
 	}
+
+	if d.freeHostedZoneId != domain.HostedZoneId {
+		err = d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
