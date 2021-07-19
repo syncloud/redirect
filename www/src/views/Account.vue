@@ -65,7 +65,7 @@
                     </li>
                   </ul>
                   <div style="margin: auto">
-                    <h4 style="text-align: center">Subscribe for £5/month</h4>
+                    <h4 style="text-align: center" v-if="this.payPalLoaded">Subscribe for £5/month</h4>
                     <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
                   </div>
                 </div>
@@ -150,10 +150,13 @@ export default {
       subscriptionId: String,
       domainGroups: Array,
       planId: String,
-      clientId: String
+      clientId: String,
+      payPalLoaded: Boolean
     }
   },
   mounted () {
+    this.subscriptionId = null
+    this.payPalLoaded = false
     this.reload()
   },
   methods: {
@@ -200,6 +203,7 @@ export default {
               }
             })
             .render('#paypal-buttons')
+          this.payPalLoaded = true
         })
         .catch((err) => {
           console.error('failed to load the PayPal JS SDK script', err)
