@@ -174,7 +174,7 @@ export default {
         .then(response => {
           this.planId = response.data.data.plan_id
           this.clientId = response.data.data.client_id
-          if (!subscriptionId) {
+          if (!subscriptionId && !this.payPalLoaded) {
             this.enablePayPal(this.clientId, this.planId)
           }
         })
