@@ -24,7 +24,7 @@ systemctl start redirect.www
 
 cp ${CURRENT}/config/common/apache/redirect.conf /etc/apache2/sites-available
 
-chown -R redirect. ${CURRENT}
+chown -R redirect. ${CURRENT}/
 if a2query -s 000-default; then
   a2dissite 000-default
 fi
