@@ -30,6 +30,7 @@ local build(arch) = {
                 "go test ./... -cover",
                 "go build -o ../build/bin/api cmd/api/main.go",
                 "go build -o ../build/bin/www cmd/www/main.go"
+                "go build -o ../build/bin/notification cmd/cli/notification/main.go"
             ]
         },
         {

@@ -13,9 +13,10 @@ CREATE TABLE `user` (
   `password_hash` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `active` BOOLEAN NOT NULL DEFAULT 0,
   `update_token` char(36) UNIQUE,
-  `unsubscribed` BOOLEAN NOT NULL DEFAULT 0,
+  `notification_enabled` BOOLEAN NOT NULL DEFAULT 1,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `premium_status_id` integer NOT NULL DEFAULT 1,
+  `subscription_id` varchar(100) NULL,
   FOREIGN KEY (premium_status_id) REFERENCES premium_status(id)
 );
 
@@ -66,4 +67,4 @@ create table db_version (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('011');
+insert into db_version (version) values ('012');

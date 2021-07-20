@@ -1,6 +1,6 @@
 Subject: Syncloud account activation
 Hello,
 
-You have recently registered at {main_domain}, if this information is correct use the link to activate it.
+You have recently registered at {domain}, if this information is correct use the link to activate it.
 
-Use the link to activate your account: {url}
+Use the link to activate your account: https://www.{domain}/activate?token={token}

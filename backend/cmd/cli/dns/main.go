@@ -1,4 +1,4 @@
-package cli
+package dns
 
 // TODO: port dns clean
 

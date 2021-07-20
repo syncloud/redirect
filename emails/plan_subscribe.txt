@@ -2,7 +2,7 @@ Subject: Syncloud Premium Subscription
 Hello,
 
 You have successfully subscribed for our premium services.
-More details at https://www.syncloud.it
+More details at https://www.{domain}
 
 Thanks,
 Syncloud

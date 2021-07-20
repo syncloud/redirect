@@ -19,16 +19,11 @@ new line
 
 func TestParseBodySubstitute(t *testing.T) {
 	template := `Subject: Reset password
-Url: {url}
+Url: https://www.{domain}/path?token={token}
 `
-	subject, body, err := ParseBody(template, map[string]string{"url": "http://url"})
+	subject, body, err := ParseBody(template, map[string]string{"domain": "example.com", "token": "123"})
 
 	assert.Nil(t, err, "should parse template")
 	assert.Equal(t, "Reset password", subject)
-	assert.Equal(t, "Url: http://url\n", body)
-}
-
-func TestParseUrl(t *testing.T) {
-	url := ParseUrl("http://url?={0}", "token")
-	assert.Equal(t, "http://url?=token", url)
+	assert.Equal(t, "Url: https://www.example.com/path?token=123\n", body)
 }

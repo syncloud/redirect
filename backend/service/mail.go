@@ -14,9 +14,8 @@ type Mail struct {
 	setPasswordTemplatePath   string
 	activateTemplatePath      string
 	planSubscribeTemplatePath string
+	releaseAnnouncementPath   string
 	from                      string
-	passwordUrlTemplate       string
-	activateUrlTemplate       string
 	deviceErrorTo             string
 	mainDomain                string
 }
@@ -24,8 +23,6 @@ type Mail struct {
 func NewMail(smtp *smtp.Smtp,
 	mailPath string,
 	from string,
-	passwordUrlTemplate string,
-	activateUrlTemplate string,
 	deviceErrorTo string,
 	mainDomain string) *Mail {
 
@@ -35,22 +32,20 @@ func NewMail(smtp *smtp.Smtp,
 		setPasswordTemplatePath:   mailPath + "/set_password.txt",
 		activateTemplatePath:      mailPath + "/activate.txt",
 		planSubscribeTemplatePath: mailPath + "/plan_subscribe.txt",
+		releaseAnnouncementPath:   mailPath + "/release_announcement.txt",
 		from:                      from,
-		passwordUrlTemplate:       passwordUrlTemplate,
-		activateUrlTemplate:       activateUrlTemplate,
 		deviceErrorTo:             deviceErrorTo,
 		mainDomain:                mainDomain,
 	}
 }
 
 func (m *Mail) SendResetPassword(to string, token string) error {
-	url := ParseUrl(m.passwordUrlTemplate, token)
 	buf, err := ioutil.ReadFile(m.resetPasswordTemplatePath)
 	if err != nil {
 		return err
 	}
 	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{"url": url})
+	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain, "token": token})
 	if err != nil {
 		return err
 	}
@@ -73,13 +68,12 @@ func (m *Mail) SendSetPassword(to string) error {
 }
 
 func (m *Mail) SendActivate(to string, token string) error {
-	url := ParseUrl(m.activateUrlTemplate, token)
 	buf, err := ioutil.ReadFile(m.activateTemplatePath)
 	if err != nil {
 		return err
 	}
 	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{"url": url, "main_domain": m.mainDomain})
+	subject, body, err := ParseBody(template, map[string]string{"token": token, "domain": m.mainDomain})
 	if err != nil {
 		return err
 	}
@@ -93,11 +87,25 @@ func (m *Mail) SendPlanSubscribed(to string) error {
 		return err
 	}
 	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{})
+	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain})
 	if err != nil {
 		return err
 	}
 	err = m.smtp.Send(m.from, "text/plain", body, subject, to, m.deviceErrorTo)
+	return err
+}
+
+func (m *Mail) SendReleaseAnnouncement(to string) error {
+	buf, err := ioutil.ReadFile(m.releaseAnnouncementPath)
+	if err != nil {
+		return err
+	}
+	template := string(buf)
+	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain})
+	if err != nil {
+		return err
+	}
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
 	return err
 }
 
@@ -112,10 +120,6 @@ func (m *Mail) SendLogs(to string, data string, includeSupport bool) error {
 		recipients = append(recipients, m.deviceErrorTo)
 	}
 	return m.smtp.Send(m.from, "text/plain", body, "Device error report", recipients...)
-}
-
-func ParseUrl(template string, token string) string {
-	return strings.ReplaceAll(template, "{0}", token)
 }
 
 func ParseBody(template string, substitution map[string]string) (string, string, error) {

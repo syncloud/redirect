@@ -176,14 +176,6 @@ func (config *Config) SmtpPassword() string {
 	return value
 }
 
-func (config *Config) MailPasswordUrlTemplate() string {
-	value, err := config.parser.Get("mail", "password_url_template")
-	if err != nil {
-		log.Fatalln("Cannot read config: ", err)
-	}
-	return value
-}
-
 func (config *Config) MailFrom() string {
 	value, err := config.parser.Get("mail", "from")
 	if err != nil {
@@ -194,14 +186,6 @@ func (config *Config) MailFrom() string {
 
 func (config *Config) MailDeviceErrorTo() string {
 	value, err := config.parser.Get("mail", "device_error")
-	if err != nil {
-		log.Fatalln("Cannot read config: ", err)
-	}
-	return value
-}
-
-func (config *Config) MailActivateUrlTemplate() string {
-	value, err := config.parser.Get("mail", "activate_url_template")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}

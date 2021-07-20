@@ -38,8 +38,7 @@ func NewMain() *Main {
 	actions := service.NewActions(database)
 	smtpClient := smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
 		config.SmtpLogin(), config.SmtpPassword())
-	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailPasswordUrlTemplate(),
-		config.MailActivateUrlTemplate(), config.MailDeviceErrorTo(), config.Domain())
+	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
 	users := service.NewUsers(database, config.ActivateByEmail(), actions, mail)
 	domains := service.NewDomains(dnsImp, database, users, config.Domain(), config.AwsHostedZoneId())
 	probe := service.NewPortProbe(database)
