@@ -34,13 +34,17 @@ func main() {
 		return
 	}
 	for _, user := range users {
-		fmt.Println("sending: ", user.Email)
-		err := mail.SendReleaseAnnouncement(user.Email)
-		if err != nil {
-			fmt.Println("send error: ", err)
-			return
+		if user.NotificationEnabled {
+			fmt.Println("sending: ", user.Email)
+			err := mail.SendReleaseAnnouncement(user.Email)
+			if err != nil {
+				fmt.Println("send error: ", err)
+				return
+			}
+			time.Sleep(time.Second)
+		} else {
+			fmt.Println("skipping: ", user.Email)
 		}
-		time.Sleep(time.Second)
 	}
 
 }
