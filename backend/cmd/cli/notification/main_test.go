@@ -34,24 +34,27 @@ func (d DbStub) GetUsersByField(field string, value string) ([]*model.User, erro
 	}, nil
 }
 
-func Test(t *testing.T) {
+func TestOnlyRetryErrorsOnSecondRun(t *testing.T) {
 	sentFile := tempFile().Name()
 	defer os.Remove(sentFile)
-	errors := map[string]bool{
-		"test2@example.com": true,
+	mail1 := &MailStub{
+		errors: map[string]bool{"test2@example.com": true},
+		sent:   make(map[string]bool),
 	}
-	mail := &MailStub{errors: errors, sent: make(map[string]bool)}
-	notification := NewNotification(&DbStub{}, mail, sentFile, "*")
-	notification.Send()
+	notification1 := NewNotification(&DbStub{}, mail1, sentFile, "*")
+	notification1.Send()
 
-	assert.Equal(t, 1, len(mail.sent))
-	assert.Contains(t, mail.sent, "test1@example.com")
+	assert.Equal(t, 1, len(mail1.sent))
+	assert.Contains(t, mail1.sent, "test1@example.com")
 
-	mail.errors = make(map[string]bool)
-	mail.sent = make(map[string]bool)
-	notification.Send()
-	assert.Equal(t, 1, len(mail.sent))
-	assert.Contains(t, mail.sent, "test2@example.com")
+	mail2 := &MailStub{
+		errors: make(map[string]bool),
+		sent:   make(map[string]bool),
+	}
+	notification2 := NewNotification(&DbStub{}, mail2, sentFile, "*")
+	notification2.Send()
+	assert.Equal(t, 1, len(mail2.sent))
+	assert.Contains(t, mail2.sent, "test2@example.com")
 
 	content, err := ioutil.ReadFile(sentFile)
 	assert.Nil(t, err)
