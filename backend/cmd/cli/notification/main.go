@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/syncloud/redirect/db"
+	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
 	"github.com/syncloud/redirect/utils"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -29,22 +33,91 @@ func main() {
 	smtpClient := smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
 		config.SmtpLogin(), config.SmtpPassword())
 	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
-	users, err := database.GetUsersByField("email", sqlEmailFilter)
+	notification := NewNotification(database, mail, "./sent", sqlEmailFilter)
+	notification.Send()
+
+}
+
+type Db interface {
+	GetUsersByField(field string, value string) ([]*model.User, error)
+}
+
+type Mail interface {
+	SendReleaseAnnouncement(to string) error
+}
+
+type Notification struct {
+	db             Db
+	mail           Mail
+	sentFile       string
+	sqlEmailFilter string
+}
+
+func NewNotification(db Db, mail Mail, sentFile string, sqlEmailFilter string) *Notification {
+	return &Notification{
+		db:             db,
+		mail:           mail,
+		sentFile:       sentFile,
+		sqlEmailFilter: sqlEmailFilter,
+	}
+}
+
+func (n *Notification) LoadSentEmails() map[string]bool {
+	file, err := os.Open(n.sentFile)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+	sentEmails := make(map[string]bool)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.TrimSpace(scanner.Text()) != "" {
+			sentEmails[scanner.Text()] = true
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	return sentEmails
+}
+
+func (n *Notification) Send() {
+	sentEmails := n.LoadSentEmails()
+	fmt.Printf("previously sent to %d emails\n", len(sentEmails))
+
+	users, err := n.db.GetUsersByField("email", n.sqlEmailFilter)
 	if err != nil {
 		return
 	}
+
+	file, err := os.OpenFile(n.sentFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("")
+		return
+	}
+	defer file.Close()
+
 	for _, user := range users {
-		if user.NotificationEnabled {
-			log.Println("sending: ", user.Email)
-			err := mail.SendReleaseAnnouncement(user.Email)
+		if !user.NotificationEnabled {
+			fmt.Println("notification disabled: ", user.Email)
+			continue
+		}
+		if sentEmails[user.Email] == true {
+			fmt.Println("already sent: ", user.Email)
+			continue
+		}
+		fmt.Println("sending: ", user.Email)
+		err := n.mail.SendReleaseAnnouncement(user.Email)
+		if err != nil {
+			fmt.Println("send error: ", err)
+		} else {
+			_, err = file.WriteString(fmt.Sprintf("%s\n", user.Email))
 			if err != nil {
-				log.Println("send error: ", err)
+				fmt.Println("sent file write error: ", err)
 				return
 			}
-			time.Sleep(time.Second)
-		} else {
-			log.Println("skipping: ", user.Email)
 		}
+		time.Sleep(time.Second)
 	}
-
 }
