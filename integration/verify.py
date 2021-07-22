@@ -87,7 +87,7 @@ def test_index(domain, artifact_dir):
 
 
 def test_unauthenticated(domain):
-    response = requests.get('https://www.{0}/user'.format(domain), allow_redirects=False, verify=False)
+    response = requests.get('https://www.{0}/api/user'.format(domain), allow_redirects=False, verify=False)
     assert response.status_code == 401, response.text
 
 
