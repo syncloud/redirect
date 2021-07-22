@@ -86,6 +86,11 @@ def test_index(domain, artifact_dir):
         f.write(str(response.text))
 
 
+def test_unauthenticated(domain):
+    response = requests.get('https://www.{0}/user'.format(domain), allow_redirects=False, verify=False)
+    assert response.status_code == 401, response.text
+
+
 def test_user_create_special_symbols_in_password(domain):
     email = 'symbols_in_password@mail.com'
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
