@@ -200,8 +200,8 @@ func (config *Config) ActivateByEmail() bool {
 	return value
 }
 
-func (config *Config) MockDns() bool {
-	result, err := config.parser.GetBool("redirect", "mock_dns")
+func (config *Config) AuthSecretSey() string {
+	result, err := config.parser.Get("redirect", "auth_secret_key")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}

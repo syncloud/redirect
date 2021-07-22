@@ -58,16 +58,16 @@ func success(w http.ResponseWriter, data interface{}) {
 	}
 }
 
-func middleware(next http.Handler) http.Handler {
+func headers(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
 }
 
-func Handle(f func(req *http.Request) (interface{}, error)) func(w http.ResponseWriter, req *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		data, err := f(req)
+func Handle(f func(w http.ResponseWriter, r *http.Request) (interface{}, error)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := f(w, r)
 		if err != nil {
 			fail(w, err)
 		} else {

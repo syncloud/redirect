@@ -43,7 +43,7 @@ func NewMain() *Main {
 	domains := service.NewDomains(dnsImp, database, users, config.Domain(), config.AwsHostedZoneId())
 	probe := service.NewPortProbe(database)
 	api := rest.NewApi(statsdClient, domains, users, actions, mail, probe, config.Domain())
-	www := rest.NewWww(statsdClient, domains, users, actions, mail, probe, config.Domain(), config.PayPalPlanId(), config.PayPalClientId())
+	www := rest.NewWww(statsdClient, domains, users, actions, mail, probe, config.Domain(), config.PayPalPlanId(), config.PayPalClientId(), config.AuthSecretSey())
 	return &Main{config: config, api: api, www: www}
 
 }
