@@ -55,6 +55,7 @@ func (www *Www) StartWww(socket string) {
 	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlan))).Methods("GET")
 	r.HandleFunc("/plan/subscribe", www.Secured(Handle(www.WebPlanSubscribe))).Methods("POST")
 	r.HandleFunc("/domain", www.Secured(Handle(www.DomainDelete))).Methods("DELETE")
+	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 
 	r.Use(headers)
 
@@ -132,6 +133,7 @@ func (www *Www) Secured(handle func(w http.ResponseWriter, r *http.Request)) fun
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := www.getSessionEmail(r)
 		if err != nil {
+			log.Printf("error %v", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}

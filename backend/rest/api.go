@@ -43,6 +43,7 @@ func (a *Api) StartApi(socket string) {
 	r.HandleFunc("/user/get", Handle(a.UserGet)).Methods("GET")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
+	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 
 	r.Use(headers)
 

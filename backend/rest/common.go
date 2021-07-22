@@ -60,6 +60,7 @@ func success(w http.ResponseWriter, data interface{}) {
 
 func headers(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("%s: %s\n", r.Method, r.RequestURI)
 		w.Header().Add("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
@@ -74,4 +75,9 @@ func Handle(f func(w http.ResponseWriter, r *http.Request) (interface{}, error))
 			success(w, data)
 		}
 	}
+}
+
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("404 %s: %s\n", r.Method, r.RequestURI)
+	http.NotFound(w, r)
 }
