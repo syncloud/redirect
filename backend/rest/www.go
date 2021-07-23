@@ -50,7 +50,7 @@ func (www *Www) StartWww(socket string) {
 	r.HandleFunc("/notification/enable", www.Secured(Handle(www.WebNotificationEnable))).Methods("POST")
 	r.HandleFunc("/notification/disable", www.Secured(Handle(www.WebNotificationDisable))).Methods("POST")
 	r.HandleFunc("/user", www.Secured(Handle(www.WebUserDelete))).Methods("DELETE")
-	r.HandleFunc("/api/user", www.Secured(Handle(www.WebUser))).Methods("GET")
+	r.HandleFunc("/user", www.Secured(Handle(www.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", www.Secured(Handle(www.WebDomains))).Methods("GET")
 	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlan))).Methods("GET")
 	r.HandleFunc("/plan/subscribe", www.Secured(Handle(www.WebPlanSubscribe))).Methods("POST")
