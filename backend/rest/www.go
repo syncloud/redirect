@@ -29,11 +29,11 @@ type Www struct {
 }
 
 func NewWww(statsdClient *statsd.Client, domains *service.Domains, users *service.Users, actions *service.Actions,
-	mail *service.Mail, probe *service.PortProbe, domain string, payPalPlanId string, payPalClientId string, authSecretSey string) *Www {
+	mail *service.Mail, probe *service.PortProbe, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
 
 	return &Www{statsdClient: statsdClient, domains: domains, users: users, actions: actions,
 		mail: mail, probe: probe, domain: domain, payPalPlanId: payPalPlanId, payPalClientId: payPalClientId,
-		store: sessions.NewCookieStore([]byte(authSecretSey)),
+		store: sessions.NewCookieStore(authSecretSey),
 	}
 }
 
