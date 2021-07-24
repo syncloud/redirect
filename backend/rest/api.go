@@ -43,8 +43,9 @@ func (a *Api) StartApi(socket string) {
 	r.HandleFunc("/user/get", Handle(a.UserGet)).Methods("GET")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
+	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 
-	r.Use(middleware)
+	r.Use(headers)
 
 	if _, err := os.Stat(socket); err == nil {
 		err := os.Remove(socket)
@@ -64,7 +65,7 @@ func (a *Api) StartApi(socket string) {
 
 }
 
-func (a *Api) Status(req *http.Request) (interface{}, error) {
+func (a *Api) Status(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	if req.Method != "GET" {
 		return nil, errors.New(fmt.Sprintf("wrong method %s, should be GET", req.Method))
 	}
@@ -119,7 +120,7 @@ func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (a *Api) UserCreate(req *http.Request) (interface{}, error) {
+func (a *Api) UserCreate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.user.create", 1)
 	err := req.ParseForm()
 	if err != nil {
@@ -137,7 +138,7 @@ func (a *Api) UserCreate(req *http.Request) (interface{}, error) {
 	return a.users.CreateNewUser(request)
 }
 
-func (a *Api) UserCreateV2(req *http.Request) (interface{}, error) {
+func (a *Api) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.user.create", 1)
 	request := model.UserCreateRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
@@ -149,7 +150,7 @@ func (a *Api) UserCreateV2(req *http.Request) (interface{}, error) {
 	return a.users.CreateNewUser(request)
 }
 
-func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
+func (a *Api) DomainAcquireV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.acquire_v2", 1)
 	request := model.DomainAcquireRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
@@ -164,7 +165,7 @@ func (a *Api) DomainAcquireV2(req *http.Request) (interface{}, error) {
 	return domain, nil
 }
 
-func (a *Api) DomainAvailability(req *http.Request) (interface{}, error) {
+func (a *Api) DomainAvailability(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.availability", 1)
 	request := model.DomainAvailabilityRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
@@ -179,7 +180,7 @@ func (a *Api) DomainAvailability(req *http.Request) (interface{}, error) {
 	return domain, nil
 }
 
-func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {
+func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.update", 1)
 	request := model.DomainUpdateRequest{MapLocalAddress: false}
 	err := json.NewDecoder(req.Body).Decode(&request)
@@ -199,7 +200,7 @@ func (a *Api) DomainUpdate(req *http.Request) (interface{}, error) {
 	return domain, nil
 }
 
-func (a *Api) DomainGet(req *http.Request) (interface{}, error) {
+func (a *Api) DomainGet(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.get", 1)
 	keys, ok := req.URL.Query()["token"]
 	if !ok {
@@ -228,7 +229,7 @@ func (a *Api) requestIp(req *http.Request) (*string, error) {
 	return &ip, nil
 }
 
-func (a *Api) UserGet(req *http.Request) (interface{}, error) {
+func (a *Api) UserGet(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 
 	a.statsdClient.Incr("rest.user.get", 1)
 	emails, ok := req.URL.Query()["email"]
@@ -262,7 +263,7 @@ func (a *Api) UserGet(req *http.Request) (interface{}, error) {
 		Domains:      domains}, nil
 }
 
-func (a *Api) UserLog(req *http.Request) (interface{}, error) {
+func (a *Api) UserLog(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.user.log", 1)
 
 	err := req.ParseForm()

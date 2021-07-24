@@ -6,7 +6,6 @@ SYNCLOUD_DOMAIN=$2
 CURRENT=/var/www/redirect/current
 DB_VERSION=012
 
-pip install -r ${CURRENT}/requirements.txt
 apt install confget
 cp -rf ${CURRENT}/config/env/${ENV}/* /var/www/redirect
 
