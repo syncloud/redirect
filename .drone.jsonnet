@@ -38,7 +38,6 @@ local build(arch) = {
             image: "syncloud/build-deps-" + arch,
             commands: [
                 "cp -r bin build",
-                "cp -r redirect build",
                 "cp -r config build",
                 "cp -r db build",
                 "cp -r emails build",
