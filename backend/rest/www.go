@@ -190,7 +190,7 @@ func (www *Www) WebUserDelete(_ http.ResponseWriter, req *http.Request) (interfa
 
 func (www *Www) WebUser(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	www.statsdClient.Incr("www.user.get", 1)
-	user, err := www.getSessionEmail(req)
+	user, err := www.getSessionUser(req)
 	if err != nil {
 		return nil, err
 	}
@@ -359,3 +359,4 @@ func (www *Www) UserLogout(w http.ResponseWriter, r *http.Request) (interface{},
 	err := www.clearSessionEmail(w, r)
 	return "User logged out", err
 }
+
