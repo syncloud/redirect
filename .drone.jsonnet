@@ -61,7 +61,7 @@ local build(arch) = {
             },
             commands: [
                 "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-	            "pip install -r integratuin/requirements.txt",
+	            "pip install -r integration/requirements.txt",
 	            "./ci/recreatedb",
                 "cd integration",
                 "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
