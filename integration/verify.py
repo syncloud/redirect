@@ -805,7 +805,7 @@ def test_backup(device):
     device.run_ssh("echo OK > /var/www/redirect/current/www/.well-known/test")
 
 
-def test_certbot(device):
+def test_certbot(device, domain):
     device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
     response = requests.get('http://api.{0}/.well-known/test'.format(domain), verify=False)
     assert response.status_code == 200
