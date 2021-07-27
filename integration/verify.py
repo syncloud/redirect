@@ -801,12 +801,12 @@ def test_status(domain):
 
 
 def test_backup(device):
-    device.run_ssh("mkdir /var/www/redirect/current/www/.well-known")
-    device.run_ssh("echo OK > /var/www/redirect/current/www/.well-known/test")
-
+   device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
+ 
 
 def test_certbot(device, domain):
-    device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
+    device.run_ssh("mkdir /var/www/redirect/current/www/.well-known")
+    device.run_ssh("echo OK > /var/www/redirect/current/www/.well-known/test")
     response = requests.get('http://api.{0}/.well-known/test'.format(domain), verify=False)
     assert response.status_code == 200
     assert 'OK' in response.text
