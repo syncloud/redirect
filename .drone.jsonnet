@@ -38,12 +38,9 @@ local build(arch) = {
             image: "syncloud/build-deps-" + arch,
             commands: [
                 "cp -r bin build",
-                "cp -r redirect build",
-                "cp requirements.txt build",
                 "cp -r config build",
                 "cp -r db build",
                 "cp -r emails build",
-                "cp redirect_*.wsgi build",
                 "mkdir artifact",
                 "tar czf artifact/redirect-${DRONE_BUILD_NUMBER}.tar.gz -C build ."
             ]
@@ -64,7 +61,7 @@ local build(arch) = {
             },
             commands: [
                 "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-	            "pip install -r dev_requirements.txt",
+	            "pip install -r integration/requirements.txt",
 	            "./ci/recreatedb",
                 "cd integration",
                 "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
@@ -75,8 +72,8 @@ local build(arch) = {
             image: "python:3.9-buster",
             commands: [
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-              "pip install -r dev_requirements.txt",
               "cd integration",
+              "pip install -r requirements.txt",
               "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test ",
             ],
             volumes: [{
@@ -89,8 +86,8 @@ local build(arch) = {
             image: "python:3.9-buster",
             commands: [
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-              "pip install -r dev_requirements.txt",
               "cd integration",
+              "pip install -r requirements.txt",
               "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test ",
             ],
             volumes: [{
