@@ -23,12 +23,12 @@ type Response struct {
 func fail(w http.ResponseWriter, err error) {
 	response, statusCode := ErrorToResponse(err)
 	responseJson, err := json.Marshal(response)
-	w.WriteHeader(statusCode)
 	if err != nil {
 		fmt.Printf("fail with error: %v \n", err)
-		fmt.Fprintln(w, err.Error())
+		http.Error(w, err.Error(), statusCode)
 	} else {
 		fmt.Printf("fail with json\n")
+		w.WriteHeader(statusCode)
 		fmt.Fprintln(w, string(responseJson))
 	}
 }
@@ -41,7 +41,7 @@ func ErrorToResponse(err error) (Response, int) {
 		response.ParametersMessages = v.ParameterErrors
 		statusCode = 400
 	case *model.ServiceError:
-		statusCode = 400
+		statusCode = v.StatusCode
 	}
 	response.Message = err.Error()
 	return response, statusCode

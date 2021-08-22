@@ -135,7 +135,7 @@ func (www *Www) Secured(handle func(w http.ResponseWriter, r *http.Request)) fun
 		_, err := www.getSessionEmail(r)
 		if err != nil {
 			log.Printf("error %v", err)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			fail(w, model.NewServiceErrorWithCode("Unauthorized", 401))
 			return
 		}
 		handle(w, r)

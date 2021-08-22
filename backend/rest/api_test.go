@@ -17,7 +17,7 @@ func TestParameterErrorToError(t *testing.T) {
 }
 
 func TestServiceErrorToError(t *testing.T) {
-	err := &model.ServiceError{InternalError: fmt.Errorf("error")}
+	err := model.NewServiceError("error")
 	response, code := ErrorToResponse(err)
 	assert.Equal(t, 400, code)
 	assert.Equal(t, "error", response.Message)
