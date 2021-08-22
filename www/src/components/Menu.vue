@@ -54,13 +54,13 @@ export default {
     activeTab: String,
     email: String,
     loggedIn: Boolean,
-    onLogout: Function
+    checkUserSession: Function
   },
   methods: {
     logout: function (_) {
       axios.post('/api/logout')
         .then(_ => {
-          this.onLogout()
+          this.checkUserSession()
         })
         .catch(err => {
           console.log(err)

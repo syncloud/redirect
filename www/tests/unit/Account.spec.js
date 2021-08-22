@@ -145,7 +145,7 @@ test('Delete', async () => {
     {
       attachTo: document.body,
       props: {
-        onLogout: jest.fn()
+        checkUserSession: jest.fn()
       },
       global: {
         components: {

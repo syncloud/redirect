@@ -51,7 +51,7 @@ test('Show devices', async () => {
     {
       attachTo: document.body,
       props: {
-        onLogin: jest.fn()
+        checkUserSession: jest.fn()
       }
     }
   )
@@ -95,7 +95,7 @@ test('Default external port', async () => {
     {
       attachTo: document.body,
       props: {
-        onLogin: jest.fn()
+        checkUserSession: jest.fn()
       }
     }
   )
@@ -136,7 +136,7 @@ test('Custom external port', async () => {
     {
       attachTo: document.body,
       props: {
-        onLogin: jest.fn()
+        checkUserSession: jest.fn()
       }
     }
   )
@@ -176,7 +176,7 @@ test('No IPv6', async () => {
     {
       attachTo: document.body,
       props: {
-        onLogin: jest.fn()
+        checkUserSession: jest.fn()
       }
     }
   )
@@ -225,7 +225,7 @@ test('Delete', async () => {
     {
       attachTo: document.body,
       props: {
-        onLogin: jest.fn()
+        checkUserSession: jest.fn()
       },
       global: {
         mocks: {
