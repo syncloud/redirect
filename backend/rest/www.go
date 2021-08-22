@@ -8,31 +8,59 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/model"
-	"github.com/syncloud/redirect/service"
 	"log"
 	"net"
 	"net/http"
 	"os"
 )
 
+type WwwStatsdClient interface {
+	Incr(stat string, count int64, tags ...statsd.Tag)
+}
+
+type WwwDomains interface {
+	DeleteDomain(userId int64, domainName string) error
+	GetDomains(user *model.User) ([]*model.Domain, error)
+	DeleteAllDomains(userId int64) error
+}
+
+type WwwUsers interface {
+	GetUserByEmail(userEmail string) (*model.User, error)
+	CreateNewUser(request model.UserCreateRequest) (*model.User, error)
+	Authenticate(email *string, password *string) (*model.User, error)
+	UserSetPassword(request *model.UserPasswordSetRequest) error
+	Save(user *model.User) error
+	PlanSubscribe(user *model.User, subscriptionId string) error
+	Activate(token string) error
+	Delete(userId int64) error
+}
+
+type WwwActions interface {
+	DeleteActions(userId int64) error
+	UpsertPasswordAction(userId int64) (*model.Action, error)
+}
+
+type WwwMail interface {
+	SendResetPassword(to string, token string) error
+}
+
 type Www struct {
-	statsdClient   *statsd.Client
-	domains        *service.Domains
-	users          *service.Users
-	actions        *service.Actions
-	mail           *service.Mail
-	probe          *service.PortProbe
+	statsdClient   WwwStatsdClient
+	domains        WwwDomains
+	users          WwwUsers
+	actions        WwwActions
+	mail           WwwMail
 	domain         string
 	payPalPlanId   string
 	payPalClientId string
 	store          *sessions.CookieStore
 }
 
-func NewWww(statsdClient *statsd.Client, domains *service.Domains, users *service.Users, actions *service.Actions,
-	mail *service.Mail, probe *service.PortProbe, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
+func NewWww(statsdClient WwwStatsdClient, domains WwwDomains, users WwwUsers, actions WwwActions,
+	mail WwwMail, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
 
 	return &Www{statsdClient: statsdClient, domains: domains, users: users, actions: actions,
-		mail: mail, probe: probe, domain: domain, payPalPlanId: payPalPlanId, payPalClientId: payPalClientId,
+		mail: mail, domain: domain, payPalPlanId: payPalPlanId, payPalClientId: payPalClientId,
 		store: sessions.NewCookieStore(authSecretSey),
 	}
 }
@@ -357,6 +385,7 @@ func (www *Www) UserLogin(w http.ResponseWriter, r *http.Request) (interface{}, 
 
 func (www *Www) UserLogout(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	www.statsdClient.Incr("www.user.logout", 1)
+	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
 	err := www.clearSessionEmail(w, r)
 	return "User logged out", err
 }
