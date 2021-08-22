@@ -86,6 +86,47 @@ def test_register(driver, ui_mode, screenshot_dir):
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, activated_status)))
 
 
+def test_login_wrong_username(driver, ui_mode, screenshot_dir):
+    menu(driver, ui_mode, screenshot_dir, 'login')
+
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'email')))
+
+    screenshots(driver, screenshot_dir, 'login-wrong-username-' + ui_mode)
+    user = driver.find_element_by_id("email")
+    user.send_keys('wrong_user')
+    password = driver.find_element_by_id("password")
+    password.send_keys('wrong_password')
+    screenshots(driver, screenshot_dir, 'login-wrong-username-credentials-' + ui_mode)
+    driver.find_element_by_id("submit").click()
+    password.send_keys(Keys.RETURN)
+    screenshots(driver, screenshot_dir, 'login-wrong-username-progress-' + ui_mode)
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'help-email')))
+    screenshots(driver, screenshot_dir, 'login-wrong-username-error-' + ui_mode)
+    error = driver.find_element_by_id("help-email")
+    assert "Not valid email" in error.text
+
+
+def test_login_wrong_password(driver, ui_mode, screenshot_dir):
+    menu(driver, ui_mode, screenshot_dir, 'login')
+
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'email')))
+
+    screenshots(driver, screenshot_dir, 'login-wrong-password-' + ui_mode)
+    user = driver.find_element_by_id("email")
+    user.clear()
+    user.send_keys('wrong_user@example.com')
+    password = driver.find_element_by_id("password")
+    password.clear()
+    password.send_keys('wrong_password')
+    screenshots(driver, screenshot_dir, 'login-wrong-password-credentials-' + ui_mode)
+    password.send_keys(Keys.RETURN)
+    screenshots(driver, screenshot_dir, 'login-wrong-password-progress-' + ui_mode)
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'error')))
+    screenshots(driver, screenshot_dir, 'login-wrong-password-error-' + ui_mode)
+    error = driver.find_element_by_id("error")
+    assert "authentication failed" in error.text
+
+
 def test_login(driver, ui_mode, screenshot_dir):
     menu(driver, ui_mode, screenshot_dir, 'login')
 
@@ -93,8 +134,10 @@ def test_login(driver, ui_mode, screenshot_dir):
 
     screenshots(driver, screenshot_dir, 'login-' + ui_mode)
     user = driver.find_element_by_id("email")
+    user.clear()
     user.send_keys(DEVICE_USER)
     password = driver.find_element_by_id("password")
+    password.clear()
     password.send_keys(DEVICE_PASSWORD)
     screenshots(driver, screenshot_dir, 'login-credentials-' + ui_mode)
     password.send_keys(Keys.RETURN)

@@ -140,8 +140,7 @@ export default {
     Confirmation
   },
   props: {
-    onLogin: Function,
-    onLogout: Function
+    checkUserSession: Function
   },
   data () {
     return {
@@ -223,7 +222,7 @@ export default {
     accountDeleteConfirm: function () {
       axios.delete('api/user')
         .then(_ => {
-          this.onLogout()
+          this.checkUserSession()
         })
         .catch(this.onError)
     },

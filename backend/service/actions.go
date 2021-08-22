@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"time"
@@ -35,7 +34,7 @@ func (a *Actions) GetActivateAction(token string) (*model.Action, error) {
 		return nil, err
 	}
 	if action == nil {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("invalid activation token")}
+		return nil, model.NewServiceError("invalid activation token")
 	}
 	return action, err
 }
@@ -46,7 +45,7 @@ func (a *Actions) GetPasswordAction(token string) (*model.Action, error) {
 		return nil, err
 	}
 	if action == nil {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("invalid password token")}
+		return nil, model.NewServiceError("invalid password token")
 	}
 	return action, err
 }

@@ -134,7 +134,7 @@ func (www *Www) Secured(handle func(w http.ResponseWriter, r *http.Request)) fun
 		_, err := www.getSessionEmail(r)
 		if err != nil {
 			log.Printf("error %v", err)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			fail(w, model.NewServiceErrorWithCode("Unauthorized", 401))
 			return
 		}
 		handle(w, r)
@@ -350,6 +350,7 @@ func (www *Www) UserLogin(w http.ResponseWriter, r *http.Request) (interface{}, 
 	if err != nil {
 		return nil, err
 	}
+	err = www.clearSessionEmail(w, r)
 	err = www.setSessionEmail(w, r, *request.Email)
 	return "User logged in", err
 }
@@ -359,4 +360,3 @@ func (www *Www) UserLogout(w http.ResponseWriter, r *http.Request) (interface{},
 	err := www.clearSessionEmail(w, r)
 	return "User logged out", err
 }
-

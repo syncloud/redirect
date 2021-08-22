@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/base64"
+	"github.com/gorilla/securecookie"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
 	"testing"
@@ -139,6 +141,7 @@ func TestActivateAlreadyActive(t *testing.T) {
 
 func TestActivateWrongToken(t *testing.T) {
 	db := &UsersDbStub{}
+	base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(32))
 	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(user.Id)

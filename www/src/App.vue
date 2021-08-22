@@ -1,6 +1,6 @@
 <template>
-  <Menu v-bind:activeTab="currentPath" v-bind:onLogout="checkUserSession" v-bind:loggedIn="loggedIn" v-bind:email="email"/>
-  <router-view v-bind:onLogin="checkUserSession" v-bind:onLogout="checkUserSession"/>
+  <Menu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn" v-bind:email="email"/>
+  <router-view v-bind:checkUserSession="checkUserSession"/>
 </template>
 <script>
 import axios from 'axios'
@@ -59,6 +59,7 @@ export default {
     }
   },
   mounted () {
+    this.currentPath = this.$route.path
     this.checkUserSession()
   }
 }

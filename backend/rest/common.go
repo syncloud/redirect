@@ -28,7 +28,8 @@ func fail(w http.ResponseWriter, err error) {
 		http.Error(w, err.Error(), statusCode)
 	} else {
 		fmt.Printf("fail with json\n")
-		http.Error(w, string(responseJson), statusCode)
+		w.WriteHeader(statusCode)
+		fmt.Fprintln(w, string(responseJson))
 	}
 }
 
@@ -40,7 +41,7 @@ func ErrorToResponse(err error) (Response, int) {
 		response.ParametersMessages = v.ParameterErrors
 		statusCode = 400
 	case *model.ServiceError:
-		statusCode = 400
+		statusCode = v.StatusCode
 	}
 	response.Message = err.Error()
 	return response, statusCode

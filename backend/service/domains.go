@@ -48,14 +48,14 @@ func (d *Domains) GetDomain(token string) (*model.Domain, error) {
 		return nil, err
 	}
 	if domain == nil {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("unknown domain update token")}
+		return nil, model.NewServiceError("unknown domain update token")
 	}
 	user, err := d.db.GetUser(domain.UserId)
 	if err != nil {
 		return nil, err
 	}
 	if user == nil || !user.Active {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("unknown domain update token")}
+		return nil, model.NewServiceError("unknown domain update token")
 	}
 	domain.BackwardCompatibleDomain(d.domain)
 	return domain, nil
@@ -256,7 +256,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, err
 	}
 	if domain == nil {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("unknown domain update token")}
+		return nil, model.NewServiceError("unknown domain update token")
 	}
 
 	user, err := d.db.GetUser(domain.UserId)
@@ -264,7 +264,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, err
 	}
 	if user == nil || !user.Active {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("unknown domain update token")}
+		return nil, model.NewServiceError("unknown domain update token")
 	}
 
 	changed := Changed(

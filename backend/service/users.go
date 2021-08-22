@@ -63,7 +63,7 @@ func (u *Users) Authenticate(email *string, password *string) (*model.User, erro
 
 	user, err := u.db.GetUserByEmail(*emailLower)
 	if err != nil || user == nil || !user.Active || Hash(*passwordChecked) != user.PasswordHash {
-		return nil, &model.ServiceError{InternalError: fmt.Errorf("authentication failed")}
+		return nil, model.NewServiceError("authentication failed")
 	}
 
 	return user, nil
@@ -81,11 +81,11 @@ func (u *Users) Activate(token string) error {
 		return err
 	}
 	if user == nil {
-		return &model.ServiceError{InternalError: fmt.Errorf("invalid activation token")}
+		return model.NewServiceError("invalid activation token")
 	}
 
 	if user.Active {
-		return &model.ServiceError{InternalError: fmt.Errorf("user is active already")}
+		return model.NewServiceError("user is active already")
 	}
 
 	user.Active = true
@@ -214,7 +214,7 @@ func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
 		return err
 	}
 	if user == nil {
-		return &model.ServiceError{InternalError: fmt.Errorf("invalid password token")}
+		return model.NewServiceError("invalid password token")
 	}
 	user.PasswordHash = Hash(*password)
 	err = u.db.UpdateUser(user)
