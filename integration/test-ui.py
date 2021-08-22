@@ -112,10 +112,12 @@ def test_login_wrong_password(driver, ui_mode, screenshot_dir):
 
     screenshots(driver, screenshot_dir, 'login-wrong-password-' + ui_mode)
     user = driver.find_element_by_id("email")
+    user.clear()
     user.send_keys('wrong_user@example.com')
     password = driver.find_element_by_id("password")
     password.send_keys('wrong_password')
     screenshots(driver, screenshot_dir, 'login-wrong-password-credentials-' + ui_mode)
+    password.clear()
     password.send_keys(Keys.RETURN)
     screenshots(driver, screenshot_dir, 'login-wrong-password-progress-' + ui_mode)
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'error')))
@@ -131,8 +133,10 @@ def test_login(driver, ui_mode, screenshot_dir):
 
     screenshots(driver, screenshot_dir, 'login-' + ui_mode)
     user = driver.find_element_by_id("email")
+    user.clear()
     user.send_keys(DEVICE_USER)
     password = driver.find_element_by_id("password")
+    password.clear()
     password.send_keys(DEVICE_PASSWORD)
     screenshots(driver, screenshot_dir, 'login-credentials-' + ui_mode)
     password.send_keys(Keys.RETURN)
