@@ -155,7 +155,7 @@ export default {
     Confirmation
   },
   props: {
-    onLogin: Function
+    checkUserSession: Function
   },
   data () {
     return {

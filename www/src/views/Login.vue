@@ -7,7 +7,7 @@
     <fieldset>
 
       <div id="errors_placeholder">
-        <div class="alert alert-danger" :class="{ visible:  isError, invisible:  !isError}">{{ error }}</div>
+        <div class="alert alert-danger" id="error" :class="{ visible:  isError, invisible:  !isError}">{{ error }}</div>
       </div>
 
       <div id="group-email" class="form-group" :class="{ 'has-error':  isEmailError}">
@@ -69,8 +69,7 @@ function showError (component, error) {
 export default {
   name: 'Login',
   props: {
-    onLogin: Function,
-    onLogout: Function
+    checkUserSession: Function
   },
   data () {
     return {
@@ -89,7 +88,7 @@ export default {
       this.isError = false
       axios.post('/api/user/login', { email: this.email, password: this.password })
         .then(_ => {
-          this.onLogin()
+          this.checkUserSession()
           this.$router.push('/')
         })
         .catch(err => {

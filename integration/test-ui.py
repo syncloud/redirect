@@ -86,6 +86,25 @@ def test_register(driver, ui_mode, screenshot_dir):
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, activated_status)))
 
 
+def test_login_failed(driver, ui_mode, screenshot_dir):
+    menu(driver, ui_mode, screenshot_dir, 'login')
+
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'email')))
+
+    screenshots(driver, screenshot_dir, 'login-wrong-' + ui_mode)
+    user = driver.find_element_by_id("email")
+    user.send_keys('wrong_user')
+    password = driver.find_element_by_id("password")
+    password.send_keys('wrong_password')
+    screenshots(driver, screenshot_dir, 'login-wrong-credentials-' + ui_mode)
+    password.send_keys(Keys.RETURN)
+    screenshots(driver, screenshot_dir, 'login-wrong-progress-' + ui_mode)
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.visibility_of_element_located((By.ID, 'error')))
+    screenshots(driver, screenshot_dir, 'login-wrong-error-' + ui_mode)
+    error = driver.find_element_by_id("error")
+    assert "authentication failed" in error.text
+
+
 def test_login(driver, ui_mode, screenshot_dir):
     menu(driver, ui_mode, screenshot_dir, 'login')
 
