@@ -23,12 +23,13 @@ type Response struct {
 func fail(w http.ResponseWriter, err error) {
 	response, statusCode := ErrorToResponse(err)
 	responseJson, err := json.Marshal(response)
+	w.WriteHeader(statusCode)
 	if err != nil {
 		fmt.Printf("fail with error: %v \n", err)
-		http.Error(w, err.Error(), statusCode)
+		fmt.Fprintln(w, err.Error())
 	} else {
 		fmt.Printf("fail with json\n")
-		http.Error(w, string(responseJson), statusCode)
+		fmt.Fprintln(w, string(responseJson))
 	}
 }
 

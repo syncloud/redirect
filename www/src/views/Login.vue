@@ -83,6 +83,9 @@ export default {
       isError: false
     }
   },
+  mounted () {
+    // this.checkUserSession()
+  },
   methods: {
     login: function (event) {
       this.isError = false
@@ -92,13 +95,7 @@ export default {
           this.$router.push('/')
         })
         .catch(err => {
-          if ('content-type' in err.response.headers &&
-            err.response.headers['content-type'].indexOf('application/json') !== -1 &&
-            'data' in err.response) {
-            showError(this, err.response.data)
-          } else {
-            this.$router.push('/error')
-          }
+          showError(this, err.response.data)
         })
       event.preventDefault()
     }

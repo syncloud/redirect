@@ -7,7 +7,6 @@ import Login from '@/views/Login'
 jest.setTimeout(30000)
 
 test('Login success', async () => {
-  const showError = jest.fn()
   const mockRouter = { push: jest.fn() }
 
   let email
@@ -35,15 +34,6 @@ test('Login success', async () => {
         components: {
           RouterLink: RouterLinkStub
         },
-        stubs: {
-          Error: {
-            template: '<span/>',
-            methods: {
-              showAxios: showError
-            }
-          }
-
-        },
         mocks: {
           $route: { path: '/login' },
           $router: mockRouter
@@ -60,7 +50,7 @@ test('Login success', async () => {
 
   await flushPromises()
 
-  expect(showError).toHaveBeenCalledTimes(0)
+  expect(wrapper.find('#error').text()).toBe('')
   expect(email).toBe('username')
   expect(password).toBe('password')
   expect(mockRouter.push).toHaveBeenCalledWith('/')
@@ -69,7 +59,6 @@ test('Login success', async () => {
 })
 
 test('Login failed', async () => {
-  const showError = jest.fn()
   const mockRouter = { push: jest.fn() }
 
   let email
@@ -80,7 +69,7 @@ test('Login failed', async () => {
     const request = JSON.parse(config.data)
     email = request.email
     password = request.password
-    return [400, { message: 'login failed' }, { 'Content-Type': 'text/plain' }]
+    return [400, { message: 'login failed' }]
   })
 
   const wrapper = mount(Login,
@@ -93,15 +82,6 @@ test('Login failed', async () => {
         components: {
           RouterLink: RouterLinkStub
         },
-        stubs: {
-          Error: {
-            template: '<span/>',
-            methods: {
-              showAxios: showError
-            }
-          }
-
-        },
         mocks: {
           $route: { path: '/login' },
           $router: mockRouter
@@ -118,7 +98,7 @@ test('Login failed', async () => {
 
   await flushPromises()
 
-  expect(showError).toHaveBeenCalledTimes(1)
+  expect(wrapper.find('#error').text()).toBe('login failed')
   expect(email).toBe('username')
   expect(password).toBe('password')
   expect(mockRouter.push).toHaveBeenCalledTimes(0)

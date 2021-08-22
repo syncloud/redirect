@@ -59,6 +59,7 @@ export default {
     }
   },
   mounted () {
+    this.currentPath = this.$route.path
     this.checkUserSession()
   }
 }

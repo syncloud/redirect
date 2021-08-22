@@ -28,6 +28,8 @@ type Www struct {
 	store          *sessions.CookieStore
 }
 
+const session = "session"
+
 func NewWww(statsdClient *statsd.Client, domains *service.Domains, users *service.Users, actions *service.Actions,
 	mail *service.Mail, probe *service.PortProbe, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
 
@@ -78,7 +80,7 @@ func (www *Www) StartWww(socket string) {
 }
 
 func (www *Www) getSession(r *http.Request) (*sessions.Session, error) {
-	return www.store.Get(r, "session")
+	return www.store.Get(r, session)
 }
 
 func (www *Www) setSessionEmail(w http.ResponseWriter, r *http.Request, email string) error {
@@ -91,11 +93,10 @@ func (www *Www) setSessionEmail(w http.ResponseWriter, r *http.Request, email st
 }
 
 func (www *Www) clearSessionEmail(w http.ResponseWriter, r *http.Request) error {
-	session, err := www.getSession(r)
+	session, err := www.store.New(r, session)
 	if err != nil {
 		return err
 	}
-	delete(session.Values, "email")
 	return session.Save(r, w)
 }
 
@@ -350,6 +351,7 @@ func (www *Www) UserLogin(w http.ResponseWriter, r *http.Request) (interface{}, 
 	if err != nil {
 		return nil, err
 	}
+	err = www.clearSessionEmail(w, r)
 	err = www.setSessionEmail(w, r, *request.Email)
 	return "User logged in", err
 }
@@ -359,4 +361,3 @@ func (www *Www) UserLogout(w http.ResponseWriter, r *http.Request) (interface{},
 	err := www.clearSessionEmail(w, r)
 	return "User logged out", err
 }
-
