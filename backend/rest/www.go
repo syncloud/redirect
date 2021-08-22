@@ -28,8 +28,6 @@ type Www struct {
 	store          *sessions.CookieStore
 }
 
-const session = "session"
-
 func NewWww(statsdClient *statsd.Client, domains *service.Domains, users *service.Users, actions *service.Actions,
 	mail *service.Mail, probe *service.PortProbe, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
 
@@ -80,7 +78,7 @@ func (www *Www) StartWww(socket string) {
 }
 
 func (www *Www) getSession(r *http.Request) (*sessions.Session, error) {
-	return www.store.Get(r, session)
+	return www.store.Get(r, "session")
 }
 
 func (www *Www) setSessionEmail(w http.ResponseWriter, r *http.Request, email string) error {
@@ -93,10 +91,11 @@ func (www *Www) setSessionEmail(w http.ResponseWriter, r *http.Request, email st
 }
 
 func (www *Www) clearSessionEmail(w http.ResponseWriter, r *http.Request) error {
-	session, err := www.store.New(r, session)
+	session, err := www.getSession(r)
 	if err != nil {
 		return err
 	}
+	delete(session.Values, "email")
 	return session.Save(r, w)
 }
 
