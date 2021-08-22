@@ -119,7 +119,6 @@ func (www *Www) setSessionEmail(w http.ResponseWriter, r *http.Request, email st
 }
 
 func (www *Www) clearSessionEmail(w http.ResponseWriter, r *http.Request) error {
-	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
 	session, err := www.getSession(r)
 	if err != nil {
 		return err
@@ -386,6 +385,7 @@ func (www *Www) UserLogin(w http.ResponseWriter, r *http.Request) (interface{}, 
 
 func (www *Www) UserLogout(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	www.statsdClient.Incr("www.user.logout", 1)
+	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
 	err := www.clearSessionEmail(w, r)
 	return "User logged out", err
 }

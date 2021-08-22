@@ -118,6 +118,48 @@ func TestLogin_CreateSession(t *testing.T) {
 
 }
 
+func TestLoginAgain_NotError(t *testing.T) {
+
+	www := NewWww(
+		&StatsdClientStub{}, &WwwDomainsStub{}, &WwwUsersStub{authenticated: true}, &WwwActionsStub{}, &WwwMailStub{},
+		"example.com", "paypal_plan_id", "paypal_client_id", []byte("secret_key"))
+	email := "test@example.com"
+	password := "password"
+	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body1 := bytes.NewBuffer(userJson)
+	req1, err := http.NewRequest("GET", "/", body1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//req.AddCookie(&http.Cookie{Name: "session", Value: "123"})
+	rr1 := httptest.NewRecorder()
+	_, err = www.UserLogin(rr1, req1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	session1 := rr1.Header().Get("Set-Cookie")
+	assert.Contains(t, session1, "session=")
+
+	body2 := bytes.NewBuffer(userJson)
+	req2, err := http.NewRequest("GET", "/", body2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req2.AddCookie(&http.Cookie{Name: "session", Value: "MTYyOTY3MDk0OHxEdi1CQkFFQ180SUFBUkFCRUFBQUJQLUNBQUE9fEZHUw9y4LnPQcECsWcJCSehnQXkmZM0nJrMDfjsaXsW"})
+	rr2 := httptest.NewRecorder()
+	_, err = www.UserLogin(rr2, req2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	session2 := rr2.Header().Get("Set-Cookie")
+	assert.Contains(t, session2, "session=")
+
+}
+
 func TestLogout_ClearSession(t *testing.T) {
 
 	www := NewWww(
