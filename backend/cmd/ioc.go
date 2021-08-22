@@ -48,7 +48,7 @@ func NewMain() *Main {
 	if err != nil {
 		log.Fatalf("unable to decode secre key %v", err)
 	}
-	www := rest.NewWww(statsdClient, domains, users, actions, mail, probe, config.Domain(), config.PayPalPlanId(), config.PayPalClientId(), secretKey)
+	www := rest.NewWww(statsdClient, domains, users, actions, mail, config.Domain(), config.PayPalPlanId(), config.PayPalClientId(), secretKey)
 	return &Main{config: config, api: api, www: www}
 
 }
