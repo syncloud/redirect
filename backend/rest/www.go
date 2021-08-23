@@ -119,11 +119,11 @@ func (www *Www) setSessionEmail(w http.ResponseWriter, r *http.Request, email st
 }
 
 func (www *Www) clearSessionEmail(w http.ResponseWriter, r *http.Request) error {
+	r.Header.Del("Cookie")
 	session, err := www.getSession(r)
 	if err != nil {
 		return err
 	}
-	delete(session.Values, "email")
 	return session.Save(r, w)
 }
 
