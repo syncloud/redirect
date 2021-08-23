@@ -124,6 +124,7 @@ func (www *Www) clearSessionEmail(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return err
 	}
+	delete(session.Values, "email")
 	return session.Save(r, w)
 }
 
