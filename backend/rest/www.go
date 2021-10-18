@@ -6,17 +6,12 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/model"
 	"log"
 	"net"
 	"net/http"
 	"os"
 )
-
-type WwwStatsdClient interface {
-	Incr(stat string, count int64, tags ...statsd.Tag)
-}
 
 type WwwDomains interface {
 	DeleteDomain(userId int64, domainName string) error
@@ -45,7 +40,7 @@ type WwwMail interface {
 }
 
 type Www struct {
-	statsdClient   WwwStatsdClient
+	statsdClient   StatsdClient
 	domains        WwwDomains
 	users          WwwUsers
 	actions        WwwActions
@@ -56,7 +51,7 @@ type Www struct {
 	store          *sessions.CookieStore
 }
 
-func NewWww(statsdClient WwwStatsdClient, domains WwwDomains, users WwwUsers, actions WwwActions,
+func NewWww(statsdClient StatsdClient, domains WwwDomains, users WwwUsers, actions WwwActions,
 	mail WwwMail, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
 
 	return &Www{statsdClient: statsdClient, domains: domains, users: users, actions: actions,
@@ -372,7 +367,7 @@ func (www *Www) UserLogin(w http.ResponseWriter, r *http.Request) (interface{}, 
 	request := &model.UserAuthenticateRequest{}
 	err := json.NewDecoder(r.Body).Decode(request)
 	if err != nil {
-		log.Println("unable to parse user set password request", err)
+		log.Println("unable to parse user login request", err)
 		return nil, errors.New("invalid request")
 	}
 	_, err = www.users.Authenticate(request.Email, request.Password)
