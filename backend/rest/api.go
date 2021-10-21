@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/service"
 	"log"
@@ -16,18 +15,39 @@ import (
 	"strings"
 )
 
+type ApiDomains interface {
+	DomainAcquire(request model.DomainAcquireRequest, domainField string) (*model.Domain, error)
+	Availability(request model.DomainAvailabilityRequest) (*model.Domain, error)
+	Update(request model.DomainUpdateRequest, requestIp *string) (*model.Domain, error)
+	GetDomain(token string) (*model.Domain, error)
+	GetDomains(user *model.User) ([]*model.Domain, error)
+}
+
+type ApiUsers interface {
+	CreateNewUser(request model.UserCreateRequest) (*model.User, error)
+	Authenticate(email *string, password *string) (*model.User, error)
+	GetUserByUpdateToken(updateToken string) (*model.User, error)
+}
+
+type ApiMail interface {
+	SendLogs(to string, data string, includeSupport bool) error
+}
+
+type ApiPortProbe interface {
+	Probe(token string, port int, protocol string, ip string) (*service.ProbeResponse, error)
+}
+
 type Api struct {
-	statsdClient *statsd.Client
-	domains      *service.Domains
-	users        *service.Users
-	actions      *service.Actions
-	mail         *service.Mail
-	probe        *service.PortProbe
+	statsdClient StatsdClient
+	domains      ApiDomains
+	users        ApiUsers
+	mail         ApiMail
+	probe        ApiPortProbe
 	domain       string
 }
 
-func NewApi(statsdClient *statsd.Client, service *service.Domains, users *service.Users, actions *service.Actions, mail *service.Mail, probe *service.PortProbe, domain string) *Api {
-	return &Api{statsdClient: statsdClient, domains: service, users: users, actions: actions, mail: mail, probe: probe, domain: domain}
+func NewApi(statsdClient StatsdClient, service ApiDomains, users ApiUsers, mail ApiMail, probe ApiPortProbe, domain string) *Api {
+	return &Api{statsdClient: statsdClient, domains: service, users: users, mail: mail, probe: probe, domain: domain}
 }
 
 func (a *Api) StartApi(socket string) {
@@ -40,7 +60,8 @@ func (a *Api) StartApi(socket string) {
 	r.HandleFunc("/domain/availability", Handle(a.DomainAvailability)).Methods("POST")
 	r.HandleFunc("/user/create", Handle(a.UserCreate)).Methods("POST")
 	r.HandleFunc("/user/create_v2", Handle(a.UserCreateV2)).Methods("POST")
-	r.HandleFunc("/user/get", Handle(a.UserGet)).Methods("GET")
+	r.HandleFunc("/user/get", Handle(a.UserGet)).Methods("GET") //deprecated
+	r.HandleFunc("/user", Handle(a.User)).Methods("POST")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
 	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
@@ -250,6 +271,37 @@ func (a *Api) UserGet(_ http.ResponseWriter, req *http.Request) (interface{}, er
 	if err != nil {
 		log.Println("unable to get domains for a user", err)
 		return nil, errors.New("invalid request")
+	}
+	if domains == nil {
+		domains = make([]*model.Domain, 0)
+	}
+	return &model.UserResponse{
+		Email:        user.Email,
+		Active:       user.Active,
+		UpdateToken:  user.UpdateToken,
+		Unsubscribed: !user.NotificationEnabled,
+		Timestamp:    user.Timestamp,
+		Domains:      domains}, nil
+}
+
+func (a *Api) User(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+
+	a.statsdClient.Incr("rest.user", 1)
+	request := &model.UserAuthenticateRequest{}
+	err := json.NewDecoder(req.Body).Decode(request)
+	if err != nil {
+		log.Println("unable to parse user request", err)
+		return nil, errors.New("unable to parse user request")
+	}
+	user, err := a.users.Authenticate(request.Email, request.Password)
+	if err != nil {
+		log.Println("unable to get a user", err)
+		return nil, errors.New("unable to get a user")
+	}
+	domains, err := a.domains.GetDomains(user)
+	if err != nil {
+		log.Println("unable to get domains for a user", err)
+		return nil, errors.New("unable to get domains for a user")
 	}
 	if domains == nil {
 		domains = make([]*model.Domain, 0)
