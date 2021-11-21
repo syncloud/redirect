@@ -35,15 +35,15 @@ func NewMain() *Main {
 	statsdClient := statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
 		statsd.MaxPacketSize(1400),
 		statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
-	dnsImp := dns.New(statsdClient, config.AwsAccessKeyId(), config.AwsSecretAccessKey())
+	amazonDns := dns.New(statsdClient, config.AwsAccessKeyId(), config.AwsSecretAccessKey())
 	actions := service.NewActions(database)
 	smtpClient := smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
 		config.SmtpLogin(), config.SmtpPassword())
 	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
 	users := service.NewUsers(database, config.ActivateByEmail(), actions, mail)
-	domains := service.NewDomains(dnsImp, database, users, config.Domain(), config.AwsHostedZoneId())
+	domains := service.NewDomains(amazonDns, database, users, config.Domain(), config.AwsHostedZoneId())
 	probe := service.NewPortProbe(database)
-	api := rest.NewApi(statsdClient, domains, users, mail, probe, config.Domain())
+	api := rest.NewApi(statsdClient, domains, users, mail, probe, service.NewCertbot(database, amazonDns), config.Domain())
 	secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
 	if err != nil {
 		log.Fatalf("unable to decode secre key %v", err)

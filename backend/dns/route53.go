@@ -30,6 +30,8 @@ func init() {
 type Dns interface {
 	CreateHostedZone(domain string) (*string, error)
 	DeleteHostedZone(hostedZoneId string) error
+	CreateCertbotRecord(hostedZoneId string, name string, value string) error
+	DeleteCertbotRecord(hostedZoneId string, name string, value string) error
 	UpdateDomainRecords(domain *model.Domain) error
 	DeleteDomainRecords(domain *model.Domain) error
 	GetHostedZoneNameServers(id string) ([]*string, error)
@@ -116,6 +118,18 @@ func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
 	return nil
 }
 
+func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, value string) error {
+	return a.commit([]*route53.Change{
+		a.change("UPSERT", name, value, "TXT"),
+	}, hostedZoneId)
+}
+
+func (a *AmazonDns) DeleteCertbotRecord(hostedZoneId string, name string, value string) error {
+	return a.commit([]*route53.Change{
+		a.change("DELETE", name, value, "TXT"),
+	}, hostedZoneId)
+}
+
 func (a *AmazonDns) change(action string, name string, value string, changeType string) *route53.Change {
 	return &route53.Change{
 		Action: aws.String(action),
@@ -148,8 +162,6 @@ func (a *AmazonDns) changeDKIM(domain string, dkim string, action string) *route
 
 func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim *string, spf string, mx string, action string, hostedZoneId string) error {
 
-	a.statsdClient.Incr("dns.ip.connect", 1)
-
 	var changes []*route53.Change
 
 	if ipv6 != nil {
@@ -167,16 +179,22 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 	changes = append(changes, a.change(action, domain, spf, "SPF"))
 	changes = append(changes, a.change(action, domain, spf, "TXT"))
 
+	err := a.commit(changes, hostedZoneId)
+	return err
+}
+
+func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error {
+	a.statsdClient.Incr("dns.client.connect", 1)
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
 		HostedZoneId: aws.String(hostedZoneId),
 	}
 	_, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {
-		a.statsdClient.Incr("dns.ip.error", 1)
+		a.statsdClient.Incr("dns.client.error", 1)
 		return err
 	}
 
-	a.statsdClient.Incr("dns.ip.commit", 1)
+	a.statsdClient.Incr("dns.client.commit", 1)
 	return nil
 }
