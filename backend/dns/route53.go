@@ -120,13 +120,13 @@ func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
 
 func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, value string) error {
 	return a.commit([]*route53.Change{
-		a.change("UPSERT", name, value, "TXT"),
+		a.change("UPSERT", name, `"`+value+`"`, "TXT"),
 	}, hostedZoneId)
 }
 
 func (a *AmazonDns) DeleteCertbotRecord(hostedZoneId string, name string, value string) error {
 	return a.commit([]*route53.Change{
-		a.change("DELETE", name, value, "TXT"),
+		a.change("DELETE", name, `"`+value+`"`, "TXT"),
 	}, hostedZoneId)
 }
 
