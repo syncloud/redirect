@@ -38,8 +38,8 @@ type ApiPortProbe interface {
 }
 
 type ApiCertbot interface {
-	Present(token string, fqdn string, value string) error
-	CleanUp(token string, fqdn string) error
+	Present(token, fqdn, value string) error
+	CleanUp(token, fqdn, value string) error
 }
 
 type Api struct {
@@ -249,7 +249,7 @@ func (a *Api) CertbotCleanUp(_ http.ResponseWriter, req *http.Request) (interfac
 		log.Println("unable to parse request", err)
 		return nil, errors.New("invalid request")
 	}
-	err = a.certbot.CleanUp(request.Token, request.Fqdn)
+	err = a.certbot.CleanUp(request.Token, request.Fqdn, request.Value)
 	return nil, err
 }
 

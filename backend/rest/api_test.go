@@ -76,6 +76,19 @@ func (a *ApiPortProbeStub) Probe(token string, port int, protocol string, ip str
 	panic("implement me")
 }
 
+type ApiCertbotStub struct {
+}
+
+func (a ApiCertbotStub) Present(token string, fqdn string, value string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (a ApiCertbotStub) CleanUp(token string, fqdn string, value string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func TestParameterErrorToError(t *testing.T) {
 	err := &model.ParameterError{ParameterErrors: &[]model.ParameterMessages{{
 		Parameter: "param", Messages: []string{"error"},
@@ -104,7 +117,7 @@ func TestLogin_SpecialSymbol(t *testing.T) {
 	users := &ApiUsersStub{}
 	api := NewApi(
 		&StatsdClientStub{}, &ApiDomainsStub{}, users, &ApiMailStub{},
-		&ApiPortProbeStub{}, "example.com")
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, "example.com")
 	email := "test@example.com"
 	password := "password;&\" "
 	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}
