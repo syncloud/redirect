@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/service"
 	"log"
@@ -43,7 +44,7 @@ type ApiCertbot interface {
 }
 
 type Api struct {
-	statsdClient StatsdClient
+	statsdClient metrics.StatsdClient
 	domains      ApiDomains
 	users        ApiUsers
 	mail         ApiMail
@@ -52,7 +53,7 @@ type Api struct {
 	domain       string
 }
 
-func NewApi(statsdClient StatsdClient, service ApiDomains, users ApiUsers, mail ApiMail, probe ApiPortProbe, certbot ApiCertbot, domain string) *Api {
+func NewApi(statsdClient metrics.StatsdClient, service ApiDomains, users ApiUsers, mail ApiMail, probe ApiPortProbe, certbot ApiCertbot, domain string) *Api {
 	return &Api{statsdClient: statsdClient, domains: service, users: users, mail: mail, probe: probe, certbot: certbot, domain: domain}
 }
 

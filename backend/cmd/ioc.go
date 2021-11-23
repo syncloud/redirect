@@ -3,6 +3,10 @@ package cmd
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
@@ -35,7 +39,9 @@ func NewMain() *Main {
 	statsdClient := statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
 		statsd.MaxPacketSize(1400),
 		statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
-	amazonDns := dns.New(statsdClient, config.AwsAccessKeyId(), config.AwsSecretAccessKey())
+	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(config.AwsAccessKeyId(), config.AwsSecretAccessKey(), "")}))
+	client := route53.New(mySession)
+	amazonDns := dns.New(statsdClient, client)
 	actions := service.NewActions(database)
 	smtpClient := smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
 		config.SmtpLogin(), config.SmtpPassword())

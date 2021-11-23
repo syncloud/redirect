@@ -1,4 +1,4 @@
-package rest
+package metrics
 
 import "github.com/smira/go-statsd"
 

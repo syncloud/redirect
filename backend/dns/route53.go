@@ -3,10 +3,8 @@ package dns
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/smira/go-statsd"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"strings"
@@ -37,21 +35,22 @@ type Dns interface {
 	GetHostedZoneNameServers(id string) ([]*string, error)
 }
 
-type AmazonDns struct {
-	client          *route53.Route53
-	statsdClient    *statsd.Client
-	accessKeyId     string
-	secretAccessKey string
+type Route53 interface {
+	ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
+	CreateHostedZone(input *route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
+	DeleteHostedZone(input *route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error)
+	GetHostedZone(input *route53.GetHostedZoneInput) (*route53.GetHostedZoneOutput, error)
 }
 
-func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string) *AmazonDns {
-	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(accessKeyId, secretAccessKey, "")}))
-	client := route53.New(mySession)
+type AmazonDns struct {
+	client       Route53
+	statsdClient metrics.StatsdClient
+}
+
+func New(statsdClient metrics.StatsdClient, client Route53) *AmazonDns {
 	return &AmazonDns{
 		client,
 		statsdClient,
-		accessKeyId,
-		secretAccessKey,
 	}
 }
 
