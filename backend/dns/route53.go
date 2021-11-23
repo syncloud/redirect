@@ -8,6 +8,7 @@ import (
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"strings"
+  "log"
 )
 
 var defaultIpv4 string
@@ -118,6 +119,7 @@ func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
 }
 
 func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, value string) error {
+  log.Println("certbot txt name ", name)
 	return a.commit([]*route53.Change{
 		a.change("UPSERT", name, `"`+value+`"`, "TXT"),
 	}, hostedZoneId)
