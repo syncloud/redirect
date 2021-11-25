@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
-	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/model"
 	"testing"
 )
@@ -36,8 +35,6 @@ func (dns *DnsStub) DeleteDomainRecords(domain *model.Domain) error {
 	dns.recordsDeleted = true
 	return nil
 }
-
-var _ dns.Dns = (*DnsStub)(nil)
 
 type DomainsDbStub struct {
 	userId       int64

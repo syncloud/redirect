@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/validator"
@@ -11,7 +10,7 @@ import (
 )
 
 type Domains struct {
-	amazonDns        dns.Dns
+	amazonDns        DomainsDns
 	db               DomainsDb
 	users            DomainsUsers
 	domain           string
@@ -33,7 +32,15 @@ type DomainsUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 }
 
-func NewDomains(dnsImpl dns.Dns, db DomainsDb, users DomainsUsers, domain string, freeHostedZoneId string) *Domains {
+type DomainsDns interface {
+	CreateHostedZone(domain string) (*string, error)
+	DeleteHostedZone(hostedZoneId string) error
+	UpdateDomainRecords(domain *model.Domain) error
+	DeleteDomainRecords(domain *model.Domain) error
+	GetHostedZoneNameServers(id string) ([]*string, error)
+}
+
+func NewDomains(dnsImpl DomainsDns, db DomainsDb, users DomainsUsers, domain string, freeHostedZoneId string) *Domains {
 	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain, freeHostedZoneId: freeHostedZoneId}
 }
 
