@@ -43,7 +43,7 @@ func (r *Route53Stub) GetHostedZone(input *route53.GetHostedZoneInput) (*route53
 func TestAmazonDns_CreateCertbotRecord_QuoteValue(t *testing.T) {
 	client := &Route53Stub{}
 	amazonDns := New(&StatsdClientStub{}, client)
-	err := amazonDns.CreateCertbotRecord("", "name", "value")
+	err := amazonDns.CreateCertbotRecord("", "name", []string{"value"})
 	assert.Nil(t, err)
 	record := client.resourceRecordSetsInput.ChangeBatch.Changes[0].ResourceRecordSet.ResourceRecords[0]
 	assert.Equal(t, `"value"`, *record.Value)

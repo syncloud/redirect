@@ -79,12 +79,12 @@ func (a *ApiPortProbeStub) Probe(token string, port int, protocol string, ip str
 type ApiCertbotStub struct {
 }
 
-func (a ApiCertbotStub) Present(token string, fqdn string, value string) error {
+func (a ApiCertbotStub) Present(token string, fqdn string, values []string) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (a ApiCertbotStub) CleanUp(token string, fqdn string, value string) error {
+func (a ApiCertbotStub) CleanUp(token string, fqdn string) error {
 	//TODO implement me
 	panic("implement me")
 }
