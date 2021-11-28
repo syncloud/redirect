@@ -24,10 +24,10 @@ func fail(w http.ResponseWriter, err error) {
 	response, statusCode := ErrorToResponse(err)
 	responseJson, err := json.Marshal(response)
 	if err != nil {
-		fmt.Printf("fail with error: %v \n", err)
+		fmt.Printf("fail with error: %v\n", err)
 		http.Error(w, err.Error(), statusCode)
 	} else {
-		fmt.Printf("fail with json\n")
+		fmt.Printf("fail with json: %v\n", err)
 		w.WriteHeader(statusCode)
 		fmt.Fprintln(w, string(responseJson))
 	}
