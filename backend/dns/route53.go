@@ -133,8 +133,8 @@ func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, values
 
 func (a *AmazonDns) DeleteCertbotRecord(hostedZoneId string, name string) error {
 	return a.commit([]*route53.Change{
-		a.change("UPSERT", name, "TXT", certbotTtl, `"clean"`),
-		a.change("DELETE", name, "TXT", certbotTtl, `"clean"`),
+		a.change("UPSERT", name, "TXT", certbotTtl, `"1"`, `"2"`),
+		a.change("DELETE", name, "TXT", certbotTtl, `"1"`, `"2"`),
 	}, hostedZoneId)
 }
 
