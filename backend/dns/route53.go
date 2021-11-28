@@ -127,7 +127,7 @@ func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, values
 		records = append(records, `"`+value+`"`)
 	}
 	return a.commit([]*route53.Change{
-		a.change("CREATE", name, "TXT", certbotTtl, records...),
+		a.change("UPSERT", name, "TXT", certbotTtl, records...),
 	}, hostedZoneId)
 }
 
