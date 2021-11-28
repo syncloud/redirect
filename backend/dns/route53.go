@@ -183,9 +183,9 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 	if dkim != nil {
 		changes = append(changes, a.changeDKIM(domain, *dkim, action))
 	}
-	changes = append(changes, a.change(action, domain, mx, defaultTtl, "MX"))
-	changes = append(changes, a.change(action, domain, spf, defaultTtl, "SPF"))
-	changes = append(changes, a.change(action, domain, spf, defaultTtl, "TXT"))
+	changes = append(changes, a.change(action, domain, "MX", defaultTtl, mx))
+	changes = append(changes, a.change(action, domain, "SPF", defaultTtl, spf))
+	changes = append(changes, a.change(action, domain, "TXT", defaultTtl, spf))
 
 	err := a.commit(changes, hostedZoneId)
 	return err
