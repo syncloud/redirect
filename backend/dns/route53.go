@@ -132,10 +132,19 @@ func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, values
 }
 
 func (a *AmazonDns) DeleteCertbotRecord(hostedZoneId string, name string) error {
-	return a.commit([]*route53.Change{
-		a.change("UPSERT", name, "TXT", certbotTtl, `"1"`, `"2"`),
-		a.change("DELETE", name, "TXT", certbotTtl, `"1"`, `"2"`),
+	err := a.commit([]*route53.Change{
+		a.change("UPSERT", name, "TXT", certbotTtl, `"cleanup"`),
 	}, hostedZoneId)
+	if err != nil {
+		return err
+	}
+	err = a.commit([]*route53.Change{
+		a.change("DELETE", name, "TXT", certbotTtl, `"cleanup"`),
+	}, hostedZoneId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *AmazonDns) change(action string, name string, changeType string, ttl int64, values ...string) *route53.Change {
@@ -197,6 +206,7 @@ func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
 		HostedZoneId: aws.String(hostedZoneId),
 	}
+	input.String()
 	_, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {
 		a.statsdClient.Incr("dns.client.error", 1)
