@@ -32,6 +32,9 @@ func (c Certbot) Present(token string, fqdn string, values []string) error {
 	if err != nil {
 		return err
 	}
+	if domain == nil {
+		return model.NewServiceError("unknown domain update token")
+	}
 	if !strings.Contains(fqdn, fmt.Sprintf(".%s", domain.Name)) {
 		return fmt.Errorf("only same domain is allowed")
 	}
@@ -43,6 +46,9 @@ func (c Certbot) CleanUp(token string, fqdn string) error {
 	domain, err := c.db.GetDomainByToken(token)
 	if err != nil {
 		return err
+	}
+	if domain == nil {
+		return model.NewServiceError("unknown domain update token")
 	}
 	if !strings.Contains(fqdn, fmt.Sprintf(".%s", domain.Name)) {
 		return fmt.Errorf("only same domain is allowed")
