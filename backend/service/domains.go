@@ -237,7 +237,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 
 	}
 	domain.BackwardCompatibleDomain(d.domain)
-	fmt.Printf("domain acquired %s, new token: %d\n", domain.Name, domain.UpdateToken)
+	fmt.Printf("domain acquired %s, new token: %s\n", domain.Name, domain.UpdateToken)
 	return domain, nil
 }
 
