@@ -79,10 +79,6 @@ func (d *Domain) DnsIpv4() *string {
 	return nil
 }
 
-func (d *Domain) IsFree(mainDomain string) bool {
-	return IsFree(d.Name, mainDomain)
-}
-
 func IsFree(domain string, mainDomain string) bool {
 	return strings.HasSuffix(domain, fmt.Sprintf(".%s", mainDomain))
 }

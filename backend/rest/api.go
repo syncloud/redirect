@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/service"
 	"log"
@@ -37,22 +38,30 @@ type ApiPortProbe interface {
 	Probe(token string, port int, protocol string, ip string) (*service.ProbeResponse, error)
 }
 
+type ApiCertbot interface {
+	Present(token string, fqdn string, values []string) error
+	CleanUp(token, fqdn string) error
+}
+
 type Api struct {
-	statsdClient StatsdClient
+	statsdClient metrics.StatsdClient
 	domains      ApiDomains
 	users        ApiUsers
 	mail         ApiMail
 	probe        ApiPortProbe
+	certbot      ApiCertbot
 	domain       string
 }
 
-func NewApi(statsdClient StatsdClient, service ApiDomains, users ApiUsers, mail ApiMail, probe ApiPortProbe, domain string) *Api {
-	return &Api{statsdClient: statsdClient, domains: service, users: users, mail: mail, probe: probe, domain: domain}
+func NewApi(statsdClient metrics.StatsdClient, service ApiDomains, users ApiUsers, mail ApiMail, probe ApiPortProbe, certbot ApiCertbot, domain string) *Api {
+	return &Api{statsdClient: statsdClient, domains: service, users: users, mail: mail, probe: probe, certbot: certbot, domain: domain}
 }
 
 func (a *Api) StartApi(socket string) {
 	r := mux.NewRouter()
 	r.HandleFunc("/status", Handle(a.Status)).Methods("GET")
+	r.HandleFunc("/certbot/present", Handle(a.CertbotPresent)).Methods("POST")
+	r.HandleFunc("/certbot/cleanup", Handle(a.CertbotCleanUp)).Methods("POST")
 	r.HandleFunc("/domain/update", Handle(a.DomainUpdate)).Methods("POST")
 	r.HandleFunc("/domain/get", Handle(a.DomainGet)).Methods("GET")
 	r.HandleFunc("/domain/acquire", a.DomainAcquireV1).Methods("POST")
@@ -219,6 +228,30 @@ func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{
 		return nil, err
 	}
 	return domain, nil
+}
+
+func (a *Api) CertbotPresent(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.certbot.present", 1)
+	request := model.CertbotPresentRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse request", err)
+		return nil, errors.New("invalid request")
+	}
+	err = a.certbot.Present(request.Token, request.Fqdn, request.Values)
+	return nil, err
+}
+
+func (a *Api) CertbotCleanUp(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.certbot.cleanup", 1)
+	request := model.CertbotCleanUpRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse request", err)
+		return nil, errors.New("invalid request")
+	}
+	err = a.certbot.CleanUp(request.Token, request.Fqdn)
+	return nil, err
 }
 
 func (a *Api) DomainGet(_ http.ResponseWriter, req *http.Request) (interface{}, error) {

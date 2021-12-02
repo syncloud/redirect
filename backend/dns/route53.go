@@ -3,12 +3,11 @@ package dns
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/smira/go-statsd"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
+	"log"
 	"strings"
 )
 
@@ -19,6 +18,8 @@ var defaultDkim string
 const (
 	defaultMx  = "1 mx"
 	defaultSpf = "\"v=spf1 -all\""
+	defaultTtl = 600
+	certbotTtl = 10
 )
 
 func init() {
@@ -30,26 +31,29 @@ func init() {
 type Dns interface {
 	CreateHostedZone(domain string) (*string, error)
 	DeleteHostedZone(hostedZoneId string) error
+	CreateCertbotRecord(hostedZoneId string, name string, value string) error
+	DeleteCertbotRecord(hostedZoneId string, name string, value string) error
 	UpdateDomainRecords(domain *model.Domain) error
 	DeleteDomainRecords(domain *model.Domain) error
 	GetHostedZoneNameServers(id string) ([]*string, error)
 }
 
-type AmazonDns struct {
-	client          *route53.Route53
-	statsdClient    *statsd.Client
-	accessKeyId     string
-	secretAccessKey string
+type Route53 interface {
+	ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
+	CreateHostedZone(input *route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
+	DeleteHostedZone(input *route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error)
+	GetHostedZone(input *route53.GetHostedZoneInput) (*route53.GetHostedZoneOutput, error)
 }
 
-func New(statsdClient *statsd.Client, accessKeyId string, secretAccessKey string) *AmazonDns {
-	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(accessKeyId, secretAccessKey, "")}))
-	client := route53.New(mySession)
+type AmazonDns struct {
+	client       Route53
+	statsdClient metrics.StatsdClient
+}
+
+func New(statsdClient metrics.StatsdClient, client Route53) *AmazonDns {
 	return &AmazonDns{
 		client,
 		statsdClient,
-		accessKeyId,
-		secretAccessKey,
 	}
 }
 
@@ -116,39 +120,64 @@ func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
 	return nil
 }
 
-func (a *AmazonDns) change(action string, name string, value string, changeType string) *route53.Change {
+func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, values []string) error {
+	log.Printf("certbot txt name: %v, values: %v", name, values)
+	var records []string
+	for _, value := range values {
+		records = append(records, `"`+value+`"`)
+	}
+	return a.commit([]*route53.Change{
+		a.change("UPSERT", name, "TXT", certbotTtl, records...),
+	}, hostedZoneId)
+}
+
+func (a *AmazonDns) DeleteCertbotRecord(hostedZoneId string, name string) error {
+	err := a.commit([]*route53.Change{
+		a.change("UPSERT", name, "TXT", certbotTtl, `"cleanup"`),
+	}, hostedZoneId)
+	if err != nil {
+		return err
+	}
+	err = a.commit([]*route53.Change{
+		a.change("DELETE", name, "TXT", certbotTtl, `"cleanup"`),
+	}, hostedZoneId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *AmazonDns) change(action string, name string, changeType string, ttl int64, values ...string) *route53.Change {
+	var records []*route53.ResourceRecord
+	for _, value := range values {
+		records = append(records, &route53.ResourceRecord{Value: aws.String(value)})
+	}
 	return &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
-			Name: aws.String(name),
-			ResourceRecords: []*route53.ResourceRecord{
-				{
-					Value: aws.String(value),
-				},
-			},
-			TTL:  aws.Int64(600),
-			Type: aws.String(changeType),
+			Name:            aws.String(name),
+			ResourceRecords: records,
+			TTL:             aws.Int64(ttl),
+			Type:            aws.String(changeType),
 		},
 	}
 }
 
 func (a *AmazonDns) changeA(ip string, domain string, action string) *route53.Change {
-	return a.change(action, domain, ip, "A")
+	return a.change(action, domain, "A", defaultTtl, ip)
 }
 
 func (a *AmazonDns) changeAAAA(ip string, domain string, action string) *route53.Change {
-	return a.change(action, domain, ip, "AAAA")
+	return a.change(action, domain, "AAAA", defaultTtl, ip)
 }
 
 func (a *AmazonDns) changeDKIM(domain string, dkim string, action string) *route53.Change {
 	name := fmt.Sprintf("mail._domainkey.%s", domain)
 	dkimValue := fmt.Sprintf("\"v=DKIM1; k=rsa; p=%s\"", dkim)
-	return a.change(action, name, dkimValue, "TXT")
+	return a.change(action, name, "TXT", defaultTtl, dkimValue)
 }
 
 func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim *string, spf string, mx string, action string, hostedZoneId string) error {
-
-	a.statsdClient.Incr("dns.ip.connect", 1)
 
 	var changes []*route53.Change
 
@@ -163,20 +192,27 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 	if dkim != nil {
 		changes = append(changes, a.changeDKIM(domain, *dkim, action))
 	}
-	changes = append(changes, a.change(action, domain, mx, "MX"))
-	changes = append(changes, a.change(action, domain, spf, "SPF"))
-	changes = append(changes, a.change(action, domain, spf, "TXT"))
+	changes = append(changes, a.change(action, domain, "MX", defaultTtl, mx))
+	changes = append(changes, a.change(action, domain, "SPF", defaultTtl, spf))
+	changes = append(changes, a.change(action, domain, "TXT", defaultTtl, spf))
 
+	err := a.commit(changes, hostedZoneId)
+	return err
+}
+
+func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error {
+	a.statsdClient.Incr("dns.client.connect", 1)
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
 		HostedZoneId: aws.String(hostedZoneId),
 	}
+	input.String()
 	_, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {
-		a.statsdClient.Incr("dns.ip.error", 1)
+		a.statsdClient.Incr("dns.client.error", 1)
 		return err
 	}
 
-	a.statsdClient.Incr("dns.ip.commit", 1)
+	a.statsdClient.Incr("dns.client.commit", 1)
 	return nil
 }

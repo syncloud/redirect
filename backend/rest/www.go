@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"log"
 	"net"
@@ -40,7 +41,7 @@ type WwwMail interface {
 }
 
 type Www struct {
-	statsdClient   StatsdClient
+	statsdClient   metrics.StatsdClient
 	domains        WwwDomains
 	users          WwwUsers
 	actions        WwwActions
@@ -51,7 +52,7 @@ type Www struct {
 	store          *sessions.CookieStore
 }
 
-func NewWww(statsdClient StatsdClient, domains WwwDomains, users WwwUsers, actions WwwActions,
+func NewWww(statsdClient metrics.StatsdClient, domains WwwDomains, users WwwUsers, actions WwwActions,
 	mail WwwMail, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
 
 	return &Www{statsdClient: statsdClient, domains: domains, users: users, actions: actions,
