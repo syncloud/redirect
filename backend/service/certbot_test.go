@@ -9,11 +9,11 @@ import (
 type CertbotDnsStub struct {
 }
 
-func (c CertbotDnsStub) CreateCertbotRecord(hostedZoneId string, name string, value string) error {
+func (c CertbotDnsStub) CreateCertbotRecord(hostedZoneId string, name string, values []string) error {
 	return nil
 }
 
-func (c CertbotDnsStub) DeleteCertbotRecord(hostedZoneId string, name string, value string) error {
+func (c CertbotDnsStub) DeleteCertbotRecord(hostedZoneId string, name string) error {
 	return nil
 }
 
@@ -31,7 +31,7 @@ func TestPresentMyDomain(t *testing.T) {
 	dnsStub := &CertbotDnsStub{}
 	certbot := NewCertbot(db, dnsStub)
 
-	err := certbot.Present("token", "acme-123.test.syncloud.it", "123value")
+	err := certbot.Present("token", "acme-123.test.syncloud.it", []string{"123value"})
 
 	assert.Nil(t, err)
 }
@@ -42,7 +42,7 @@ func TestPresentNotMyDomain(t *testing.T) {
 	dnsStub := &CertbotDnsStub{}
 	certbot := NewCertbot(db, dnsStub)
 
-	err := certbot.Present("token", "acme-123.test.syncloud.it", "123value")
+	err := certbot.Present("token", "acme-123.test.syncloud.it", []string{"123value"})
 
 	assert.NotNil(t, err)
 }
@@ -53,7 +53,7 @@ func TestPresentNotMyDomainContains(t *testing.T) {
 	dnsStub := &CertbotDnsStub{}
 	certbot := NewCertbot(db, dnsStub)
 
-	err := certbot.Present("token", "acme-123.11test.syncloud.it", "123value")
+	err := certbot.Present("token", "acme-123.11test.syncloud.it", []string{"123value"})
 
 	assert.NotNil(t, err)
 }
@@ -64,7 +64,7 @@ func TestCleanUpMyDomain(t *testing.T) {
 	dnsStub := &CertbotDnsStub{}
 	certbot := NewCertbot(db, dnsStub)
 
-	err := certbot.CleanUp("token", "acme-123.test.syncloud.it", "123value")
+	err := certbot.CleanUp("token", "acme-123.test.syncloud.it")
 
 	assert.Nil(t, err)
 }
@@ -75,7 +75,7 @@ func TestCleanUpNotMyDomain(t *testing.T) {
 	dnsStub := &CertbotDnsStub{}
 	certbot := NewCertbot(db, dnsStub)
 
-	err := certbot.CleanUp("token", "acme-123.test.syncloud.it", "123value")
+	err := certbot.CleanUp("token", "acme-123.test.syncloud.it")
 
 	assert.NotNil(t, err)
 }
@@ -86,7 +86,7 @@ func TestCleanUpNotMyDomainContains(t *testing.T) {
 	dnsStub := &CertbotDnsStub{}
 	certbot := NewCertbot(db, dnsStub)
 
-	err := certbot.CleanUp("token", "acme-123.11test.syncloud.it", "123value")
+	err := certbot.CleanUp("token", "acme-123.11test.syncloud.it")
 
 	assert.NotNil(t, err)
 }

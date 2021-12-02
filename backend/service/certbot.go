@@ -23,30 +23,36 @@ type CertbotDb interface {
 }
 
 type CertbotDns interface {
-	CreateCertbotRecord(hostedZoneId string, name string, value string) error
-	DeleteCertbotRecord(hostedZoneId string, name string, value string) error
+	CreateCertbotRecord(hostedZoneId string, name string, values []string) error
+	DeleteCertbotRecord(hostedZoneId string, name string) error
 }
 
-func (c Certbot) Present(token string, fqdn string, value string) error {
+func (c Certbot) Present(token string, fqdn string, values []string) error {
 	domain, err := c.db.GetDomainByToken(token)
 	if err != nil {
 		return err
 	}
+	if domain == nil {
+		return model.NewServiceError("unknown domain update token")
+	}
 	if !strings.Contains(fqdn, fmt.Sprintf(".%s", domain.Name)) {
 		return fmt.Errorf("only same domain is allowed")
 	}
-	err = c.amazonDns.CreateCertbotRecord(domain.HostedZoneId, fqdn, value)
+	err = c.amazonDns.CreateCertbotRecord(domain.HostedZoneId, fqdn, values)
 	return err
 }
 
-func (c Certbot) CleanUp(token string, fqdn string, value string) error {
+func (c Certbot) CleanUp(token string, fqdn string) error {
 	domain, err := c.db.GetDomainByToken(token)
 	if err != nil {
 		return err
 	}
+	if domain == nil {
+		return model.NewServiceError("unknown domain update token")
+	}
 	if !strings.Contains(fqdn, fmt.Sprintf(".%s", domain.Name)) {
 		return fmt.Errorf("only same domain is allowed")
 	}
-	err = c.amazonDns.DeleteCertbotRecord(domain.HostedZoneId, fqdn, value)
+	err = c.amazonDns.DeleteCertbotRecord(domain.HostedZoneId, fqdn)
 	return err
 }

@@ -50,7 +50,7 @@ def test_start(module_setup, device, device_host, domain, build_number):
     device.run_ssh("snap remove platform")
     device.run_ssh("apt-get update")
     device.run_ssh(
-        "apt-get install -y mysql-client default-libmysqlclient-dev apache2 python libpython2.7 python-pip libapache2-mod-wsgi python-mysqldb python-dev openssl > {0}/apt.log".format(
+        "apt-get install -y mysql-client default-libmysqlclient-dev apache2 libapache2-mod-wsgi openssl > {0}/apt.log".format(
             TMP_DIR))
     device.scp_to_device("fakecertificate.sh", "/")
     device.run_ssh("/fakecertificate.sh")
@@ -847,3 +847,46 @@ def test_user_log_include_support(domain, artifact_dir):
     email = smtp.emails()[0]
     smtp.clear()
     assert 'test_user_log_include_support' in email
+
+
+def test_certbot_support(domain, artifact_dir):
+    email = 'test_certbot_support@syncloud.test'
+    password = 'pass123456'
+    token = create_user(domain, email, password, artifact_dir)
+
+    user_domain = 'test_certbot_support.{}'.format(domain)
+    update_token = api.domain_acquire(domain, user_domain, email, password)
+
+    response = requests.post('https://api.{0}/certbot/present'.format(domain),
+                             json={
+                                 'token': update_token,
+                                 'fqdn': '_certbot.{}'.format(user_domain),
+                                 'values': ['value1']
+                             },
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    response = requests.post('https://api.{0}/certbot/present'.format(domain),
+                             json={
+                                 'token': update_token,
+                                 'fqdn': '_certbot.{}'.format(user_domain),
+                                 'values': ['value1', 'value2']
+                             },
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    response = requests.post('https://api.{0}/certbot/cleanup'.format(domain),
+                             json={
+                                 'token': update_token,
+                                 'fqdn': '_certbot.{}'.format(user_domain)
+                             },
+                             verify=False)
+    assert response.status_code == 200, response.text
+
+    response = requests.post('https://api.{0}/certbot/cleanup'.format(domain),
+                             json={
+                                 'token': update_token,
+                                 'fqdn': '_certbot.{}'.format(user_domain)
+                             },
+                             verify=False)
+    assert response.status_code == 200, response.text
