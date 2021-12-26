@@ -36,7 +36,7 @@ func (c Certbot) Present(token string, fqdn string, values []string) error {
 		return model.NewServiceError("unknown domain update token")
 	}
 	if !strings.Contains(fqdn, fmt.Sprintf(".%s", domain.Name)) {
-		return fmt.Errorf("only same domain is allowed")
+		return fmt.Errorf("only same domain is allowed, requested: %s, owned: %s", fqdn, domain.Name)
 	}
 	err = c.amazonDns.CreateCertbotRecord(domain.HostedZoneId, fqdn, values)
 	return err
@@ -51,7 +51,7 @@ func (c Certbot) CleanUp(token string, fqdn string) error {
 		return model.NewServiceError("unknown domain update token")
 	}
 	if !strings.Contains(fqdn, fmt.Sprintf(".%s", domain.Name)) {
-		return fmt.Errorf("only same domain is allowed")
+		return fmt.Errorf("only same domain is allowed, requested: %s, owned: %s", fqdn, domain.Name)
 	}
 	err = c.amazonDns.DeleteCertbotRecord(domain.HostedZoneId, fqdn)
 	return err
