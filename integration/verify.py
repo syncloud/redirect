@@ -459,6 +459,42 @@ def test_domain_new_v2(domain, artifact_dir):
     data.pop('last_update', None)
     assert expected_data == data
 
+def test_domain_lower_case(domain, artifact_dir):
+    email = 'test_domain_lower_case@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+
+    request_domain = "test_domain_LOWER_case.syncloud.test"
+    acquire_data = dict(
+        domain=request_domain,
+        device_mac_address='00:00:00:00:00:00',
+        device_name='my-super-board',
+        device_title='My Super Board',
+        email=email,
+        password=password)
+    response = requests.post('https://api.{0}/domain/acquire_v2'.format(domain), json=acquire_data,
+                             verify=False)
+
+    assert response.status_code == 200
+    domain_data = json.loads(response.text)['data']
+
+    update_token = domain_data['update_token']
+    assert update_token is not None
+
+    expected_data = {
+        'update_token': update_token,
+        'user_domain': 'test_domain_lower_case',
+        'device_mac_address': '00:00:00:00:00:00',
+        'device_name': 'my-super-board',
+        'device_title': 'My Super Board',
+        'map_local_address': False,
+        'name': 'test_domain_lower_case.syncloud.test'
+    }
+
+    data = get_domain(update_token, domain)
+    data.pop('last_update', None)
+    assert expected_data == data
+
 
 def test_domain_existing(domain, artifact_dir):
     email_1 = 'test_domain_existing_@syncloud.test'
