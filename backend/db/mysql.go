@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/syncloud/redirect/model"
 	"log"
+	"strings"
 	"time"
 )
 import _ "github.com/go-sql-driver/mysql"
@@ -220,7 +221,7 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 			"web_port, "+
 			"web_local_port, "+
 			"last_update, "+
-			"name, "+
+			"lower(name), "+
 			"hosted_zone_id "+
 			"FROM domain "+
 			"WHERE "+field+" = ?", value)
@@ -300,7 +301,7 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 	rows, err := mysql.db.Query(
 		"SELECT "+
 			"id, "+
-			"name, "+
+			"lower(name), "+
 			"ip, "+
 			"ipv6, "+
 			"dkim_key, "+
@@ -391,7 +392,7 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 		return err
 	}
 	_, err = stmt.Exec(
-		domain.Name,
+		strings.ToLower(domain.Name),
 		domain.Ip,
 		domain.Ipv6,
 		domain.DkimKey,
@@ -434,7 +435,7 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 		return err
 	}
 	_, err = stmt.Exec(
-		domain.Name,
+		strings.ToLower(domain.Name),
 		domain.UpdateToken,
 		domain.UserId,
 		domain.DeviceMacAddress,
