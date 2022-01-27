@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/syncloud/redirect/model"
+	"log"
 	"net/http"
 )
 
@@ -24,14 +25,14 @@ func fail(w http.ResponseWriter, err error) {
 	response, statusCode := ErrorToResponse(err)
 	responseJson, errJson := json.Marshal(response)
 	if errJson != nil {
-		fmt.Printf("fail with error: %v (%v)\n", errJson, err)
+		log.Printf("fail with error: %v (%v)\n", errJson, err)
 		http.Error(w, err.Error(), statusCode)
 	} else {
-		fmt.Printf("fail with json: %v\n", err)
+		log.Printf("fail with json: %v\n", err)
 		w.WriteHeader(statusCode)
 		_, err := fmt.Fprintln(w, string(responseJson))
 		if err != nil {
-			fmt.Printf("writer error: %v\n", err)
+			log.Printf("writer error: %v\n", err)
 		}
 	}
 }
@@ -64,7 +65,7 @@ func success(w http.ResponseWriter, data interface{}) {
 
 func headers(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("%s: %s\n", r.Method, r.RequestURI)
+		log.Printf("%s: %s\n", r.Method, r.RequestURI)
 		w.Header().Add("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
@@ -82,6 +83,6 @@ func Handle(f func(w http.ResponseWriter, r *http.Request) (interface{}, error))
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("404 %s: %s\n", r.Method, r.RequestURI)
+	log.Printf("404 %s: %s\n", r.Method, r.RequestURI)
 	http.NotFound(w, r)
 }

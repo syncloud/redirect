@@ -11,12 +11,6 @@ import (
 	"time"
 )
 
-const (
-	PremiumStatusInactive = 1
-	PremiumStatusPending  = 2
-	PremiumStatusActive   = 3
-)
-
 type UsersDb interface {
 	GetUserByEmail(email string) (*model.User, error)
 	GetUserByUpdateToken(updateToken string) (*model.User, error)
@@ -146,6 +140,7 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("user created")
 
 	if u.activateByEmail {
 		action, err := u.actions.UpsertActivateAction(userId)
@@ -156,6 +151,7 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 		if err != nil {
 			return nil, err
 		}
+		log.Printf("activation email sent")
 	}
 
 	return user, nil

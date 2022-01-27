@@ -24,7 +24,17 @@ type Main struct {
 	www    *rest.Www
 }
 
+type logWriter struct {
+}
+
+func (writer logWriter) Write(bytes []byte) (int, error) {
+	return fmt.Print(string(bytes))
+}
+
 func NewMain() *Main {
+	log.SetFlags(0)
+	log.SetOutput(new(logWriter))
+
 	if len(os.Args) < 4 {
 		log.Println("usage: ", os.Args[0], "config.cfg", "secret.cfg", "mail_dir")
 		return nil

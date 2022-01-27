@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
 	"github.com/syncloud/redirect/utils"
+	"log"
 	"os"
 	"time"
 )
@@ -13,7 +13,7 @@ import (
 func main() {
 
 	if len(os.Args) < 5 {
-		fmt.Println("usage: ", os.Args[0], "config", "secret", "mail_path", "sql_email_filter")
+		log.Println("usage: ", os.Args[0], "config", "secret", "mail_path", "sql_email_filter")
 		return
 	}
 
@@ -35,15 +35,15 @@ func main() {
 	}
 	for _, user := range users {
 		if user.NotificationEnabled {
-			fmt.Println("sending: ", user.Email)
+			log.Println("sending: ", user.Email)
 			err := mail.SendReleaseAnnouncement(user.Email)
 			if err != nil {
-				fmt.Println("send error: ", err)
+				log.Println("send error: ", err)
 				return
 			}
 			time.Sleep(time.Second)
 		} else {
-			fmt.Println("skipping: ", user.Email)
+			log.Println("skipping: ", user.Email)
 		}
 	}
 

@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"strings"
 	"time"
@@ -56,7 +57,7 @@ func (d *Domain) DnsIpv6() *string {
 	if d.Ipv6 != nil {
 		ip := net.ParseIP(*d.Ipv6)
 		if ip.To4() == nil && ip.To16() != nil {
-			fmt.Printf("ipv6: %s\n", *d.Ipv6)
+			log.Printf("ipv6: %s\n", *d.Ipv6)
 			return d.Ipv6
 		}
 	}
@@ -64,7 +65,7 @@ func (d *Domain) DnsIpv6() *string {
 	if accessIp != nil {
 		ip := net.ParseIP(*accessIp)
 		if ip.To4() == nil && ip.To16() != nil {
-			fmt.Printf("ipv6: %s\n", *accessIp)
+			log.Printf("ipv6: %s\n", *accessIp)
 			return accessIp
 		}
 	}
