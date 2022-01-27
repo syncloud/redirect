@@ -1,15 +1,12 @@
 <template>
 
-  <div class="container">
+  <div class="container" style="text-align: center">
     <h2>Activation</h2>
     <br/>
-    <div class="row">
-      <div id="activated" class="col-10 col-md-10 col-sm-10 col-lg-10" style="font-size: 18px">
-        {{ message }}
-      </div>
-    </div>
+    <span>
+      {{ message }}
+    </span>
   </div>
-
 </template>
 
 <script>
