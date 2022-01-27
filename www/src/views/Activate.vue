@@ -3,7 +3,7 @@
   <div class="container" style="text-align: center">
     <h2>Activation</h2>
     <br/>
-    <span>
+    <span id="activated">
       {{ message }}
     </span>
   </div>
