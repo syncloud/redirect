@@ -1,4 +1,3 @@
-import json
 import socket
 
 import time
@@ -6,7 +5,6 @@ from os.path import dirname, join
 from subprocess import check_output
 
 import pytest
-import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -76,9 +74,10 @@ def test_register(driver, ui_mode, screenshot_dir):
     password.send_keys(DEVICE_PASSWORD)
     screenshots(driver, screenshot_dir, 'register-credentials-' + ui_mode)
     password.send_keys(Keys.RETURN)
-    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.ID, 'email')))
+    complete_header = "//h2[text()='Complete']"
+    wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, complete_header)))
 
-    screenshots(driver, screenshot_dir, 'login-' + ui_mode)
+    screenshots(driver, screenshot_dir, 'complete-registration-' + ui_mode)
     activate_url = smtp.get_activate_url(smtp.emails()[0])
     smtp.clear()
     driver.get(activate_url)
