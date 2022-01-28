@@ -82,7 +82,7 @@ def test_register(driver, ui_mode, screenshot_dir):
     smtp.clear()
     driver.get(activate_url)
     print('activate_url: ' + activate_url)
-    activated_status = "//div[text()='User was activated']"
+    activated_status = "//span[text()='User was activated']"
     wait_or_screenshot(driver, ui_mode, screenshot_dir, EC.presence_of_element_located((By.XPATH, activated_status)))
 
 
