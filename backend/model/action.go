@@ -9,4 +9,3 @@ type Action struct {
 	Token        string
 	Timestamp    time.Time
 }
-

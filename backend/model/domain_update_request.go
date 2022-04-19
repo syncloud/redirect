@@ -11,4 +11,6 @@ type DomainUpdateRequest struct {
 	WebProtocol     *string `json:"web_protocol,omitempty"`
 	WebLocalPort    *int    `json:"web_local_port,omitempty"`
 	WebPort         *int    `json:"web_port,omitempty"`
+	Ipv4Enabled     *bool   `json:"ipv4_enabled,omitempty"`
+	Ipv6Enabled     *bool   `json:"ipv6_enabled,omitempty"`
 }

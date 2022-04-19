@@ -274,12 +274,22 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, model.NewServiceError("unknown domain update token")
 	}
 
+	ipv4 := ip
+	localIpv4 := request.LocalIp
+	if request.Ipv4Enabled != nil && !*request.Ipv4Enabled {
+		ipv4 = nil
+		localIpv4 = nil
+	}
+	if request.Ipv6Enabled != nil && !*request.Ipv6Enabled {
+		ipv6 = nil
+	}
+
 	changed := Changed(
 		domain.MapLocalAddress, domain.Ip, domain.Ipv6, domain.DkimKey, domain.LocalIp,
-		mapLocalAddress, ip, ipv6, dkimKey, request.LocalIp)
+		mapLocalAddress, ipv4, ipv6, dkimKey, localIpv4)
 
-	domain.Ip = ip
-	domain.LocalIp = request.LocalIp
+	domain.Ip = ipv4
+	domain.LocalIp = localIpv4
 	domain.Ipv6 = ipv6
 	domain.DkimKey = dkimKey
 	domain.MapLocalAddress = mapLocalAddress
