@@ -13,28 +13,29 @@ import (
 )
 
 type ApiDomainsStub struct {
+	domainUpdateRequest model.DomainUpdateRequest
 }
 
-func (w *ApiDomainsStub) GetDomains(user *model.User) ([]*model.Domain, error) {
+func (d *ApiDomainsStub) GetDomains(user *model.User) ([]*model.Domain, error) {
 	return []*model.Domain{}, nil
 }
 
-func (w *ApiDomainsStub) DomainAcquire(request model.DomainAcquireRequest, domainField string) (*model.Domain, error) {
+func (d *ApiDomainsStub) DomainAcquire(request model.DomainAcquireRequest, domainField string) (*model.Domain, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (w *ApiDomainsStub) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
+func (d *ApiDomainsStub) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (w *ApiDomainsStub) Update(request model.DomainUpdateRequest, requestIp *string) (*model.Domain, error) {
-	//TODO implement me
-	panic("implement me")
+func (d *ApiDomainsStub) Update(request model.DomainUpdateRequest, requestIp *string) (*model.Domain, error) {
+	d.domainUpdateRequest = request
+	return &model.Domain{}, nil
 }
 
-func (w *ApiDomainsStub) GetDomain(token string) (*model.Domain, error) {
+func (d *ApiDomainsStub) GetDomain(token string) (*model.Domain, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -137,5 +138,53 @@ func TestLogin_SpecialSymbol(t *testing.T) {
 	}
 	assert.Equal(t, email, *users.email)
 	assert.Equal(t, password, *users.password)
+
+}
+
+func TestDomainUpdate_Ipv4Enabled(t *testing.T) {
+
+	domains := &ApiDomainsStub{}
+	api := NewApi(
+		&StatsdClientStub{}, domains, &ApiUsersStub{}, &ApiMailStub{},
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, "example.com")
+	request := `
+{ "port": 1 }
+`
+	body := bytes.NewBufferString(request)
+	req, err := http.NewRequest("GET", "/", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.RemoteAddr = "127.0.0.1:0"
+	rr := httptest.NewRecorder()
+	_, err = api.DomainUpdate(rr, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.True(t, domains.domainUpdateRequest.Ipv4Enabled)
+
+}
+
+func TestDomainUpdate_Ipv4Disabled(t *testing.T) {
+
+	domains := &ApiDomainsStub{}
+	api := NewApi(
+		&StatsdClientStub{}, domains, &ApiUsersStub{}, &ApiMailStub{},
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, "example.com")
+	request := `
+{ "ipv4_enabled": false}
+`
+	body := bytes.NewBufferString(request)
+	req, err := http.NewRequest("GET", "/", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.RemoteAddr = "127.0.0.1:0"
+	rr := httptest.NewRecorder()
+	_, err = api.DomainUpdate(rr, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.False(t, domains.domainUpdateRequest.Ipv4Enabled)
 
 }

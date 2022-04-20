@@ -212,7 +212,7 @@ func (a *Api) DomainAvailability(_ http.ResponseWriter, req *http.Request) (inte
 
 func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.update", 1)
-	request := model.DomainUpdateRequest{MapLocalAddress: false, Ipv4Enablex: false, Ipv6Enabled: false}
+	request := model.DomainUpdateRequest{MapLocalAddress: false, Ipv4Enabled: true, Ipv6Enabled: true}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
 		log.Println("unable to parse domain update request", err)
