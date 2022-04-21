@@ -431,5 +431,24 @@ func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}
 		}
 	}
 
-	return a.probe.Probe(request.Token, request.Port, *ip)
+	probe, err := a.probe.Probe(request.Token, request.Port, *ip)
+	if err != nil {
+		return nil, err
+	}
+
+	if probe.StatusCode != 200 {
+		resultAddr := net.ParseIP(probe.DeviceIp)
+		ipType := "4"
+		resultIp := ""
+		if resultAddr.To4() == nil {
+			ipType = "6"
+			resultIp = resultAddr.To16().String()
+		} else {
+			resultIp = resultAddr.To4().String()
+		}
+
+		return nil, fmt.Errorf("using device public IP: '%v' which is IPv%v", resultIp, ipType)
+	}
+
+	return "OK", nil
 }
