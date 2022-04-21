@@ -16,16 +16,16 @@ type ApiDomainsStub struct {
 	domainUpdateRequest model.DomainUpdateRequest
 }
 
-func (d *ApiDomainsStub) GetDomains(user *model.User) ([]*model.Domain, error) {
+func (d *ApiDomainsStub) GetDomains(_ *model.User) ([]*model.Domain, error) {
 	return []*model.Domain{}, nil
 }
 
-func (d *ApiDomainsStub) DomainAcquire(request model.DomainAcquireRequest, domainField string) (*model.Domain, error) {
+func (d *ApiDomainsStub) DomainAcquire(_ model.DomainAcquireRequest, _ string) (*model.Domain, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (d *ApiDomainsStub) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
+func (d *ApiDomainsStub) Availability(_ model.DomainAvailabilityRequest) (*model.Domain, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -35,7 +35,7 @@ func (d *ApiDomainsStub) Update(request model.DomainUpdateRequest, requestIp *st
 	return &model.Domain{}, nil
 }
 
-func (d *ApiDomainsStub) GetDomain(token string) (*model.Domain, error) {
+func (d *ApiDomainsStub) GetDomain(_ string) (*model.Domain, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -45,7 +45,7 @@ type ApiUsersStub struct {
 	password *string
 }
 
-func (a *ApiUsersStub) CreateNewUser(request model.UserCreateRequest) (*model.User, error) {
+func (a *ApiUsersStub) CreateNewUser(_ model.UserCreateRequest) (*model.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -56,7 +56,7 @@ func (a *ApiUsersStub) Authenticate(email *string, password *string) (*model.Use
 	return &model.User{Email: *email}, nil
 }
 
-func (a *ApiUsersStub) GetUserByUpdateToken(updateToken string) (*model.User, error) {
+func (a *ApiUsersStub) GetUserByUpdateToken(_ string) (*model.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -64,7 +64,7 @@ func (a *ApiUsersStub) GetUserByUpdateToken(updateToken string) (*model.User, er
 type ApiMailStub struct {
 }
 
-func (a *ApiMailStub) SendLogs(to string, data string, includeSupport bool) error {
+func (a *ApiMailStub) SendLogs(_ string, _ string, _ bool) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -72,7 +72,7 @@ func (a *ApiMailStub) SendLogs(to string, data string, includeSupport bool) erro
 type ApiPortProbeStub struct {
 }
 
-func (a *ApiPortProbeStub) Probe(token string, port int, protocol string, ip string) (*service.ProbeResponse, error) {
+func (a *ApiPortProbeStub) Probe(_ string, _ int, _ string) (*service.ProbeResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -80,12 +80,12 @@ func (a *ApiPortProbeStub) Probe(token string, port int, protocol string, ip str
 type ApiCertbotStub struct {
 }
 
-func (a ApiCertbotStub) Present(token string, fqdn string, values []string) error {
+func (a ApiCertbotStub) Present(_ string, _ string, _ []string) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (a ApiCertbotStub) CleanUp(token string, fqdn string) error {
+func (a ApiCertbotStub) CleanUp(_ string, _ string) error {
 	//TODO implement me
 	panic("implement me")
 }

@@ -28,7 +28,7 @@ func NewPortProbe(db ProbeDb) *PortProbe {
 	return &PortProbe{db: db}
 }
 
-func (p PortProbe) Probe(token string, port int, protocol string, ip string) (*ProbeResponse, error) {
+func (p PortProbe) Probe(token string, port int, ip string) (*ProbeResponse, error) {
 
 	domain, err := p.db.GetDomainByToken(token)
 	if err != nil {
@@ -44,7 +44,7 @@ func (p PortProbe) Probe(token string, port int, protocol string, ip string) (*P
 		return nil, fmt.Errorf("unknown user for domain update token: %s", token)
 	}
 
-	url := fmt.Sprintf("%s://%s:%d/ping", protocol, ip, port)
+	url := fmt.Sprintf("https://%s:%d/ping", ip, port)
 	client := &http.Client{
 		Timeout: time.Second * 1,
 		Transport: &http.Transport{
