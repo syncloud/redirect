@@ -447,7 +447,7 @@ func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}
 			resultIp = resultAddr.To4().String()
 		}
 
-		return nil, fmt.Errorf("using device public IP: '%v' which is IPv%v", resultIp, ipType)
+		return nil, model.NewServiceErrorWithCode(fmt.Sprintf("using device public IP: '%v' which is IPv%v", resultIp, ipType), 200)
 	}
 
 	return "OK", nil
