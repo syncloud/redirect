@@ -44,7 +44,7 @@ export default {
     reset: function (event) {
       axios.post('api/user/reset_password', { email: this.email })
         .then(_ => {
-          this.$router.push('/login')
+          this.$router.push('/check-email')
         })
         .catch(_ => {
           this.$router.push('/error')

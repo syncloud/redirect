@@ -1,5 +1,5 @@
 let state = {
-  loggedIn: true,
+  loggedIn: false,
   credentials: {
     user: '11',
     password: '2'

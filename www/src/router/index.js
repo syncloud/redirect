@@ -42,6 +42,11 @@ const routes = [
     component: () => import('../views/Register.vue')
   },
   {
+    path: '/check-email',
+    name: 'CheckEmail',
+    component: () => import('../views/CheckEmail.vue')
+  },
+  {
     path: '/',
     name: 'Devices',
     component: () => import('../views/Devices.vue')

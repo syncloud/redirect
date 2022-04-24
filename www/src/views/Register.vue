@@ -85,7 +85,7 @@ export default {
       this.isError = false
       axios.post('/api/user/create', { email: this.email, password: this.password })
         .then(_ => {
-          this.$router.push('/login')
+          this.$router.push('/check-email')
         })
         .catch(err => {
           if ('data' in err.response) {

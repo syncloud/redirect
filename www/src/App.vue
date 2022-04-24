@@ -34,7 +34,7 @@ export default {
   },
   watch: {
     $route (to, from) {
-      console.log('route change from ' + from.path + ' to ' + to.path)
+      // console.log('route change from ' + from.path + ' to ' + to.path)
       this.currentPath = to.path
     }
   },
@@ -52,7 +52,7 @@ export default {
           this.email = ''
           this.loggedIn = false
           if (!publicRoutes.includes(this.currentPath)) {
-            console.log('redirect to login from ' + this.currentPath)
+            // console.log('redirect to login from ' + this.currentPath)
             this.$router.push('/login')
           }
         })

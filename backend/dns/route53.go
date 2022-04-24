@@ -58,7 +58,7 @@ func New(statsdClient metrics.StatsdClient, client Route53) *AmazonDns {
 }
 
 func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
-	fmt.Printf("create hosted zone for: %v\n", domain)
+	log.Printf("create hosted zone for: %v\n", domain)
 	zone, err := a.client.CreateHostedZone(&route53.CreateHostedZoneInput{
 		CallerReference:  aws.String(utils.Uuid()),
 		HostedZoneConfig: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)},
@@ -68,31 +68,31 @@ func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
 		return nil, err
 	}
 	id := strings.ReplaceAll(*zone.HostedZone.Id, "/hostedzone/", "")
-	fmt.Printf("created hosted zone id: %s\n", id)
+	log.Printf("created hosted zone id: %s\n", id)
 	return &id, nil
 }
 
 func (a *AmazonDns) GetHostedZoneNameServers(id string) ([]*string, error) {
-	fmt.Printf("get hosted zone for: %v\n", id)
+	log.Printf("get hosted zone for: %v\n", id)
 	zone, err := a.client.GetHostedZone(&route53.GetHostedZoneInput{
 		Id: aws.String(id),
 	})
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("created hosted zone id: %s\n", id)
+	log.Printf("got hosted zone id: %s\n", id)
 	return zone.DelegationSet.NameServers, nil
 }
 
 func (a *AmazonDns) DeleteHostedZone(hostedZoneId string) error {
-	fmt.Printf("delete hosted zone: %s\n", hostedZoneId)
+	log.Printf("delete hosted zone: %s\n", hostedZoneId)
 	output, err := a.client.DeleteHostedZone(&route53.DeleteHostedZoneInput{
 		Id: aws.String(hostedZoneId),
 	})
 	if err != nil {
 		return err
 	}
-	fmt.Printf("deleted hosted zone output: %v\n", output)
+	log.Printf("deleted hosted zone output: %v\n", output)
 	return nil
 }
 
@@ -206,7 +206,6 @@ func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
 		HostedZoneId: aws.String(hostedZoneId),
 	}
-	input.String()
 	_, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {
 		a.statsdClient.Incr("dns.client.error", 1)

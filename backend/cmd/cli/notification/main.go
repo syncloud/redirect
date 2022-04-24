@@ -8,6 +8,7 @@ import (
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
 	"github.com/syncloud/redirect/utils"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -16,7 +17,7 @@ import (
 func main() {
 
 	if len(os.Args) < 5 {
-		fmt.Println("usage: ", os.Args[0], "config", "secret", "mail_path", "sql_email_filter")
+		log.Println("usage: ", os.Args[0], "config", "secret", "mail_path", "sql_email_filter")
 		return
 	}
 
