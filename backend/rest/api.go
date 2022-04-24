@@ -35,7 +35,7 @@ type ApiMail interface {
 }
 
 type ApiPortProbe interface {
-	Probe(token string, port int, protocol string, ip string) (*service.ProbeResponse, error)
+	Probe(token string, port int, ip string) (*service.ProbeResponse, error)
 }
 
 type ApiCertbot interface {
@@ -73,6 +73,7 @@ func (a *Api) StartApi(socket string) {
 	r.HandleFunc("/user", Handle(a.User)).Methods("POST")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
+	r.HandleFunc("/probe/port_v3", Handle(a.PortProbeV3)).Methods("POST")
 	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 
 	r.Use(headers)
@@ -212,7 +213,7 @@ func (a *Api) DomainAvailability(_ http.ResponseWriter, req *http.Request) (inte
 
 func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	a.statsdClient.Incr("rest.domain.update", 1)
-	request := model.DomainUpdateRequest{MapLocalAddress: false}
+	request := model.DomainUpdateRequest{MapLocalAddress: false, Ipv4Enabled: true, Ipv6Enabled: true}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
 		log.Println("unable to parse domain update request", err)
@@ -388,10 +389,6 @@ func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	protocol := "https"
-	if protocolParam, ok := req.URL.Query()["protocol"]; ok {
-		protocol = protocolParam[0]
-	}
 	requestIp, err := a.requestIp(req)
 	if err != nil {
 		fail(w, err)
@@ -402,7 +399,7 @@ func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
 		ip = ipParam[0]
 	}
 
-	result, err := a.probe.Probe(tokenParam[0], port, protocol, ip)
+	result, err := a.probe.Probe(tokenParam[0], port, ip)
 	if err != nil {
 		fail(w, err)
 		return
@@ -415,4 +412,43 @@ func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
 	}
 	w.WriteHeader(result.StatusCode)
 	_, _ = fmt.Fprintf(w, string(responseJson))
+}
+
+func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.probe.port_v3", 1)
+	request := model.PortProbeRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse probe v3 request", err)
+		return nil, errors.New("invalid request")
+	}
+
+	ip := request.Ip
+	if ip == nil {
+		ip, err = a.requestIp(req)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	probe, err := a.probe.Probe(request.Token, request.Port, *ip)
+	if err != nil {
+		return nil, err
+	}
+
+	if probe.StatusCode != 200 {
+		resultAddr := net.ParseIP(probe.DeviceIp)
+		ipType := "4"
+		resultIp := ""
+		if resultAddr.To4() == nil {
+			ipType = "6"
+			resultIp = resultAddr.To16().String()
+		} else {
+			resultIp = resultAddr.To4().String()
+		}
+
+		return nil, model.NewServiceErrorWithCode(fmt.Sprintf("using device public IP: '%v' which is IPv%v", resultIp, ipType), 200)
+	}
+
+	return "OK", nil
 }

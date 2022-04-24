@@ -245,7 +245,6 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	fieldValidator := validator.New()
 	fieldValidator.Token(request.Token)
 	ip := fieldValidator.Ip(request.Ip, requestIp)
-	ipv6 := request.Ipv6
 	dkimKey := request.DkimKey
 	fieldValidator.LocalIp(request.LocalIp)
 	mapLocalAddress := request.MapLocalAddress
@@ -274,12 +273,24 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, model.NewServiceError("unknown domain update token")
 	}
 
+	var ipv4 *string
+	var localIpv4 *string
+	if request.Ipv4Enabled {
+		ipv4 = ip
+		localIpv4 = request.LocalIp
+	}
+
+	var ipv6 *string
+	if !request.Ipv6Enabled {
+		ipv6 = request.Ipv6
+	}
+
 	changed := Changed(
 		domain.MapLocalAddress, domain.Ip, domain.Ipv6, domain.DkimKey, domain.LocalIp,
-		mapLocalAddress, ip, ipv6, dkimKey, request.LocalIp)
+		mapLocalAddress, ipv4, ipv6, dkimKey, localIpv4)
 
-	domain.Ip = ip
-	domain.LocalIp = request.LocalIp
+	domain.Ip = ipv4
+	domain.LocalIp = localIpv4
 	domain.Ipv6 = ipv6
 	domain.DkimKey = dkimKey
 	domain.MapLocalAddress = mapLocalAddress
