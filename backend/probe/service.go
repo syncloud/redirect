@@ -1,37 +1,35 @@
-package service
+package probe
 
 import (
-	"crypto/tls"
 	"fmt"
 	"github.com/syncloud/redirect/model"
 	"io/ioutil"
-	"net/http"
-	"time"
 )
 
-type ProbeResponse struct {
+type Response struct {
 	Message    string `json:"message"`
 	DeviceIp   string `json:"device_ip"`
 	StatusCode int    `json:"-"`
 }
 
-type ProbeDb interface {
+type Db interface {
 	GetDomainByToken(token string) (*model.Domain, error)
 	GetUser(id int64) (*model.User, error)
 }
 
-type PortProbe struct {
-	db ProbeDb
+type Service struct {
+	db     Db
+	client HttpClient
 }
 
-func NewPortProbe(db ProbeDb) *PortProbe {
-	return &PortProbe{db: db}
+func New(db Db, client HttpClient) *Service {
+	return &Service{db: db, client: client}
 }
 
-func (p PortProbe) Probe(token string, port int, ip string) (*ProbeResponse, error) {
+func (p Service) Probe(token string, port int, ip string) (*Response, error) {
 
 	domain, err := p.db.GetDomainByToken(token)
-	if err != nil {
+	if err != nil || domain == nil {
 		return nil, fmt.Errorf("unknown domain update token")
 	}
 
@@ -40,22 +38,13 @@ func (p PortProbe) Probe(token string, port int, ip string) (*ProbeResponse, err
 		return nil, fmt.Errorf("unknown user for domain update token: %s", token)
 	}
 
-	if domain == nil || user == nil || !user.Active {
+	if user == nil || !user.Active {
 		return nil, fmt.Errorf("unknown user for domain update token: %s", token)
 	}
 
 	url := fmt.Sprintf("https://%s:%d/ping", ip, port)
-	client := &http.Client{
-		Timeout: time.Second * 1,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-	result := &ProbeResponse{DeviceIp: ip, Message: "Port is not reachable"}
-	resp, err := client.Get(url)
+	result := &Response{DeviceIp: ip, Message: "Port is not reachable"}
+	resp, err := p.client.Get(url)
 	if err != nil {
 		result.StatusCode = 500
 		return result, nil

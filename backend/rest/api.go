@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
-	"github.com/syncloud/redirect/service"
+	"github.com/syncloud/redirect/probe"
 	"log"
 	"net"
 	"net/http"
@@ -35,7 +35,7 @@ type ApiMail interface {
 }
 
 type ApiPortProbe interface {
-	Probe(token string, port int, ip string) (*service.ProbeResponse, error)
+	Probe(token string, port int, ip string) (*probe.Response, error)
 }
 
 type ApiCertbot interface {
@@ -431,13 +431,13 @@ func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}
 		}
 	}
 
-	probe, err := a.probe.Probe(request.Token, request.Port, *ip)
+	response, err := a.probe.Probe(request.Token, request.Port, *ip)
 	if err != nil {
 		return nil, err
 	}
 
-	if probe.StatusCode != 200 {
-		resultAddr := net.ParseIP(probe.DeviceIp)
+	if response.StatusCode != 200 {
+		resultAddr := net.ParseIP(response.DeviceIp)
 		ipType := "4"
 		resultIp := ""
 		if resultAddr.To4() == nil {
