@@ -12,10 +12,15 @@ import (
 
 type DbStub struct {
 	domainExists bool
+	domainError  bool
 	userExists   bool
+	userError    bool
 }
 
 func (d DbStub) GetDomainByToken(_ string) (*model.Domain, error) {
+	if d.domainError {
+		return nil, fmt.Errorf("error")
+	}
 	if d.domainExists {
 		return &model.Domain{}, nil
 	}
@@ -23,6 +28,9 @@ func (d DbStub) GetDomainByToken(_ string) (*model.Domain, error) {
 }
 
 func (d DbStub) GetUser(_ int64) (*model.User, error) {
+	if d.userError {
+		return nil, fmt.Errorf("error")
+	}
 	if d.userExists {
 		return &model.User{Active: true}, nil
 	}
@@ -35,7 +43,7 @@ type ClientStub struct {
 }
 
 func (c ClientStub) Get(_ string) (resp *http.Response, err error) {
-	if c.status != 200 {
+	if c.status == 500 {
 		return nil, fmt.Errorf("error code: %v", c.status)
 	}
 
@@ -48,14 +56,42 @@ func (c ClientStub) Get(_ string) (resp *http.Response, err error) {
 
 func TestProbe_Success(t *testing.T) {
 	service := New(&DbStub{domainExists: true, userExists: true}, &ClientStub{"OK", 200})
-	probe, err := service.Probe("existing", 1, "1.1.1.1")
+	_, err := service.Probe("existing", 1, "1.1.1.1")
 	assert.Nil(t, err)
-	assert.Equal(t, 200, probe.StatusCode)
 }
 
-func TestProbe_WrongToken_Fail(t *testing.T) {
-	service := New(&DbStub{}, &ClientStub{})
+func TestProbe_UnknownDomain_Fail(t *testing.T) {
+	service := New(&DbStub{domainExists: false}, &ClientStub{})
 	_, err := service.Probe("existing", 1, "1.1.1.1")
 	assert.NotNil(t, err)
-	//assert.Equal(t, 200, probe.StatusCode)
+}
+
+func TestProbe_ErrorDomain_Fail(t *testing.T) {
+	service := New(&DbStub{domainError: true}, &ClientStub{})
+	_, err := service.Probe("existing", 1, "1.1.1.1")
+	assert.NotNil(t, err)
+}
+
+func TestProbe_UnknownUser_Fail(t *testing.T) {
+	service := New(&DbStub{domainExists: true, userExists: false}, &ClientStub{})
+	_, err := service.Probe("existing", 1, "1.1.1.1")
+	assert.NotNil(t, err)
+}
+
+func TestProbe_ErrorUser_Fail(t *testing.T) {
+	service := New(&DbStub{domainExists: true, userError: true}, &ClientStub{})
+	_, err := service.Probe("existing", 1, "1.1.1.1")
+	assert.NotNil(t, err)
+}
+
+func TestProbe_HttpError_Fail(t *testing.T) {
+	service := New(&DbStub{domainExists: true, userExists: true}, &ClientStub{status: 500})
+	_, err := service.Probe("existing", 1, "1.1.1.1")
+	assert.NotNil(t, err)
+}
+
+func TestProbe_HttpStatusNonOK_Fail(t *testing.T) {
+	service := New(&DbStub{domainExists: true, userExists: true}, &ClientStub{status: 502})
+	_, err := service.Probe("existing", 1, "1.1.1.1")
+	assert.NotNil(t, err)
 }

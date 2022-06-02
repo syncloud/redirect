@@ -26,37 +26,31 @@ func New(db Db, client HttpClient) *Service {
 	return &Service{db: db, client: client}
 }
 
-func (p Service) Probe(token string, port int, ip string) (*Response, error) {
+func (p Service) Probe(token string, port int, ip string) (*string, error) {
 
 	domain, err := p.db.GetDomainByToken(token)
 	if err != nil || domain == nil {
-		return nil, fmt.Errorf("unknown domain update token")
+		return nil, fmt.Errorf("unknown domain update token or Custom activation mode is not supported, token: %s", token)
 	}
 
 	user, err := p.db.GetUser(domain.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("unknown user for domain update token: %s", token)
-	}
-
-	if user == nil || !user.Active {
+	if err != nil || user == nil || !user.Active {
 		return nil, fmt.Errorf("unknown user for domain update token: %s", token)
 	}
 
 	url := fmt.Sprintf("https://%s:%d/ping", ip, port)
-	result := &Response{DeviceIp: ip, Message: "Port is not reachable"}
+	defaultError := fmt.Errorf("port is not reachable")
 	resp, err := p.client.Get(url)
 	if err != nil {
-		result.StatusCode = 500
-		return result, nil
+		return nil, defaultError
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		result.StatusCode = 500
-		return result, nil
+		return nil, defaultError
 	}
-	result.StatusCode = resp.StatusCode
-	if resp.StatusCode == 200 {
-		result.Message = string(body)
+	if resp.StatusCode != 200 {
+		return nil, defaultError
 	}
-	return result, nil
+	message := string(body)
+	return &message, nil
 }

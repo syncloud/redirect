@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
-	"github.com/syncloud/redirect/probe"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -72,7 +71,7 @@ func (a *ApiMailStub) SendLogs(_ string, _ string, _ bool) error {
 type ApiPortProbeStub struct {
 }
 
-func (a *ApiPortProbeStub) Probe(_ string, _ int, _ string) (*probe.Response, error) {
+func (a *ApiPortProbeStub) Probe(_ string, _ int, _ string) (*string, error) {
 	//TODO implement me
 	panic("implement me")
 }
