@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
-	"github.com/syncloud/redirect/service"
+	"github.com/syncloud/redirect/probe"
 	"log"
 	"net"
 	"net/http"
@@ -35,7 +35,7 @@ type ApiMail interface {
 }
 
 type ApiPortProbe interface {
-	Probe(token string, port int, ip string) (*service.ProbeResponse, error)
+	Probe(token string, port int, ip string) (*string, error)
 }
 
 type ApiCertbot interface {
@@ -399,10 +399,14 @@ func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
 		ip = ipParam[0]
 	}
 
-	result, err := a.probe.Probe(tokenParam[0], port, ip)
+	result := &probe.Response{DeviceIp: ip}
+	message, err := a.probe.Probe(tokenParam[0], port, ip)
 	if err != nil {
-		fail(w, err)
-		return
+		result.Message = err.Error()
+		result.StatusCode = 500
+	} else {
+		result.Message = *message
+		result.StatusCode = 200
 	}
 	w.Header().Add("Content-Type", "application/json")
 	responseJson, err := json.Marshal(result)
@@ -431,13 +435,9 @@ func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}
 		}
 	}
 
-	probe, err := a.probe.Probe(request.Token, request.Port, *ip)
+	message, err := a.probe.Probe(request.Token, request.Port, *ip)
 	if err != nil {
-		return nil, err
-	}
-
-	if probe.StatusCode != 200 {
-		resultAddr := net.ParseIP(probe.DeviceIp)
+		resultAddr := net.ParseIP(*ip)
 		ipType := "4"
 		resultIp := ""
 		if resultAddr.To4() == nil {
@@ -447,8 +447,8 @@ func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}
 			resultIp = resultAddr.To4().String()
 		}
 
-		return nil, model.NewServiceErrorWithCode(fmt.Sprintf("using device public IP: '%v' which is IPv%v", resultIp, ipType), 200)
+		return nil, model.NewServiceErrorWithCode(fmt.Sprintf("using device public IP: '%v' which is IPv%v. Details: %s", resultIp, ipType, err.Error()), 200)
 	}
 
-	return "OK", nil
+	return *message, nil
 }

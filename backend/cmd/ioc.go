@@ -10,6 +10,7 @@ import (
 	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
+	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
@@ -58,8 +59,9 @@ func NewMain() *Main {
 	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
 	users := service.NewUsers(database, config.ActivateByEmail(), actions, mail)
 	domains := service.NewDomains(amazonDns, database, users, config.Domain(), config.AwsHostedZoneId())
-	probe := service.NewPortProbe(database)
-	api := rest.NewApi(statsdClient, domains, users, mail, probe, service.NewCertbot(database, amazonDns), config.Domain())
+	probeClient := probe.NewClient()
+	prober := probe.New(database, probeClient)
+	api := rest.NewApi(statsdClient, domains, users, mail, prober, service.NewCertbot(database, amazonDns), config.Domain())
 	secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
 	if err != nil {
 		log.Fatalf("unable to decode secre key %v", err)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
-	"github.com/syncloud/redirect/service"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,7 +29,7 @@ func (d *ApiDomainsStub) Availability(_ model.DomainAvailabilityRequest) (*model
 	panic("implement me")
 }
 
-func (d *ApiDomainsStub) Update(request model.DomainUpdateRequest, requestIp *string) (*model.Domain, error) {
+func (d *ApiDomainsStub) Update(request model.DomainUpdateRequest, _ *string) (*model.Domain, error) {
 	d.domainUpdateRequest = request
 	return &model.Domain{}, nil
 }
@@ -72,7 +71,7 @@ func (a *ApiMailStub) SendLogs(_ string, _ string, _ bool) error {
 type ApiPortProbeStub struct {
 }
 
-func (a *ApiPortProbeStub) Probe(_ string, _ int, _ string) (*service.ProbeResponse, error) {
+func (a *ApiPortProbeStub) Probe(_ string, _ int, _ string) (*string, error) {
 	//TODO implement me
 	panic("implement me")
 }

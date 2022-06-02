@@ -17,6 +17,7 @@ const publicRoutes = [
   '/reset',
   '/error',
   '/login',
+  '/privacy',
   ''
 ]
 
