@@ -8,7 +8,7 @@ import pytest
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-from syncloudlib.integration.hosts import add_host_alias_by_ip
+from syncloudlib.integration.hosts import add_host_alias
 import smtp
 
 import db
@@ -43,7 +43,7 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
 
 
 def test_start(module_setup, device_host, domain):
-    add_host_alias_by_ip('app', 'api', device_host, domain)
+    add_host_alias('api', device_host, domain)
     db.recreate()
 
 
