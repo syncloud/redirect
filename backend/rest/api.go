@@ -51,6 +51,7 @@ type Api struct {
 	probe        ApiPortProbe
 	certbot      ApiCertbot
 	domain       string
+	count404     int64
 }
 
 func NewApi(statsdClient metrics.StatsdClient, service ApiDomains, users ApiUsers, mail ApiMail, probe ApiPortProbe, certbot ApiCertbot, domain string) *Api {
@@ -74,7 +75,7 @@ func (a *Api) StartApi(socket string) {
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
 	r.HandleFunc("/probe/port_v3", Handle(a.PortProbeV3)).Methods("POST")
-	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+	r.NotFoundHandler = http.HandlerFunc(a.notFoundHandler)
 
 	r.Use(headers)
 
@@ -224,6 +225,7 @@ func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{
 		return nil, err
 	}
 
+	log.Printf("/domain/update, token: %v, ipv4 enabled: %v, ip: %v, ipv6 enabled: %v, ipv6: %v\n", request.Token, request.Ipv4Enabled, request.Ip, request.Ipv6Enabled, request.Ipv6)
 	domain, err := a.domains.Update(request, ip)
 	if err != nil {
 		return nil, err
@@ -451,4 +453,12 @@ func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}
 	}
 
 	return *message, nil
+}
+
+func (a *Api) notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	a.count404++
+	if a.count404%100 == 0 {
+		log.Printf("404 counter: %v\n", a.count404)
+	}
+	http.NotFound(w, r)
 }

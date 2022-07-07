@@ -81,8 +81,3 @@ func Handle(f func(w http.ResponseWriter, r *http.Request) (interface{}, error))
 		}
 	}
 }
-
-func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("404 %s: %s\n", r.Method, r.RequestURI)
-	http.NotFound(w, r)
-}
