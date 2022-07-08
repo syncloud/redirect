@@ -174,7 +174,7 @@ def test_password_reset(driver, ui_mode, selenium):
 
     email = selenium.find_by_id('email')
     email.send_keys(DEVICE_USER)
-    send = driver.find_by_id('send')
+    send = selenium.find_by_id('send')
     send.click()
 
     reset_url = smtp.get_reset_url(smtp.emails()[0])
