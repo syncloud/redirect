@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/kr/pretty"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/probe"
@@ -225,7 +226,7 @@ func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{
 		return nil, err
 	}
 
-	log.Printf("/domain/update, token: %v, ipv4 enabled: %v, ip: %v, ipv6 enabled: %v, ipv6: %v\n", request.Token, request.Ipv4Enabled, request.Ip, request.Ipv6Enabled, request.Ipv6)
+	log.Printf("/domain/update, token: %# v, ipv4 enabled: %v, ip: %# v, ipv6 enabled: %v, ipv6: %# v\n", pretty.Formatter(request.Token), request.Ipv4Enabled, pretty.Formatter(request.Ip), request.Ipv6Enabled, pretty.Formatter(request.Ipv6))
 	domain, err := a.domains.Update(request, ip)
 	if err != nil {
 		return nil, err

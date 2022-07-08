@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/smira/go-statsd v1.3.1
 	github.com/stretchr/testify v1.5.1
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
