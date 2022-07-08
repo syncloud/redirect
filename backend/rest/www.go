@@ -50,6 +50,7 @@ type Www struct {
 	payPalPlanId   string
 	payPalClientId string
 	store          *sessions.CookieStore
+	count404       int64
 }
 
 func NewWww(statsdClient metrics.StatsdClient, domains WwwDomains, users WwwUsers, actions WwwActions,
@@ -79,7 +80,7 @@ func (www *Www) StartWww(socket string) {
 	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlan))).Methods("GET")
 	r.HandleFunc("/plan/subscribe", www.Secured(Handle(www.WebPlanSubscribe))).Methods("POST")
 	r.HandleFunc("/domain", www.Secured(Handle(www.DomainDelete))).Methods("DELETE")
-	r.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+	r.NotFoundHandler = http.HandlerFunc(www.notFoundHandler)
 
 	r.Use(headers)
 
@@ -385,4 +386,12 @@ func (www *Www) UserLogout(w http.ResponseWriter, r *http.Request) (interface{},
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
 	err := www.clearSessionEmail(w, r)
 	return "User logged out", err
+}
+
+func (www *Www) notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	www.count404++
+	if www.count404%100 == 0 {
+		log.Printf("404 counter: %v\n", www.count404)
+	}
+	http.NotFound(w, r)
 }

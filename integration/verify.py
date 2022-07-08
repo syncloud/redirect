@@ -7,7 +7,7 @@ from subprocess import check_output
 import pytest
 import requests
 import time
-from syncloudlib.integration.hosts import add_host_alias_by_ip
+from syncloudlib.integration.hosts import add_host_alias
 
 import db
 import smtp
@@ -45,7 +45,8 @@ def module_setup(request, log_dir, artifact_dir, device):
 
 
 def test_start(module_setup, device, device_host, domain, build_number):
-    add_host_alias_by_ip('app', 'api', device_host, domain)
+    add_host_alias('api', device_host, domain)
+
     device.run_ssh('mkdir {0}'.format(TMP_DIR))
     device.run_ssh("snap remove platform")
     device.run_ssh("apt-get update")

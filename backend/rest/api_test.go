@@ -147,7 +147,7 @@ func TestDomainUpdate_Ipv4Enabled(t *testing.T) {
 		&StatsdClientStub{}, domains, &ApiUsersStub{}, &ApiMailStub{},
 		&ApiPortProbeStub{}, &ApiCertbotStub{}, "example.com")
 	request := `
-{ "port": 1 }
+{ "port": 1, "token": "123", "ip": "1.1.1", "ipv6": "aaa.bbb.111" }
 `
 	body := bytes.NewBufferString(request)
 	req, err := http.NewRequest("GET", "/", body)
