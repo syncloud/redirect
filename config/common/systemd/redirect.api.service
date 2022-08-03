@@ -2,8 +2,6 @@
 Description=Redirect
 
 [Service]
-ExecStartPre=/bin/mkdir -p /var/run/redirect
-ExecStartPre=/bin/chown redirect /var/run/redirect
 ExecStart=/var/www/redirect/current/bin/api /var/www/redirect/config.cfg /var/www/redirect/secret.cfg /var/www/redirect/current/emails
 Restart=always
 User=redirect

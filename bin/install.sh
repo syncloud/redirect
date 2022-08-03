@@ -12,8 +12,6 @@ cp -rf ${CURRENT}/config/env/${ENV}/* /var/www/redirect
 if  ! id -u redirect > /dev/null 2>&1; then
     adduser --disabled-password --gecos "" redirect
 fi
-mkdir -p /var/run/redirect
-chown redirect. /var/run/redirect
 cp ${CURRENT}/config/common/systemd/redirect.api.service /lib/systemd/system/
 cp ${CURRENT}/config/common/systemd/redirect.www.service /lib/systemd/system/
 systemctl enable redirect.api
