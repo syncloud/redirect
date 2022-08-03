@@ -2,8 +2,8 @@
 
 ENV=$1
 SYNCLOUD_DOMAIN=$2
-
-CURRENT=/var/www/redirect/current
+REDIRECT_DIR=/var/www/redirect
+CURRENT=$REDIRECT_DIR/current
 DB_VERSION=012
 
 apt install confget
@@ -12,8 +12,6 @@ cp -rf ${CURRENT}/config/env/${ENV}/* /var/www/redirect
 if  ! id -u redirect > /dev/null 2>&1; then
     adduser --disabled-password --gecos "" redirect
 fi
-mkdir -p /var/run/redirect
-chown redirect. /var/run/redirect
 cp ${CURRENT}/config/common/systemd/redirect.api.service /lib/systemd/system/
 cp ${CURRENT}/config/common/systemd/redirect.www.service /lib/systemd/system/
 systemctl enable redirect.api
@@ -23,7 +21,7 @@ systemctl start redirect.www
 
 cp ${CURRENT}/config/common/apache/redirect.conf /etc/apache2/sites-available
 
-chown -R redirect. ${CURRENT}/
+chown -R redirect.redirect $REDIRECT_DIR
 if a2query -s 000-default; then
   a2dissite 000-default
 fi
