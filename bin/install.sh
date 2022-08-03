@@ -2,8 +2,8 @@
 
 ENV=$1
 SYNCLOUD_DOMAIN=$2
-
-CURRENT=/var/www/redirect/current
+REDIRECT_DIR=/var/www/redirect
+CURRENT=$REDIRECT_DIR/current
 DB_VERSION=012
 
 apt install confget
@@ -21,7 +21,7 @@ systemctl start redirect.www
 
 cp ${CURRENT}/config/common/apache/redirect.conf /etc/apache2/sites-available
 
-chown -R redirect. ${CURRENT}/
+chown -R redirect.redirect $REDIRECT_DIR
 if a2query -s 000-default; then
   a2dissite 000-default
 fi
