@@ -52,7 +52,7 @@ func NewMain() *Main {
 		statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
 	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(config.AwsAccessKeyId(), config.AwsSecretAccessKey(), "")}))
 	client := route53.New(mySession)
-	amazonDns := dns.New(statsdClient, client)
+	amazonDns := dns.New(statsdClient, client, 255)
 	actions := service.NewActions(database)
 	smtpClient := smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
 		config.SmtpLogin(), config.SmtpPassword())

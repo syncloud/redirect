@@ -48,12 +48,14 @@ type Route53 interface {
 type AmazonDns struct {
 	client       Route53
 	statsdClient metrics.StatsdClient
+	txtLimit     int
 }
 
-func New(statsdClient metrics.StatsdClient, client Route53) *AmazonDns {
+func New(statsdClient metrics.StatsdClient, client Route53, txtLimit int) *AmazonDns {
 	return &AmazonDns{
 		client,
 		statsdClient,
+		txtLimit,
 	}
 }
 
@@ -173,8 +175,10 @@ func (a *AmazonDns) changeAAAA(ip string, domain string, action string) *route53
 
 func (a *AmazonDns) changeDKIM(domain string, dkim string, action string) *route53.Change {
 	name := fmt.Sprintf("mail._domainkey.%s", domain)
-	dkimValue := fmt.Sprintf("\"v=DKIM1; k=rsa; p=%s\"", dkim)
-	return a.change(action, name, "TXT", defaultTtl, dkimValue)
+	dkimValueLong := fmt.Sprintf("v=DKIM1; k=rsa; p=%s", dkim)
+	values := splitBy(dkimValueLong, a.txtLimit)
+	value := fmt.Sprintf(`"%s"`, strings.Join(values, `" "`))
+	return a.change(action, name, "TXT", defaultTtl, value)
 }
 
 func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim *string, spf string, mx string, action string, hostedZoneId string) error {
@@ -214,4 +218,17 @@ func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error
 
 	a.statsdClient.Incr("dns.client.commit", 1)
 	return nil
+}
+
+func splitBy(s string, n int) []string {
+	var ss []string
+	for i := 1; i < len(s); i++ {
+		if i%n == 0 {
+			ss = append(ss, s[:i])
+			s = s[i:]
+			i = 1
+		}
+	}
+	ss = append(ss, s)
+	return ss
 }
