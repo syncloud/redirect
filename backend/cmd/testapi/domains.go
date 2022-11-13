@@ -6,7 +6,7 @@ type TestDomains struct {
 }
 
 func (d *TestDomains) DomainAcquire(request model.DomainAcquireRequest, domainField string) (*model.Domain, error) {
-	return &model.Domain{}, nil
+	return &model.Domain{Name: *request.Domain}, nil
 }
 
 func (d *TestDomains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
