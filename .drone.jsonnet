@@ -171,7 +171,7 @@ local build(arch) = [{
 
 local build_testapi(arch) = [{
     kind: "pipeline",
-    name: name + "-" + arch,
+    name: name + "-testapi-" + arch,
 
     platform: {
         os: "linux",
