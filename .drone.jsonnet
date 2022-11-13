@@ -1,5 +1,5 @@
 local name = "redirect";
-local go = "1.15.6";
+local go = "1.18.2-buster";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -187,7 +187,7 @@ local build_testapi(arch) = [{
             ]
         },
         {
-            name: "docker redirect-test",
+            name: "push redirect-test",
             image: "debian:buster-slim",
             environment: {
                 DOCKER_USERNAME: {
