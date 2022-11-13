@@ -83,10 +83,11 @@ func (a *Api) StartApi(socket string) {
 	var listener net.Listener
 	if strings.HasPrefix(socket, "tcp://") {
 		address := strings.TrimPrefix(socket, "tcp://")
-		listener, err = net.Listen("tcp", address)
+		tcpListener, err := net.Listen("tcp", address)
 		if err != nil {
 			panic(err)
 		}
+		listener = tcpListener
 	} else {
 		if _, err := os.Stat(socket); err == nil {
 			err := os.Remove(socket)
@@ -94,13 +95,14 @@ func (a *Api) StartApi(socket string) {
 				panic(err)
 			}
 		}
-		listener, err = net.Listen("unix", socket)
+		unixListener, err := net.Listen("unix", socket)
 		if err != nil {
 			panic(err)
 		}
 		if err := os.Chmod(socket, 0777); err != nil {
 			log.Fatal(err)
 		}
+		listener = unixListener
 	}
 
 	log.Printf("Started backend (%s)\n", socket)

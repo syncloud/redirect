@@ -19,13 +19,15 @@ func main() {
 	log.SetOutput(new(logWriter))
 
 	domain := os.Getenv("DOMAIN")
-	statsdClient := TestStatsdClient{}
-	mail := &TestMail{}
-	users := &TestUsers{}
-	domains := &TestDomains{}
-	prober := &TestPortProbe{}
-	certbot := &TestCertbot{}
-	api := rest.NewApi(statsdClient, domains, users, mail, prober, certbot, domain)
+	api := rest.NewApi(
+		TestStatsdClient{},
+		&TestDomains{},
+		&TestUsers{},
+		&TestMail{},
+		&TestPortProbe{},
+		&TestCertbot{},
+		domain,
+	)
 	api.StartApi(os.Getenv("SOCKET"))
 
 }
