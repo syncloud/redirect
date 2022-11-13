@@ -183,7 +183,7 @@ local build_testapi(arch) = [{
             image: "golang:" + go,
             commands: [
                 "cd backend",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../docker/testapi ./cmd/testapi",
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../docker/build/testapi ./cmd/testapi",
             ]
         },
         {
