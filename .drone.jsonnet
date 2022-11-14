@@ -211,7 +211,10 @@ local build_testapi(arch) = [{
                     name: "docker.sock",
                     path: "/var/run/docker.sock"
                 }
-            ]
+            ],
+            when: {
+                branch: ["stable", "master"]
+            }
         },
     ],
     volumes: [
@@ -233,10 +236,7 @@ local build_testapi(arch) = [{
                 path: "/var/run/docker.sock"
             }
         }
-    ],
-    when: {
-        branch: ["stable", "master"]
-    }
+    ]
 }];
 
 build("amd64") +
