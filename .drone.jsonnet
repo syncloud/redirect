@@ -234,10 +234,9 @@ local build_testapi(arch) = [{
             }
         }
     ],
-//    when: {
-//        event: [ "tag" ],
-//        branch: ["stable"]
-//    }
+    when: {
+        branch: ["stable", "master"]
+    }
 }];
 
 build("amd64") +
