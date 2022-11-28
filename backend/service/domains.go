@@ -37,6 +37,7 @@ type DomainsDns interface {
 	DeleteHostedZone(hostedZoneId string) error
 	UpdateDomainRecords(domain *model.Domain) error
 	DeleteDomainRecords(domain *model.Domain) error
+	DeleteCertbotRecord(hostedZoneId string, name string) error
 	GetHostedZoneNameServers(id string) ([]*string, error)
 }
 
@@ -127,6 +128,10 @@ func (d *Domains) deleteDomain(domain *model.Domain) error {
 	}
 
 	if d.freeHostedZoneId != domain.HostedZoneId {
+		err = d.amazonDns.DeleteCertbotRecord(domain.HostedZoneId, fmt.Sprintf("_acme-challenge.%s", domain.FQDN()))
+		if err != nil {
+			return err
+		}
 		err = d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
 		if err != nil {
 			return err
