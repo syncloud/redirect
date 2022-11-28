@@ -11,28 +11,34 @@ import (
 type DnsStub struct {
 	hostedZoneDeleted bool
 	recordsDeleted    bool
+	certbotDeleted    bool
 }
 
-func (dns *DnsStub) GetHostedZoneNameServers(id string) ([]*string, error) {
+func (dns *DnsStub) GetHostedZoneNameServers(_ string) ([]*string, error) {
 	return []*string{aws.String("ns1.example.com")}, nil
 }
 
-func (dns *DnsStub) DeleteHostedZone(hostedZoneId string) error {
+func (dns *DnsStub) DeleteHostedZone(_ string) error {
 	dns.hostedZoneDeleted = true
 	return nil
 }
 
-func (dns *DnsStub) CreateHostedZone(domain string) (*string, error) {
+func (dns *DnsStub) CreateHostedZone(_ string) (*string, error) {
 	id := "123"
 	return &id, nil
 }
 
-func (dns *DnsStub) UpdateDomainRecords(domain *model.Domain) error {
+func (dns *DnsStub) UpdateDomainRecords(_ *model.Domain) error {
 	return nil
 }
 
-func (dns *DnsStub) DeleteDomainRecords(domain *model.Domain) error {
+func (dns *DnsStub) DeleteDomainRecords(_ *model.Domain) error {
 	dns.recordsDeleted = true
+	return nil
+}
+
+func (dns *DnsStub) DeleteCertbotRecord(_ string, _ string) error {
+	dns.certbotDeleted = true
 	return nil
 }
 
@@ -45,26 +51,26 @@ type DomainsDbStub struct {
 	hostedZoneId string
 }
 
-func (db *DomainsDbStub) GetDomainByToken(token string) (*model.Domain, error) {
+func (db *DomainsDbStub) GetDomainByToken(_ string) (*model.Domain, error) {
 	return nil, nil
 }
 
-func (db *DomainsDbStub) GetUserDomains(userId int64) ([]*model.Domain, error) {
+func (db *DomainsDbStub) GetUserDomains(_ int64) ([]*model.Domain, error) {
 	if db.found {
 		return []*model.Domain{{Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId}}, nil
 	}
 	return nil, nil
 }
 
-func (db *DomainsDbStub) GetUser(id int64) (*model.User, error) {
+func (db *DomainsDbStub) GetUser(_ int64) (*model.User, error) {
 	return nil, nil
 }
 
-func (db *DomainsDbStub) DeleteAllDomains(userId int64) error {
+func (db *DomainsDbStub) DeleteAllDomains(_ int64) error {
 	return nil
 }
 
-func (db *DomainsDbStub) DeleteDomain(domainId uint64) error {
+func (db *DomainsDbStub) DeleteDomain(_ uint64) error {
 	db.deleted = true
 	return nil
 }
@@ -75,12 +81,12 @@ func (db *DomainsDbStub) GetDomainByName(value string) (*model.Domain, error) {
 	}
 	return nil, nil
 }
-func (db *DomainsDbStub) InsertDomain(domain *model.Domain) error {
+func (db *DomainsDbStub) InsertDomain(_ *model.Domain) error {
 	db.inserted = true
 	return nil
 
 }
-func (db *DomainsDbStub) UpdateDomain(domain *model.Domain) error {
+func (db *DomainsDbStub) UpdateDomain(_ *model.Domain) error {
 	db.updated = true
 	return nil
 
@@ -94,7 +100,7 @@ type DomainsUsersStub struct {
 	subscriptionId *string
 }
 
-func (users *DomainsUsersStub) Authenticate(email *string, password *string) (*model.User, error) {
+func (users *DomainsUsersStub) Authenticate(email *string, _ *string) (*model.User, error) {
 	if users.authenticated {
 		return &model.User{Id: users.userId, Email: *email, Active: true, SubscriptionId: users.subscriptionId}, nil
 	}
@@ -410,6 +416,7 @@ func TestDeleteDomain_Free_DeleteRecords(t *testing.T) {
 	assert.Nil(t, err)
 	assert.False(t, dnsStub.hostedZoneDeleted)
 	assert.True(t, dnsStub.recordsDeleted)
+	assert.False(t, dnsStub.certbotDeleted)
 	assert.True(t, db.deleted)
 
 }
@@ -424,6 +431,7 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, dnsStub.hostedZoneDeleted)
 	assert.True(t, dnsStub.recordsDeleted)
+	assert.True(t, dnsStub.certbotDeleted)
 	assert.True(t, db.deleted)
 
 }

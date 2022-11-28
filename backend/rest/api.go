@@ -80,21 +80,33 @@ func (a *Api) StartApi(socket string) {
 
 	r.Use(headers)
 
-	if _, err := os.Stat(socket); err == nil {
-		err := os.Remove(socket)
+	var listener net.Listener
+	if strings.HasPrefix(socket, "tcp://") {
+		address := strings.TrimPrefix(socket, "tcp://")
+		tcpListener, err := net.Listen("tcp", address)
 		if err != nil {
 			panic(err)
 		}
+		listener = tcpListener
+	} else {
+		if _, err := os.Stat(socket); err == nil {
+			err := os.Remove(socket)
+			if err != nil {
+				panic(err)
+			}
+		}
+		unixListener, err := net.Listen("unix", socket)
+		if err != nil {
+			panic(err)
+		}
+		if err := os.Chmod(socket, 0777); err != nil {
+			log.Fatal(err)
+		}
+		listener = unixListener
 	}
-	unixListener, err := net.Listen("unix", socket)
-	if err != nil {
-		panic(err)
-	}
-	if err := os.Chmod(socket, 0777); err != nil {
-		log.Fatal(err)
-	}
+
 	log.Printf("Started backend (%s)\n", socket)
-	_ = http.Serve(unixListener, r)
+	_ = http.Serve(listener, r)
 
 }
 

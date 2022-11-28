@@ -1,8 +1,9 @@
 local name = "redirect";
+local go = "1.18.2-buster";
 
-local build(arch) = {
+local build(arch) = [{
     kind: "pipeline",
-    name: name,
+    name: name + "-" + arch,
 
     platform: {
         os: "linux",
@@ -24,13 +25,13 @@ local build(arch) = {
         },
         {
             name: "build backend",
-            image: "golang:1.15.6",
+            image: "golang:" + go,
             commands: [
                 "cd backend",
                 "go test ./... -cover",
-                "go build -o ../build/bin/api cmd/api/main.go",
-                "go build -o ../build/bin/www cmd/www/main.go",
-                "go build -o ../build/bin/notification cmd/cli/notification/main.go"
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/cli/notification"
             ]
         },
         {
@@ -166,8 +167,79 @@ local build(arch) = {
          temp: {}
         }
     ]
-};
+}];
 
-[
-    build("amd64")
-]
+local build_testapi(arch) = [{
+    kind: "pipeline",
+    name: name + "-testapi-" + arch,
+
+    platform: {
+        os: "linux",
+        arch: arch
+    },
+    steps: [
+        {
+            name: "build test api",
+            image: "golang:" + go,
+            commands: [
+                "cd backend",
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../docker/build/testapi ./cmd/testapi",
+            ]
+        },
+        {
+            name: "push redirect-test",
+            image: "debian:buster-slim",
+            environment: {
+                DOCKER_USERNAME: {
+                    from_secret: "DOCKER_USERNAME"
+                },
+                DOCKER_PASSWORD: {
+                    from_secret: "DOCKER_PASSWORD"
+                }
+            },
+            commands: [
+                "./docker/push-redirect-test.sh " + arch
+            ],
+            privileged: true,
+            network_mode: "host",
+            volumes: [
+                {
+                    name: "docker",
+                    path: "/usr/bin/docker"
+                },
+                {
+                    name: "docker.sock",
+                    path: "/var/run/docker.sock"
+                }
+            ],
+            when: {
+                branch: ["stable", "master"]
+            }
+        },
+    ],
+    volumes: [
+        {
+            name: "dbus",
+            host: {
+                path: "/var/run/dbus"
+            }
+        },
+        {
+            name: "docker",
+            host: {
+                path: "/usr/bin/docker"
+            }
+        },
+        {
+            name: "docker.sock",
+            host: {
+                path: "/var/run/docker.sock"
+            }
+        }
+    ]
+}];
+
+build("amd64") +
+build_testapi("amd64") +
+build_testapi("arm64") +
+build_testapi("arm")
