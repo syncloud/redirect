@@ -49,7 +49,7 @@ def test_start(module_setup, device, device_host, domain, build_number):
 
     device.run_ssh('mkdir {0}'.format(TMP_DIR))
     device.run_ssh("snap remove platform")
-    device.run_ssh("apt-get update")
+    device.run_ssh("apt-get update --allow-releaseinfo-change")
     device.run_ssh(
         "apt-get install -y mysql-client default-libmysqlclient-dev apache2 libapache2-mod-wsgi openssl > {0}/apt.log".format(
             TMP_DIR))
