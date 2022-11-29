@@ -147,7 +147,7 @@ local build(arch) = [{
         },
         {
             name: "www.syncloud.test",
-            image: "syncloud/platform-jessie-amd64",
+            image: "syncloud/platform-buster-amd64",
             privileged: true,
             volumes: [
                 {
