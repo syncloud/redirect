@@ -223,9 +223,9 @@ def domain_delete(ui_mode, screenshot, selenium):
 
     device_label = "//h3[text()='Some Device']"
     selenium.wait_or_screenshot(EC.invisibility_of_element_located((By.XPATH, device_label)))
-    by_xpath = selenium.find_by_xpath(device_label)
-    selenium.screenshot('{}-{}'.format(screenshot, ui_mode))
-    assert by_xpath is not None
+    found = selenium.exists_by(By.XPATH, device_label)
+    selenium.screenshot(screenshot)
+    assert not found
 
 
 def test_account(ui_mode, selenium):
