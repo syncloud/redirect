@@ -148,6 +148,47 @@ test('Custom external port', async () => {
   wrapper.unmount()
 })
 
+test('Use locall address and web port 0', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/domains').reply(200,
+    {
+      data: [
+        {
+          device_mac_address: '111',
+          device_name: 'syncloud',
+          device_title: 'Syncloud',
+          dkim_key: 'dkim',
+          ip: '111.111.111.111',
+          ipv6: null,
+          last_update: 'Mon, 19 Oct 2020 19:31:49 GMT',
+          local_ip: '192.168.1.1',
+          map_local_address: true,
+          platform_version: '2',
+          web_local_port: 443,
+          web_port: 0,
+          web_protocol: 'https',
+          name: 'test.example.com'
+        }
+      ]
+    }
+  )
+
+  const wrapper = mount(Devices,
+    {
+      attachTo: document.body,
+      props: {
+        checkUserSession: jest.fn()
+      }
+    }
+  )
+
+  await flushPromises()
+
+  const address = await wrapper.find('#external_address').text()
+  expect(address).toBe('https://111.111.111.111')
+  wrapper.unmount()
+})
+
 test('No IPv6', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/domains').reply(200,
