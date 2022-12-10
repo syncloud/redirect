@@ -1,5 +1,4 @@
-#!/bin/sh -xe
-cd docker
+#!/bin/sh
 ARCH=$1
 
 TAG=latest
@@ -8,18 +7,17 @@ if [ -n "$DRONE_TAG" ]; then
 fi
 IMAGE="syncloud/redirect-test-${ARCH}:$TAG"
 
-set +ex
 while ! docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; do
   echo "retry login"
   sleep 10
 done
-set -ex
 
-docker build -f Dockerfile.redirect-test -t ${IMAGE} .
+while ! docker build -f Dockerfile.redirect-test -t ${IMAGE} .; do
+  echo "retry push"
+  sleep 10
+done
 
-set -ex
 while ! docker push ${IMAGE}; do
   echo "retry push"
   sleep 10
 done
-set +ex

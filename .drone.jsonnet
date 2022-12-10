@@ -198,7 +198,7 @@ local build_testapi(arch) = [{
                 }
             },
             commands: [
-                "sleep 10",
+                "cd docker",
                 "./docker/push-redirect-test.sh " + arch
             ],
             volumes: [
