@@ -111,7 +111,7 @@ local build(arch) = [{
                 command_timeout: "2m",
                 target: "/home/artifact/repo/" + name + "/${DRONE_BUILD_NUMBER}" ,
                 source: "artifact/*",
-                     strip_components: 1
+                strip_components: 1
             },
             when: {
               status: [ "failure", "success" ]
@@ -204,7 +204,7 @@ local build_testapi(arch) = [{
                 {
                     name: "dockersock",
                     path: "/var/run"
-                }t
+                }
             ],
             when: {
                 branch: ["stable", "master"]
@@ -213,7 +213,7 @@ local build_testapi(arch) = [{
     ],
     services: [
         {
-            name: "docker"",
+            name: "docker",
             image: "docker:dind",
             privileged: true,
             volumes: [
