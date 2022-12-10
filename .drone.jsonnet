@@ -200,22 +200,29 @@ local build_testapi(arch) = [{
             commands: [
                 "./docker/push-redirect-test.sh " + arch
             ],
-            privileged: true,
-            network_mode: "host",
             volumes: [
                 {
-                    name: "docker",
-                    path: "/usr/bin/docker"
-                },
-                {
-                    name: "docker.sock",
-                    path: "/var/run/docker.sock"
-                }
+                    name: "dockersock",
+                    path: "/var/run"
+                }t
             ],
             when: {
                 branch: ["stable", "master"]
             }
         },
+    ],
+    services: [
+        {
+            name: "docker"",
+            image: "docker:dind",
+            privileged: true,
+            volumes: [
+                {
+                    name: "dockersock",
+                    path: "/var/run"
+                }
+            ]
+        }
     ],
     volumes: [
         {
@@ -225,16 +232,8 @@ local build_testapi(arch) = [{
             }
         },
         {
-            name: "docker",
-            host: {
-                path: "/usr/bin/docker"
-            }
-        },
-        {
-            name: "docker.sock",
-            host: {
-                path: "/var/run/docker.sock"
-            }
+            name: "dockersock",
+            temp: {}
         }
     ]
 }];
