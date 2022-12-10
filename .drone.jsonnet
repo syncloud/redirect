@@ -188,7 +188,7 @@ local build_testapi(arch) = [{
         },
         {
             name: "push redirect-test",
-            image: "docker:dind",
+            image: "docker:19.03.8-dind",
             environment: {
                 DOCKER_USERNAME: {
                     from_secret: "DOCKER_USERNAME"
@@ -198,6 +198,7 @@ local build_testapi(arch) = [{
                 }
             },
             commands: [
+                "sleep 10"
                 "./docker/push-redirect-test.sh " + arch
             ],
             volumes: [
@@ -214,7 +215,7 @@ local build_testapi(arch) = [{
     services: [
         {
             name: "docker",
-            image: "docker:dind",
+            image: "docker:19.03.8-dind",
             privileged: true,
             volumes: [
                 {
