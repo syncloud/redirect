@@ -1,5 +1,5 @@
 #!/bin/sh -xe
-
+cd docker
 ARCH=$1
 
 TAG=latest
