@@ -188,7 +188,7 @@ local build_testapi(arch) = [{
         },
         {
             name: "push redirect-test",
-            image: "debian:buster-slim",
+            image: "docker:dind",
             environment: {
                 DOCKER_USERNAME: {
                     from_secret: "DOCKER_USERNAME"

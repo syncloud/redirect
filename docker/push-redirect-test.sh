@@ -9,8 +9,6 @@ if [[ -z "$1" ]]; then
 fi
 
 ARCH=$1
-apt update
-apt install -y libltdl7 libnss3 
 
 TAG=latest
 if [ -n "$DRONE_TAG" ]; then
