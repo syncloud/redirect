@@ -1,5 +1,6 @@
 local name = "redirect";
 local go = "1.18.2-buster";
+local dind = "18.09.9-dind"
 
 local build(arch) = [{
     kind: "pipeline",
@@ -188,7 +189,7 @@ local build_testapi(arch) = [{
         },
         {
             name: "push redirect-test",
-            image: "docker:19.03.8-dind",
+            image: "docker:" + dind,
             environment: {
                 DOCKER_USERNAME: {
                     from_secret: "DOCKER_USERNAME"
@@ -215,7 +216,7 @@ local build_testapi(arch) = [{
     services: [
         {
             name: "docker",
-            image: "docker:19.03.8-dind",
+            image: "docker:" + dind,
             privileged: true,
             volumes: [
                 {

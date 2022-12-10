@@ -13,7 +13,7 @@ while ! docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; do
 done
 
 while ! docker build -f Dockerfile.redirect-test -t ${IMAGE} .; do
-  echo "retry push"
+  echo "retry build"
   sleep 10
 done
 
