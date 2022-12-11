@@ -1,6 +1,6 @@
 local name = "redirect";
 local go = "1.18.2-buster";
-local dind = "17.12.1-ce-dind";
+local dind = "18.06.3-ce-dind";
 
 local build(arch) = [{
     kind: "pipeline",
