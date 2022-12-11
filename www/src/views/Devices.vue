@@ -138,7 +138,7 @@ function convert (domain) {
   domain.domain_address_port = domain.map_local_address ? 443 : domain.web_port
   domain.domain_address = fullUrl(domain.name, domain.domain_address_port)
   domain.has_domain_address = domain.name !== undefined
-  domain.external_address = fullUrl(domain.ip, domain.web_port)
+  domain.external_address = fullUrl(domain.ip, domain.domain_address_port)
   domain.has_external_address = domain.ip !== undefined
   domain.internal_address = 'https://' + domain.local_ip
   domain.has_internal_address = domain.local_ip !== undefined

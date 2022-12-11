@@ -1,5 +1,6 @@
 local name = "redirect";
 local go = "1.18.2-buster";
+local dind = "19.03.8-dind";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -111,7 +112,7 @@ local build(arch) = [{
                 command_timeout: "2m",
                 target: "/home/artifact/repo/" + name + "/${DRONE_BUILD_NUMBER}" ,
                 source: "artifact/*",
-                     strip_components: 1
+                strip_components: 1
             },
             when: {
               status: [ "failure", "success" ]
@@ -188,7 +189,7 @@ local build_testapi(arch) = [{
         },
         {
             name: "push redirect-test",
-            image: "debian:buster-slim",
+            image: "docker:" + dind,
             environment: {
                 DOCKER_USERNAME: {
                     from_secret: "DOCKER_USERNAME"
@@ -198,24 +199,32 @@ local build_testapi(arch) = [{
                 }
             },
             commands: [
-                "./docker/push-redirect-test.sh " + arch
+                "cd docker",
+                "./push-redirect-test.sh " + arch
             ],
-            privileged: true,
-            network_mode: "host",
             volumes: [
                 {
-                    name: "docker",
-                    path: "/usr/bin/docker"
-                },
-                {
-                    name: "docker.sock",
-                    path: "/var/run/docker.sock"
+                    name: "dockersock",
+                    path: "/var/run"
                 }
             ],
             when: {
                 branch: ["stable", "master"]
             }
         },
+    ],
+    services: [
+        {
+            name: "docker",
+            image: "docker:" + dind,
+            privileged: true,
+            volumes: [
+                {
+                    name: "dockersock",
+                    path: "/var/run"
+                }
+            ]
+        }
     ],
     volumes: [
         {
@@ -225,16 +234,8 @@ local build_testapi(arch) = [{
             }
         },
         {
-            name: "docker",
-            host: {
-                path: "/usr/bin/docker"
-            }
-        },
-        {
-            name: "docker.sock",
-            host: {
-                path: "/var/run/docker.sock"
-            }
+            name: "dockersock",
+            temp: {}
         }
     ]
 }];
