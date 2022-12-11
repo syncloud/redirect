@@ -1,6 +1,6 @@
 local name = "redirect";
 local go = "1.18.2-buster";
-local dind = "18.06.3-ce-dind";
+local dind = "19.03.8-dind";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -240,7 +240,7 @@ local build_testapi(arch) = [{
     ]
 }];
 
-build("amd64") +
+# build("amd64") +
 build_testapi("amd64") +
 build_testapi("arm64") +
 build_testapi("arm")
