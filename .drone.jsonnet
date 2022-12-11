@@ -240,7 +240,7 @@ local build_testapi(arch) = [{
     ]
 }];
 
-# build("amd64") +
+build("amd64") +
 build_testapi("amd64") +
 build_testapi("arm64") +
 build_testapi("arm")
