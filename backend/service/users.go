@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
-	"github.com/syncloud/redirect/validator"
+	"github.com/syncloud/redirect/validation"
 	"log"
 	"time"
 )
@@ -48,7 +48,7 @@ func NewUsers(db UsersDb, activateByEmail bool, actions UsersActions, usersMail 
 }
 
 func (u *Users) Authenticate(email *string, password *string) (*model.User, error) {
-	fieldValidator := validator.New()
+	fieldValidator := validation.New()
 	emailLower := fieldValidator.Email(email)
 	passwordChecked := fieldValidator.Password(password)
 	if fieldValidator.HasErrors() {
@@ -112,7 +112,7 @@ func (u *Users) Delete(userId int64) error {
 }
 
 func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, error) {
-	fieldValidator := validator.New()
+	fieldValidator := validation.New()
 	email := fieldValidator.Email(request.Email)
 	password := fieldValidator.NewPassword(request.Password)
 	if fieldValidator.HasErrors() {
@@ -193,7 +193,7 @@ func (u *Users) RequestPasswordReset(email string) (*string, error) {
 }
 
 func (u *Users) UserSetPassword(request *model.UserPasswordSetRequest) error {
-	fieldValidator := validator.New()
+	fieldValidator := validation.New()
 	fieldValidator.Token(request.Token)
 	password := fieldValidator.NewPassword(request.Password)
 	if fieldValidator.HasErrors() {

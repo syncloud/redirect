@@ -1,4 +1,4 @@
-package validator
+package validation
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -103,6 +103,14 @@ func TestIpDefault(t *testing.T) {
 	result := validator.Ip(nil, &defaultIp)
 	assert.Equal(t, 0, len(validator.errors))
 	assert.Equal(t, *result, "192.168.0.2")
+}
+
+func TestIpDefault_Ipv6(t *testing.T) {
+	defaultIp := "fe80::9656:d028:8652:66b6"
+	validator := New()
+	result := validator.Ip(nil, &defaultIp)
+	assert.Equal(t, 0, len(validator.errors))
+	assert.Equal(t, *result, "fe80::9656:d028:8652:66b6")
 }
 
 func TestIpInvalid(t *testing.T) {

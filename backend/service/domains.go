@@ -2,9 +2,10 @@ package service
 
 import (
 	"fmt"
+	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
-	"github.com/syncloud/redirect/validator"
+	"github.com/syncloud/redirect/validation"
 	"log"
 	"time"
 )
@@ -15,6 +16,7 @@ type Domains struct {
 	users            DomainsUsers
 	domain           string
 	freeHostedZoneId string
+	detector         change.Detector
 }
 
 type DomainsDb interface {
@@ -41,12 +43,25 @@ type DomainsDns interface {
 	GetHostedZoneNameServers(id string) ([]*string, error)
 }
 
-func NewDomains(dnsImpl DomainsDns, db DomainsDb, users DomainsUsers, domain string, freeHostedZoneId string) *Domains {
-	return &Domains{amazonDns: dnsImpl, db: db, users: users, domain: domain, freeHostedZoneId: freeHostedZoneId}
+func NewDomains(
+	dnsImpl DomainsDns,
+	db DomainsDb,
+	users DomainsUsers,
+	domain string,
+	freeHostedZoneId string,
+	detector change.Detector,
+) *Domains {
+	return &Domains{
+		amazonDns:        dnsImpl,
+		db:               db,
+		users:            users,
+		domain:           domain,
+		freeHostedZoneId: freeHostedZoneId,
+		detector:         detector}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
-	fieldValidator := validator.New()
+	fieldValidator := validation.New()
 	fieldValidator.Token(&token)
 	if fieldValidator.HasErrors() {
 		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
@@ -147,7 +162,7 @@ func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.
 		return nil, err
 	}
 
-	fieldValidator := validator.New()
+	fieldValidator := validation.New()
 	domainField := "domain"
 	fieldValidator.Domain(request.Domain, domainField, d.domain)
 	if fieldValidator.HasErrors() {
@@ -189,16 +204,16 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		return nil, err
 	}
 
-	fieldValidator := validator.New()
+	validator := validation.New()
 
-	fieldValidator.Domain(request.Domain, domainField, d.domain)
+	validator.Domain(request.Domain, domainField, d.domain)
 
-	deviceMacAddress := fieldValidator.DeviceMacAddress(request.DeviceMacAddress)
-	fieldValidator.DeviceName(request.DeviceName)
-	fieldValidator.DeviceTitle(request.DeviceTitle)
+	deviceMacAddress := validator.DeviceMacAddress(request.DeviceMacAddress)
+	validator.DeviceName(request.DeviceName)
+	validator.DeviceTitle(request.DeviceTitle)
 
-	if fieldValidator.HasErrors() {
-		return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
+	if validator.HasErrors() {
+		return nil, &model.ParameterError{ParameterErrors: validator.ToParametersMessages()}
 	}
 
 	isFree := request.IsFree(d.domain)
@@ -247,7 +262,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 }
 
 func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (*model.Domain, error) {
-	fieldValidator := validator.New()
+	fieldValidator := validation.New()
 	fieldValidator.Token(request.Token)
 	ip := fieldValidator.Ip(request.Ip, requestIp)
 	dkimKey := request.DkimKey
@@ -286,11 +301,11 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	}
 
 	var ipv6 *string
-	if !request.Ipv6Enabled {
+	if request.Ipv6Enabled {
 		ipv6 = request.Ipv6
 	}
 
-	changed := Changed(
+	changed := d.detector.Changed(
 		domain.MapLocalAddress, domain.Ip, domain.Ipv6, domain.DkimKey, domain.LocalIp,
 		mapLocalAddress, ipv4, ipv6, dkimKey, localIpv4)
 
@@ -320,27 +335,4 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	domain.BackwardCompatibleDomain(d.domain)
 
 	return domain, nil
-}
-
-func Changed(
-	existingMapLocalAddress bool, existingIp *string, existingIpv6 *string, existingDkimKey *string, existingLocalIp *string,
-	newMapLocalAddress bool, newIp *string, newIpv6 *string, newDkimKey *string, newLocalIp *string) bool {
-
-	changed := (existingMapLocalAddress != newMapLocalAddress) ||
-		!Equals(existingIp, newIp) ||
-		!Equals(existingLocalIp, newLocalIp) ||
-		!Equals(existingIpv6, newIpv6) ||
-		!Equals(existingDkimKey, newDkimKey)
-
-	return changed
-}
-
-func Equals(left *string, right *string) bool {
-	if left == nil && right == nil {
-		return true
-	}
-	if left == nil || right == nil {
-		return false
-	}
-	return *left == *right
 }
