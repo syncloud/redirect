@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/smira/go-statsd"
+	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/probe"
@@ -58,7 +59,8 @@ func NewMain() *Main {
 		config.SmtpLogin(), config.SmtpPassword())
 	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
 	users := service.NewUsers(database, config.ActivateByEmail(), actions, mail)
-	domains := service.NewDomains(amazonDns, database, users, config.Domain(), config.AwsHostedZoneId())
+	detector := change.New()
+	domains := service.NewDomains(amazonDns, database, users, config.Domain(), config.AwsHostedZoneId(), detector)
 	probeClient := probe.NewClient()
 	prober := probe.New(database, probeClient)
 	api := rest.NewApi(statsdClient, domains, users, mail, prober, service.NewCertbot(database, amazonDns), config.Domain())
