@@ -1,5 +1,5 @@
 local name = "redirect";
-local go = "1.18.2-buster";
+local go = "1.19.5-buster";
 local dind = "19.03.8-dind";
 
 local build(arch) = [{
