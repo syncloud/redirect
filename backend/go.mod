@@ -11,6 +11,7 @@ require (
 	github.com/kr/pretty v0.1.0
 	github.com/smira/go-statsd v1.3.1
 	github.com/stretchr/testify v1.5.1
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
 
