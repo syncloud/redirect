@@ -8,10 +8,12 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
+	"golang.org/x/net/netutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"time"
 )
 
 type WwwDomains interface {
@@ -90,16 +92,25 @@ func (www *Www) StartWww(socket string) {
 			panic(err)
 		}
 	}
-	unixListener, err := net.Listen("unix", socket)
+	listener, err := net.Listen("unix", socket)
 	if err != nil {
 		panic(err)
 	}
-	if err := os.Chmod(socket, 0777); err != nil {
+	if err = os.Chmod(socket, 0777); err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Started backend (%s)\n", socket)
-	_ = http.Serve(unixListener, r)
-
+	srv := &http.Server{
+		Handler:      r,
+		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+	l := netutil.LimitListener(listener, 1000)
+	log.Printf("Started backend (%s)\n", socket)
+	if err := srv.Serve(l); err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 
 func (www *Www) getSession(r *http.Request) (*sessions.Session, error) {

@@ -9,12 +9,14 @@ import (
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/probe"
+	"golang.org/x/net/netutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type ApiDomains interface {
@@ -105,9 +107,17 @@ func (a *Api) StartApi(socket string) {
 		listener = unixListener
 	}
 
+	srv := &http.Server{
+		Handler:      r,
+		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+	l := netutil.LimitListener(listener, 1000)
 	log.Printf("Started backend (%s)\n", socket)
-	_ = http.Serve(listener, r)
-
+	if err := srv.Serve(l); err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 
 func (a *Api) Status(_ http.ResponseWriter, req *http.Request) (interface{}, error) {

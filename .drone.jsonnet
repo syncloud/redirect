@@ -1,5 +1,5 @@
 local name = "redirect";
-local go = "1.18.2-buster";
+local go = "1.19.5-buster";
 local dind = "19.03.8-dind";
 
 local build(arch) = [{
@@ -30,9 +30,9 @@ local build(arch) = [{
             commands: [
                 "cd backend",
                 "go test ./... -cover",
-                "CGO_ENABLE=0 go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
-                "CGO_ENABLE=0 go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
-                "CGO_ENABLE=0 go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/cli/notification"
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/cli/notification"
             ]
         },
         {

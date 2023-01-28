@@ -24,7 +24,9 @@ func (mysql *MySql) Connect(host string, database string, user string, password 
 	if err != nil {
 		log.Println("Cannot connect to db: ", err)
 	}
-	db.SetConnMaxIdleTime(time.Hour)
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 	mysql.db = db
 }
 
@@ -89,6 +91,7 @@ func (mysql *MySql) InsertUser(user *model.User) (int64, error) {
 		log.Println("unable to insert user (prepare): ", err)
 		return 0, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Exec(
 		user.Email,
 		user.PasswordHash,
@@ -101,7 +104,6 @@ func (mysql *MySql) InsertUser(user *model.User) (int64, error) {
 		log.Println("unable to insert user (exec): ", err)
 		return 0, err
 	}
-	defer stmt.Close()
 	return res.LastInsertId()
 }
 
@@ -121,6 +123,7 @@ func (mysql *MySql) UpdateUser(user *model.User) error {
 		return err
 	}
 	now := time.Now()
+	defer stmt.Close()
 	_, err = stmt.Exec(
 		user.Email,
 		user.PasswordHash,
@@ -135,7 +138,6 @@ func (mysql *MySql) UpdateUser(user *model.User) error {
 		log.Println("sql error: ", err)
 		return err
 	}
-	defer stmt.Close()
 	return nil
 }
 
@@ -391,6 +393,7 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 		log.Println("sql error: ", err)
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(
 		strings.ToLower(domain.Name),
 		domain.Ip,
@@ -414,7 +417,6 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 		log.Println("sql error: ", err)
 		return err
 	}
-	defer stmt.Close()
 	return nil
 }
 
@@ -434,6 +436,7 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 		log.Println("unable to insert domain (prepare): ", err)
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(
 		strings.ToLower(domain.Name),
 		domain.UpdateToken,
@@ -448,7 +451,6 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 		log.Println("unable to insert domain (exec): ", err)
 		return err
 	}
-	defer stmt.Close()
 	return nil
 }
 
@@ -512,6 +514,7 @@ func (mysql *MySql) InsertAction(action *model.Action) error {
 		log.Println("unable to insert action (prepare): ", err)
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(
 		action.ActionTypeId,
 		action.UserId,
@@ -522,7 +525,6 @@ func (mysql *MySql) InsertAction(action *model.Action) error {
 		log.Println("unable to insert action (exec): ", err)
 		return err
 	}
-	defer stmt.Close()
 	return nil
 
 }
@@ -539,6 +541,7 @@ func (mysql *MySql) UpdateAction(action *model.Action) error {
 		log.Println("unable to update action (prepare): ", err)
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(
 		action.ActionTypeId,
 		action.UserId,
@@ -550,7 +553,6 @@ func (mysql *MySql) UpdateAction(action *model.Action) error {
 		log.Println("unable to update action (exec): ", err)
 		return err
 	}
-	defer stmt.Close()
 	return nil
 
 }
