@@ -8,10 +8,28 @@ import (
 	"time"
 )
 
-func Start(prefix, hostname string, port int) *graphite.Graphite {
-	g := graphite.New(prefix, log.NewNopLogger())
+type GraphiteClient struct {
+	Graphite         *graphite.Graphite
+	prefix, hostname string
+	port             int
+}
+
+func New(prefix, hostname string, port int) *GraphiteClient {
+	return &GraphiteClient{
+		Graphite: graphite.New(prefix, log.NewNopLogger()),
+		prefix:   prefix,
+		hostname: hostname,
+		port:     port,
+	}
+}
+
+func (g *GraphiteClient) Start() {
 	report := time.NewTicker(5 * time.Second)
 	//defer report.Stop()
-	go g.SendLoop(context.Background(), report.C, "tcp", fmt.Sprintf("%s:%d", hostname, port))
-	return g
+	go g.Graphite.SendLoop(
+		context.Background(),
+		report.C,
+		"tcp",
+		fmt.Sprintf("%s:%d", g.hostname, g.port),
+	)
 }
