@@ -99,7 +99,6 @@ func (www *Www) StartWww(socket string) {
 	if err = os.Chmod(socket, 0777); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Started backend (%s)\n", socket)
 	srv := &http.Server{
 		Handler:      r,
 		WriteTimeout: 5 * time.Second,

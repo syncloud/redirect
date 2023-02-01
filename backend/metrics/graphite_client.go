@@ -16,7 +16,7 @@ type GraphiteClient struct {
 
 func New(prefix, hostname string, port int) *GraphiteClient {
 	return &GraphiteClient{
-		Graphite: graphite.New(prefix, log.NewNopLogger()),
+		Graphite: graphite.New(fmt.Sprintf("%s.", prefix), log.NewNopLogger()),
 		prefix:   prefix,
 		hostname: hostname,
 		port:     port,
