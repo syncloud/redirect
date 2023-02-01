@@ -609,7 +609,7 @@ where timestampdiff(minute, last_update, now()) < 600
 }
 
 func (mysql *MySql) GetUsersCount() (int64, error) {
-	row := mysql.db.QueryRow("count(*) from user")
+	row := mysql.db.QueryRow("select count(*) from user")
 	var count int64
 	err := row.Scan(&count)
 	if err != nil {
