@@ -122,7 +122,7 @@ local build(arch) = [{
     services: [
         {
             name: "statsd",
-            image: "statsd/statsd"
+            image: "graphiteapp/graphite-statsd:1.1.10-4"
         },
         {
             name: "mail",

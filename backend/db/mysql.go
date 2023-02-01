@@ -589,7 +589,35 @@ func (mysql *MySql) DeleteAction(actionId uint64) error {
 	return nil
 }
 
-func (mysql *MySql) getDomainsLastUpdatedBefore() error {
-	//return self.session.query(Domain).filter(Domain.last_update < date).filter(Domain.ip != None).order_by(Domain.last_update).limit(limit)
-	return fmt.Errorf("not implemented")
+func (mysql *MySql) GetOnlineDevicesCount() (int64, error) {
+	row := mysql.db.QueryRow(
+		`
+select count(*)  
+from domain join user on domain.user_id = user.id 
+where timestampdiff(minute, last_update, now()) < 600
+`)
+	var count int64
+	err := row.Scan(&count)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		} else {
+			return 0, err
+		}
+	}
+	return count, nil
+}
+
+func (mysql *MySql) GetUsersCount() (int64, error) {
+	row := mysql.db.QueryRow("select count(*) from user")
+	var count int64
+	err := row.Scan(&count)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		} else {
+			return 0, err
+		}
+	}
+	return count, nil
 }

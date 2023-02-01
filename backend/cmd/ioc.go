@@ -11,6 +11,7 @@ import (
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
@@ -18,12 +19,15 @@ import (
 	"github.com/syncloud/redirect/utils"
 	"log"
 	"os"
+	"time"
 )
 
 type Main struct {
-	config *utils.Config
-	api    *rest.Api
-	www    *rest.Www
+	config         *utils.Config
+	api            *rest.Api
+	www            *rest.Www
+	graphiteClient *metrics.GraphiteClient
+	database       *db.MySql
 }
 
 type logWriter struct {
@@ -51,6 +55,7 @@ func NewMain() *Main {
 	statsdClient := statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
 		statsd.MaxPacketSize(1400),
 		statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
+	graphiteClient := metrics.New(config.GraphitePrefix(), config.GraphiteHost(), 2003)
 	mySession := session.Must(session.NewSession(&aws.Config{Credentials: credentials.NewStaticCredentials(config.AwsAccessKeyId(), config.AwsSecretAccessKey(), "")}))
 	client := route53.New(mySession)
 	amazonDns := dns.New(statsdClient, client, 255)
@@ -69,7 +74,13 @@ func NewMain() *Main {
 		log.Fatalf("unable to decode secre key %v", err)
 	}
 	www := rest.NewWww(statsdClient, domains, users, actions, mail, config.Domain(), config.PayPalPlanId(), config.PayPalClientId(), secretKey)
-	return &Main{config: config, api: api, www: www}
+	return &Main{
+		config:         config,
+		api:            api,
+		www:            www,
+		graphiteClient: graphiteClient,
+		database:       database,
+	}
 
 }
 
@@ -78,5 +89,29 @@ func (m *Main) StartApi() {
 }
 
 func (m *Main) StartWww() {
+	m.StartMetrics()
 	m.www.StartWww(m.config.GetWwwSocket())
+}
+
+func (m *Main) StartMetrics() {
+	m.graphiteClient.Start()
+	devicesGauge := m.graphiteClient.Graphite.NewGauge("db.devices")
+	usersGauge := m.graphiteClient.Graphite.NewGauge("db.users")
+	go func() {
+		for {
+			count, err := m.database.GetOnlineDevicesCount()
+			if err != nil {
+				log.Printf("db error %v", err)
+			} else {
+				devicesGauge.Set(float64(count))
+			}
+			count, err = m.database.GetUsersCount()
+			if err != nil {
+				log.Printf("db error %v", err)
+			} else {
+				usersGauge.Set(float64(count))
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}()
 }
