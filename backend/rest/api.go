@@ -76,6 +76,7 @@ func (a *Api) StartApi(socket string) {
 	r.HandleFunc("/user/get", Handle(a.UserGet)).Methods("GET") //deprecated
 	r.HandleFunc("/user", Handle(a.User)).Methods("POST")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
+ r.HandleFunc("/user/log_v2", Handle(a.UserLogV2)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
 	r.HandleFunc("/probe/port_v3", Handle(a.PortProbeV3)).Methods("POST")
 	r.NotFoundHandler = http.HandlerFunc(a.notFoundHandler)
@@ -393,6 +394,28 @@ func (a *Api) UserLog(_ http.ResponseWriter, req *http.Request) (interface{}, er
 		return nil, fmt.Errorf("wrong user token: %s", token)
 	}
 	err = a.mail.SendLogs(user.Email, data, includeSupport)
+	return "Error report sent successfully", err
+}
+
+func (a *Api) UserLogV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.user_v2.log", 1)
+
+request := model.SendLogsRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse send logs v2 request", err)
+		return nil, errors.New("invalid request")
+	}
+
+	
+	user, err := a.users.GetUserByUpdateToken(request.Token)
+	if err != nil {
+		return nil, fmt.Errorf("user token: %s, error: %s", request.Token, err)
+	}
+	if user == nil {
+		return nil, fmt.Errorf("wrong user token: %s", request.Token)
+	}
+	err = a.mail.SendLogs(user.Email, request.Data, request.IncludeSupport)
 	return "Error report sent successfully", err
 }
 
