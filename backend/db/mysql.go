@@ -216,6 +216,22 @@ func (m *MySql) GetDomainByName(name string) (*model.Domain, error) {
 	return m.getDomainByField("name", name)
 }
 
+func (m *MySql) GetOldestDomainBefore(before time.Time) (*model.Domain, error) {
+	row := m.db.QueryRow("SELECT id, lower(name), last_update FROM domain WHERE last_update < ?", before)
+	var id uint64
+	var name string
+	var lastUpdate *time.Time
+	err := row.Scan(&id, &name, &lastUpdate)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			log.Println("Cannot scan a domain: ", err)
+			return nil, fmt.Errorf("DB error")
+		}
+	}
+	return &model.Domain{Id: id, Name: name, LastUpdate: lastUpdate}, nil
+}
 func (m *MySql) getDomainByField(field string, value string) (*model.Domain, error) {
 	row := m.db.QueryRow(
 		"SELECT "+
