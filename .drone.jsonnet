@@ -33,7 +33,7 @@ local build(arch) = [{
                 "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
                 "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
                 "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/dns ./cmd/dns",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/cli/notification"
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/notification"
             ]
         },
         {
