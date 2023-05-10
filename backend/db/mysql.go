@@ -11,43 +11,55 @@ import (
 import _ "github.com/go-sql-driver/mysql"
 
 type MySql struct {
-	db *sql.DB
+	host     string
+	database string
+	user     string
+	password string
+	db       *sql.DB
 }
 
-func NewMySql() *MySql {
-	return &MySql{}
+func NewMySql(host string, database string, user string, password string) *MySql {
+	return &MySql{
+		host:     host,
+		database: database,
+		user:     user,
+		password: password,
+	}
 }
 
-func (mysql *MySql) Connect(host string, database string, user string, password string) {
-
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", user, password, host, database))
+func (m *MySql) Connect() error {
+	db, err := sql.Open(
+		"mysql",
+		fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", m.user, m.password, m.host, m.database),
+	)
 	if err != nil {
-		log.Println("Cannot connect to db: ", err)
+		return fmt.Errorf("cannot connect to db: %v", err)
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
-	mysql.db = db
+	m.db = db
+	return nil
 }
 
-func (mysql *MySql) Close() {
-	defer mysql.db.Close()
+func (m *MySql) Close() {
+	defer m.db.Close()
 }
 
-func (mysql *MySql) GetUser(id int64) (*model.User, error) {
-	return mysql.selectUserByField("id", id)
+func (m *MySql) GetUser(id int64) (*model.User, error) {
+	return m.selectUserByField("id", id)
 }
 
-func (mysql *MySql) GetUserByEmail(email string) (*model.User, error) {
-	return mysql.selectUserByField("email", email)
+func (m *MySql) GetUserByEmail(email string) (*model.User, error) {
+	return m.selectUserByField("email", email)
 }
 
-func (mysql *MySql) GetUserByUpdateToken(updateToken string) (*model.User, error) {
-	return mysql.selectUserByField("update_token", updateToken)
+func (m *MySql) GetUserByUpdateToken(updateToken string) (*model.User, error) {
+	return m.selectUserByField("update_token", updateToken)
 }
 
-func (mysql *MySql) selectUserByField(field string, value interface{}) (*model.User, error) {
-	row := mysql.db.QueryRow(
+func (m *MySql) selectUserByField(field string, value interface{}) (*model.User, error) {
+	row := m.db.QueryRow(
 		"SELECT "+
 			"id, "+
 			"email, "+
@@ -77,8 +89,8 @@ func (mysql *MySql) selectUserByField(field string, value interface{}) (*model.U
 	return user, nil
 }
 
-func (mysql *MySql) InsertUser(user *model.User) (int64, error) {
-	stmt, err := mysql.db.Prepare(
+func (m *MySql) InsertUser(user *model.User) (int64, error) {
+	stmt, err := m.db.Prepare(
 		"INSERT into user (" +
 			"email, " +
 			"password_hash, " +
@@ -107,8 +119,8 @@ func (mysql *MySql) InsertUser(user *model.User) (int64, error) {
 	return res.LastInsertId()
 }
 
-func (mysql *MySql) UpdateUser(user *model.User) error {
-	stmt, err := mysql.db.Prepare(
+func (m *MySql) UpdateUser(user *model.User) error {
+	stmt, err := m.db.Prepare(
 		"UPDATE user SET " +
 			"email = ?, " +
 			"password_hash = ?, " +
@@ -141,9 +153,9 @@ func (mysql *MySql) UpdateUser(user *model.User) error {
 	return nil
 }
 
-func (mysql *MySql) GetUsersByField(field string, value string) ([]*model.User, error) {
+func (m *MySql) GetUsersByField(field string, value string) ([]*model.User, error) {
 	users := make([]*model.User, 0)
-	rows, err := mysql.db.Query(
+	rows, err := m.db.Query(
 		"SELECT "+
 			"id, "+
 			"email, "+
@@ -180,9 +192,9 @@ func (mysql *MySql) GetUsersByField(field string, value string) ([]*model.User, 
 	return users, nil
 }
 
-func (mysql *MySql) DeleteUser(userId int64) error {
+func (m *MySql) DeleteUser(userId int64) error {
 
-	stmt, err := mysql.db.Prepare("DELETE FROM user WHERE id = ?")
+	stmt, err := m.db.Prepare("DELETE FROM user WHERE id = ?")
 	if err != nil {
 		log.Println("Cannot delete user: ", userId, err)
 		return fmt.Errorf("DB error")
@@ -196,16 +208,16 @@ func (mysql *MySql) DeleteUser(userId int64) error {
 	return nil
 }
 
-func (mysql *MySql) GetDomainByToken(token string) (*model.Domain, error) {
-	return mysql.getDomainByField("update_token", token)
+func (m *MySql) GetDomainByToken(token string) (*model.Domain, error) {
+	return m.getDomainByField("update_token", token)
 }
 
-func (mysql *MySql) GetDomainByName(name string) (*model.Domain, error) {
-	return mysql.getDomainByField("name", name)
+func (m *MySql) GetDomainByName(name string) (*model.Domain, error) {
+	return m.getDomainByField("name", name)
 }
 
-func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain, error) {
-	row := mysql.db.QueryRow(
+func (m *MySql) getDomainByField(field string, value string) (*model.Domain, error) {
+	row := m.db.QueryRow(
 		"SELECT "+
 			"id, "+
 			"ip, "+
@@ -267,8 +279,8 @@ func (mysql *MySql) getDomainByField(field string, value string) (*model.Domain,
 	return domain, nil
 }
 
-func (mysql *MySql) DeleteDomain(domainId uint64) error {
-	stmt, err := mysql.db.Prepare("DELETE FROM domain WHERE id = ?")
+func (m *MySql) DeleteDomain(domainId uint64) error {
+	stmt, err := m.db.Prepare("DELETE FROM domain WHERE id = ?")
 	if err != nil {
 		log.Println("Cannot delete domain (prepare): ", domainId, err)
 		return fmt.Errorf("DB error")
@@ -282,9 +294,9 @@ func (mysql *MySql) DeleteDomain(domainId uint64) error {
 	return nil
 }
 
-func (mysql *MySql) DeleteAllDomains(userId int64) error {
+func (m *MySql) DeleteAllDomains(userId int64) error {
 
-	stmt, err := mysql.db.Prepare("DELETE FROM domain WHERE user_id = ?")
+	stmt, err := m.db.Prepare("DELETE FROM domain WHERE user_id = ?")
 	if err != nil {
 		log.Println("Cannot delete domains for user: ", userId, err)
 		return fmt.Errorf("DB error")
@@ -298,9 +310,9 @@ func (mysql *MySql) DeleteAllDomains(userId int64) error {
 	return nil
 }
 
-func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
+func (m *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 	domains := make([]*model.Domain, 0)
-	rows, err := mysql.db.Query(
+	rows, err := m.db.Query(
 		"SELECT "+
 			"id, "+
 			"lower(name), "+
@@ -369,8 +381,8 @@ func (mysql *MySql) GetUserDomains(userId int64) ([]*model.Domain, error) {
 	return domains, nil
 }
 
-func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
-	stmt, err := mysql.db.Prepare(
+func (m *MySql) UpdateDomain(domain *model.Domain) error {
+	stmt, err := m.db.Prepare(
 		"UPDATE domain SET " +
 			"name = ?, " +
 			"ip = ?, " +
@@ -420,8 +432,8 @@ func (mysql *MySql) UpdateDomain(domain *model.Domain) error {
 	return nil
 }
 
-func (mysql *MySql) InsertDomain(domain *model.Domain) error {
-	stmt, err := mysql.db.Prepare(
+func (m *MySql) InsertDomain(domain *model.Domain) error {
+	stmt, err := m.db.Prepare(
 		"INSERT into domain (" +
 			"name, " +
 			"update_token, " +
@@ -454,8 +466,8 @@ func (mysql *MySql) InsertDomain(domain *model.Domain) error {
 	return nil
 }
 
-func (mysql *MySql) GetAction(userId int64, actionTypeId uint64) (*model.Action, error) {
-	row := mysql.db.QueryRow(
+func (m *MySql) GetAction(userId int64, actionTypeId uint64) (*model.Action, error) {
+	row := m.db.QueryRow(
 		"SELECT "+
 			"id, "+
 			"action_type_id, "+
@@ -478,8 +490,8 @@ func (mysql *MySql) GetAction(userId int64, actionTypeId uint64) (*model.Action,
 
 }
 
-func (mysql *MySql) GetActionByToken(token string, actionTypeId uint64) (*model.Action, error) {
-	row := mysql.db.QueryRow(
+func (m *MySql) GetActionByToken(token string, actionTypeId uint64) (*model.Action, error) {
+	row := m.db.QueryRow(
 		"SELECT "+
 			"id, "+
 			"action_type_id, "+
@@ -502,8 +514,8 @@ func (mysql *MySql) GetActionByToken(token string, actionTypeId uint64) (*model.
 
 }
 
-func (mysql *MySql) InsertAction(action *model.Action) error {
-	stmt, err := mysql.db.Prepare(
+func (m *MySql) InsertAction(action *model.Action) error {
+	stmt, err := m.db.Prepare(
 		"INSERT into action (" +
 			"action_type_id, " +
 			"user_id, " +
@@ -529,8 +541,8 @@ func (mysql *MySql) InsertAction(action *model.Action) error {
 
 }
 
-func (mysql *MySql) UpdateAction(action *model.Action) error {
-	stmt, err := mysql.db.Prepare(
+func (m *MySql) UpdateAction(action *model.Action) error {
+	stmt, err := m.db.Prepare(
 		"UPDATE action SET " +
 			"action_type_id = ?, " +
 			"user_id = ?, " +
@@ -557,9 +569,9 @@ func (mysql *MySql) UpdateAction(action *model.Action) error {
 
 }
 
-func (mysql *MySql) DeleteActions(userId int64) error {
+func (m *MySql) DeleteActions(userId int64) error {
 
-	stmt, err := mysql.db.Prepare("DELETE FROM action WHERE user_id = ?")
+	stmt, err := m.db.Prepare("DELETE FROM action WHERE user_id = ?")
 	if err != nil {
 		log.Println("Cannot delete actions for user (prepare): ", userId, err)
 		return fmt.Errorf("DB error")
@@ -573,9 +585,9 @@ func (mysql *MySql) DeleteActions(userId int64) error {
 	return nil
 }
 
-func (mysql *MySql) DeleteAction(actionId uint64) error {
+func (m *MySql) DeleteAction(actionId uint64) error {
 
-	stmt, err := mysql.db.Prepare("DELETE FROM action WHERE id = ?")
+	stmt, err := m.db.Prepare("DELETE FROM action WHERE id = ?")
 	if err != nil {
 		log.Println("Cannot delete action (prepare): ", actionId, err)
 		return fmt.Errorf("DB error")
@@ -589,8 +601,8 @@ func (mysql *MySql) DeleteAction(actionId uint64) error {
 	return nil
 }
 
-func (mysql *MySql) GetOnlineDevicesCount() (int64, error) {
-	row := mysql.db.QueryRow(
+func (m *MySql) GetOnlineDevicesCount() (int64, error) {
+	row := m.db.QueryRow(
 		`
 select count(*)  
 from domain join user on domain.user_id = user.id 
@@ -608,8 +620,8 @@ where timestampdiff(minute, last_update, now()) < 600
 	return count, nil
 }
 
-func (mysql *MySql) GetUsersCount() (int64, error) {
-	row := mysql.db.QueryRow("select count(*) from user")
+func (m *MySql) GetUsersCount() (int64, error) {
+	row := m.db.QueryRow("select count(*) from user")
 	var count int64
 	err := row.Scan(&count)
 	if err != nil {

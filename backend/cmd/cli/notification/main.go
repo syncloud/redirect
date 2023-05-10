@@ -28,8 +28,8 @@ func main() {
 
 	config := utils.NewConfig()
 	config.Load(configPath, configSecretPath)
-	database := db.NewMySql()
-	database.Connect(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
+	database := db.NewMySql(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
+	database.Connect()
 	smtpClient := smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
 		config.SmtpLogin(), config.SmtpPassword())
 	mail := service.NewMail(smtpClient, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())

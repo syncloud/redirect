@@ -1,7 +1,5 @@
 package dns
 
-// TODO: port dns clean
-
 /*
 sys.path.append(normpath(join(dirname(__file__), '..')))
 from redirect import ioc

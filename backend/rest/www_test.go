@@ -94,8 +94,17 @@ func (w WwwMailStub) SendResetPassword(_ string, _ string) error {
 func TestLogin_CreateSession(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{}, &WwwDomainsStub{}, &WwwUsersStub{authenticated: true}, &WwwActionsStub{}, &WwwMailStub{},
-		"example.com", "paypal_plan_id", "paypal_client_id", []byte("secret_key"))
+		&StatsdClientStub{},
+		&WwwDomainsStub{},
+		&WwwUsersStub{authenticated: true},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		"example.com",
+		"paypal_plan_id",
+		"paypal_client_id",
+		[]byte("secret_key"),
+		"",
+	)
 	email := "test@example.com"
 	password := "password"
 	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}
@@ -121,8 +130,17 @@ func TestLogin_CreateSession(t *testing.T) {
 func TestLoginAgain_NotError(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{}, &WwwDomainsStub{}, &WwwUsersStub{authenticated: true}, &WwwActionsStub{}, &WwwMailStub{},
-		"example.com", "paypal_plan_id", "paypal_client_id", []byte("secret_key"))
+		&StatsdClientStub{},
+		&WwwDomainsStub{},
+		&WwwUsersStub{authenticated: true},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		"example.com",
+		"paypal_plan_id",
+		"paypal_client_id",
+		[]byte("secret_key"),
+		"",
+	)
 	email := "test@example.com"
 	password := "password"
 	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}
@@ -163,8 +181,17 @@ func TestLoginAgain_NotError(t *testing.T) {
 func TestLoginFresh_NotError(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{}, &WwwDomainsStub{}, &WwwUsersStub{authenticated: true}, &WwwActionsStub{}, &WwwMailStub{},
-		"example.com", "paypal_plan_id", "paypal_client_id", []byte("secret_key"))
+		&StatsdClientStub{},
+		&WwwDomainsStub{},
+		&WwwUsersStub{authenticated: true},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		"example.com",
+		"paypal_plan_id",
+		"paypal_client_id",
+		[]byte("secret_key"),
+		"",
+	)
 	email := "test@example.com"
 	password := "password"
 	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}
@@ -191,8 +218,17 @@ func TestLoginFresh_NotError(t *testing.T) {
 func TestLogout_ClearSession(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{}, &WwwDomainsStub{}, &WwwUsersStub{authenticated: true}, &WwwActionsStub{}, &WwwMailStub{},
-		"example.com", "paypal_plan_id", "paypal_client_id", []byte("secret_key"))
+		&StatsdClientStub{},
+		&WwwDomainsStub{},
+		&WwwUsersStub{authenticated: true},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		"example.com",
+		"paypal_plan_id",
+		"paypal_client_id",
+		[]byte("secret_key"),
+		"",
+	)
 	email := "test@example.com"
 	password := "password"
 	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}

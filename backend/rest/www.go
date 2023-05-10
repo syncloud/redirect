@@ -53,18 +53,36 @@ type Www struct {
 	payPalClientId string
 	store          *sessions.CookieStore
 	count404       int64
+	socket         string
 }
 
-func NewWww(statsdClient metrics.StatsdClient, domains WwwDomains, users WwwUsers, actions WwwActions,
-	mail WwwMail, domain string, payPalPlanId string, payPalClientId string, authSecretSey []byte) *Www {
-
-	return &Www{statsdClient: statsdClient, domains: domains, users: users, actions: actions,
-		mail: mail, domain: domain, payPalPlanId: payPalPlanId, payPalClientId: payPalClientId,
-		store: sessions.NewCookieStore(authSecretSey),
+func NewWww(
+	statsdClient metrics.StatsdClient,
+	domains WwwDomains,
+	users WwwUsers,
+	actions WwwActions,
+	mail WwwMail,
+	domain string,
+	payPalPlanId string,
+	payPalClientId string,
+	authSecretSey []byte,
+	socket string,
+) *Www {
+	return &Www{
+		statsdClient:   statsdClient,
+		domains:        domains,
+		users:          users,
+		actions:        actions,
+		mail:           mail,
+		domain:         domain,
+		payPalPlanId:   payPalPlanId,
+		payPalClientId: payPalClientId,
+		store:          sessions.NewCookieStore(authSecretSey),
+		socket:         socket,
 	}
 }
 
-func (www *Www) StartWww(socket string) {
+func (www *Www) Start() error {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/user/reset_password", Handle(www.WebUserPasswordReset)).Methods("POST")
@@ -86,18 +104,18 @@ func (www *Www) StartWww(socket string) {
 
 	r.Use(headers)
 
-	if _, err := os.Stat(socket); err == nil {
-		err := os.Remove(socket)
+	if _, err := os.Stat(www.socket); err == nil {
+		err := os.Remove(www.socket)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
-	listener, err := net.Listen("unix", socket)
+	listener, err := net.Listen("unix", www.socket)
 	if err != nil {
 		panic(err)
 	}
-	if err = os.Chmod(socket, 0777); err != nil {
-		log.Fatal(err)
+	if err = os.Chmod(www.socket, 0777); err != nil {
+		return err
 	}
 	srv := &http.Server{
 		Handler:      r,
@@ -106,10 +124,8 @@ func (www *Www) StartWww(socket string) {
 		IdleTimeout:  15 * time.Second,
 	}
 	l := netutil.LimitListener(listener, 1000)
-	log.Printf("Started backend (%s)\n", socket)
-	if err := srv.Serve(l); err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+	log.Printf("Started backend (%s)\n", www.socket)
+	return srv.Serve(l)
 }
 
 func (www *Www) getSession(r *http.Request) (*sessions.Session, error) {
