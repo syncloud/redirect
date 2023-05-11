@@ -6,6 +6,7 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/utils"
 	"os"
 	"time"
 )
@@ -24,7 +25,7 @@ func main() {
 				fmt.Println(err.Error())
 				os.Exit(1)
 			}
-			return c.Call(func(database *db.MySql) error {
+			return c.Call(func(database *db.MySql, config *utils.Config) error {
 				err := database.Connect()
 				if err != nil {
 					return err
@@ -34,9 +35,21 @@ func main() {
 					return err
 				}
 
-				domain, err := database.GetOldestDomainBefore(before)
+				token, err := database.GetOldestDomainBefore(before, config.Domain())
 				if err != nil {
 					return err
+				}
+				if token == "" {
+					fmt.Printf("not found\n")
+					return nil
+				}
+				domain, err := database.GetDomainByToken(token)
+				if err != nil {
+					return err
+				}
+				if domain == nil {
+					fmt.Printf("not found\n")
+					return nil
 				}
 				fmt.Printf("id: %d, name: %s, update: %s\n", domain.Id, domain.Name, domain.LastUpdate.String())
 				if !dryRun {

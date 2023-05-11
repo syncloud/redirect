@@ -216,21 +216,19 @@ func (m *MySql) GetDomainByName(name string) (*model.Domain, error) {
 	return m.getDomainByField("name", name)
 }
 
-func (m *MySql) GetOldestDomainBefore(before time.Time) (*model.Domain, error) {
-	row := m.db.QueryRow("SELECT id, lower(name), last_update FROM domain WHERE last_update < ?", before)
-	var id uint64
-	var name string
-	var lastUpdate *time.Time
-	err := row.Scan(&id, &name, &lastUpdate)
+func (m *MySql) GetOldestDomainBefore(before time.Time, domain string) (string, error) {
+	row := m.db.QueryRow("SELECT update_token FROM domain WHERE last_update < ? and ip is not null and lower(name) like '%.?' order by last_update desc limit 1", before, domain)
+	var token string
+	err := row.Scan(&token)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return "", nil
 		} else {
 			log.Println("Cannot scan a domain: ", err)
-			return nil, fmt.Errorf("DB error")
+			return "", fmt.Errorf("DB error")
 		}
 	}
-	return &model.Domain{Id: id, Name: name, LastUpdate: lastUpdate}, nil
+	return token, nil
 }
 func (m *MySql) getDomainByField(field string, value string) (*model.Domain, error) {
 	row := m.db.QueryRow(

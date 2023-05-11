@@ -24,19 +24,25 @@ import (
 
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
 
-	config := utils.NewConfig()
-	config.Load(configPath, secretPath)
-
 	c := container.New()
 
-	err := c.Singleton(func() *db.MySql {
+	err := c.Singleton(func() *utils.Config {
+		config := utils.NewConfig()
+		config.Load(configPath, secretPath)
+		return config
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *db.MySql {
 		return db.NewMySql(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func() *statsd.Client {
+	err = c.Singleton(func(config *utils.Config) *statsd.Client {
 		return statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
 			statsd.MaxPacketSize(1400),
 			statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
@@ -45,14 +51,14 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func() *metrics.GraphiteClient {
+	err = c.Singleton(func(config *utils.Config) *metrics.GraphiteClient {
 		return metrics.New(config.GraphitePrefix(), config.GraphiteHost(), 2003)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func() *session.Session {
+	err = c.Singleton(func(config *utils.Config) *session.Session {
 		return session.Must(session.NewSession(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(
 				config.AwsAccessKeyId(),
@@ -87,7 +93,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql) *smtp.Smtp {
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *smtp.Smtp {
 		return smtp.NewSmtp(config.SmtpHost(), config.SmtpPort(), config.SmtpTls(),
 			config.SmtpLogin(), config.SmtpPassword())
 	})
@@ -95,7 +101,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(smtp *smtp.Smtp) *service.Mail {
+	err = c.Singleton(func(smtp *smtp.Smtp, config *utils.Config) *service.Mail {
 		return service.NewMail(smtp, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
 	})
 	if err != nil {
@@ -106,6 +112,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		database *db.MySql,
 		mail *service.Mail,
 		actions *service.Actions,
+		config *utils.Config,
 	) *service.Users {
 		return service.NewUsers(
 			database,
@@ -130,6 +137,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		users *service.Users,
 		detector *change.RequestDetector,
 		amazonDns *dns.AmazonDns,
+		config *utils.Config,
 	) *service.Domains {
 		return service.NewDomains(amazonDns, database, users, config.Domain(), config.AwsHostedZoneId(), detector)
 	})
@@ -171,6 +179,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		prober *probe.Service,
 		certbot *service.Certbot,
+		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
 			statsd,
@@ -193,6 +202,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		users *service.Users,
 		mail *service.Mail,
 		actions *service.Actions,
+		config *utils.Config,
 	) (*rest.Www, error) {
 		secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
 		if err != nil {
