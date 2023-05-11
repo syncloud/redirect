@@ -217,7 +217,7 @@ func (m *MySql) GetDomainByName(name string) (*model.Domain, error) {
 }
 
 func (m *MySql) GetOldestDomainBefore(before time.Time, domain string) (string, error) {
-	row := m.db.QueryRow("SELECT update_token FROM domain WHERE last_update < ? and ip is not null and lower(name) like '%.?' order by last_update desc limit 1", before, domain)
+	row := m.db.QueryRow("SELECT update_token FROM domain WHERE last_update < ? and ip is not null and lower(name) like '%.' || ? order by last_update desc limit 1", before, domain)
 	var token string
 	err := row.Scan(&token)
 	if err != nil {
