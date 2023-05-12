@@ -843,7 +843,7 @@ def test_backup(device):
 
 
 def test_dns_cli(device):
-   device.run_ssh("/var/www/redirect/current/bin/dns --config-file /var/www/redirect/current/config.cfg --secret-file /var/www/redirect/current/secret.cfg --before 3000-01-01")
+   device.run_ssh("/var/www/redirect/current/bin/dns --config-file /var/www/redirect/config.cfg --secret-file /var/www/redirect/secret.cfg --before 3000-01-01")
  
 
 def test_certbot(device, domain):
