@@ -48,7 +48,7 @@ func main() {
 					return err
 				}
 				if domain == nil {
-					fmt.Printf("not found\n")
+					fmt.Printf("token not found: %s\n", token)
 					return nil
 				}
 				fmt.Printf("id: %d, name: %s, update: %s\n", domain.Id, domain.Name, domain.LastUpdate.String())
