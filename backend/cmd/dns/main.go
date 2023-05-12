@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/syncloud/redirect/db"
+	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/utils"
@@ -25,7 +26,7 @@ func main() {
 				fmt.Println(err.Error())
 				os.Exit(1)
 			}
-			return c.Call(func(database *db.MySql, config *utils.Config) error {
+			return c.Call(func(database *db.MySql, config *utils.Config, dns *dns.AmazonDns) error {
 				err := database.Connect()
 				if err != nil {
 					return err
@@ -54,6 +55,16 @@ func main() {
 				fmt.Printf("id: %d, name: %s, update: %s\n", domain.Id, domain.Name, domain.LastUpdate.String())
 				if !dryRun {
 					fmt.Printf("will remove\n")
+					err = dns.DeleteDomainRecords(domain)
+					if err != nil {
+						return err
+					}
+					domain.Ip = nil
+
+					err := database.UpdateDomain(domain)
+					if err != nil {
+						return err
+					}
 				}
 				return nil
 			})
