@@ -42,7 +42,10 @@
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
-                  Premium Services
+                  Subscription
+                  <div class="pull-right" id="premium_active" v-if="this.subscriptionId">
+                    <span class="label label-success" style="font-size: 16px;">Active</span>
+                  </div>
                 </div>
               </div>
               <div class="panel-body">
@@ -51,7 +54,6 @@
                 <ul style="padding-top: 10px">
                   <li>Automatic IP DNS updates</li>
                   <li>Automatic mail DNS records</li>
-                  <li>There will be more in future ...</li>
                 </ul>
                 <div id="request_premium" v-if="!this.subscriptionId">
                   <div>
@@ -71,13 +73,11 @@
                 </div>
 
                 <div id="premium_active" v-if="this.subscriptionId">
-                  <span class="label label-success" style="font-size: 16px;padding-top: 8px">Active</span>
                   <div style="padding-top: 10px">
-                  You can now activate your device in a premium mode:<br>
+                  You can activate your device in a premium (personal domain) mode:<br>
                   </div>
                   <ol>
-                    <li>Update system on the device from Settings - Updates</li>
-                    <li>ReActivate from Settings - Activation and select a Premium mode</li>
+                    <li>Reactivate from Settings - Activation and select a Premium mode</li>
                     <li>
                       Copy Name Servers for your
                       <router-link to="/">domain</router-link>
