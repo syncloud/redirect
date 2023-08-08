@@ -27,7 +27,8 @@ func main() {
 		&TestPortProbe{},
 		&TestCertbot{},
 		domain,
+		os.Getenv("SOCKET"),
 	)
-	api.StartApi(os.Getenv("SOCKET"))
+	api.Start()
 
 }

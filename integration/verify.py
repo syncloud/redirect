@@ -840,6 +840,10 @@ def test_status(domain):
 
 def test_backup(device):
    device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
+
+
+def test_dns_cli(device):
+   device.run_ssh("/var/www/redirect/current/bin/dns --config-file /var/www/redirect/config.cfg --secret-file /var/www/redirect/secret.cfg --before 3000-01-01")
  
 
 def test_certbot(device, domain):

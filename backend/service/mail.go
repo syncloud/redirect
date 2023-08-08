@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/syncloud/redirect/smtp"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -40,7 +40,7 @@ func NewMail(smtp *smtp.Smtp,
 }
 
 func (m *Mail) SendResetPassword(to string, token string) error {
-	buf, err := ioutil.ReadFile(m.resetPasswordTemplatePath)
+	buf, err := os.ReadFile(m.resetPasswordTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (m *Mail) SendResetPassword(to string, token string) error {
 }
 
 func (m *Mail) SendSetPassword(to string) error {
-	buf, err := ioutil.ReadFile(m.setPasswordTemplatePath)
+	buf, err := os.ReadFile(m.setPasswordTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (m *Mail) SendSetPassword(to string) error {
 }
 
 func (m *Mail) SendActivate(to string, token string) error {
-	buf, err := ioutil.ReadFile(m.activateTemplatePath)
+	buf, err := os.ReadFile(m.activateTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (m *Mail) SendActivate(to string, token string) error {
 }
 
 func (m *Mail) SendPlanSubscribed(to string) error {
-	buf, err := ioutil.ReadFile(m.planSubscribeTemplatePath)
+	buf, err := os.ReadFile(m.planSubscribeTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (m *Mail) SendPlanSubscribed(to string) error {
 }
 
 func (m *Mail) SendReleaseAnnouncement(to string) error {
-	buf, err := ioutil.ReadFile(m.releaseAnnouncementPath)
+	buf, err := os.ReadFile(m.releaseAnnouncementPath)
 	if err != nil {
 		return err
 	}

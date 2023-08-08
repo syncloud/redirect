@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
-	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -56,13 +55,13 @@ func TestOnlyRetryErrorsOnSecondRun(t *testing.T) {
 	assert.Equal(t, 1, len(mail2.sent))
 	assert.Contains(t, mail2.sent, "test2@example.com")
 
-	content, err := ioutil.ReadFile(sentFile)
+	content, err := os.ReadFile(sentFile)
 	assert.Nil(t, err)
 	fmt.Println(string(content))
 }
 
 func tempFile() *os.File {
-	tmpFile, err := ioutil.TempFile("", "")
+	tmpFile, err := os.CreateTemp("", "")
 	if err != nil {
 		log.Fatal(err)
 	}
