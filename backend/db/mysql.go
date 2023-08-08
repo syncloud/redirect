@@ -615,13 +615,8 @@ func (m *MySql) DeleteAction(actionId uint64) error {
 	return nil
 }
 
-func (m *MySql) GetOnlineDevicesCount() (int64, error) {
-	row := m.db.QueryRow(
-		`
-select count(*)  
-from domain join user on domain.user_id = user.id 
-where timestampdiff(minute, last_update, now()) < 600
-`)
+func (m *MySql) GetCount(query string) (int64, error) {
+	row := m.db.QueryRow(query)
 	var count int64
 	err := row.Scan(&count)
 	if err != nil {
@@ -634,16 +629,37 @@ where timestampdiff(minute, last_update, now()) < 600
 	return count, nil
 }
 
-func (m *MySql) GetUsersCount() (int64, error) {
-	row := m.db.QueryRow("select count(*) from user")
-	var count int64
-	err := row.Scan(&count)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, nil
-		} else {
-			return 0, err
-		}
-	}
-	return count, nil
+func (m *MySql) GetOnlineDevicesCount() (int64, error) {
+	return m.GetCount(`
+select count(*)  
+from domain join user on domain.user_id = user.id 
+where timestampdiff(minute, last_update, now()) < 600
+`)
+}
+
+func (m *MySql) GetDomainCount() (int64, error) {
+	return m.GetCount(`select count(*) from domain`)
+}
+
+func (m *MySql) GetAllUsersCount() (int64, error) {
+	return m.GetCount("select count(*) from user")
+}
+
+func (m *MySql) GetActiveUsersCount() (int64, error) {
+	return m.GetCount("select count(*) from user where active = true")
+}
+
+func (m *MySql) GetSubscribedUsersCount() (int64, error) {
+	return m.GetCount("select count(*) from user where subscription_id is not null")
+}
+
+func (m *MySql) Get2MonthOldActiveUsersWithoutDomainCount() (int64, error) {
+	return m.GetCount(`
+select count(*)
+from user u
+left outer join domain d on u.id = d.user_id
+where d.id is null
+and u.active = true
+and timestampdiff(day, u.timestamp, now()) > 60
+`)
 }
