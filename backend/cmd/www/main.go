@@ -25,7 +25,7 @@ func main() {
 				os.Exit(1)
 			}
 			return c.Call(func(www *rest.Www, database *db.MySql, metrics *metrics.Publisher) error {
-				err := database.Connect()
+				err := database.Start()
 				if err != nil {
 					return err
 				}

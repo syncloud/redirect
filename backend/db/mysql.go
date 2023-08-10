@@ -27,7 +27,7 @@ func NewMySql(host string, database string, user string, password string) *MySql
 	}
 }
 
-func (m *MySql) Connect() error {
+func (m *MySql) Start() error {
 	db, err := sql.Open(
 		"mysql",
 		fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", m.user, m.password, m.host, m.database),
@@ -216,8 +216,12 @@ func (m *MySql) GetDomainByName(name string) (*model.Domain, error) {
 	return m.getDomainByField("name", name)
 }
 
-func (m *MySql) GetOldestDomainBefore(before time.Time, domain string) (string, error) {
-	row := m.db.QueryRow("SELECT update_token FROM domain WHERE last_update < ? and ip is not null and lower(name) like concat('%.',?) order by last_update desc limit 1", before, domain)
+func (m *MySql) GetDomainTokenUpdatedBefore(before time.Time) (string, error) {
+	row := m.db.QueryRow(`
+SELECT update_token
+FROM domain
+WHERE timestamp < ? 
+order by timestamp limit 1`, before)
 	var token string
 	err := row.Scan(&token)
 	if err != nil {
@@ -250,7 +254,8 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 			"web_local_port, "+
 			"last_update, "+
 			"lower(name), "+
-			"hosted_zone_id "+
+			"hosted_zone_id, "+
+			"timestamp "+
 			"FROM domain "+
 			"WHERE "+field+" = ?", value)
 
@@ -275,6 +280,7 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 		&domain.LastUpdate,
 		&domain.Name,
 		&domain.HostedZoneId,
+		&domain.Timestamp,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
