@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics/graphite"
+	"sync"
 	"time"
 )
 
@@ -12,6 +13,9 @@ type GraphiteClient struct {
 	Graphite         *graphite.Graphite
 	prefix, hostname string
 	port             int
+	counters         map[string]*graphite.Counter
+	gauges           map[string]*graphite.Gauge
+	mtx              sync.RWMutex
 }
 
 func New(prefix, hostname string, port int) *GraphiteClient {
@@ -32,4 +36,26 @@ func (g *GraphiteClient) Start() {
 		"tcp",
 		fmt.Sprintf("%s:%d", g.hostname, g.port),
 	)
+}
+
+func (g *GraphiteClient) GaugeSet(name string, value float64) {
+	var gauge *graphite.Gauge
+	g.mtx.Lock()
+	if _, ok := g.gauges[name]; !ok {
+		gauge = g.Graphite.NewGauge(name)
+		g.gauges[name] = gauge
+	}
+	g.mtx.Unlock()
+	gauge.Set(value)
+}
+
+func (g *GraphiteClient) CounterAdd(name string, value float64) {
+	var counter *graphite.Counter
+	g.mtx.Lock()
+	if _, ok := g.counters[name]; !ok {
+		counter = g.Graphite.NewCounter(name)
+		g.counters[name] = counter
+	}
+	g.mtx.Unlock()
+	counter.Add(value)
 }

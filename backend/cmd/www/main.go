@@ -24,11 +24,17 @@ func main() {
 				fmt.Println(err.Error())
 				os.Exit(1)
 			}
-			return c.Call(func(www *rest.Www, database *db.MySql, metrics *metrics.Publisher) error {
+			return c.Call(func(
+				www *rest.Www,
+				database *db.MySql,
+				metrics *metrics.Publisher,
+				graphite *metrics.GraphiteClient,
+			) error {
 				err := database.Start()
 				if err != nil {
 					return err
 				}
+				graphite.Start()
 				metrics.Start()
 				return www.Start()
 			})

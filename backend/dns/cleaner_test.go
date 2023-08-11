@@ -47,6 +47,14 @@ func (m *MailStub) SendDnsCleanNotification(to string, userDomain string) error 
 	return nil
 }
 
+type GraphiteStub struct {
+	value float64
+}
+
+func (g *GraphiteStub) CounterAdd(name string, value float64) {
+	g.value += value
+}
+
 func TestCleaner_Clean_NotRemoveDNSForSubscribedUsers(t *testing.T) {
 	subscriptionId := "123"
 	now := time.Now()
@@ -56,7 +64,8 @@ func TestCleaner_Clean_NotRemoveDNSForSubscribedUsers(t *testing.T) {
 	}
 	dns := &RemoverStub{}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, dns, mail)
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, dns.deleted)
@@ -70,7 +79,8 @@ func TestCleaner_Clean_NotRemoveDNSLessThanAMonthOfInactivity(t *testing.T) {
 	}
 	dns := &RemoverStub{}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, dns, mail)
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, dns.deleted)
@@ -85,7 +95,8 @@ func TestCleaner_Clean_RemoveDNSMoreThanAMonthOfInactivity(t *testing.T) {
 	}
 	dns := &RemoverStub{}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, dns, mail)
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, dns.deleted)
@@ -101,7 +112,8 @@ func TestCleaner_Clean_RemoveUpdateTime(t *testing.T) {
 	}
 	dns := &RemoverStub{}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, dns, mail)
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, dns.deleted)
@@ -118,7 +130,8 @@ func TestCleaner_Clean_RemoveSendNotification(t *testing.T) {
 	}
 	dns := &RemoverStub{}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, dns, mail)
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, dns.deleted)
@@ -133,7 +146,8 @@ func TestCleaner_Clean_NotRemoveNotSendNotification(t *testing.T) {
 	}
 	dns := &RemoverStub{}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, dns, mail)
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, dns.deleted)

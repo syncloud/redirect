@@ -243,11 +243,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		database *db.MySql,
 		amazonDns *dns.AmazonDns,
 		mail *service.Mail,
+		graphite *metrics.GraphiteClient,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
 			amazonDns,
 			mail,
+			graphite,
 		)
 	})
 	if err != nil {

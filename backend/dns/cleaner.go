@@ -21,17 +21,23 @@ type Mail interface {
 	SendDnsCleanNotification(to string, userDomain string) error
 }
 
+type Graphite interface {
+	CounterAdd(name string, value float64)
+}
+
 type Cleaner struct {
 	database Database
 	dns      Remover
 	mail     Mail
+	graphite Graphite
 }
 
-func NewCleaner(database Database, dns Remover, mail Mail) *Cleaner {
+func NewCleaner(database Database, dns Remover, mail Mail, graphite Graphite) *Cleaner {
 	return &Cleaner{
 		database: database,
 		dns:      dns,
 		mail:     mail,
+		graphite: graphite,
 	}
 }
 
@@ -75,6 +81,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, domain.LastUpdate.Format(time.RFC3339), user.SubscriptionId != nil)
 	if user.SubscriptionId == nil {
+		c.graphite.CounterAdd("domain.clean", 1)
 		err = c.dns.DeleteDomainRecords(domain)
 		if err != nil {
 			return err
