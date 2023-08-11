@@ -34,8 +34,8 @@ func main() {
 				services := []service.Startable{
 					database,
 					dnsCleaner,
-					api,
 					graphite,
+					api,
 				}
 				for _, s := range services {
 					err := s.Start()
