@@ -72,14 +72,19 @@ func (c *Cleaner) Clean(now time.Time) error {
 		fmt.Printf("token not found: %s\n", token)
 		return nil
 	}
-	if !domain.LastUpdate.Before(monthOld) {
-		return nil
+	lastUpdate := domain.LastUpdate
+	format := "nil"
+	if lastUpdate != nil {
+		if !lastUpdate.Before(monthOld) {
+			return nil
+		}
+		format = lastUpdate.Format(time.RFC3339)
 	}
 	user, err := c.database.GetUser(domain.UserId)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, domain.LastUpdate.Format(time.RFC3339), user.SubscriptionId != nil)
+	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, format, user.SubscriptionId != nil)
 	if user.SubscriptionId == nil {
 		c.graphite.CounterAdd("domain.clean", 1)
 		err = c.dns.DeleteDomainRecords(domain)

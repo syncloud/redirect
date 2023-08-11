@@ -102,6 +102,21 @@ func TestCleaner_Clean_RemoveDNSMoreThanAMonthOfInactivity(t *testing.T) {
 	assert.True(t, dns.deleted)
 }
 
+func TestCleaner_Clean_RemoveDNSUnknownLastUpdate(t *testing.T) {
+	now := time.Now()
+	database := &DatabaseStub{
+		domain: &model.Domain{Id: 1, Name: "test.com"},
+		user:   &model.User{Email: "test"},
+	}
+	dns := &RemoverStub{}
+	mail := &MailStub{}
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
+	err := cleaner.Clean(now)
+	assert.Nil(t, err)
+	assert.True(t, dns.deleted)
+}
+
 func TestCleaner_Clean_RemoveUpdateTime(t *testing.T) {
 	now := time.Now()
 	timestamp := now.AddDate(0, -1, -1)
