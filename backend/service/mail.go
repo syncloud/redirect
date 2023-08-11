@@ -15,6 +15,7 @@ type Mail struct {
 	activateTemplatePath      string
 	planSubscribeTemplatePath string
 	releaseAnnouncementPath   string
+	dnsCleanPath              string
 	from                      string
 	deviceErrorTo             string
 	mainDomain                string
@@ -33,6 +34,7 @@ func NewMail(smtp *smtp.Smtp,
 		activateTemplatePath:      mailPath + "/activate.txt",
 		planSubscribeTemplatePath: mailPath + "/plan_subscribe.txt",
 		releaseAnnouncementPath:   mailPath + "/release_announcement.txt",
+		dnsCleanPath:              mailPath + "/dns_clean.txt",
 		from:                      from,
 		deviceErrorTo:             deviceErrorTo,
 		mainDomain:                mainDomain,
@@ -102,6 +104,25 @@ func (m *Mail) SendReleaseAnnouncement(to string) error {
 	}
 	template := string(buf)
 	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain})
+	if err != nil {
+		return err
+	}
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
+	return err
+}
+
+func (m *Mail) SendDnsCleanNotification(to string, userDomain string) error {
+	buf, err := os.ReadFile(m.dnsCleanPath)
+	if err != nil {
+		return err
+	}
+	template := string(buf)
+	subject, body, err := ParseBody(template,
+		map[string]string{
+			"main_domain": m.mainDomain,
+			"user_domain": userDomain,
+		},
+	)
 	if err != nil {
 		return err
 	}

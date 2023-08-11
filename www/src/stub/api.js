@@ -9,8 +9,8 @@ let state = {
       active: true,
       email: 'test@example.com',
       notification_enabled: true,
-      update_token: '0a'
-      // subscription_id: 'S-1'
+      update_token: '0a',
+      subscription_id: 'S-1'
     }
   },
   plan: {

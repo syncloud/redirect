@@ -239,5 +239,22 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(
+		database *db.MySql,
+		amazonDns *dns.AmazonDns,
+		mail *service.Mail,
+		graphite *metrics.GraphiteClient,
+	) *dns.Cleaner {
+		return dns.NewCleaner(
+			database,
+			amazonDns,
+			mail,
+			graphite,
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }

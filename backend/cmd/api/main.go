@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/syncloud/redirect/db"
+	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
+	"github.com/syncloud/redirect/service"
 	"os"
 )
 
@@ -20,15 +23,27 @@ func main() {
 			log.EnableStdOutLog()
 			c, err := ioc.NewContainer(configFile, secretFile, mailDir)
 			if err != nil {
-				fmt.Println(err.Error())
-				os.Exit(1)
+				return err
 			}
-			return c.Call(func(api *rest.Api, database *db.MySql) error {
-				err := database.Connect()
-				if err != nil {
-					return err
+			return c.Call(func(
+				api *rest.Api,
+				database *db.MySql,
+				dnsCleaner *dns.Cleaner,
+				graphite *metrics.GraphiteClient,
+			) error {
+				services := []service.Startable{
+					database,
+					dnsCleaner,
+					graphite,
+					api,
 				}
-				return api.Start()
+				for _, s := range services {
+					err := s.Start()
+					if err != nil {
+						return err
+					}
+				}
+				return nil
 			})
 		},
 	}
