@@ -256,6 +256,8 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		}
 
 	}
+	now := time.Now()
+	domain.LastUpdate = &now
 	domain.BackwardCompatibleDomain(d.domain)
 	log.Printf("domain acquired %s, new token: %s\n", domain.Name, *domain.UpdateToken)
 	return domain, nil
