@@ -242,10 +242,12 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		database *db.MySql,
 		amazonDns *dns.AmazonDns,
+		mail *service.Mail,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
 			amazonDns,
+			mail,
 		)
 	})
 	if err != nil {
