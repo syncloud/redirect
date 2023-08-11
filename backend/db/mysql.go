@@ -220,7 +220,7 @@ func (m *MySql) GetDomainTokenUpdatedBefore(before time.Time) (string, error) {
 	row := m.db.QueryRow(`
 SELECT update_token
 FROM domain
-WHERE last_update < ? 
+WHERE last_update < ? or last_update is null
 order by last_update limit 1`, before)
 	var token string
 	err := row.Scan(&token)
