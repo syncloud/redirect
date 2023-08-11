@@ -29,7 +29,7 @@ func New(prefix, hostname string, port int) *GraphiteClient {
 	}
 }
 
-func (g *GraphiteClient) Start() {
+func (g *GraphiteClient) Start() error {
 	report := time.NewTicker(5 * time.Second)
 	//defer report.Stop()
 	go g.Graphite.SendLoop(
@@ -38,6 +38,7 @@ func (g *GraphiteClient) Start() {
 		"tcp",
 		fmt.Sprintf("%s:%d", g.hostname, g.port),
 	)
+	return nil
 }
 
 func (g *GraphiteClient) GaugeSet(name string, value float64) {

@@ -8,6 +8,7 @@ import (
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
+	"github.com/syncloud/redirect/service"
 	"os"
 )
 
@@ -30,13 +31,19 @@ func main() {
 				metrics *metrics.Publisher,
 				graphite *metrics.GraphiteClient,
 			) error {
-				err := database.Start()
-				if err != nil {
-					return err
+				services := []service.Startable{
+					database,
+					graphite,
+					metrics,
+					www,
 				}
-				graphite.Start()
-				metrics.Start()
-				return www.Start()
+				for _, s := range services {
+					err := s.Start()
+					if err != nil {
+						return err
+					}
+				}
+				return nil
 			})
 		},
 	}

@@ -7,13 +7,11 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
+	"github.com/syncloud/redirect/service"
 	"os"
 )
-
-type Service interface {
-	Start() error
-}
 
 func main() {
 	var configFile string
@@ -27,14 +25,20 @@ func main() {
 			if err != nil {
 				return err
 			}
-			return c.Call(func(api *rest.Api, database *db.MySql, dnsCleaner *dns.Cleaner) error {
-				services := []Service{
+			return c.Call(func(
+				api *rest.Api,
+				database *db.MySql,
+				dnsCleaner *dns.Cleaner,
+				graphite *metrics.GraphiteClient,
+			) error {
+				services := []service.Startable{
 					database,
 					dnsCleaner,
 					api,
+					graphite,
 				}
-				for _, service := range services {
-					err := service.Start()
+				for _, s := range services {
+					err := s.Start()
 					if err != nil {
 						return err
 					}

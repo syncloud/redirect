@@ -25,7 +25,7 @@ func NewPublisher(
 	}
 }
 
-func (p *Publisher) Start() {
+func (p *Publisher) Start() error {
 	go func() {
 		for {
 			count, err := p.database.GetOnlineDevicesCount()
@@ -73,4 +73,5 @@ func (p *Publisher) Start() {
 			time.Sleep(10 * time.Second)
 		}
 	}()
+	return nil
 }
