@@ -638,6 +638,7 @@ func (m *MySql) GetOnlineDevicesCount() (int64, error) {
 select count(*)  
 from domain join user on domain.user_id = user.id 
 where timestampdiff(minute, last_update, now()) < 600
+and (ip is not null or ipv6 is not null) 
 `)
 }
 
