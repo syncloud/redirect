@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/syncloud/redirect/smtp"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -15,6 +15,7 @@ type Mail struct {
 	activateTemplatePath      string
 	planSubscribeTemplatePath string
 	releaseAnnouncementPath   string
+	dnsCleanPath              string
 	from                      string
 	deviceErrorTo             string
 	mainDomain                string
@@ -33,6 +34,7 @@ func NewMail(smtp *smtp.Smtp,
 		activateTemplatePath:      mailPath + "/activate.txt",
 		planSubscribeTemplatePath: mailPath + "/plan_subscribe.txt",
 		releaseAnnouncementPath:   mailPath + "/release_announcement.txt",
+		dnsCleanPath:              mailPath + "/dns_clean.txt",
 		from:                      from,
 		deviceErrorTo:             deviceErrorTo,
 		mainDomain:                mainDomain,
@@ -40,7 +42,7 @@ func NewMail(smtp *smtp.Smtp,
 }
 
 func (m *Mail) SendResetPassword(to string, token string) error {
-	buf, err := ioutil.ReadFile(m.resetPasswordTemplatePath)
+	buf, err := os.ReadFile(m.resetPasswordTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -54,7 +56,7 @@ func (m *Mail) SendResetPassword(to string, token string) error {
 }
 
 func (m *Mail) SendSetPassword(to string) error {
-	buf, err := ioutil.ReadFile(m.setPasswordTemplatePath)
+	buf, err := os.ReadFile(m.setPasswordTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -68,7 +70,7 @@ func (m *Mail) SendSetPassword(to string) error {
 }
 
 func (m *Mail) SendActivate(to string, token string) error {
-	buf, err := ioutil.ReadFile(m.activateTemplatePath)
+	buf, err := os.ReadFile(m.activateTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func (m *Mail) SendActivate(to string, token string) error {
 }
 
 func (m *Mail) SendPlanSubscribed(to string) error {
-	buf, err := ioutil.ReadFile(m.planSubscribeTemplatePath)
+	buf, err := os.ReadFile(m.planSubscribeTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -96,12 +98,31 @@ func (m *Mail) SendPlanSubscribed(to string) error {
 }
 
 func (m *Mail) SendReleaseAnnouncement(to string) error {
-	buf, err := ioutil.ReadFile(m.releaseAnnouncementPath)
+	buf, err := os.ReadFile(m.releaseAnnouncementPath)
 	if err != nil {
 		return err
 	}
 	template := string(buf)
 	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain})
+	if err != nil {
+		return err
+	}
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
+	return err
+}
+
+func (m *Mail) SendDnsCleanNotification(to string, userDomain string) error {
+	buf, err := os.ReadFile(m.dnsCleanPath)
+	if err != nil {
+		return err
+	}
+	template := string(buf)
+	subject, body, err := ParseBody(template,
+		map[string]string{
+			"main_domain": m.mainDomain,
+			"user_domain": userDomain,
+		},
+	)
 	if err != nil {
 		return err
 	}

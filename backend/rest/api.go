@@ -55,13 +55,32 @@ type Api struct {
 	certbot      ApiCertbot
 	domain       string
 	count404     int64
+	socket       string
 }
 
-func NewApi(statsdClient metrics.StatsdClient, service ApiDomains, users ApiUsers, mail ApiMail, probe ApiPortProbe, certbot ApiCertbot, domain string) *Api {
-	return &Api{statsdClient: statsdClient, domains: service, users: users, mail: mail, probe: probe, certbot: certbot, domain: domain}
+func NewApi(
+	statsdClient metrics.StatsdClient,
+	service ApiDomains,
+	users ApiUsers,
+	mail ApiMail,
+	probe ApiPortProbe,
+	certbot ApiCertbot,
+	domain string,
+	socket string,
+) *Api {
+	return &Api{
+		statsdClient: statsdClient,
+		domains:      service,
+		users:        users,
+		mail:         mail,
+		probe:        probe,
+		certbot:      certbot,
+		domain:       domain,
+		socket:       socket,
+	}
 }
 
-func (a *Api) StartApi(socket string) {
+func (a *Api) Start() error {
 	r := mux.NewRouter()
 	r.HandleFunc("/status", Handle(a.Status)).Methods("GET")
 	r.HandleFunc("/certbot/present", Handle(a.CertbotPresent)).Methods("POST")
@@ -76,6 +95,7 @@ func (a *Api) StartApi(socket string) {
 	r.HandleFunc("/user/get", Handle(a.UserGet)).Methods("GET") //deprecated
 	r.HandleFunc("/user", Handle(a.User)).Methods("POST")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
+	r.HandleFunc("/user/log_v2", Handle(a.UserLogV2)).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
 	r.HandleFunc("/probe/port_v3", Handle(a.PortProbeV3)).Methods("POST")
 	r.NotFoundHandler = http.HandlerFunc(a.notFoundHandler)
@@ -83,26 +103,26 @@ func (a *Api) StartApi(socket string) {
 	r.Use(headers)
 
 	var listener net.Listener
-	if strings.HasPrefix(socket, "tcp://") {
-		address := strings.TrimPrefix(socket, "tcp://")
+	if strings.HasPrefix(a.socket, "tcp://") {
+		address := strings.TrimPrefix(a.socket, "tcp://")
 		tcpListener, err := net.Listen("tcp", address)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		listener = tcpListener
 	} else {
-		if _, err := os.Stat(socket); err == nil {
-			err := os.Remove(socket)
+		if _, err := os.Stat(a.socket); err == nil {
+			err := os.Remove(a.socket)
 			if err != nil {
-				panic(err)
+				return err
 			}
 		}
-		unixListener, err := net.Listen("unix", socket)
+		unixListener, err := net.Listen("unix", a.socket)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		if err := os.Chmod(socket, 0777); err != nil {
-			log.Fatal(err)
+		if err := os.Chmod(a.socket, 0777); err != nil {
+			return err
 		}
 		listener = unixListener
 	}
@@ -114,10 +134,8 @@ func (a *Api) StartApi(socket string) {
 		IdleTimeout:  15 * time.Second,
 	}
 	l := netutil.LimitListener(listener, 1000)
-	log.Printf("Started backend (%s)\n", socket)
-	if err := srv.Serve(l); err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+	log.Printf("Started backend (%s)\n", a.socket)
+	return srv.Serve(l)
 }
 
 func (a *Api) Status(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -248,7 +266,14 @@ func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{
 		return nil, err
 	}
 
-	log.Printf("/domain/update, token: %# v, ipv4 enabled: %v, ip: %# v, ipv6 enabled: %v, ipv6: %# v\n", pretty.Formatter(request.Token), request.Ipv4Enabled, pretty.Formatter(request.Ip), request.Ipv6Enabled, pretty.Formatter(request.Ipv6))
+	log.Printf("/domain/update, token: %# v, ipv4 enabled: %v, ip: %# v, local ip: %#v, ipv6 enabled: %v, ipv6: %# v\n",
+		pretty.Formatter(request.Token),
+		request.Ipv4Enabled,
+		pretty.Formatter(request.Ip),
+		pretty.Formatter(request.LocalIp),
+		request.Ipv6Enabled,
+		pretty.Formatter(request.Ipv6),
+	)
 	domain, err := a.domains.Update(request, ip)
 	if err != nil {
 		return nil, err
@@ -393,6 +418,27 @@ func (a *Api) UserLog(_ http.ResponseWriter, req *http.Request) (interface{}, er
 		return nil, fmt.Errorf("wrong user token: %s", token)
 	}
 	err = a.mail.SendLogs(user.Email, data, includeSupport)
+	return "Error report sent successfully", err
+}
+
+func (a *Api) UserLogV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.statsdClient.Incr("rest.user_v2.log", 1)
+
+	request := model.SendLogsRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		log.Println("unable to parse send logs v2 request", err)
+		return nil, errors.New("invalid request")
+	}
+
+	user, err := a.users.GetUserByUpdateToken(request.Token)
+	if err != nil {
+		return nil, fmt.Errorf("user token: %s, error: %s", request.Token, err)
+	}
+	if user == nil {
+		return nil, fmt.Errorf("wrong user token: %s", request.Token)
+	}
+	err = a.mail.SendLogs(user.Email, request.Data, request.IncludeSupport)
 	return "Error report sent successfully", err
 }
 

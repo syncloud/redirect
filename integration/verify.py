@@ -840,7 +840,7 @@ def test_status(domain):
 
 def test_backup(device):
    device.run_ssh("/var/www/redirect/current/bin/redirectdb backup redirect redirect.sql")
- 
+
 
 def test_certbot(device, domain):
     device.run_ssh("mkdir /var/www/redirect/current/www/.well-known")

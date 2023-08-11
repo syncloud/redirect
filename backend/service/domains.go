@@ -222,6 +222,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		return nil, err
 	}
 	updateToken := utils.Uuid()
+	now := time.Now()
 	if domain == nil {
 		domain = &model.Domain{
 			Name:             *request.Domain,
@@ -231,6 +232,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 			UpdateToken:      &updateToken,
 			UserId:           user.Id,
 			HostedZoneId:     d.freeHostedZoneId,
+			LastUpdate:       &now,
 		}
 		if !isFree {
 			id, err := d.amazonDns.CreateHostedZone(domain.Name)
@@ -249,6 +251,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		domain.DeviceMacAddress = deviceMacAddress
 		domain.DeviceName = request.DeviceName
 		domain.DeviceTitle = request.DeviceTitle
+		domain.LastUpdate = &now
 
 		err := d.db.UpdateDomain(domain)
 		if err != nil {

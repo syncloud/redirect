@@ -113,8 +113,25 @@ func (config *Config) StatsdServer() string {
 	}
 	return value
 }
+
 func (config *Config) StatsdPrefix() string {
 	value, err := config.parser.Get("stats", "prefix")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) GraphitePrefix() string {
+	value, err := config.parser.Get("graphite", "prefix")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
+func (config *Config) GraphiteHost() string {
+	value, err := config.parser.Get("graphite", "host")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}

@@ -79,7 +79,7 @@ func (u *Users) Activate(token string) error {
 	}
 
 	if user.Active {
-		return model.NewServiceError("user is active already")
+		return model.NewServiceError("user is already active")
 	}
 
 	user.Active = true

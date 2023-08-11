@@ -1,5 +1,5 @@
 local name = "redirect";
-local go = "1.19.5-buster";
+local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
 
 local build(arch) = [{
@@ -32,7 +32,7 @@ local build(arch) = [{
                 "go test ./... -cover",
                 "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
                 "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/cli/notification"
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/notification"
             ]
         },
         {
@@ -122,7 +122,7 @@ local build(arch) = [{
     services: [
         {
             name: "statsd",
-            image: "statsd/statsd"
+            image: "graphiteapp/graphite-statsd:1.1.10-4"
         },
         {
             name: "mail",
