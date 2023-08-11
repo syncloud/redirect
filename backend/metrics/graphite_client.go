@@ -24,6 +24,8 @@ func New(prefix, hostname string, port int) *GraphiteClient {
 		prefix:   prefix,
 		hostname: hostname,
 		port:     port,
+		gauges:   make(map[string]*graphite.Gauge),
+		counters: make(map[string]*graphite.Counter),
 	}
 }
 
@@ -39,23 +41,21 @@ func (g *GraphiteClient) Start() {
 }
 
 func (g *GraphiteClient) GaugeSet(name string, value float64) {
-	var gauge *graphite.Gauge
 	g.mtx.Lock()
 	if _, ok := g.gauges[name]; !ok {
-		gauge = g.Graphite.NewGauge(name)
+		gauge := g.Graphite.NewGauge(name)
 		g.gauges[name] = gauge
 	}
 	g.mtx.Unlock()
-	gauge.Set(value)
+	g.gauges[name].Set(value)
 }
 
 func (g *GraphiteClient) CounterAdd(name string, value float64) {
-	var counter *graphite.Counter
 	g.mtx.Lock()
 	if _, ok := g.counters[name]; !ok {
-		counter = g.Graphite.NewCounter(name)
+		counter := g.Graphite.NewCounter(name)
 		g.counters[name] = counter
 	}
 	g.mtx.Unlock()
-	counter.Add(value)
+	g.counters[name].Add(value)
 }
