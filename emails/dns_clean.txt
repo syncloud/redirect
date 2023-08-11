@@ -1,0 +1,6 @@
+Subject: Syncloud device name deactivation {main_name}
+Hello,
+
+We are removing your device name ({user_domain}).
+
+To continue using it please renew your subscription in your account: https://www.{main_name}/account

@@ -17,15 +17,21 @@ type Remover interface {
 	DeleteDomainRecords(domain *model.Domain) error
 }
 
+type Mail interface {
+	SendDnsCleanNotification(to string, userDomain string) error
+}
+
 type Cleaner struct {
 	database Database
 	dns      Remover
+	mail     Mail
 }
 
-func NewCleaner(database Database, dns Remover) *Cleaner {
+func NewCleaner(database Database, dns Remover, mail Mail) *Cleaner {
 	return &Cleaner{
 		database: database,
 		dns:      dns,
+		mail:     mail,
 	}
 }
 
@@ -74,6 +80,10 @@ func (c *Cleaner) Clean(now time.Time) error {
 			return err
 		}
 		domain.Ip = nil
+		err = c.mail.SendDnsCleanNotification(user.Email, domain.Name)
+		if err != nil {
+			fmt.Printf("cannot send dns clean email: %s\n", err)
+		}
 	}
 	domain.LastUpdate = &now
 	err = c.database.UpdateDomain(domain)

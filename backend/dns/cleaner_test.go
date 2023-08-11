@@ -38,6 +38,15 @@ func (r *RemoverStub) DeleteDomainRecords(domain *model.Domain) error {
 	return nil
 }
 
+type MailStub struct {
+	sent bool
+}
+
+func (m *MailStub) SendDnsCleanNotification(to string, userDomain string) error {
+	m.sent = true
+	return nil
+}
+
 func TestCleaner_Clean_NotRemoveDNSForSubscribedUsers(t *testing.T) {
 	subscriptionId := "123"
 	now := time.Now()
@@ -46,7 +55,8 @@ func TestCleaner_Clean_NotRemoveDNSForSubscribedUsers(t *testing.T) {
 		user:   &model.User{SubscriptionId: &subscriptionId},
 	}
 	dns := &RemoverStub{}
-	cleaner := NewCleaner(database, dns)
+	mail := &MailStub{}
+	cleaner := NewCleaner(database, dns, mail)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, dns.deleted)
@@ -59,7 +69,8 @@ func TestCleaner_Clean_NotRemoveDNSLessThanAMonthOfInactivity(t *testing.T) {
 		user:   &model.User{},
 	}
 	dns := &RemoverStub{}
-	cleaner := NewCleaner(database, dns)
+	mail := &MailStub{}
+	cleaner := NewCleaner(database, dns, mail)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, dns.deleted)
@@ -70,10 +81,11 @@ func TestCleaner_Clean_RemoveDNSMoreThanAMonthOfInactivity(t *testing.T) {
 	timestamp := now.AddDate(0, -1, -1)
 	database := &DatabaseStub{
 		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp},
-		user:   &model.User{},
+		user:   &model.User{Email: "test"},
 	}
 	dns := &RemoverStub{}
-	cleaner := NewCleaner(database, dns)
+	mail := &MailStub{}
+	cleaner := NewCleaner(database, dns, mail)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, dns.deleted)
@@ -88,9 +100,42 @@ func TestCleaner_Clean_RemoveUpdateTime(t *testing.T) {
 		user:   &model.User{},
 	}
 	dns := &RemoverStub{}
-	cleaner := NewCleaner(database, dns)
+	mail := &MailStub{}
+	cleaner := NewCleaner(database, dns, mail)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, dns.deleted)
 	assert.Equal(t, &now, domain.LastUpdate)
+}
+
+func TestCleaner_Clean_RemoveSendNotification(t *testing.T) {
+	now := time.Now()
+	timestamp := now.AddDate(0, -1, -1)
+	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp}
+	database := &DatabaseStub{
+		domain: domain,
+		user:   &model.User{},
+	}
+	dns := &RemoverStub{}
+	mail := &MailStub{}
+	cleaner := NewCleaner(database, dns, mail)
+	err := cleaner.Clean(now)
+	assert.Nil(t, err)
+	assert.True(t, dns.deleted)
+	assert.True(t, mail.sent)
+}
+
+func TestCleaner_Clean_NotRemoveNotSendNotification(t *testing.T) {
+	now := time.Now()
+	database := &DatabaseStub{
+		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &now},
+		user:   &model.User{},
+	}
+	dns := &RemoverStub{}
+	mail := &MailStub{}
+	cleaner := NewCleaner(database, dns, mail)
+	err := cleaner.Clean(now)
+	assert.Nil(t, err)
+	assert.False(t, dns.deleted)
+	assert.False(t, mail.sent)
 }
