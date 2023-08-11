@@ -254,8 +254,7 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 			"web_local_port, "+
 			"last_update, "+
 			"lower(name), "+
-			"hosted_zone_id, "+
-			"timestamp "+
+			"hosted_zone_id "+
 			"FROM domain "+
 			"WHERE "+field+" = ?", value)
 
@@ -280,7 +279,6 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 		&domain.LastUpdate,
 		&domain.Name,
 		&domain.HostedZoneId,
-		&domain.Timestamp,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

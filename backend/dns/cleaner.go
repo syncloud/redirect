@@ -60,14 +60,14 @@ func (c *Cleaner) Clean(now time.Time) error {
 		fmt.Printf("token not found: %s\n", token)
 		return nil
 	}
-	if !domain.Timestamp.Before(monthOld) {
+	if !domain.LastUpdate.Before(monthOld) {
 		return nil
 	}
 	user, err := c.database.GetUser(domain.UserId)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, domain.Timestamp.Format(time.RFC3339), user.SubscriptionId != nil)
+	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, domain.LastUpdate.Format(time.RFC3339), user.SubscriptionId != nil)
 	if user.SubscriptionId == nil {
 		err = c.dns.DeleteDomainRecords(domain)
 		if err != nil {
@@ -75,6 +75,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 		}
 		domain.Ip = nil
 	}
+	domain.LastUpdate = &now
 	err = c.database.UpdateDomain(domain)
 	if err != nil {
 		return err

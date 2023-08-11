@@ -42,7 +42,7 @@ func TestCleaner_Clean_NotRemoveDNSForSubscribedUsers(t *testing.T) {
 	subscriptionId := "123"
 	now := time.Now()
 	database := &DatabaseStub{
-		domain: &model.Domain{Id: 1, Name: "test.com", Timestamp: &now},
+		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &now},
 		user:   &model.User{SubscriptionId: &subscriptionId},
 	}
 	dns := &RemoverStub{}
@@ -55,7 +55,7 @@ func TestCleaner_Clean_NotRemoveDNSForSubscribedUsers(t *testing.T) {
 func TestCleaner_Clean_NotRemoveDNSLessThanAMonthOfInactivity(t *testing.T) {
 	now := time.Now()
 	database := &DatabaseStub{
-		domain: &model.Domain{Id: 1, Name: "test.com", Timestamp: &now},
+		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &now},
 		user:   &model.User{},
 	}
 	dns := &RemoverStub{}
@@ -69,7 +69,7 @@ func TestCleaner_Clean_RemoveDNSMoreThanAMonthOfInactivity(t *testing.T) {
 	now := time.Now()
 	timestamp := now.AddDate(0, -1, -1)
 	database := &DatabaseStub{
-		domain: &model.Domain{Id: 1, Name: "test.com", Timestamp: &timestamp},
+		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp},
 		user:   &model.User{},
 	}
 	dns := &RemoverStub{}
@@ -77,4 +77,20 @@ func TestCleaner_Clean_RemoveDNSMoreThanAMonthOfInactivity(t *testing.T) {
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, dns.deleted)
+}
+
+func TestCleaner_Clean_RemoveUpdateTime(t *testing.T) {
+	now := time.Now()
+	timestamp := now.AddDate(0, -1, -1)
+	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp}
+	database := &DatabaseStub{
+		domain: domain,
+		user:   &model.User{},
+	}
+	dns := &RemoverStub{}
+	cleaner := NewCleaner(database, dns)
+	err := cleaner.Clean(now)
+	assert.Nil(t, err)
+	assert.True(t, dns.deleted)
+	assert.Equal(t, &now, domain.LastUpdate)
 }
