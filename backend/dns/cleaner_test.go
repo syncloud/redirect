@@ -117,7 +117,7 @@ func TestCleaner_Clean_RemoveDNSUnknownLastUpdate(t *testing.T) {
 	assert.True(t, dns.deleted)
 }
 
-func TestCleaner_Clean_RemoveUpdateTime(t *testing.T) {
+func TestCleaner_Clean_RemoveAndUpdateTime(t *testing.T) {
 	now := time.Now()
 	timestamp := now.AddDate(0, -1, -1)
 	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp}
@@ -133,6 +133,27 @@ func TestCleaner_Clean_RemoveUpdateTime(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, dns.deleted)
 	assert.Equal(t, &now, domain.LastUpdate)
+}
+
+func TestCleaner_Clean_RemoveAndResetIPs(t *testing.T) {
+	now := time.Now()
+	timestamp := now.AddDate(0, -1, -1)
+	ip := "1.1.1.1"
+	ipv6 := "fe80::"
+	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp, Ip: &ip, Ipv6: &ipv6}
+	database := &DatabaseStub{
+		domain: domain,
+		user:   &model.User{},
+	}
+	dns := &RemoverStub{}
+	mail := &MailStub{}
+	graphite := &GraphiteStub{}
+	cleaner := NewCleaner(database, dns, mail, graphite)
+	err := cleaner.Clean(now)
+	assert.Nil(t, err)
+	assert.True(t, dns.deleted)
+	assert.Nil(t, domain.Ip)
+	assert.Nil(t, domain.Ipv6)
 }
 
 func TestCleaner_Clean_RemoveSendNotification(t *testing.T) {

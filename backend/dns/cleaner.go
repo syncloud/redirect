@@ -92,6 +92,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 			return err
 		}
 		domain.Ip = nil
+		domain.Ipv6 = nil
 		err = c.mail.SendDnsCleanNotification(user.Email, domain.Name)
 		if err != nil {
 			fmt.Printf("cannot send dns clean email: %s\n", err)
