@@ -59,6 +59,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	monthOld := now.AddDate(0, -1, 0)
 	token, err := c.database.GetDomainTokenUpdatedBefore(monthOld)
 	if err != nil {
+		c.statsdClient.Incr("cleaner.domain.error", 1)
 		return err
 	}
 	if token == "" {
@@ -67,6 +68,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	domain, err := c.database.GetDomainByToken(token)
 	if err != nil {
+		c.statsdClient.Incr("cleaner.domain.error", 1)
 		return err
 	}
 	if domain == nil {
@@ -83,6 +85,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	user, err := c.database.GetUser(domain.UserId)
 	if err != nil {
+		c.statsdClient.Incr("cleaner.domain.error", 1)
 		return err
 	}
 	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, format, user.SubscriptionId != nil)
@@ -90,16 +93,19 @@ func (c *Cleaner) Clean(now time.Time) error {
 		c.statsdClient.Incr("cleaner.domain.delete", 1)
 		err = c.remover.DeleteDomain(user.Id, domain.Name)
 		if err != nil {
+			c.statsdClient.Incr("cleaner.domain.error", 1)
 			return err
 		}
 		err = c.mail.SendDnsCleanNotification(user.Email, domain.Name)
 		if err != nil {
+			c.statsdClient.Incr("cleaner.domain.error", 1)
 			fmt.Printf("cannot send dns clean email: %s\n", err)
 		}
 	} else {
 		domain.LastUpdate = &now
 		err = c.database.UpdateDomain(domain)
 		if err != nil {
+			c.statsdClient.Incr("cleaner.domain.error", 1)
 			return err
 		}
 	}
