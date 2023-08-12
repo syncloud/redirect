@@ -31,21 +31,33 @@ func (dns *DnsStub) DeleteHostedZone(_ string) error {
 }
 
 func (dns *DnsStub) CreateHostedZone(_ string) (*string, error) {
+	if dns.error != nil {
+		return nil, dns.error
+	}
 	id := "123"
 	return &id, nil
 }
 
 func (dns *DnsStub) UpdateDomainRecords(_ *model.Domain) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.updated = true
 	return nil
 }
 
 func (dns *DnsStub) DeleteDomainRecords(_ *model.Domain) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.recordsDeleted = true
 	return nil
 }
 
 func (dns *DnsStub) DeleteCertbotRecord(_ string, _ string) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.certbotDeleted = true
 	return nil
 }
@@ -355,8 +367,8 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone_IgnoreNoSuchHostedZoneE
 
 	assert.Nil(t, err)
 	assert.False(t, dnsStub.hostedZoneDeleted)
-	assert.True(t, dnsStub.recordsDeleted)
-	assert.True(t, dnsStub.certbotDeleted)
+	assert.False(t, dnsStub.recordsDeleted)
+	assert.False(t, dnsStub.certbotDeleted)
 	assert.True(t, db.deleted)
 
 }

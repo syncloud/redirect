@@ -141,30 +141,34 @@ func (d *Domains) DeleteDomain(userId int64, domainName string) error {
 
 func (d *Domains) deleteDomain(domain *model.Domain) error {
 	err := d.amazonDns.DeleteDomainRecords(domain)
-	if err != nil {
+	if err != nil && !isNoSuchHostedZone(err, domain.HostedZoneId) {
 		return err
 	}
 
 	if d.freeHostedZoneId != domain.HostedZoneId {
 		err = d.amazonDns.DeleteCertbotRecord(domain.HostedZoneId, fmt.Sprintf("_acme-challenge.%s", domain.FQDN()))
-		if err != nil {
+		if err != nil && !isNoSuchHostedZone(err, domain.HostedZoneId) {
 			return err
 		}
 		err = d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
-		var aErr awserr.Error
-		if errors.As(err, &aErr) {
-			switch aErr.Code() {
-			case route53.ErrCodeNoSuchHostedZone:
-				log.Printf("no such hosted zone: %s, ignoring", domain.HostedZoneId)
-				return nil
-			}
-		}
-		if err != nil {
+		if err != nil && !isNoSuchHostedZone(err, domain.HostedZoneId) {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func isNoSuchHostedZone(err error, id string) bool {
+	var aErr awserr.Error
+	if errors.As(err, &aErr) {
+		switch aErr.Code() {
+		case route53.ErrCodeNoSuchHostedZone:
+			log.Printf("no such hosted zone: %s, ignoring", id)
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
