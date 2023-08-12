@@ -12,14 +12,64 @@
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
-                  Free Services
+                  Subscription
+                  <div class="pull-right" id="premium_active" v-if="this.subscriptionId">
+                    <span class="label label-success" style="font-size: 16px;">Active</span>
+                  </div>
+                  <div class="pull-right" id="premium_active" v-if="!this.subscriptionId">
+                    You have 30 days to subscribe
+                  </div>
                 </div>
               </div>
               <div class="panel-body">
-                DNS (*.syncloud.it)
+                <div>
+                  Subscription is required after 30 days of a free trial period.<br>
+                  Additionally you can use your personal domain on active subscription (like example.com)<br><br>
+                  We provide the following features for your device:
+                </div>
+                <ul style="padding-top: 10px">
+                  <li>Automatic IP DNS updates</li>
+                  <li>Automatic mail DNS records</li>
+                  <li>Email support for your device</li>
+                </ul>
+                <div id="request_premium" v-if="!this.subscriptionId">
+                  <div>
+                    For personal domain you need to:
+                  </div>
+                  <ul>
+                    <li>Have you own a domain (like example.com)</li>
+                    <li>Be able to change Nameservers for your domain</li>
+                    <li>Allow Syncloud to manage DNS records for that domain name by setting
+                      Syncloud Name Servers
+                    </li>
+                  </ul>
+                  <div style="margin: auto">
+                    <h4 style="text-align: center" v-if="this.payPalLoaded">Subscribe for £5/month</h4>
+                    <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
+                  </div>
+                </div>
+
+                <div id="premium_active" v-if="this.subscriptionId">
+                  <div style="padding-top: 10px">
+                  You can activate your device with a personal domain:<br>
+                  </div>
+                  <ol>
+                    <li>Reactivate from Settings - Activation and select a Premium mode</li>
+                    <li>
+                      Copy Name Servers for your
+                      <router-link to="/">domain</router-link>
+                      (Under this domain Name Servers list)
+                    </li>
+                    <li>
+                      Update Name Servers on your domain registrar page (GoDaddy for example)
+                    </li>
+                  </ol>
+
+                </div>
               </div>
             </div>
           </div>
+
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -38,60 +88,7 @@
               </div>
             </div>
           </div>
-          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <div class="panel-title">
-                  Subscription
-                  <div class="pull-right" id="premium_active" v-if="this.subscriptionId">
-                    <span class="label label-success" style="font-size: 16px;">Active</span>
-                  </div>
-                </div>
-              </div>
-              <div class="panel-body">
-                <div>Improve Syncloud device experience with your domain name (ex. example.com).
-                </div>
-                <ul style="padding-top: 10px">
-                  <li>Automatic IP DNS updates</li>
-                  <li>Automatic mail DNS records</li>
-                </ul>
-                <div id="request_premium" v-if="!this.subscriptionId">
-                  <div>
-                    What you need to have:
-                  </div>
-                  <ul>
-                    <li>You own a domain (like example.com)</li>
-                    <li>You can change Nameservers for your domain</li>
-                    <li>You are ready to allow Syncloud to manage DNS records for that domain name by setting
-                      Syncloud Name Servers
-                    </li>
-                  </ul>
-                  <div style="margin: auto">
-                    <h4 style="text-align: center" v-if="this.payPalLoaded">Subscribe for £5/month</h4>
-                    <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
-                  </div>
-                </div>
 
-                <div id="premium_active" v-if="this.subscriptionId">
-                  <div style="padding-top: 10px">
-                  You can activate your device in a premium (personal domain) mode:<br>
-                  </div>
-                  <ol>
-                    <li>Reactivate from Settings - Activation and select a Premium mode</li>
-                    <li>
-                      Copy Name Servers for your
-                      <router-link to="/">domain</router-link>
-                      (Under this domain Name Servers list)
-                    </li>
-                    <li>
-                      Update Name Servers on your domain registrar page (GoDaddy for example)
-                    </li>
-                  </ol>
-
-                </div>
-              </div>
-            </div>
-          </div>
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-danger">
               <div class="panel-heading">
