@@ -3,6 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
 	"testing"
@@ -13,6 +15,7 @@ type DnsStub struct {
 	recordsDeleted    bool
 	certbotDeleted    bool
 	updated           bool
+	error             error
 }
 
 func (dns *DnsStub) GetHostedZoneNameServers(_ string) ([]*string, error) {
@@ -20,6 +23,9 @@ func (dns *DnsStub) GetHostedZoneNameServers(_ string) ([]*string, error) {
 }
 
 func (dns *DnsStub) DeleteHostedZone(_ string) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.hostedZoneDeleted = true
 	return nil
 }
@@ -334,6 +340,21 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, dnsStub.hostedZoneDeleted)
+	assert.True(t, dnsStub.recordsDeleted)
+	assert.True(t, dnsStub.certbotDeleted)
+	assert.True(t, db.deleted)
+
+}
+
+func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone_IgnoreNoSuchHostedZoneError(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+	dnsStub := &DnsStub{error: awserr.New(route53.ErrCodeNoSuchHostedZone, "not found", nil)}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "2", &DetectorStub{})
+	err := domains.DeleteDomain(1, "test.com")
+
+	assert.Nil(t, err)
+	assert.False(t, dnsStub.hostedZoneDeleted)
 	assert.True(t, dnsStub.recordsDeleted)
 	assert.True(t, dnsStub.certbotDeleted)
 	assert.True(t, db.deleted)

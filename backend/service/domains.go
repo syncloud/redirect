@@ -1,7 +1,10 @@
 package service
 
 import (
+	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
@@ -148,6 +151,14 @@ func (d *Domains) deleteDomain(domain *model.Domain) error {
 			return err
 		}
 		err = d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
+		var aErr awserr.Error
+		if errors.As(err, &aErr) {
+			switch aErr.Code() {
+			case route53.ErrCodeNoSuchHostedZone:
+				log.Printf("no such hosted zone: %s, ignoring", domain.HostedZoneId)
+				return nil
+			}
+		}
 		if err != nil {
 			return err
 		}
