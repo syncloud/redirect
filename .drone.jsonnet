@@ -49,7 +49,7 @@ local build(arch) = [{
         },
         {
             name: "test-integration",
-            image: "python:3.9-buster",
+            image: "python:3.9-slim-bullseye",
             environment: {
                 access_key_id: {
                   from_secret: "access_key_id"
@@ -71,7 +71,7 @@ local build(arch) = [{
         },
         {
             name: "test-ui-desktop",
-            image: "python:3.9-buster",
+            image: "python:3.9-slim-bullseye",
             commands: [
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
               "cd integration",
@@ -85,7 +85,7 @@ local build(arch) = [{
         },
         {
             name: "test-ui-mobile",
-            image: "python:3.9-buster",
+            image: "python:3.9-slim-bullseye",
             commands: [
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
               "cd integration",
