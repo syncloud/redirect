@@ -2,6 +2,7 @@ package dns
 
 import (
 	"fmt"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"time"
 )
@@ -14,7 +15,7 @@ type Database interface {
 }
 
 type Remover interface {
-	DeleteDomainRecords(domain *model.Domain) error
+	DeleteDomain(userId int64, domainName string) error
 }
 
 type Mail interface {
@@ -26,18 +27,18 @@ type Graphite interface {
 }
 
 type Cleaner struct {
-	database Database
-	dns      Remover
-	mail     Mail
-	graphite Graphite
+	database     Database
+	remover      Remover
+	mail         Mail
+	statsdClient metrics.StatsdClient
 }
 
-func NewCleaner(database Database, dns Remover, mail Mail, graphite Graphite) *Cleaner {
+func NewCleaner(database Database, dns Remover, mail Mail, statsdClient metrics.StatsdClient) *Cleaner {
 	return &Cleaner{
-		database: database,
-		dns:      dns,
-		mail:     mail,
-		graphite: graphite,
+		database:     database,
+		remover:      dns,
+		mail:         mail,
+		statsdClient: statsdClient,
 	}
 }
 
@@ -86,22 +87,21 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, format, user.SubscriptionId != nil)
 	if user.SubscriptionId == nil {
-		c.graphite.CounterAdd("domain.clean", 1)
-		err = c.dns.DeleteDomainRecords(domain)
+		c.statsdClient.Incr("cleaner.domain.delete", 1)
+		err = c.remover.DeleteDomain(user.Id, domain.Name)
 		if err != nil {
 			return err
 		}
-		domain.Ip = nil
-		domain.Ipv6 = nil
 		err = c.mail.SendDnsCleanNotification(user.Email, domain.Name)
 		if err != nil {
 			fmt.Printf("cannot send dns clean email: %s\n", err)
 		}
-	}
-	domain.LastUpdate = &now
-	err = c.database.UpdateDomain(domain)
-	if err != nil {
-		return err
+	} else {
+		domain.LastUpdate = &now
+		err = c.database.UpdateDomain(domain)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

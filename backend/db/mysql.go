@@ -228,7 +228,7 @@ order by last_update limit 1`, before)
 		if err == sql.ErrNoRows {
 			return "", nil
 		} else {
-			log.Println("Cannot scan a domain: ", err)
+			log.Println("Cannot scan a update_token: ", err)
 			return "", fmt.Errorf("DB error")
 		}
 	}
