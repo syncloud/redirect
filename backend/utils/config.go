@@ -240,3 +240,11 @@ func (config *Config) PayPalClientId() string {
 	}
 	return result
 }
+
+func (config *Config) UserCleanerEnabled() bool {
+	result, err := config.parser.GetBool("cleaner", "user")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}

@@ -2,8 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/syncloud/redirect/model"
+	"go.uber.org/zap"
 	"log"
 	"strings"
 	"time"
@@ -16,14 +18,16 @@ type MySql struct {
 	user     string
 	password string
 	db       *sql.DB
+	logger   *zap.Logger
 }
 
-func NewMySql(host string, database string, user string, password string) *MySql {
+func NewMySql(host string, database string, user string, password string, logger *zap.Logger) *MySql {
 	return &MySql{
 		host:     host,
 		database: database,
 		user:     user,
 		password: password,
+		logger:   logger,
 	}
 }
 
@@ -56,6 +60,25 @@ func (m *MySql) GetUserByEmail(email string) (*model.User, error) {
 
 func (m *MySql) GetUserByUpdateToken(updateToken string) (*model.User, error) {
 	return m.selectUserByField("update_token", updateToken)
+}
+
+func (m *MySql) GetNextUserId(id int64) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT id FROM user WHERE id > ? order by id asc limit 1", id)
+
+	var nextId int64
+	err := row.Scan(&nextId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			m.logger.Info("no user found greater than", zap.Int64("id", id))
+			return 0, nil
+		} else {
+			m.logger.Error("cannot find next user", zap.Error(err))
+			return 0, err
+		}
+	}
+
+	return nextId, nil
 }
 
 func (m *MySql) selectUserByField(field string, value interface{}) (*model.User, error) {

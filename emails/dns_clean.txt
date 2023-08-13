@@ -4,3 +4,5 @@ Hello,
 We are removing your device name ({user_domain}).
 
 To continue using it please renew your subscription in your account: https://www.{main_domain}/account
+
+Thank you for choosing Syncloud

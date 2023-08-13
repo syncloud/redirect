@@ -88,8 +88,8 @@ func (c *Cleaner) Clean(now time.Time) error {
 		c.statsdClient.Incr("cleaner.domain.error", 1)
 		return err
 	}
-	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, format, user.SubscriptionId != nil)
-	if user.SubscriptionId == nil {
+	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, format, user.IsSubscribed())
+	if !user.IsSubscribed() {
 		c.statsdClient.Incr("cleaner.domain.delete", 1)
 		err = c.remover.DeleteDomain(user.Id, domain.Name)
 		if err != nil {

@@ -158,10 +158,10 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 }
 
 func (u *Users) PlanSubscribe(user *model.User, subscriptionId string) error {
-	if user.SubscriptionId != nil {
+	if user.IsSubscribed() {
 		return fmt.Errorf("you have existing premium subscrition, please contact support")
 	}
-	user.SubscriptionId = &subscriptionId
+	user.Subscribe(subscriptionId)
 	err := u.db.UpdateUser(user)
 	if err != nil {
 		return err
