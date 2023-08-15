@@ -290,11 +290,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		statsd *statsd.Client,
 		config *utils.Config,
+		domains *service.Domains,
 	) *user.Cleaner {
 		return user.NewCleaner(
 			database,
 			state,
 			mail,
+			domains,
 			config.UserCleanerEnabled(),
 			logger,
 		)

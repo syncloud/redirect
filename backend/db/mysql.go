@@ -70,7 +70,6 @@ func (m *MySql) GetNextUserId(id int64) (int64, error) {
 	err := row.Scan(&nextId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			m.logger.Info("no user found greater than", zap.Int64("id", id))
 			return 0, nil
 		} else {
 			m.logger.Error("cannot find next user", zap.Error(err))

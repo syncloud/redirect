@@ -62,13 +62,23 @@ func (m *MailStub) SendTrial(to string) error {
 	return nil
 }
 
+type RemoverStub struct {
+	domainsRemoved bool
+}
+
+func (r *RemoverStub) DeleteAllDomains(userId int64) error {
+	r.domainsRemoved = true
+	return nil
+}
+
 func TestCleaner_Clean_Subscribed_Skip(t *testing.T) {
 	now := time.Now()
 	subscriptionId := "1"
 	database := &DatabaseStub{user: &model.User{Id: 2, SubscriptionId: &subscriptionId}}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -84,7 +94,8 @@ func TestCleaner_Clean_Locked_Skip(t *testing.T) {
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -99,7 +110,8 @@ func TestCleaner_Clean_StatusCreated_SendTrial(t *testing.T) {
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -115,7 +127,8 @@ func TestCleaner_Clean_StatusCreated_SendTrial_Once(t *testing.T) {
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -140,7 +153,8 @@ func TestCleaner_Clean_StatusTrialSent_LessThan20Days_Skip(t *testing.T) {
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -157,7 +171,8 @@ func TestCleaner_Clean_StatusTrialSent_MoreThan20Days_SendLockEmail(t *testing.T
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -174,7 +189,8 @@ func TestCleaner_Clean_StatusLockSoonSent_LessThan30Days_Skip(t *testing.T) {
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -182,6 +198,7 @@ func TestCleaner_Clean_StatusLockSoonSent_LessThan30Days_Skip(t *testing.T) {
 	assert.False(t, mail.trial)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
+	assert.False(t, remover.domainsRemoved)
 }
 
 func TestCleaner_Clean_StatusLockSoonSent_MoreThan30Days_Lock(t *testing.T) {
@@ -191,7 +208,8 @@ func TestCleaner_Clean_StatusLockSoonSent_MoreThan30Days_Lock(t *testing.T) {
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -199,6 +217,7 @@ func TestCleaner_Clean_StatusLockSoonSent_MoreThan30Days_Lock(t *testing.T) {
 	assert.False(t, mail.trial)
 	assert.False(t, mail.lockSoon)
 	assert.True(t, mail.locked)
+	assert.True(t, remover.domainsRemoved)
 }
 
 func TestCleaner_Clean_Last_ResetToZero(t *testing.T) {
@@ -206,7 +225,8 @@ func TestCleaner_Clean_Last_ResetToZero(t *testing.T) {
 	database := &DatabaseStub{user: nil}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
-	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), state.userId)

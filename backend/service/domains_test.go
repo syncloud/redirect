@@ -69,6 +69,7 @@ type DomainsDbStub struct {
 	inserted     bool
 	deleted      bool
 	hostedZoneId string
+	userStatus   int64
 }
 
 func (db *DomainsDbStub) GetDomainByToken(_ string) (*model.Domain, error) {
@@ -87,7 +88,7 @@ func (db *DomainsDbStub) GetUserDomains(_ int64) ([]*model.Domain, error) {
 
 func (db *DomainsDbStub) GetUser(_ int64) (*model.User, error) {
 	if db.found {
-		return &model.User{Id: db.userId, Active: true}, nil
+		return &model.User{Id: db.userId, Active: true, Status: db.userStatus}, nil
 	}
 	return nil, nil
 }
@@ -420,4 +421,28 @@ func TestDomains_Update_Ipv6_Changed(t *testing.T) {
 	assert.Equal(t, "fe80::0000:0000:0000:0000", *domain.Ipv6)
 	assert.True(t, db.updated)
 	assert.True(t, dnsStub.updated)
+}
+
+func TestDomains_Update_LockedUser_Error(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1", userStatus: model.StatusLocked}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	token := "123"
+	ipv6 := "fe80::0000:0000:0000:0000"
+	requestIp := "fe80::1111:1111:1111:1111"
+	webLocalPort := 443
+	webProtocol := "https"
+	detector := &DetectorStub{changed: true}
+	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "2", detector)
+	_, err := domainService.Update(model.DomainUpdateRequest{
+		MapLocalAddress: false,
+		WebLocalPort:    &webLocalPort,
+		WebProtocol:     &webProtocol,
+		Token:           &token,
+		Ipv6:            &ipv6,
+		Ipv4Enabled:     false,
+		Ipv6Enabled:     true,
+	}, &requestIp)
+
+	assert.Error(t, err)
 }

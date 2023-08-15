@@ -310,6 +310,9 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	if user == nil || !user.Active {
 		return nil, model.NewServiceError("unknown domain update token")
 	}
+	if user.IsLocked() {
+		return nil, model.NewServiceError("user is locked")
+	}
 
 	var ipv4 *string
 	var localIpv4 *string

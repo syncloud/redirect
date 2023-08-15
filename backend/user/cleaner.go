@@ -23,19 +23,25 @@ type Mail interface {
 	SendAccountLocked(to string) error
 }
 
+type Remover interface {
+	DeleteAllDomains(userId int64) error
+}
+
 type Cleaner struct {
 	database Database
 	state    State
 	mail     Mail
+	remover  Remover
 	enabled  bool
 	logger   *zap.Logger
 }
 
-func NewCleaner(database Database, state State, mail Mail, enabled bool, logger *zap.Logger) *Cleaner {
+func NewCleaner(database Database, state State, mail Mail, remover Remover, enabled bool, logger *zap.Logger) *Cleaner {
 	return &Cleaner{
 		database: database,
 		state:    state,
 		mail:     mail,
+		remover:  remover,
 		enabled:  enabled,
 		logger:   logger,
 	}
@@ -80,37 +86,42 @@ func (c *Cleaner) Clean(now time.Time) error {
 		return c.state.Set(id)
 	}
 	if user.IsStatusCreated() {
-		err = c.mail.SendTrial(user.Email)
-		if err != nil {
-			return err
-		}
 		user.TrialEmailSent()
 		err = c.database.UpdateUser(user)
 		if err != nil {
 			return err
 		}
-	}
-	if user.IsReadyForLockEmail(now) {
-		err = c.mail.SendAccountLockSoon(user.Email)
+		err = c.mail.SendTrial(user.Email)
 		if err != nil {
 			return err
 		}
+	}
+	if user.IsReadyForLockEmail(now) {
 		user.LockEmailSent()
 		err = c.database.UpdateUser(user)
 		if err != nil {
 			return err
 		}
-	}
-	if user.IsReadyForAccountLock(now) {
-		err = c.mail.SendAccountLocked(user.Email)
+		err = c.mail.SendAccountLockSoon(user.Email)
 		if err != nil {
 			return err
 		}
+	}
+	if user.IsReadyForAccountLock(now) {
 		user.Lock()
+		err = c.remover.DeleteAllDomains(userId)
+		if err != nil {
+			return err
+		}
 		err = c.database.UpdateUser(user)
 		if err != nil {
 			return err
 		}
+		err = c.mail.SendAccountLocked(user.Email)
+		if err != nil {
+			return err
+		}
 	}
+	//TODO: remove account after 10 days from lock
 	return c.state.Set(id)
 }
