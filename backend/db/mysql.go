@@ -91,13 +91,16 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 			"update_token, "+
 			"notification_enabled, "+
 			"timestamp, "+
-			"subscription_id "+
+			"subscription_id, "+
+			"registered_at, "+
+			"status "+
 			"FROM user "+
 			"WHERE "+field+" = ?", value)
 
 	user := &model.User{}
 	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
-		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId)
+		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId, &user.RegisteredAt,
+		&user.Status)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -151,7 +154,8 @@ func (m *MySql) UpdateUser(user *model.User) error {
 			"update_token = ?, " +
 			"notification_enabled = ?, " +
 			"timestamp = ?, " +
-			"subscription_id = ? " +
+			"subscription_id = ?, " +
+			"status = ? " +
 			"WHERE id = ?")
 	if err != nil {
 		log.Println("sql error: ", err)
@@ -167,6 +171,7 @@ func (m *MySql) UpdateUser(user *model.User) error {
 		user.NotificationEnabled,
 		&now,
 		user.SubscriptionId,
+		user.Status,
 		user.Id,
 	)
 	if err != nil {

@@ -109,6 +109,30 @@ func TestCleaner_Clean_StatusCreated_SendTrial(t *testing.T) {
 	assert.False(t, mail.locked)
 }
 
+func TestCleaner_Clean_StatusCreated_SendTrial_Once(t *testing.T) {
+	now := time.Now()
+	user := &model.User{Id: 2, RegisteredAt: now}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	cleaner := NewCleaner(database, state, mail, true, log.Default())
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), state.userId)
+	assert.True(t, user.IsTrialEmailSent())
+	assert.True(t, mail.trial)
+	assert.False(t, mail.lockSoon)
+	assert.False(t, mail.locked)
+
+	mail.trial = false
+	err = cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), state.userId)
+	assert.False(t, mail.trial)
+	assert.False(t, mail.lockSoon)
+	assert.False(t, mail.locked)
+}
+
 func TestCleaner_Clean_StatusTrialSent_LessThan20Days_Skip(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2, RegisteredAt: now.AddDate(0, 0, -19)}
