@@ -204,7 +204,7 @@ func (d *Domains) findAndCheck(domain *string, isFree bool, user *model.User, fi
 			}}}
 		}
 	} else {
-		if !isFree && user.SubscriptionId == nil {
+		if !isFree && !user.IsSubscribed() {
 			return nil, fmt.Errorf("non free domain name requires a premium subscription")
 		}
 	}
@@ -309,6 +309,9 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	}
 	if user == nil || !user.Active {
 		return nil, model.NewServiceError("unknown domain update token")
+	}
+	if user.IsLocked() {
+		return nil, model.NewServiceError("user is locked")
 	}
 
 	var ipv4 *string

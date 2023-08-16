@@ -12,17 +12,20 @@ import (
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
+	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
+	"github.com/syncloud/redirect/user"
 	"github.com/syncloud/redirect/utils"
-	"log"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
+	var logger = log.Default()
 
 	c := container.New()
 
@@ -36,7 +39,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(config *utils.Config) *db.MySql {
-		return db.NewMySql(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
+		return db.NewMySql(
+			config.GetMySqlHost(),
+			config.GetMySqlDB(),
+			config.GetMySqlLogin(),
+			config.GetMySqlPassword(),
+			logger,
+		)
 	})
 	if err != nil {
 		return nil, err
@@ -102,7 +111,14 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(smtp *smtp.Smtp, config *utils.Config) *service.Mail {
-		return service.NewMail(smtp, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
+		return service.NewMail(
+			smtp,
+			mailPath,
+			config.MailFrom(),
+			config.MailDeviceErrorTo(),
+			config.Domain(),
+			logger,
+		)
 	})
 	if err != nil {
 		return nil, err
@@ -206,7 +222,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	) (*rest.Www, error) {
 		secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
 		if err != nil {
-			log.Fatalf("unable to decode secre key %v", err)
+			logger.Error("unable to decode secret key", zap.Error(err))
 			return nil, err
 		}
 		return rest.NewWww(
@@ -250,6 +266,39 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			domains,
 			mail,
 			statsd,
+		)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	err = c.Singleton(func() *user.CleanerState {
+		return user.NewCleanerState(
+			logger,
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	err = c.Singleton(func(
+		database *db.MySql,
+		state *user.CleanerState,
+		mail *service.Mail,
+		statsd *statsd.Client,
+		config *utils.Config,
+		domains *service.Domains,
+	) *user.Cleaner {
+		return user.NewCleaner(
+			database,
+			state,
+			mail,
+			domains,
+			config.UserCleanerEnabled(),
+			logger,
 		)
 	})
 	if err != nil {

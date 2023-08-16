@@ -10,6 +10,7 @@ import (
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
+	"github.com/syncloud/redirect/user"
 	"os"
 )
 
@@ -29,11 +30,13 @@ func main() {
 				api *rest.Api,
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
+				userCleaner *user.Cleaner,
 				graphite *metrics.GraphiteClient,
 			) error {
 				services := []service.Startable{
 					database,
 					dnsCleaner,
+					userCleaner,
 					graphite,
 					api,
 				}
