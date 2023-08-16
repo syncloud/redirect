@@ -180,45 +180,6 @@ func (m *MySql) UpdateUser(user *model.User) error {
 	return nil
 }
 
-func (m *MySql) GetUsersByField(field string, value string) ([]*model.User, error) {
-	users := make([]*model.User, 0)
-	rows, err := m.db.Query(
-		"SELECT "+
-			"id, "+
-			"email, "+
-			"password_hash, "+
-			"active, "+
-			"update_token, "+
-			"notification_enabled, "+
-			"timestamp, "+
-			"subscription_id "+
-			"FROM user "+
-			"WHERE "+field+" like ?", value)
-	if err != nil {
-		log.Printf("cannot select users by field: %s, value: %s, error: %v\n", field, value, err)
-		return nil, fmt.Errorf("DB error")
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		user := &model.User{}
-		err := rows.Scan(
-			&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
-			&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId,
-		)
-		if err != nil {
-			log.Printf("cannot scan users by field: %s, value: %s, error: %v\n", field, value, err)
-			return nil, fmt.Errorf("DB error")
-		}
-		users = append(users, user)
-	}
-	if err := rows.Err(); err != nil {
-		log.Printf("cannot processes users by field: %s, value: %s, error: %v\n", field, value, err)
-		return nil, fmt.Errorf("DB error")
-	}
-	return users, nil
-}
-
 func (m *MySql) DeleteUser(userId int64) error {
 
 	stmt, err := m.db.Prepare("DELETE FROM user WHERE id = ?")

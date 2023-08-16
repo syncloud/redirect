@@ -63,11 +63,13 @@ func (m *MailStub) SendTrial(to string) error {
 }
 
 type RemoverStub struct {
-	domainsRemoved bool
+	domainsRemoved       bool
+	domainsRemovedUserId int64
 }
 
 func (r *RemoverStub) DeleteAllDomains(userId int64) error {
 	r.domainsRemoved = true
+	r.domainsRemovedUserId = userId
 	return nil
 }
 
@@ -218,6 +220,7 @@ func TestCleaner_Clean_StatusLockSoonSent_MoreThan30Days_Lock(t *testing.T) {
 	assert.False(t, mail.lockSoon)
 	assert.True(t, mail.locked)
 	assert.True(t, remover.domainsRemoved)
+	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
 }
 
 func TestCleaner_Clean_Last_ResetToZero(t *testing.T) {

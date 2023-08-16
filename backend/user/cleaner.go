@@ -109,7 +109,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	if user.IsReadyForAccountLock(now) {
 		user.Lock()
-		err = c.remover.DeleteAllDomains(userId)
+		err = c.remover.DeleteAllDomains(id)
 		if err != nil {
 			return err
 		}
