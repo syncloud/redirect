@@ -1,6 +1,8 @@
-Subject: Syncloud account is locked
+Subject: Syncloud free trial expired
 Hello,
 
-We are sorry to let you know that you account has been locked as you have no valid subscription: https://www.{main_domain}/account
+We are sorry to inform you that your account has been locked due to no valid subscription.
 
-Thank you for choosing Syncloud
+You may subscribe at any time to continue using our services at: https://www.{main_domain}/account
+
+Thank you for choosing Syncloud!

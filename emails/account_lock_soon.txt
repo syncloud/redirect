@@ -1,7 +1,9 @@
-Subject: Syncloud account removal in 10 days
+Subject: Syncloud free trial expires in 10 days
 Hello,
 
 We would like to notify you that your account will be locked soon.
-Subscribe today to not have your service disrupted: https://www.{main_domain}/account
+Subscribe today to keep using Syncloud after your free trial expires.
 
-Thank you for choosing Syncloud
+Click here to activate your subscription: https://www.{main_domain}/account
+
+Thank you for choosing Syncloud!
