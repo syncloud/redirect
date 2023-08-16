@@ -1,4 +1,4 @@
-Subject: Syncloud account locked
+Subject: Syncloud account is locked
 Hello,
 
 We are sorry to let you know that you account has been locked as you have no valid subscription: https://www.{main_domain}/account
