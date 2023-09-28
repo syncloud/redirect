@@ -88,7 +88,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(statsd *statsd.Client, route53 *route53.Route53) *dns.AmazonDns {
-		return dns.New(statsd, route53, 255)
+		return dns.New(statsd, route53, 255, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -206,6 +206,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			certbot,
 			config.Domain(),
 			config.GetApiSocket(),
+			logger,
 		)
 	})
 	if err != nil {
