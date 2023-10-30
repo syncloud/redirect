@@ -4,11 +4,7 @@
 </template>
 <script>
 import axios from 'axios'
-import Menu from '@/components/Menu'
-
-global.jQuery = require('jquery')
-var $ = global.jQuery
-window.jQuery = window.$ = $
+import Menu from './components/Menu.vue'
 
 const publicRoutes = [
   '/register',
@@ -66,5 +62,5 @@ export default {
 }
 </script>
 <style>
-@import '~bootstrap/dist/css/bootstrap.css';
+@import 'bootstrap/dist/css/bootstrap.css';
 </style>

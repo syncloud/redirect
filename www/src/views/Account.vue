@@ -44,7 +44,14 @@
                     </li>
                   </ul>
                   <div style="margin: auto">
-                    <h4 style="text-align: center" v-if="this.payPalLoaded">Subscribe for £5/month</h4>
+                    <el-switch
+                      style="margin: auto; max-width: 200px"
+                      v-model="subscriptionAnnual"
+                      active-text="Annual"
+                      inactive-text="Monthly"
+                    />
+                    <h4 style="text-align: center" v-if="this.payPalLoaded && this.subscriptionAnnual">Subscribe for £60/year</h4>
+                    <h4 style="text-align: center" v-if="this.payPalLoaded && !this.subscriptionAnnual">Subscribe for £5/month</h4>
                     <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
                   </div>
                 </div>
@@ -128,13 +135,15 @@
 </template>
 <script>
 import axios from 'axios'
-import Confirmation from '@/components/Confirmation'
+import Confirmation from '../components/Confirmation.vue'
 import { loadScript } from '@paypal/paypal-js'
+import { ElSwitch } from 'element-plus'
 
 export default {
   name: 'Account',
   components: {
-    Confirmation
+    Confirmation,
+    ElSwitch
   },
   props: {
     checkUserSession: Function
@@ -147,7 +156,8 @@ export default {
       domainGroups: Array,
       planId: String,
       clientId: String,
-      payPalLoaded: Boolean
+      payPalLoaded: Boolean,
+      subscriptionAnnual: false
     }
   },
   mounted () {

@@ -95,7 +95,7 @@
 <script>
 import axios from 'axios'
 import moment from 'moment'
-import Confirmation from '@/components/Confirmation'
+import Confirmation from '../components/Confirmation.vue'
 
 function sameDay (date1, date2) {
   return (date1.getDate() === date2.getDate() &&
