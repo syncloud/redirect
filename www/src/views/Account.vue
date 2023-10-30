@@ -157,7 +157,7 @@ export default {
   },
   methods: {
     reload: function () {
-      axios.get('api/user')
+      axios.get('/api/user')
         .then(response => {
           this.notificationEnabled = response.data.data.notification_enabled
           this.subscriptionId = response.data.data.subscription_id
@@ -166,7 +166,7 @@ export default {
         .catch(this.onError)
     },
     loadPlan: function (subscriptionId) {
-      axios.get('api/plan')
+      axios.get('/api/plan')
         .then(response => {
           this.planId = response.data.data.plan_id
           this.clientId = response.data.data.client_id
@@ -191,7 +191,7 @@ export default {
                 })
               },
               onApprove: (data, actions) => {
-                axios.post('api/plan/subscribe', { subscription_id: data.subscriptionID })
+                axios.post('/api/plan/subscribe', { subscription_id: data.subscriptionID })
                   .then(_ => {
                     this.reload()
                   })
@@ -207,7 +207,7 @@ export default {
     },
     notificationSave: function () {
       const action = this.notificationEnabled ? 'enable' : 'disable'
-      axios.post('api/notification/' + action)
+      axios.post('/api/notification/' + action)
         .then(_ => {
           this.reload()
         })
@@ -217,7 +217,7 @@ export default {
       this.$refs.delete_confirmation.show()
     },
     accountDeleteConfirm: function () {
-      axios.delete('api/user')
+      axios.delete('/api/user')
         .then(_ => {
           this.checkUserSession()
         })
