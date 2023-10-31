@@ -1,7 +1,7 @@
 import { createServer, Model, Response } from 'miragejs'
 
 let state = {
-  loggedIn: false,
+  loggedIn: true,
   credentials: {
     user: '11',
     password: '2'
@@ -12,7 +12,7 @@ let state = {
       email: 'test@example.com',
       notification_enabled: true,
       update_token: '0a',
-      subscription_id: null
+      subscription_id: 1
     }
   },
   plan: {
@@ -20,7 +20,7 @@ let state = {
       annual_plan_id: 'P-3AV82824GF026134TMU772XQ', // paypal sandbox plan id (Annual)
       monthly_plan_id: 'P-88T8436193034834XMDZRP4A', // paypal sandbox plan id (Monthly)
       client_id: 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN', // paypal sandbox client id
-      subscribed: false
+      subscribed: true
     }
   },
   domains: {
@@ -172,6 +172,10 @@ export function mock () {
       this.post('/api/plan/subscribe', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
         state.user.data.subscription_id = attrs.subscription_id
+        return new Response(200, {}, {})
+      })
+      this.delete('/api/plan', function (_schema, _request) {
+        state.user.data.subscription_id = undefined
         return new Response(200, {}, {})
       })
     }

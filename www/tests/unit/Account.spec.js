@@ -174,4 +174,3 @@ test('Delete', async () => {
   expect(deleted).toBe(true)
   wrapper.unmount()
 })
-

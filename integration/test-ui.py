@@ -181,9 +181,9 @@ def test_password_reset(ui_mode, selenium):
     smtp.clear()
     print('reset_url: ' + reset_url)
     selenium.driver.get(reset_url)
+    selenium.screenshot('password-reset')
     selenium.find_by(By.ID, 'password')
     password = selenium.find_by(By.ID, 'password')
-    selenium.screenshot('password-reset')
     global DEVICE_PASSWORD
     DEVICE_PASSWORD = 'password1'
     password.send_keys(DEVICE_PASSWORD)
