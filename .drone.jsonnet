@@ -1,6 +1,7 @@
 local name = "redirect";
 local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
+local node = "18.12.0";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -13,7 +14,7 @@ local build(arch) = [{
     steps: [
         {
             name: "build web",
-            image: "node:16.1.0",
+            image: "node:" + node,
             commands: [
                 "mkdir build",
                 "cd www",
