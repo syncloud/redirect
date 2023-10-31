@@ -48,16 +48,16 @@ def test_start(module_setup, device_host, domain):
     db.recreate()
 
 
-def test_error(driver, domain, selenium):
+def test_error(domain, selenium):
     ip = socket.gethostbyname('www.syncloud.test')
     print('domain ip: ' + ip)
-    driver.get("https://www.{0}/error".format(domain))
+    selenium.driver.get("https://www.{0}/error".format(domain))
     selenium.find_by(By.ID, 'error')
     selenium.screenshot('error')
 
 
-def test_index(driver, domain, selenium):
-    driver.get("https://www.{0}".format(domain))
+def test_index(domain, selenium):
+    selenium.driver.get("https://www.{0}".format(domain))
     selenium.find_by(By.ID, 'email')
     selenium.screenshot('index')
 
@@ -124,7 +124,7 @@ def test_login_wrong_password(ui_mode, selenium):
     assert "authentication failed" in error.text
 
 
-def test_login(driver, ui_mode, selenium):
+def test_login(ui_mode, selenium):
     menu(selenium, ui_mode, 'login')
 
     selenium.find_by(By.ID, 'email')
@@ -141,17 +141,17 @@ def test_login(driver, ui_mode, selenium):
     selenium.screenshot('login-progress')
     selenium.find_by(By.ID, 'no_domains')
     selenium.screenshot('default')
-    assert "You do not have any activated devices" in driver.page_source
+    assert "You do not have any activated devices" in selenium.driver.page_source
 
 
-def test_devices(domain, driver, ui_mode, artifact_dir, selenium):
+def test_devices(domain, ui_mode, artifact_dir, selenium):
 
     api.domain_acquire(domain, '{}.{}'.format(ui_mode, domain), DEVICE_USER, DEVICE_PASSWORD)
 
-    driver.get("https://www.{0}/api/domains".format(domain))
+    selenium.driver.get("https://www.{0}/api/domains".format(domain))
     with open(join(artifact_dir, '{}-api-domains.log'.format(ui_mode)), 'w') as f:
-        f.write(str(driver.page_source.encode("utf-8")))
-    driver.get("https://www.{0}".format(domain))
+        f.write(str(selenium.driver.page_source.encode("utf-8")))
+    selenium.driver.get("https://www.{0}".format(domain))
 
     menu(selenium, ui_mode, 'devices')
 
@@ -162,7 +162,7 @@ def test_devices(domain, driver, ui_mode, artifact_dir, selenium):
     assert by_xpath is not None
 
 
-def test_password_reset(driver, ui_mode, selenium):
+def test_password_reset(ui_mode, selenium):
     menu(selenium, ui_mode, 'logout')
 
     selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'forgot')))
@@ -178,14 +178,14 @@ def test_password_reset(driver, ui_mode, selenium):
 
     reset_url = smtp.get_reset_url(smtp.emails()[0])
     smtp.clear()
-
-    driver.get(reset_url)
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'password')))
-    password = selenium.find_by_id('password')
+    print('reset_url: ' + reset_url)
+    selenium.driver.get(reset_url)
+    selenium.find_by(By.ID, 'password')
+    password = selenium.find_by(By.ID, 'password')
     global DEVICE_PASSWORD
     DEVICE_PASSWORD = 'password1'
     password.send_keys(DEVICE_PASSWORD)
-    reset = selenium.find_by_id('reset')
+    reset = selenium.find_by(By.ID, 'reset')
     reset.click()
 
     menu(selenium, ui_mode, 'login')
