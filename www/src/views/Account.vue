@@ -43,7 +43,7 @@
                       Syncloud Name Servers
                     </li>
                   </ul>
-                  <div style="margin: auto">
+                  <div style="display: flex; flex-direction: column;">
                     <el-switch
                       style="margin: auto; max-width: 200px"
                       v-model="subscriptionAnnual"
@@ -154,7 +154,8 @@ export default {
       premiumStatusId: Number,
       subscriptionId: String,
       domainGroups: Array,
-      planId: String,
+      planMonthlyId: String,
+      planAnnualId: String,
       clientId: String,
       payPalLoaded: Boolean,
       subscriptionAnnual: false
@@ -178,15 +179,16 @@ export default {
     loadPlan: function (subscriptionId) {
       axios.get('/api/plan')
         .then(response => {
-          this.planId = response.data.data.plan_id
+          this.planAnnualId = response.data.data.annual_plan_id
+          this.planMonthlyId = response.data.data.monthly_plan_id
           this.clientId = response.data.data.client_id
           if (!subscriptionId && !this.payPalLoaded) {
-            this.enablePayPal(this.clientId, this.planId)
+            this.enablePayPal(this.clientId)
           }
         })
         .catch(this.onError)
     },
-    enablePayPal: function (clientId, planId) {
+    enablePayPal: function (clientId) {
       loadScript({
         'client-id': clientId,
         vault: true,
@@ -197,7 +199,7 @@ export default {
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: planId
+                  plan_id: this.subscriptionAnnual ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {

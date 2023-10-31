@@ -51,20 +51,20 @@ def test_error(driver, domain, selenium):
     ip = socket.gethostbyname('www.syncloud.test')
     print('domain ip: ' + ip)
     driver.get("https://www.{0}/error".format(domain))
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'error')))
+    selenium.find_by(By.ID, 'error')
     selenium.screenshot('error')
 
 
 def test_index(driver, domain, selenium):
     driver.get("https://www.{0}".format(domain))
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'email')))
+    selenium.find_by(By.ID, 'email')
     selenium.screenshot('index')
 
 
-def test_register(driver, ui_mode, selenium):
+def test_register(ui_mode, selenium):
     menu(selenium, ui_mode, 'register')
 
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'register_email')))
+    selenium.find_by(By.ID, 'register_email')
     selenium.screenshot('register')
     email = selenium.find_by_id('register_email')
     email.send_keys(DEVICE_USER)
@@ -72,22 +72,20 @@ def test_register(driver, ui_mode, selenium):
     password.send_keys(DEVICE_PASSWORD)
     selenium.screenshot('register-credentials')
     password.send_keys(Keys.RETURN)
-    complete_header = "//h2[text()='Complete']"
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, complete_header)))
+    selenium.find_by(By.XPATH, "//h2[text()='Complete']")
 
     selenium.screenshot('complete-registration')
     activate_url = smtp.get_activate_url(smtp.emails()[0])
     smtp.clear()
-    driver.get(activate_url)
+    selenium.driver.get(activate_url)
     print('activate_url: ' + activate_url)
-    activated_status = "//span[text()='User was activated']"
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, activated_status)))
+    selenium.find_by(By.XPATH, "//span[text()='User was activated']")
 
 
 def test_login_wrong_username(ui_mode, selenium):
     menu(selenium, ui_mode, 'login')
 
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'email')))
+    selenium.find_by(By.ID, 'email')
 
     selenium.screenshot('login-wrong-username-' + ui_mode)
     user = selenium.find_by_id("email")
@@ -98,7 +96,7 @@ def test_login_wrong_username(ui_mode, selenium):
     selenium.find_by_id("submit").click()
     password.send_keys(Keys.RETURN)
     selenium.screenshot('login-wrong-username-progress')
-    selenium.wait_or_screenshot(EC.visibility_of_element_located((By.ID, 'help-email')))
+    selenium.find_by(By.ID, 'help-email')
     selenium.screenshot('login-wrong-username-error')
     error = selenium.find_by_id("help-email")
     assert "Not valid email" in error.text
@@ -107,7 +105,7 @@ def test_login_wrong_username(ui_mode, selenium):
 def test_login_wrong_password(ui_mode, selenium):
     menu(selenium, ui_mode, 'login')
 
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'email')))
+    selenium.find_by(By.ID, 'email')
 
     selenium.screenshot('login-wrong-password-')
     user = selenium.find_by_id("email")
@@ -119,7 +117,7 @@ def test_login_wrong_password(ui_mode, selenium):
     selenium.screenshot('login-wrong-password-credentials-')
     password.send_keys(Keys.RETURN)
     selenium.screenshot('login-wrong-password-progress')
-    selenium.wait_or_screenshot(EC.visibility_of_element_located((By.ID, 'error')))
+    selenium.find_by(By.ID, 'error')
     selenium.screenshot('login-wrong-password-error')
     error = selenium.find_by_id("error")
     assert "authentication failed" in error.text
@@ -128,7 +126,7 @@ def test_login_wrong_password(ui_mode, selenium):
 def test_login(driver, ui_mode, selenium):
     menu(selenium, ui_mode, 'login')
 
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'email')))
+    selenium.find_by(By.ID, 'email')
 
     selenium.screenshot('login')
     user = selenium.find_by_id("email")
@@ -140,7 +138,7 @@ def test_login(driver, ui_mode, selenium):
     selenium.screenshot('login-credentials')
     password.send_keys(Keys.RETURN)
     selenium.screenshot('login-progress')
-    selenium.wait_or_screenshot(EC.visibility_of_element_located((By.ID, 'no_domains')))
+    selenium.find_by(By.ID, 'no_domains')
     selenium.screenshot('default')
     assert "You do not have any activated devices" in driver.page_source
 
@@ -157,7 +155,7 @@ def test_devices(domain, driver, ui_mode, artifact_dir, selenium):
     menu(selenium, ui_mode, 'devices')
 
     device_label = "//h3[text()='Some Device']"
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, device_label)))
+    selenium.find_by(By.XPATH, device_label)
     by_xpath = selenium.find_by_xpath(device_label)
     selenium.screenshot('devices')
     assert by_xpath is not None
