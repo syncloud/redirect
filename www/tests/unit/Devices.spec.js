@@ -4,8 +4,6 @@ import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Devices from '@/views/Devices'
 
-jest.setTimeout(30000)
-
 test('Show devices', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/domains').reply(200,

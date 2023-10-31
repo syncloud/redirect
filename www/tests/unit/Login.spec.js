@@ -4,8 +4,6 @@ import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Login from '@/views/Login'
 
-jest.setTimeout(30000)
-
 test('Login success', async () => {
   const mockRouter = { push: jest.fn() }
 

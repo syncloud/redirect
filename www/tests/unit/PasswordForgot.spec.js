@@ -4,8 +4,6 @@ import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import PasswordForgot from '@/views/PasswordForgot'
 
-jest.setTimeout(30000)
-
 test('Request reset', async () => {
   const mockRouter = { push: jest.fn() }
   let email

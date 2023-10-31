@@ -4,8 +4,6 @@ import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Activate from '@/views/Activate'
 
-jest.setTimeout(30000)
-
 test('Activate success', async () => {
   let token
 

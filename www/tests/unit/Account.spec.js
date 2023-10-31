@@ -4,8 +4,6 @@ import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Account from '@/views/Account'
 
-jest.setTimeout(30000)
-
 test('Notifications disable', async () => {
   let notificationsEnabled
 
