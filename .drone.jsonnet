@@ -70,6 +70,25 @@ local build(arch) = [{
             ]
         },
         {
+             name: 'selenium-video',
+             image: 'selenium/video:ffmpeg-4.3.1-20220208',
+             detach: true,
+             environment: {
+               DISPLAY_CONTAINER_NAME: 'selenium',
+               FILE_NAME: 'video.mkv',
+             },
+             volumes: [
+               {
+                 name: 'shm',
+                 path: '/dev/shm',
+               },
+               {
+                 name: 'videos',
+                 path: '/videos',
+               },
+             ],
+           },
+        {
             name: "test-ui-desktop",
             image: "python:3.9-slim-bullseye",
             commands: [
@@ -78,10 +97,10 @@ local build(arch) = [{
               "pip install -r requirements.txt",
               "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test ",
             ],
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
+             volumes: [{
+               name: 'videos',
+               path: '/videos',
+             }],
         },
         {
             name: "test-ui-mobile",
@@ -92,10 +111,10 @@ local build(arch) = [{
               "pip install -r requirements.txt",
               "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test ",
             ],
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
+             volumes: [{
+               name: 'videos',
+               path: '/videos',
+             }],
         },
         {
             name: "artifact",
@@ -166,7 +185,11 @@ local build(arch) = [{
         {
          name: "shm",
          temp: {}
-        }
+        },
+          {
+            name: 'videos',
+            temp: {},
+          },
     ]
 }];
 

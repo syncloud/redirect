@@ -37,6 +37,7 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
         check_output("{0} 'select * from user' > {1}/{2}/db-user.log".format(sql, artifact_dir, ui_mode), shell=True)
         check_output("{0} 'select * from domain' > {1}/{2}/db-domain.log".format(sql, artifact_dir, ui_mode), shell=True)
         check_output('cp -R {0} {1}'.format(log_dir, artifact_dir), shell=True)
+        check_output('cp /videos/* {0}'.format(artifact_dir), shell=True)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
 
     request.addfinalizer(module_teardown)
