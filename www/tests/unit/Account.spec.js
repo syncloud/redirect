@@ -2,7 +2,7 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
-import Account from '@/views/Account'
+import Account from '../../src/views/Account.vue'
 
 test('Notifications disable', async () => {
   let notificationsEnabled

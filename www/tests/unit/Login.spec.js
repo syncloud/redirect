@@ -2,7 +2,7 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
-import Login from '@/views/Login'
+import Login from '../../src/views/Login.vue'
 
 test('Login success', async () => {
   const mockRouter = { push: jest.fn() }

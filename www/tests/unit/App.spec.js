@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import App from '@/App'
+import App from '../../src/App.vue'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'

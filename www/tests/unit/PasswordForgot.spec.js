@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
-import PasswordForgot from '@/views/PasswordForgot'
+import PasswordForgot from '../../src/views/PasswordForgot.vue'
 
 test('Request reset', async () => {
   const mockRouter = { push: jest.fn() }
