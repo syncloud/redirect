@@ -140,7 +140,7 @@ local build(arch) = [{
         },
         {
             name: "selenium",
-            image: "selenium/standalone-firefox:4.0.0-beta-3-prerelease-20210402",
+            image: "selenium/standalone-firefox:119.0",
             volumes: [{
                 name: "shm",
                 path: "/dev/shm"
