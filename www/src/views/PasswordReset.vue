@@ -1,6 +1,6 @@
 <template>
 
-  <form class="form-horizontal" id="form-set-password">
+  <form class="form-horizontal">
     <h2>Reset password</h2>
     <br/>
     <fieldset>

@@ -34,7 +34,7 @@
                   <li>Automatic mail DNS records</li>
                   <li>Email support for your device</li>
                 </ul>
-                <div id="request_premium" v-if="this.userLoaded && this.subscriptionId === undefined">
+                <div id="request_premium" v-show="this.userLoaded && this.subscriptionId === undefined">
                   <div>
                     For personal domain you need to:
                   </div>
