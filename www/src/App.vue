@@ -49,7 +49,7 @@ export default {
           this.email = ''
           this.loggedIn = false
           if (!publicRoutes.includes(this.currentPath)) {
-            // console.log('redirect to login from ' + this.currentPath)
+            console.log('redirect to login from ' + this.currentPath)
             this.$router.push('/login')
           }
         })
