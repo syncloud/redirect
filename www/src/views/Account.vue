@@ -202,8 +202,8 @@ export default {
     loadPlan: function (subscriptionId) {
       axios.get('/api/plan')
         .then(response => {
-          this.planAnnualId = response.data.data.annual_plan_id
-          this.planMonthlyId = response.data.data.monthly_plan_id
+          this.planAnnualId = response.data.data.plan_annual_id
+          this.planMonthlyId = response.data.data.plan_monthly_id
           this.clientId = response.data.data.client_id
           if (!subscriptionId && !this.paypalLoaded) {
             this.enablePayPal(this.clientId)
