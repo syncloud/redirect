@@ -102,7 +102,7 @@ func (www *Www) Start() error {
 	r.HandleFunc("/user", www.Secured(Handle(www.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", www.Secured(Handle(www.WebDomains))).Methods("GET")
 	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlan))).Methods("GET")
-	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlanUnsubscribe))).Methods("POST")
+	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlanUnsubscribe))).Methods("DELETE")
 	r.HandleFunc("/plan/subscribe", www.Secured(Handle(www.WebPlanSubscribe))).Methods("POST")
 	r.HandleFunc("/domain", www.Secured(Handle(www.DomainDelete))).Methods("DELETE")
 	r.NotFoundHandler = http.HandlerFunc(www.notFoundHandler)
