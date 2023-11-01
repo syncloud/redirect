@@ -81,6 +81,7 @@ def test_register(ui_mode, selenium):
     print('activate_url: ' + activate_url)
     selenium.screenshot('activate-before')
     selenium.driver.get(activate_url)
+    selenium.driver.get(activate_url)
     selenium.screenshot('activate-after')
     selenium.find_by(By.XPATH, "//span[text()='User was activated']")
 
@@ -183,6 +184,7 @@ def test_password_reset(ui_mode, selenium):
     smtp.clear()
     print('reset_url: ' + reset_url)
     selenium.screenshot('password-reset-before')
+    selenium.driver.get(reset_url)
     selenium.driver.get(reset_url)
     selenium.screenshot('password-reset-after')
     selenium.find_by(By.ID, 'password')

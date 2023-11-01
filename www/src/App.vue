@@ -1,5 +1,6 @@
 <template>
-  <Menu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn" v-bind:email="email"/>
+  <Menu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
+        v-bind:email="email"/>
   <router-view v-bind:checkUserSession="checkUserSession"/>
 </template>
 <script>
@@ -18,16 +19,20 @@ const publicRoutes = [
 ]
 
 export default {
-  data: function () {
+  name: 'app',
+  components: {
+    Menu
+  },
+  data () {
     return {
       currentPath: '',
       loggedIn: undefined,
       email: ''
     }
   },
-  name: 'app',
-  components: {
-    Menu
+  mounted () {
+    this.currentPath = this.$route.path
+    this.checkUserSession()
   },
   watch: {
     $route (to, from) {
@@ -49,15 +54,11 @@ export default {
           this.email = ''
           this.loggedIn = false
           if (!publicRoutes.includes(this.currentPath)) {
-            console.log('redirect to login from ' + this.currentPath)
+            // console.log('redirect to login from ' + this.currentPath)
             this.$router.push('/login')
           }
         })
     }
-  },
-  mounted () {
-    this.currentPath = this.$route.path
-    this.checkUserSession()
   }
 }
 </script>
