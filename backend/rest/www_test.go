@@ -65,6 +65,10 @@ func (w WwwUsersStub) PlanSubscribe(_ *model.User, _ string) error {
 	panic("implement me")
 }
 
+func (w WwwUsersStub) PlanUnSubscribe(_ *model.User) error {
+	panic("implement me")
+}
+
 func (w WwwUsersStub) Activate(_ string) error {
 	panic("implement me")
 }
@@ -100,7 +104,8 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
@@ -136,7 +141,8 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
@@ -187,7 +193,8 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
@@ -224,7 +231,8 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",

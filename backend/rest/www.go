@@ -29,6 +29,7 @@ type WwwUsers interface {
 	UserSetPassword(request *model.UserPasswordSetRequest) error
 	Save(user *model.User) error
 	PlanSubscribe(user *model.User, subscriptionId string) error
+	PlanUnSubscribe(user *model.User) error
 	Activate(token string) error
 	Delete(userId int64) error
 }
@@ -43,17 +44,18 @@ type WwwMail interface {
 }
 
 type Www struct {
-	statsdClient   metrics.StatsdClient
-	domains        WwwDomains
-	users          WwwUsers
-	actions        WwwActions
-	mail           WwwMail
-	domain         string
-	payPalPlanId   string
-	payPalClientId string
-	store          *sessions.CookieStore
-	count404       int64
-	socket         string
+	statsdClient        metrics.StatsdClient
+	domains             WwwDomains
+	users               WwwUsers
+	actions             WwwActions
+	mail                WwwMail
+	domain              string
+	payPalPlanMonthlyId string
+	payPalPlanAnnualId  string
+	payPalClientId      string
+	store               *sessions.CookieStore
+	count404            int64
+	socket              string
 }
 
 func NewWww(
@@ -63,22 +65,24 @@ func NewWww(
 	actions WwwActions,
 	mail WwwMail,
 	domain string,
-	payPalPlanId string,
+	payPalPlanMonthlyId string,
+	payPalPlanAnnualId string,
 	payPalClientId string,
 	authSecretSey []byte,
 	socket string,
 ) *Www {
 	return &Www{
-		statsdClient:   statsdClient,
-		domains:        domains,
-		users:          users,
-		actions:        actions,
-		mail:           mail,
-		domain:         domain,
-		payPalPlanId:   payPalPlanId,
-		payPalClientId: payPalClientId,
-		store:          sessions.NewCookieStore(authSecretSey),
-		socket:         socket,
+		statsdClient:        statsdClient,
+		domains:             domains,
+		users:               users,
+		actions:             actions,
+		mail:                mail,
+		domain:              domain,
+		payPalPlanMonthlyId: payPalPlanMonthlyId,
+		payPalPlanAnnualId:  payPalPlanAnnualId,
+		payPalClientId:      payPalClientId,
+		store:               sessions.NewCookieStore(authSecretSey),
+		socket:              socket,
 	}
 }
 
@@ -98,6 +102,7 @@ func (www *Www) Start() error {
 	r.HandleFunc("/user", www.Secured(Handle(www.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", www.Secured(Handle(www.WebDomains))).Methods("GET")
 	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlan))).Methods("GET")
+	r.HandleFunc("/plan", www.Secured(Handle(www.WebPlanUnsubscribe))).Methods("POST")
 	r.HandleFunc("/plan/subscribe", www.Secured(Handle(www.WebPlanSubscribe))).Methods("POST")
 	r.HandleFunc("/domain", www.Secured(Handle(www.DomainDelete))).Methods("DELETE")
 	r.NotFoundHandler = http.HandlerFunc(www.notFoundHandler)
@@ -266,7 +271,27 @@ func (www *Www) WebDomains(_ http.ResponseWriter, req *http.Request) (interface{
 
 func (www *Www) WebPlan(http.ResponseWriter, *http.Request) (interface{}, error) {
 	www.statsdClient.Incr("www.plan.get", 1)
-	return model.PlanResponse{PlanId: www.payPalPlanId, ClientId: www.payPalClientId}, nil
+	return model.PlanResponse{
+		PlanMonthlyId: www.payPalPlanMonthlyId,
+		PlanAnnualId:  www.payPalPlanAnnualId,
+		ClientId:      www.payPalClientId,
+	}, nil
+}
+
+func (www *Www) WebPlanUnsubscribe(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	www.statsdClient.Incr("www.plan.unsubscribe", 1)
+	user, err := www.getSessionUser(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = www.users.PlanUnSubscribe(user)
+	if err != nil {
+		log.Println("unable to unsubscribe a plan subscribe for a user", err)
+		return nil, errors.New("invalid request")
+	}
+
+	return "OK", nil
 }
 
 func (www *Www) WebPlanSubscribe(_ http.ResponseWriter, req *http.Request) (interface{}, error) {

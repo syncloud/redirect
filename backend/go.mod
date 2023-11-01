@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/kr/pretty v0.1.0
+	github.com/plutov/paypal/v4 v4.7.0
 	github.com/smira/go-statsd v1.3.1
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.7.0

@@ -18,6 +18,7 @@ import (
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
+	"github.com/syncloud/redirect/subscription"
 	"github.com/syncloud/redirect/user"
 	"github.com/syncloud/redirect/utils"
 	"go.uber.org/zap"
@@ -125,16 +126,30 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(
+		config *utils.Config,
+	) (*subscription.PayPal, error) {
+		return subscription.New(
+			config.PayPalUrl(),
+			logger,
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
 		database *db.MySql,
 		mail *service.Mail,
 		actions *service.Actions,
 		config *utils.Config,
+		subscriptions *subscription.PayPal,
 	) *service.Users {
 		return service.NewUsers(
 			database,
 			config.ActivateByEmail(),
 			actions,
 			mail,
+			subscriptions,
 		)
 	})
 	if err != nil {
@@ -233,7 +248,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			actions,
 			mail,
 			config.Domain(),
-			config.PayPalPlanId(),
+			config.PayPalPlanMonthlyId(),
+			config.PayPalPlanAnnualId(),
 			config.PayPalClientId(),
 			secretKey,
 			config.GetWwwSocket(),
