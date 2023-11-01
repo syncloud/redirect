@@ -30,5 +30,5 @@ func (p *PayPal) Unsubscribe(id string) error {
 	if err != nil {
 		return err
 	}
-	return p.client.DeactivateSubscriptionPlans(context.Background(), id)
+	return p.client.CancelSubscription(context.Background(), id, "user action")
 }
