@@ -5,6 +5,6 @@ Thank you for trying Syncloud. We strive to improve our product and rely purely 
 
 Subscribe today to keep using Syncloud.
 
-Click here to activate your subscription: https://www.{main_domain}/account
+Click here to activate your subscription: https://www.{domain}/account
 
 Thank you for choosing Syncloud!
