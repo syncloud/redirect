@@ -129,6 +129,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		config *utils.Config,
 	) (*subscription.PayPal, error) {
 		return subscription.New(
+			config.PayPalClientId(),
+			config.PayPalSecretId(),
 			config.PayPalUrl(),
 			logger,
 		)

@@ -12,8 +12,8 @@ type PayPal struct {
 	logger *zap.Logger
 }
 
-func New(url string, logger *zap.Logger) (*PayPal, error) {
-	c, err := paypal.NewClient("clientID", "secretID", url)
+func New(clientID, secretID, url string, logger *zap.Logger) (*PayPal, error) {
+	c, err := paypal.NewClient(clientID, secretID, url)
 	if err != nil {
 		return nil, err
 	}

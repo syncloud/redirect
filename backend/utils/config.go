@@ -257,6 +257,14 @@ func (config *Config) PayPalClientId() string {
 	return result
 }
 
+func (config *Config) PayPalSecretId() string {
+	result, err := config.parser.Get("paypal", "secret_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
 func (config *Config) UserCleanerEnabled() bool {
 	result, err := config.parser.GetBool("cleaner", "user")
 	if err != nil {

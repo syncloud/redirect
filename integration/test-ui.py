@@ -78,9 +78,10 @@ def test_register(ui_mode, selenium):
     selenium.screenshot('complete-registration')
     activate_url = smtp.get_activate_url(smtp.emails()[0])
     smtp.clear()
-    selenium.driver.get(activate_url)
     print('activate_url: ' + activate_url)
-    selenium.screenshot('activate')
+    selenium.screenshot('activate-before')
+    selenium.driver.get(activate_url)
+    selenium.screenshot('activate-after')
     selenium.find_by(By.XPATH, "//span[text()='User was activated']")
 
 
