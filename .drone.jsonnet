@@ -2,7 +2,7 @@ local name = "redirect";
 local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
-local browser = "chrome";
+local browser = "chrome:4.14.1";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -160,7 +160,7 @@ local build(arch) = [{
         },
         {
             name: "selenium",
-            image: "selenium/standalone-" + browser + ":119.0",
+            image: "selenium/standalone-" + browser,
             volumes: [{
                 name: "shm",
                 path: "/dev/shm"
