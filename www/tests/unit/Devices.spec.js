@@ -2,9 +2,7 @@ import { mount } from '@vue/test-utils'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
-import Devices from '@/views/Devices'
-
-jest.setTimeout(30000)
+import Devices from '../../src/views/Devices.vue'
 
 test('Show devices', async () => {
   const mock = new MockAdapter(axios)

@@ -1,14 +1,11 @@
 <template>
-  <Menu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn" v-bind:email="email"/>
+  <Menu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
+        v-bind:email="email"/>
   <router-view v-bind:checkUserSession="checkUserSession"/>
 </template>
 <script>
 import axios from 'axios'
-import Menu from '@/components/Menu'
-
-global.jQuery = require('jquery')
-var $ = global.jQuery
-window.jQuery = window.$ = $
+import Menu from './components/Menu.vue'
 
 const publicRoutes = [
   '/register',
@@ -18,25 +15,27 @@ const publicRoutes = [
   '/error',
   '/login',
   '/privacy',
+  '/check-email',
   ''
 ]
 
 export default {
-  data: function () {
+  name: 'app',
+  components: {
+    Menu
+  },
+  data () {
     return {
       currentPath: '',
       loggedIn: undefined,
       email: ''
     }
   },
-  name: 'app',
-  components: {
-    Menu
-  },
   watch: {
     $route (to, from) {
       // console.log('route change from ' + from.path + ' to ' + to.path)
       this.currentPath = to.path
+      this.checkUserSession()
     }
   },
   methods: {
@@ -58,13 +57,9 @@ export default {
           }
         })
     }
-  },
-  mounted () {
-    this.currentPath = this.$route.path
-    this.checkUserSession()
   }
 }
 </script>
 <style>
-@import '~bootstrap/dist/css/bootstrap.css';
+@import 'bootstrap/dist/css/bootstrap.css';
 </style>

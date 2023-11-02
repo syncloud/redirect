@@ -93,6 +93,11 @@ type UsersMailStub struct {
 	sentToken *string
 }
 
+func (a *UsersMailStub) SendPlanUnSubscribed(to string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (a *UsersMailStub) SendSetPassword(to string) error {
 	return nil
 }
@@ -112,13 +117,21 @@ func (a *UsersMailStub) SendResetPassword(to string, token string) error {
 	return nil
 }
 
+type SubscriptionsStub struct {
+}
+
+func (s *SubscriptionsStub) Unsubscribe(id string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func TestActivateSuccess(t *testing.T) {
 	db := &UsersDbStub{}
 	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: false, UpdateToken: "update token", Timestamp: time.Now()}
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(user.Id)
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	_ = users.Save(user)
 
 	err := users.Activate(action.Token)
@@ -132,7 +145,7 @@ func TestActivateAlreadyActive(t *testing.T) {
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(user.Id)
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	_ = users.Save(user)
 
 	err := users.Activate(action.Token)
@@ -146,7 +159,7 @@ func TestActivateWrongToken(t *testing.T) {
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(user.Id)
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	_ = users.Save(user)
 
 	err := users.Activate(action.Token)
@@ -158,7 +171,7 @@ func TestActivateMissingUser(t *testing.T) {
 	actions := &UsersActionsStub{}
 	action, _ := actions.UpsertActivateAction(1)
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 
 	err := users.Activate(action.Token)
 	assert.NotNil(t, err)
@@ -168,7 +181,7 @@ func TestUserCreate(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, true, actions, mail}
+	users := &Users{db, true, actions, mail, &SubscriptionsStub{}}
 
 	email := "test@example.com"
 	password := "password"
@@ -186,7 +199,7 @@ func TestUserCreateSuccessNoActivation(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 
 	email := "test@example.com"
 	password := "password"
@@ -203,7 +216,7 @@ func TestUserCreateExistingEmail(t *testing.T) {
 	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	_ = users.Save(user)
 	password := "password"
 	user, err := users.CreateNewUser(model.UserCreateRequest{Email: &user.Email, Password: &password})
@@ -214,7 +227,7 @@ func TestUserMissingEmail(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 
 	password := "password"
 	_, err := users.CreateNewUser(model.UserCreateRequest{Email: nil, Password: &password})
@@ -228,7 +241,7 @@ func TestUsers_PlanSubscribe_Good(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
 	err := users.PlanSubscribe(user, "123")
@@ -241,7 +254,7 @@ func TestUsers_PlanSubscribe_AlreadySubscribed(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	subscriptionId := "123"
 	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", SubscriptionId: &subscriptionId, Timestamp: time.Now()}
 	_ = users.Save(user)
@@ -255,7 +268,7 @@ func TestUserAuthenticateSuccess(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	email := "test@example.com"
 	password := "password"
 	user := &model.User{Email: email, PasswordHash: Hash(password), Active: true, UpdateToken: "update token", Timestamp: time.Now()}
@@ -270,7 +283,7 @@ func TestUserAuthenticateWrongPassword(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	email := "test@example.com"
 	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
@@ -284,7 +297,7 @@ func TestUserAuthenticateNotExisting(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	email := "test@example.com"
 	password := "password"
 	_, err := users.Authenticate(&email, &password)
@@ -297,7 +310,7 @@ func TestUserAuthenticateNonActive(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	email := "test@example.com"
 	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
@@ -311,7 +324,7 @@ func TestUserAuthenticateMissingPassword(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	email := "test@example.com"
 	user := &model.User{Email: email, PasswordHash: Hash("otherpassword"), Active: false, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
@@ -324,7 +337,7 @@ func TestPasswordReset(t *testing.T) {
 	db := &UsersDbStub{}
 	actions := &UsersActionsStub{}
 	mail := &UsersMailStub{}
-	users := &Users{db, false, actions, mail}
+	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	email := "test@example.com"
 	password1 := "password1"
 	user := &model.User{Email: email, PasswordHash: Hash(password1), Active: true, UpdateToken: "update token", Timestamp: time.Now()}

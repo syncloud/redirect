@@ -1,6 +1,8 @@
 local name = "redirect";
 local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
+local node = "18.12.0";
+local browser = "firefox";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -13,7 +15,7 @@ local build(arch) = [{
     steps: [
         {
             name: "build web",
-            image: "node:16.1.0",
+            image: "node:" + node,
             commands: [
                 "mkdir build",
                 "cd www",
@@ -69,18 +71,37 @@ local build(arch) = [{
             ]
         },
         {
+             name: 'selenium-video',
+             image: 'selenium/video:ffmpeg-4.3.1-20220208',
+             detach: true,
+             environment: {
+               DISPLAY_CONTAINER_NAME: 'selenium',
+               FILE_NAME: 'video.mkv',
+             },
+             volumes: [
+               {
+                 name: 'shm',
+                 path: '/dev/shm',
+               },
+               {
+                 name: 'videos',
+                 path: '/videos',
+               },
+             ],
+           },
+        {
             name: "test-ui-desktop",
             image: "python:3.9-slim-bullseye",
             commands: [
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
               "cd integration",
               "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test ",
+              "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test --browser=" + browser,
             ],
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
+             volumes: [{
+               name: 'videos',
+               path: '/videos',
+             }],
         },
         {
             name: "test-ui-mobile",
@@ -89,12 +110,12 @@ local build(arch) = [{
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
               "cd integration",
               "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test ",
+              "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test --browser=" + browser,
             ],
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
+             volumes: [{
+               name: 'videos',
+               path: '/videos',
+             }],
         },
         {
             name: "artifact",
@@ -139,7 +160,7 @@ local build(arch) = [{
         },
         {
             name: "selenium",
-            image: "selenium/standalone-firefox:4.0.0-beta-3-prerelease-20210402",
+            image: "selenium/standalone-" + browser + ":4.14.1",
             volumes: [{
                 name: "shm",
                 path: "/dev/shm"
@@ -165,7 +186,11 @@ local build(arch) = [{
         {
          name: "shm",
          temp: {}
-        }
+        },
+          {
+            name: 'videos',
+            temp: {},
+          },
     ]
 }];
 

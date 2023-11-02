@@ -1,17 +1,17 @@
 <template>
 
-  <form class="form-horizontal" id="form-set-password" @submit="reset">
+  <form class="form-horizontal">
     <h2>Reset password</h2>
     <br/>
     <fieldset>
 
-      <div id="errors_placeholder" :class="{ invisible:  error === ''}" >
+      <div id="errors_placeholder" v-if="error !== ''" >
         <div class="alert alert-danger">
           {{ error }}
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" v-if="error === ''">
         <div class="col-4 col-md-4 col-sm-4 col-lg-4">
           <label class="control-label" for="password">New password</label>
         </div>
@@ -20,9 +20,9 @@
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" v-if="error === ''">
         <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <button id="reset" class="btn btn-primary pull-right">Reset</button>
+          <button id="reset" class="btn btn-primary pull-right" @click="reset">Reset</button>
         </div>
       </div>
 
@@ -39,7 +39,8 @@ export default {
   data () {
     return {
       password: '',
-      error: ''
+      error: '',
+      token: undefined
     }
   },
   mounted () {
@@ -51,12 +52,11 @@ export default {
       if (token === undefined) {
         this.error = 'No token found'
       }
-      return token
+      this.token = token
     },
     reset: function (event) {
-      const token = this.getToken()
-      if (token !== undefined) {
-        axios.post('api/user/set_password', { token: token, password: this.password })
+      if (this.token !== undefined) {
+        axios.post('api/user/set_password', { token: this.token, password: this.password })
           .then(_ => {
             this.$router.push('/login')
           })
@@ -77,7 +77,4 @@ export default {
 </script>
 <style>
 @import '../style/form-center.css';
-.invisible {
-  display: none;
-}
 </style>

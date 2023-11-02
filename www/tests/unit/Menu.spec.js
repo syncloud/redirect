@@ -1,5 +1,5 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import Menu from '@/components/Menu.vue'
+import Menu from '../../src/components/Menu.vue'
 
 test('Menu.vue', async () => {
   const mockRouter = { push: jest.fn() }

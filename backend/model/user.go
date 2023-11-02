@@ -8,6 +8,7 @@ const (
 	StatusLockEmailSent  int64 = 2
 	StatusLocked         int64 = 3
 	StatusSubscribed     int64 = 4
+	StatusUnSubscribed   int64 = 5
 )
 
 type User struct {
@@ -70,4 +71,9 @@ func (u *User) IsLocked() bool {
 func (u *User) Subscribe(subscriptionId string) {
 	u.SubscriptionId = &subscriptionId
 	u.Status = StatusSubscribed
+}
+
+func (u *User) UnSubscribe() {
+	u.SubscriptionId = nil
+	u.Status = StatusUnSubscribed
 }

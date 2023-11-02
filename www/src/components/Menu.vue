@@ -11,7 +11,7 @@
           <span class="icon-bar"></span>
         </button>
 
-        <a class="navbar-brand" href="#"><img src="../assets/logo.png" style="display: inline" alt="syncloud"/>
+        <a class="navbar-brand" href="#"><img src="/assets/logo.png" style="display: inline" alt="syncloud"/>
           <span>SYNCLOUD</span>
         </a>
       </div>

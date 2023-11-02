@@ -10,20 +10,21 @@ import (
 )
 
 type Mail struct {
-	smtp                      *smtp.Smtp
-	resetPasswordTemplatePath string
-	setPasswordTemplatePath   string
-	activateTemplatePath      string
-	planSubscribeTemplatePath string
-	releaseAnnouncementPath   string
-	dnsCleanPath              string
-	subscriptionTrialPath     string
-	accountLockSoonPath       string
-	accountLockedPath         string
-	from                      string
-	deviceErrorTo             string
-	mainDomain                string
-	logger                    *zap.Logger
+	smtp                        *smtp.Smtp
+	resetPasswordTemplatePath   string
+	setPasswordTemplatePath     string
+	activateTemplatePath        string
+	planSubscribeTemplatePath   string
+	planUnSubscribeTemplatePath string
+	releaseAnnouncementPath     string
+	dnsCleanPath                string
+	subscriptionTrialPath       string
+	accountLockSoonPath         string
+	accountLockedPath           string
+	from                        string
+	deviceErrorTo               string
+	mainDomain                  string
+	logger                      *zap.Logger
 }
 
 func NewMail(smtp *smtp.Smtp,
@@ -35,20 +36,21 @@ func NewMail(smtp *smtp.Smtp,
 ) *Mail {
 
 	return &Mail{
-		smtp:                      smtp,
-		resetPasswordTemplatePath: mailPath + "/reset_password.txt",
-		setPasswordTemplatePath:   mailPath + "/set_password.txt",
-		activateTemplatePath:      mailPath + "/activate.txt",
-		planSubscribeTemplatePath: mailPath + "/plan_subscribe.txt",
-		releaseAnnouncementPath:   mailPath + "/release_announcement.txt",
-		dnsCleanPath:              mailPath + "/dns_clean.txt",
-		subscriptionTrialPath:     mailPath + "/subscription_trial.txt",
-		accountLockSoonPath:       mailPath + "/account_lock_soon.txt",
-		accountLockedPath:         mailPath + "/account_locked.txt",
-		from:                      from,
-		deviceErrorTo:             deviceErrorTo,
-		mainDomain:                mainDomain,
-		logger:                    logger,
+		smtp:                        smtp,
+		resetPasswordTemplatePath:   mailPath + "/reset_password.txt",
+		setPasswordTemplatePath:     mailPath + "/set_password.txt",
+		activateTemplatePath:        mailPath + "/activate.txt",
+		planSubscribeTemplatePath:   mailPath + "/plan_subscribe.txt",
+		planUnSubscribeTemplatePath: mailPath + "/plan_unsubscribe.txt",
+		releaseAnnouncementPath:     mailPath + "/release_announcement.txt",
+		dnsCleanPath:                mailPath + "/dns_clean.txt",
+		subscriptionTrialPath:       mailPath + "/subscription_trial.txt",
+		accountLockSoonPath:         mailPath + "/account_lock_soon.txt",
+		accountLockedPath:           mailPath + "/account_locked.txt",
+		from:                        from,
+		deviceErrorTo:               deviceErrorTo,
+		mainDomain:                  mainDomain,
+		logger:                      logger,
 	}
 }
 
@@ -72,6 +74,12 @@ func (m *Mail) SendActivate(to string, token string) error {
 
 func (m *Mail) SendPlanSubscribed(to string) error {
 	return m.SendNotification(m.planSubscribeTemplatePath, map[string]string{
+		"domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendPlanUnSubscribed(to string) error {
+	return m.SendNotification(m.planUnSubscribeTemplatePath, map[string]string{
 		"domain": m.mainDomain,
 	}, to, m.deviceErrorTo)
 }

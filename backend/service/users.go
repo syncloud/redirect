@@ -32,8 +32,13 @@ type UsersActions interface {
 type UsersMail interface {
 	SendActivate(to string, token string) error
 	SendPlanSubscribed(to string) error
+	SendPlanUnSubscribed(to string) error
 	SendSetPassword(to string) error
 	SendResetPassword(to string, token string) error
+}
+
+type Subscriptions interface {
+	Unsubscribe(id string) error
 }
 
 type Users struct {
@@ -41,10 +46,22 @@ type Users struct {
 	activateByEmail bool
 	actions         UsersActions
 	usersMail       UsersMail
+	subscriptions   Subscriptions
 }
 
-func NewUsers(db UsersDb, activateByEmail bool, actions UsersActions, usersMail *Mail) *Users {
-	return &Users{db: db, activateByEmail: activateByEmail, actions: actions, usersMail: usersMail}
+func NewUsers(db UsersDb,
+	activateByEmail bool,
+	actions UsersActions,
+	usersMail *Mail,
+	subscriptions Subscriptions,
+) *Users {
+	return &Users{
+		db:              db,
+		activateByEmail: activateByEmail,
+		actions:         actions,
+		usersMail:       usersMail,
+		subscriptions:   subscriptions,
+	}
 }
 
 func (u *Users) Authenticate(email *string, password *string) (*model.User, error) {
@@ -157,9 +174,25 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	return user, nil
 }
 
+func (u *Users) PlanUnSubscribe(user *model.User) error {
+	if !user.IsSubscribed() {
+		return fmt.Errorf("you have no existing subscrition, please contact support")
+	}
+	err := u.subscriptions.Unsubscribe(*user.SubscriptionId)
+	if err != nil {
+		return err
+	}
+	user.UnSubscribe()
+	err = u.db.UpdateUser(user)
+	if err != nil {
+		return err
+	}
+	return u.usersMail.SendPlanUnSubscribed(user.Email)
+}
+
 func (u *Users) PlanSubscribe(user *model.User, subscriptionId string) error {
 	if user.IsSubscribed() {
-		return fmt.Errorf("you have existing premium subscrition, please contact support")
+		return fmt.Errorf("you have an existing subscrition, please contact support")
 	}
 	user.Subscribe(subscriptionId)
 	err := u.db.UpdateUser(user)

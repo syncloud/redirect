@@ -29,7 +29,7 @@ export default {
   },
   methods: {
     activate: function (token) {
-      axios.post('api/user/activate', { token: token })
+      axios.post('/api/user/activate', { token: token })
         .then(response => {
           if (response.data.data) {
             this.message = response.data.data

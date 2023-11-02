@@ -225,8 +225,24 @@ func (config *Config) AuthSecretSey() string {
 	return result
 }
 
-func (config *Config) PayPalPlanId() string {
-	result, err := config.parser.Get("paypal", "plan_id")
+func (config *Config) PayPalPlanMonthlyId() string {
+	result, err := config.parser.Get("paypal", "plan_monthly_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
+func (config *Config) PayPalPlanAnnualId() string {
+	result, err := config.parser.Get("paypal", "plan_annual_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
+func (config *Config) PayPalUrl() string {
+	result, err := config.parser.Get("paypal", "url")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
@@ -235,6 +251,14 @@ func (config *Config) PayPalPlanId() string {
 
 func (config *Config) PayPalClientId() string {
 	result, err := config.parser.Get("paypal", "client_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
+func (config *Config) PayPalSecretId() string {
+	result, err := config.parser.Get("paypal", "secret_id")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}

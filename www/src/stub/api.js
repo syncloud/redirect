@@ -1,3 +1,5 @@
+import { createServer, Model, Response } from 'miragejs'
+
 let state = {
   loggedIn: false,
   credentials: {
@@ -10,14 +12,14 @@ let state = {
       email: 'test@example.com',
       notification_enabled: true,
       update_token: '0a',
-      subscription_id: null
+      subscription_id: undefined
     }
   },
   plan: {
     data: {
-      plan_id: 'P-88T8436193034834XMDZRP4A', // paypal sandbox plan id
-      client_id: 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN', // paypal sandbox client id
-      subscribed: false
+      plan_annual_id: 'P-3AV82824GF026134TMU772XQ', // paypal sandbox plan id (Annual)
+      plan_monthly_id: 'P-88T8436193034834XMDZRP4A', // paypal sandbox plan id (Monthly)
+      client_id: 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN' // paypal sandbox client id
     }
   },
   domains: {
@@ -62,109 +64,119 @@ let state = {
   }
 }
 
-const express = require('express')
-const bodyparser = require('body-parser')
-const mock = function (app, server, compiler) {
-  app.use(express.urlencoded())
-  app.use(bodyparser.json())
-  app.post('/api/user/login', function (req, res) {
-    if (state.credentials.user === req.body.email && state.credentials.password === req.body.password) {
-      state.loggedIn = true
-      res.json({ message: 'OK' })
-    } else {
-      if (req.body.email.length < 2) {
-        res.status(400).json({
-          message: 'There\'s an error in parameters',
-          parameters_messages: [
-            {
-              messages: [
-                'Not valid email'
-              ],
-              parameter: 'email'
-            }
-          ]
-        })
-      } else {
-        res.status(400).json({ message: 'Authentication failed' })
-      }
-    }
-  })
-  app.post('/api/user/create', function (req, res) {
-    if (req.body.email.length < 2) {
-      res.status(400).json({
-        message: 'There\'s an error in parameters',
-        parameters_messages: [
-          {
-            messages: [
-              'Not valid email'
-            ],
-            parameter: 'email'
+export function mock () {
+  createServer({
+    models: {
+      author: Model
+    },
+    routes () {
+      this.post('/api/user/login', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        if (state.credentials.user === attrs.email && state.credentials.password === attrs.password) {
+          state.loggedIn = true
+          return new Response(200, {}, { message: 'OK' })
+        } else {
+          if (attrs.email.length < 2) {
+            return new Response(400, {}, {
+              message: 'There\'s an error in parameters',
+              parameters_messages: [
+                {
+                  messages: [
+                    'Not valid email'
+                  ],
+                  parameter: 'email'
+                }
+              ]
+            })
+          } else {
+            return new Response(400, {}, { message: 'Authentication failed' })
           }
-        ]
+        }
       })
-    } else {
-      res.json({ success: true, message: 'OK' })
+      this.post('/api/user/create', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        if (attrs.email.length < 2) {
+          return new Response(400, {}, {
+            message: 'There\'s an error in parameters',
+            parameters_messages: [
+              {
+                messages: [
+                  'Not valid email'
+                ],
+                parameter: 'email'
+              }
+            ]
+          })
+        } else {
+          return new Response(200, {}, { success: true, message: 'OK' })
+        }
+      })
+      this.get('/api/user', function (_schema, request) {
+        if (state.loggedIn) {
+          return new Response(200, {}, state.user)
+        } else {
+          return new Response(401, {}, {})
+        }
+      })
+      this.get('/api/domains', function (_schema, request) {
+        return new Response(200, {}, state.domains)
+      })
+      this.post('/api/logout', function (_schema, request) {
+        state.loggedIn = false
+        return new Response(200, {}, {})
+      })
+      this.delete('/api/domain', function (_schema, request) {
+        state.domains.data = state.domains.data.filter(v => {
+          return v.name !== request.queryParams.domain
+        })
+        return new Response(200, {}, {})
+      })
+      this.post('/api/notification/enable', function (_schema, request) {
+        state.user.data.notification_enabled = true
+        return new Response(200, {}, {})
+      })
+      this.post('/api/notification/disable', function (_schema, request) {
+        state.user.data.notification_enabled = false
+        return new Response(200, {}, {})
+      })
+      this.delete('/api/user', function (_schema, request) {
+        return new Response(200, {}, {})
+      })
+      this.post('/api/user/reset_password', function (_schema, request) {
+        state = {}
+        return new Response(200, {}, {})
+      })
+      this.post('/api/user/activate', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        if (attrs.token === '1') {
+          return new Response(400, {}, { message: 'No such token' })
+        } else {
+          return new Response(200, {}, { message: 'Activated' })
+        }
+      })
+      this.get('/api/plan', function (_schema, request) {
+        return new Response(200, {}, state.plan)
+      })
+      this.post('/api/user/set_password', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        console.log('set_password')
+        console.log(attrs.token)
+        if (attrs.token === '1') {
+          console.log('set_password failed')
+          return new Response(400, {}, { message: 'No such token' })
+        } else {
+          return new Response(200, {}, { message: 'Activated' })
+        }
+      })
+      this.post('/api/plan/subscribe', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        state.user.data.subscription_id = attrs.subscription_id
+        return new Response(200, {}, {})
+      })
+      this.delete('/api/plan', function (_schema, _request) {
+        state.user.data.subscription_id = undefined
+        return new Response(200, {}, {})
+      })
     }
-  })
-  app.get('/api/user', function (req, res) {
-    if (state.loggedIn) {
-      res.json(state.user)
-    } else {
-      res.sendStatus(401)
-    }
-  })
-  app.get('/api/domains', function (req, res) {
-    res.json(state.domains)
-  })
-  app.post('/api/logout', function (req, res) {
-    state.loggedIn = false
-    res.json({})
-  })
-  app.delete('/api/domain', function (req, res) {
-    state.domains.data = state.domains.data.filter(v => {
-      return v.name !== req.query.domain
-    })
-    res.json({})
-  })
-  app.post('/api/notification/enable', function (req, res) {
-    state.user.data.notification_enabled = true
-    res.json({})
-  })
-  app.post('/api/notification/disable', function (req, res) {
-    state.user.data.notification_enabled = false
-    res.json({})
-  })
-  app.delete('/api/user', function (req, res) {
-    res.json({})
-  })
-  app.post('/api/user/reset_password', function (req, res) {
-    state = {}
-    res.json({})
-  })
-  app.post('/api/user/activate', function (req, res) {
-    if (req.body.token === '1') {
-      res.status(400).json({ message: 'No such token' })
-    } else {
-      res.json({ message: 'Activated' })
-    }
-  })
-  app.get('/api/plan', function (req, res) {
-    res.json(state.plan)
-  })
-  app.post('/api/user/set_password', function (req, res) {
-    console.log('set_password')
-    console.log(req.body.token)
-    if (req.body.token === '1') {
-      console.log('set_password failed')
-      res.status(400).json({ message: 'No such token' })
-    } else {
-      res.json({ message: 'Activated' })
-    }
-  })
-  app.post('/api/plan/subscribe', function (req, res) {
-    state.user.data.subscription_id = req.body.subscription_id
-    res.json({ })
   })
 }
-
-exports.mock = mock

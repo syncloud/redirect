@@ -13,10 +13,12 @@
               <div class="panel-heading">
                 <div class="panel-title">
                   Subscription
-                  <div class="pull-right" id="premium_active" v-if="this.subscriptionId">
+                  <div class="pull-right" id="premium_active"
+                       v-if="this.userLoaded && this.subscriptionId !== undefined">
                     <span class="label label-success" style="font-size: 16px;">Active</span>
                   </div>
-                  <div class="pull-right" id="premium_active" v-if="!this.subscriptionId">
+                  <div class="pull-right" id="premium_active"
+                       v-if="this.userLoaded && this.subscriptionId === undefined">
                     You have 30 days to subscribe
                   </div>
                 </div>
@@ -32,7 +34,7 @@
                   <li>Automatic mail DNS records</li>
                   <li>Email support for your device</li>
                 </ul>
-                <div id="request_premium" v-if="!this.subscriptionId">
+                <div id="request_premium" v-show="this.userLoaded && this.subscriptionId === undefined">
                   <div>
                     For personal domain you need to:
                   </div>
@@ -43,15 +45,25 @@
                       Syncloud Name Servers
                     </li>
                   </ul>
-                  <div style="margin: auto">
-                    <h4 style="text-align: center" v-if="this.payPalLoaded">Subscribe for £5/month</h4>
+                  <div style="display: flex; flex-direction: column;">
+                    <el-switch
+                      v-if="this.userLoaded"
+                      style="margin: auto; max-width: 200px"
+                      v-model="subscriptionAnnual"
+                      active-text="Annual"
+                      inactive-text="Monthly"
+                    />
+                    <h4 style="text-align: center" v-if="this.userLoaded && this.subscriptionAnnual">Subscribe for
+                      £60/year</h4>
+                    <h4 style="text-align: center" v-if="this.userLoaded && !this.subscriptionAnnual">Subscribe for
+                      £5/month</h4>
                     <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
                   </div>
                 </div>
 
-                <div id="premium_active" v-if="this.subscriptionId">
+                <div id="premium_active" v-if="this.userLoaded && this.subscriptionId !== undefined">
                   <div style="padding-top: 10px">
-                  You can activate your device with a personal domain:<br>
+                    You can activate your device with a personal domain:<br>
                   </div>
                   <ol>
                     <li>Reactivate from Settings - Activation and select a Premium mode</li>
@@ -64,6 +76,10 @@
                       Update Name Servers on your domain registrar page (GoDaddy for example)
                     </li>
                   </ol>
+
+                  <button type="button" class="btn btn-danger pull-right" id="cancel" @click="cancelSubscription">
+                    <span class="glyphicon glyphicon-remove" aria-hidden="true" style="padding-right: 5px"></span>Cancel
+                  </button>
 
                 </div>
               </div>
@@ -113,7 +129,7 @@
     </div>
   </div>
 
-  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="accountDeleteConfirm" @cancel="reload">
+  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="accountDeleteConfirm">
     <template v-slot:title>Delete Account</template>
     <template v-slot:text>
       <div>Once you delete your account, there's no going back. All devices you have will be deactivated and domains
@@ -125,16 +141,29 @@
     </template>
   </Confirmation>
 
+  <Confirmation ref="cancel_confirmation" id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
+    <template v-slot:title>Cancel subscription</template>
+    <template v-slot:text>
+      <div>
+        You are about to cancel your subscription
+      </div>
+      <br>
+      <div>Are you sure?</div>
+    </template>
+  </Confirmation>
+
 </template>
 <script>
 import axios from 'axios'
-import Confirmation from '@/components/Confirmation'
+import Confirmation from '../components/Confirmation.vue'
 import { loadScript } from '@paypal/paypal-js'
+import { ElSwitch } from 'element-plus'
 
 export default {
   name: 'Account',
   components: {
-    Confirmation
+    Confirmation,
+    ElSwitch
   },
   props: {
     checkUserSession: Function
@@ -145,38 +174,44 @@ export default {
       premiumStatusId: Number,
       subscriptionId: String,
       domainGroups: Array,
-      planId: String,
+      planMonthlyId: String,
+      planAnnualId: String,
       clientId: String,
-      payPalLoaded: Boolean
+      paypalLoaded: Boolean,
+      userLoaded: Boolean,
+      subscriptionAnnual: false
     }
   },
   mounted () {
-    this.subscriptionId = null
-    this.payPalLoaded = false
+    this.subscriptionId = undefined
+    this.paypalLoaded = false
+    this.userLoaded = false
     this.reload()
   },
   methods: {
     reload: function () {
-      axios.get('api/user')
+      axios.get('/api/user')
         .then(response => {
           this.notificationEnabled = response.data.data.notification_enabled
           this.subscriptionId = response.data.data.subscription_id
+          this.userLoaded = true
           this.loadPlan(this.subscriptionId)
         })
         .catch(this.onError)
     },
     loadPlan: function (subscriptionId) {
-      axios.get('api/plan')
+      axios.get('/api/plan')
         .then(response => {
-          this.planId = response.data.data.plan_id
+          this.planAnnualId = response.data.data.plan_annual_id
+          this.planMonthlyId = response.data.data.plan_monthly_id
           this.clientId = response.data.data.client_id
-          if (!subscriptionId && !this.payPalLoaded) {
-            this.enablePayPal(this.clientId, this.planId)
+          if (!subscriptionId && !this.paypalLoaded) {
+            this.enablePayPal(this.clientId)
           }
         })
         .catch(this.onError)
     },
-    enablePayPal: function (clientId, planId) {
+    enablePayPal: function (clientId) {
       loadScript({
         'client-id': clientId,
         vault: true,
@@ -187,11 +222,11 @@ export default {
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: planId
+                  plan_id: this.subscriptionAnnual ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {
-                axios.post('api/plan/subscribe', { subscription_id: data.subscriptionID })
+                axios.post('/api/plan/subscribe', { subscription_id: data.subscriptionID })
                   .then(_ => {
                     this.reload()
                   })
@@ -199,7 +234,7 @@ export default {
               }
             })
             .render('#paypal-buttons')
-          this.payPalLoaded = true
+          this.paypalLoaded = true
         })
         .catch((err) => {
           console.error('failed to load the PayPal JS SDK script', err)
@@ -207,7 +242,17 @@ export default {
     },
     notificationSave: function () {
       const action = this.notificationEnabled ? 'enable' : 'disable'
-      axios.post('api/notification/' + action)
+      axios.post('/api/notification/' + action)
+        .then(_ => {
+          this.reload()
+        })
+        .catch(this.onError)
+    },
+    cancelSubscription: function () {
+      this.$refs.cancel_confirmation.show()
+    },
+    cancelSubscriptionConfirm: function () {
+      axios.delete('/api/plan')
         .then(_ => {
           this.reload()
         })
@@ -217,7 +262,7 @@ export default {
       this.$refs.delete_confirmation.show()
     },
     accountDeleteConfirm: function () {
-      axios.delete('api/user')
+      axios.delete('/api/user')
         .then(_ => {
           this.checkUserSession()
         })
