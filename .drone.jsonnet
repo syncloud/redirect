@@ -2,7 +2,7 @@ local name = "redirect";
 local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
-local browser = "chrome:4.14.1";
+local browser = "chrome";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -96,7 +96,7 @@ local build(arch) = [{
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
               "cd integration",
               "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test ",
+              "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test --browser=" + browser,
             ],
              volumes: [{
                name: 'videos',
@@ -110,7 +110,7 @@ local build(arch) = [{
               "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
               "cd integration",
               "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test ",
+              "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test --browser=" + browser,
             ],
              volumes: [{
                name: 'videos',
@@ -160,7 +160,7 @@ local build(arch) = [{
         },
         {
             name: "selenium",
-            image: "selenium/standalone-" + browser,
+            image: "selenium/standalone-" + browser + ":4.14.1",
             volumes: [{
                 name: "shm",
                 path: "/dev/shm"
