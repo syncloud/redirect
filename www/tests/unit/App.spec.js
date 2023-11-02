@@ -13,7 +13,7 @@ test('index to login (not logged in)', async () => {
     { }
   )
 
-  mount(App, {
+  const wrapper = mount(App, {
     global: {
       components: {
         RouterView: { render () { return h('div') } }
@@ -22,12 +22,13 @@ test('index to login (not logged in)', async () => {
         Menu: true
       },
       mocks: {
-        $route: { path: '/' },
+        // $route: { path: '/' },
         $router: mockRouter
       }
     }
   })
 
+  wrapper.vm.$options.watch.$route.call(wrapper.vm, { path: '/' }, {})
   await flushPromises()
   expect(mockRouter.push).toHaveBeenCalledWith('/login')
 })
@@ -81,7 +82,7 @@ test('login to index (logged in)', async () => {
     }
   )
 
-  mount(App, {
+  const wrapper = mount(App, {
     global: {
       components: {
         RouterView: { render () { return h('div') } }
@@ -90,12 +91,13 @@ test('login to index (logged in)', async () => {
         Menu: true
       },
       mocks: {
-        $route: { path: '/login' },
+        // $route: { path: '/login' },
         $router: mockRouter
       }
     }
   })
 
+  wrapper.vm.$options.watch.$route.call(wrapper.vm, { path: '/login' }, {})
   await flushPromises()
   expect(mockRouter.push).toHaveBeenCalledWith('/')
 })
