@@ -33,6 +33,10 @@ We do not support independent installations of redirect
 
     sudo docker run --name statsd -p 2003-2004:2003-2004 -p 8125:8125/udp -d graphiteapp/graphite-statsd:1.1.10-4
 
+#### Mail
+
+    sudo docker run --name mail -p 25:25 -d mailhog/mailhog:v1.0.0
+
 #### Web backend
 
     cd backend

@@ -15,6 +15,7 @@ const publicRoutes = [
   '/error',
   '/login',
   '/privacy',
+  '/check-email',
   ''
 ]
 
