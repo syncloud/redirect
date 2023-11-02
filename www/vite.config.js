@@ -4,14 +4,25 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
-export default defineConfig({
-  plugins: [
-    AutoImport({
-      resolvers: [ElementPlusResolver()]
-    }),
-    Components({
-      resolvers: [ElementPlusResolver()]
-    }),
-    vue()
-  ]
+export default defineConfig(({ command, mode, ssrBuild }) => {
+  return {
+    plugins: [
+      AutoImport({
+        resolvers: [ElementPlusResolver()]
+      }),
+      Components({
+        resolvers: [ElementPlusResolver()]
+      }),
+      vue()
+    ],
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3002',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '')
+        }
+      }
+    }
+  }
 })

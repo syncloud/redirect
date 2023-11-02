@@ -25,19 +25,16 @@ export default {
   },
   data () {
     return {
-      currentPath: '',
+      currentPath: undefined,
       loggedIn: undefined,
       email: ''
     }
-  },
-  mounted () {
-    this.currentPath = this.$route.path
-    this.checkUserSession()
   },
   watch: {
     $route (to, from) {
       // console.log('route change from ' + from.path + ' to ' + to.path)
       this.currentPath = to.path
+      this.checkUserSession()
     }
   },
   methods: {
