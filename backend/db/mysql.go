@@ -92,6 +92,7 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 			"timestamp, "+
 			"subscription_id, "+
 			"registered_at, "+
+			"status_at, "+
 			"status "+
 			"FROM user "+
 			"WHERE "+field+" = ?", value)
@@ -99,7 +100,7 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 	user := &model.User{}
 	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
 		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId, &user.RegisteredAt,
-		&user.Status)
+		&user.StatusAt, &user.Status)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
