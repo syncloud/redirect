@@ -4,7 +4,7 @@ ENV=$1
 SYNCLOUD_DOMAIN=$2
 REDIRECT_DIR=/var/www/redirect
 CURRENT=$REDIRECT_DIR/current
-DB_VERSION=013
+DB_VERSION=014
 
 apt install confget
 cp -rf ${CURRENT}/config/env/${ENV}/* /var/www/redirect
