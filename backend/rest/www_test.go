@@ -80,10 +80,6 @@ func (w WwwUsersStub) Delete(_ int64) error {
 type WwwActionsStub struct {
 }
 
-func (w WwwActionsStub) DeleteActions(_ int64) error {
-	panic("implement me")
-}
-
 func (w WwwActionsStub) UpsertPasswordAction(_ int64) (*model.Action, error) {
 	panic("implement me")
 }

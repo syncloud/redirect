@@ -36,7 +36,6 @@ type WwwUsers interface {
 }
 
 type WwwActions interface {
-	DeleteActions(userId int64) error
 	UpsertPasswordAction(userId int64) (*model.Action, error)
 }
 
@@ -243,12 +242,6 @@ func (w *Www) WebUserDelete(_ http.ResponseWriter, req *http.Request) (interface
 		log.Println("unable to delete domains for a user", err)
 		return nil, errors.New("invalid request")
 	}
-	err = w.actions.DeleteActions(user.Id)
-	if err != nil {
-		log.Println("unable to delete actions for a user", err)
-		return nil, errors.New("invalid request")
-	}
-
 	err = w.users.Delete(user.Id)
 	if err != nil {
 		log.Println("unable to delete a user", err)

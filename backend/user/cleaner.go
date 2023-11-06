@@ -10,6 +10,8 @@ type Database interface {
 	GetNextUserId(after int64) (int64, error)
 	GetUser(id int64) (*model.User, error)
 	UpdateUser(user *model.User) error
+	DeleteUser(userId int64) error
+	DeleteActions(userId int64) error
 }
 
 type State interface {
@@ -21,6 +23,7 @@ type Mail interface {
 	SendTrial(to string) error
 	SendAccountLockSoon(to string) error
 	SendAccountLocked(to string) error
+	SendAccountRemoved(to string) error
 }
 
 type Remover interface {
@@ -82,11 +85,11 @@ func (c *Cleaner) Clean(now time.Time) error {
 	if err != nil {
 		return err
 	}
-	if user.IsSubscribed() || user.IsLocked() {
+	if user.IsSubscribed() {
 		return c.state.Set(id)
 	}
 	if user.IsStatusCreated() {
-		user.TrialEmailSent()
+		user.TrialEmailSent(now)
 		err = c.database.UpdateUser(user)
 		if err != nil {
 			return err
@@ -97,7 +100,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 		}
 	}
 	if user.IsReadyForLockEmail(now) {
-		user.LockEmailSent()
+		user.LockEmailSent(now)
 		err = c.database.UpdateUser(user)
 		if err != nil {
 			return err
@@ -108,7 +111,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 		}
 	}
 	if user.IsReadyForAccountLock(now) {
-		user.Lock()
+		user.Lock(now)
 		err = c.remover.DeleteAllDomains(id)
 		if err != nil {
 			return err
@@ -122,6 +125,24 @@ func (c *Cleaner) Clean(now time.Time) error {
 			return err
 		}
 	}
-	//TODO: remove account after 10 days from lock
+	if user.IsReadyForAccountRemove(now) {
+		err = c.remover.DeleteAllDomains(id)
+		if err != nil {
+			return err
+		}
+		err = c.database.DeleteActions(user.Id)
+		if err != nil {
+			return err
+		}
+		err = c.database.DeleteUser(user.Id)
+		if err != nil {
+			return err
+		}
+		err = c.mail.SendAccountRemoved(user.Email)
+		if err != nil {
+			return err
+		}
+	}
+	//TODO: lock accounts without subscription after 1 day
 	return c.state.Set(id)
 }

@@ -21,6 +21,7 @@ type User struct {
 	Timestamp           time.Time `json:"timestamp,omitempty"`
 	SubscriptionId      *string   `json:"subscription_id,omitempty"`
 	Status              int64     `json:"status,omitempty"`
+	StatusAt            time.Time `json:"status_at,omitempty"`
 	RegisteredAt        time.Time `json:"registered_at,omitempty"`
 }
 
@@ -32,6 +33,10 @@ func (u *User) IsNDaysSinceRegistration(now time.Time, days int) bool {
 	return u.RegisteredAt.Before(now.AddDate(0, 0, -days))
 }
 
+func (u *User) IsNDaysSinceStatus(now time.Time, days int) bool {
+	return u.StatusAt.Before(now.AddDate(0, 0, -days))
+}
+
 func (u *User) IsReadyForLockEmail(now time.Time) bool {
 	return u.Status == StatusTrialEmailSent && u.IsNDaysSinceRegistration(now, 20)
 }
@@ -40,11 +45,16 @@ func (u *User) IsReadyForAccountLock(now time.Time) bool {
 	return u.Status == StatusLockEmailSent && u.IsNDaysSinceRegistration(now, 30)
 }
 
+func (u *User) IsReadyForAccountRemove(now time.Time) bool {
+	return u.Status == StatusLocked && u.IsNDaysSinceStatus(now, 10)
+}
+
 func (u *User) IsStatusCreated() bool {
 	return u.Status == StatusCreated
 }
 
-func (u *User) TrialEmailSent() {
+func (u *User) TrialEmailSent(now time.Time) {
+	u.StatusAt = now
 	u.Status = StatusTrialEmailSent
 }
 
@@ -56,11 +66,13 @@ func (u *User) IsLockEmailSent() bool {
 	return u.Status == StatusLockEmailSent
 }
 
-func (u *User) LockEmailSent() {
+func (u *User) LockEmailSent(now time.Time) {
+	u.StatusAt = now
 	u.Status = StatusLockEmailSent
 }
 
-func (u *User) Lock() {
+func (u *User) Lock(now time.Time) {
+	u.StatusAt = now
 	u.Status = StatusLocked
 }
 

@@ -17,6 +17,8 @@ CREATE TABLE `user` (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `premium_status_id` integer NOT NULL DEFAULT 1,
   `subscription_id` varchar(100) NULL,
+  `registered_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `status` integer DEFAULT 0,
   FOREIGN KEY (premium_status_id) REFERENCES premium_status(id)
 );
 
@@ -67,4 +69,4 @@ create table db_version (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('012');
+insert into db_version (version) values ('013');

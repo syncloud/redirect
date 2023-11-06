@@ -9,7 +9,19 @@ import (
 )
 
 type DatabaseStub struct {
-	user *model.User
+	user          *model.User
+	userDeleted   int64
+	actionDeleted int64
+}
+
+func (d *DatabaseStub) DeleteUser(userId int64) error {
+	d.userDeleted = userId
+	return nil
+}
+
+func (d *DatabaseStub) DeleteActions(userId int64) error {
+	d.actionDeleted = userId
+	return nil
 }
 
 func (d *DatabaseStub) UpdateUser(user *model.User) error {
@@ -45,6 +57,12 @@ type MailStub struct {
 	trial    bool
 	lockSoon bool
 	locked   bool
+	removed  bool
+}
+
+func (m *MailStub) SendAccountRemoved(to string) error {
+	m.removed = true
+	return nil
 }
 
 func (m *MailStub) SendAccountLockSoon(to string) error {
@@ -92,7 +110,7 @@ func TestCleaner_Clean_Subscribed_Skip(t *testing.T) {
 func TestCleaner_Clean_Locked_Skip(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2}
-	user.Lock()
+	user.Lock(now)
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
@@ -151,7 +169,7 @@ func TestCleaner_Clean_StatusCreated_SendTrial_Once(t *testing.T) {
 func TestCleaner_Clean_StatusTrialSent_LessThan20Days_Skip(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2, RegisteredAt: now.AddDate(0, 0, -19)}
-	user.TrialEmailSent()
+	user.TrialEmailSent(now)
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
@@ -169,7 +187,7 @@ func TestCleaner_Clean_StatusTrialSent_LessThan20Days_Skip(t *testing.T) {
 func TestCleaner_Clean_StatusTrialSent_MoreThan20Days_SendLockEmail(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2, RegisteredAt: now.AddDate(0, 0, -21)}
-	user.TrialEmailSent()
+	user.TrialEmailSent(now)
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
@@ -187,7 +205,7 @@ func TestCleaner_Clean_StatusTrialSent_MoreThan20Days_SendLockEmail(t *testing.T
 func TestCleaner_Clean_StatusLockSoonSent_LessThan30Days_Skip(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2, RegisteredAt: now.AddDate(0, 0, -29)}
-	user.LockEmailSent()
+	user.LockEmailSent(now)
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
@@ -206,7 +224,7 @@ func TestCleaner_Clean_StatusLockSoonSent_LessThan30Days_Skip(t *testing.T) {
 func TestCleaner_Clean_StatusLockSoonSent_MoreThan30Days_Lock(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2, RegisteredAt: now.AddDate(0, 0, -31)}
-	user.LockEmailSent()
+	user.LockEmailSent(now)
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
@@ -221,6 +239,40 @@ func TestCleaner_Clean_StatusLockSoonSent_MoreThan30Days_Lock(t *testing.T) {
 	assert.True(t, mail.locked)
 	assert.True(t, remover.domainsRemoved)
 	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
+}
+
+func TestCleaner_Clean_StatusLocked_MoreThan10Days_Remove(t *testing.T) {
+	now := time.Now()
+	user := &model.User{Id: 2}
+	user.Lock(now.AddDate(0, 0, -11))
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.True(t, remover.domainsRemoved)
+	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
+	assert.Equal(t, int64(2), database.actionDeleted)
+	assert.Equal(t, int64(2), database.userDeleted)
+}
+
+func TestCleaner_Clean_StatusLocked_LessThan10Days_NotRemove(t *testing.T) {
+	now := time.Now()
+	user := &model.User{Id: 2}
+	user.Lock(now.AddDate(0, 0, -9))
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	cleaner := NewCleaner(database, state, mail, remover, true, log.Default())
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.False(t, remover.domainsRemoved)
+	assert.Equal(t, int64(0), remover.domainsRemovedUserId)
+	assert.Equal(t, int64(0), database.actionDeleted)
+	assert.Equal(t, int64(0), database.userDeleted)
 }
 
 func TestCleaner_Clean_Last_ResetToZero(t *testing.T) {

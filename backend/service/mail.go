@@ -21,6 +21,7 @@ type Mail struct {
 	subscriptionTrialPath       string
 	accountLockSoonPath         string
 	accountLockedPath           string
+	accountRemovedPath          string
 	from                        string
 	deviceErrorTo               string
 	mainDomain                  string
@@ -47,6 +48,7 @@ func NewMail(smtp *smtp.Smtp,
 		subscriptionTrialPath:       mailPath + "/subscription_trial.txt",
 		accountLockSoonPath:         mailPath + "/account_lock_soon.txt",
 		accountLockedPath:           mailPath + "/account_locked.txt",
+		accountRemovedPath:          mailPath + "/account_removed.txt",
 		from:                        from,
 		deviceErrorTo:               deviceErrorTo,
 		mainDomain:                  mainDomain,
@@ -110,6 +112,12 @@ func (m *Mail) SendAccountLockSoon(to string) error {
 }
 
 func (m *Mail) SendAccountLocked(to string) error {
+	return m.SendNotification(m.accountLockedPath, map[string]string{
+		"main_domain": m.mainDomain,
+	}, to)
+}
+
+func (m *Mail) SendAccountRemoved(to string) error {
 	return m.SendNotification(m.accountLockedPath, map[string]string{
 		"main_domain": m.mainDomain,
 	}, to)
