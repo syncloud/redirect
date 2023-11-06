@@ -118,7 +118,7 @@ func (m *Mail) SendAccountLocked(to string) error {
 }
 
 func (m *Mail) SendAccountRemoved(to string) error {
-	return m.SendNotification(m.accountLockedPath, map[string]string{
+	return m.SendNotification(m.accountRemovedPath, map[string]string{
 		"main_domain": m.mainDomain,
 	}, to)
 }
