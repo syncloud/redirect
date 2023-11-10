@@ -1,7 +1,7 @@
 import { createServer, Model, Response } from 'miragejs'
 
 let state = {
-  loggedIn: false,
+  loggedIn: true,
   credentials: {
     user: '11',
     password: '2'

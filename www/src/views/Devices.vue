@@ -73,7 +73,7 @@
             <p>You do not have any activated devices.<br/>Buy or build your first Syncloud device and activate it.</p>
             <br/>
             <p style="text-align:center;">
-              <a class="btn btn-primary btn-lg" href="http://syncloud.org" role="button">Learn more</a>
+              <a class="btn btn-primary btn-lg" href="https://www.syncloud.org" role="button">Learn more</a>
             </p>
           </div>
         </div>
