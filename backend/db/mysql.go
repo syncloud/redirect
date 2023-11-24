@@ -631,6 +631,20 @@ and (ip is not null or ipv6 is not null)
 `)
 }
 
+func (m *MySql) GetOnlineUsersCount() (int64, error) {
+	return m.GetCount(`
+select count(*) 
+from user 
+where exists (
+	select user_id 
+	from domain 
+	where user_id = user.id 
+	  and timestampdiff(minute, last_update, now()) < 600 
+	  and (ip is not null or ipv6 is not null) 
+)
+`)
+}
+
 func (m *MySql) GetDomainCount() (int64, error) {
 	return m.GetCount(`select count(*) from domain`)
 }

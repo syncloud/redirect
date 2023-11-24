@@ -35,6 +35,13 @@ func (p *Publisher) Start() error {
 				p.graphite.GaugeSet("db.devices", float64(count))
 			}
 
+			count, err = p.database.GetOnlineUsersCount()
+			if err != nil {
+				log.Printf("db error %v", err)
+			} else {
+				p.graphite.GaugeSet("db.users.online", float64(count))
+			}
+
 			count, err = p.database.GetAllUsersCount()
 			if err != nil {
 				log.Printf("db error %v", err)

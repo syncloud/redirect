@@ -10,3 +10,4 @@ _site
 venv
 build
 *.tar.gz
+api
