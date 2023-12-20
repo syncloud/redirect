@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
@@ -11,14 +10,13 @@ import (
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/user"
-	"os"
 )
 
 func main() {
 	var configFile string
 	var secretFile string
 	var mailDir string
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use: "api",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.EnableStdOutLog()
@@ -50,16 +48,12 @@ func main() {
 			})
 		},
 	}
-	cmd.Flags().StringVar(&configFile, "config-file", "", "config file")
-	_ = cmd.MarkFlagRequired("config-file")
-	cmd.Flags().StringVar(&secretFile, "secret-file", "", "secret file")
-	_ = cmd.MarkFlagRequired("secret-file")
-	cmd.Flags().StringVar(&mailDir, "mail-dir", "", "mail dir")
-	_ = cmd.MarkFlagRequired("mail-dir")
+	cmd.Flags().StringVar(&configFile, "config-file", ioc.ConfigFile, "config file")
+	cmd.Flags().StringVar(&secretFile, "secret-file", ioc.SecretFile, "secret file")
+	cmd.Flags().StringVar(&mailDir, "mail-dir", ioc.MailDir, "mail dir")
 
 	err := cmd.Execute()
 	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
+		panic(err)
 	}
 }

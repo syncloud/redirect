@@ -32,3 +32,11 @@ func (p *PayPal) Unsubscribe(id string) error {
 	}
 	return p.client.CancelSubscription(context.Background(), id, "user action")
 }
+
+func (p *PayPal) GetSubscriptionDetails(id string) (*paypal.SubscriptionDetailResp, error) {
+	_, err := p.client.GetAccessToken(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return p.client.GetSubscriptionDetails(context.Background(), id)
+}

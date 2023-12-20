@@ -2,7 +2,7 @@
 Description=Redirect
 
 [Service]
-ExecStart=/var/www/redirect/current/bin/www --config-file /var/www/redirect/config.cfg --secret-file /var/www/redirect/secret.cfg --mail-dir /var/www/redirect/current/emails
+ExecStart=/var/www/redirect/current/bin/www
 Restart=always
 User=redirect
 
