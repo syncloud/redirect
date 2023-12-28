@@ -34,6 +34,7 @@ local build(arch) = [{
                 "go test ./... -cover",
                 "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
                 "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
+                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/cli ./cmd/cli",
             ]
         },
         {
