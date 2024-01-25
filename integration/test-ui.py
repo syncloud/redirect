@@ -221,7 +221,7 @@ def domain_delete(ui_mode, screenshot, selenium):
     selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, deactivate_xpath)))
     selenium.find_by_xpath(deactivate_xpath).click()
 
-    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(text(), 'Yes')]"
+    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(text(), 'Confirm')]"
     selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, confirm_xpath)))
     selenium.find_by_xpath(confirm_xpath).click()
 
