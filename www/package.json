@@ -17,7 +17,6 @@
     "core-js": "^3.6.5",
     "element-plus": "^2.4.1",
     "flush-promises": "^1.0.2",
-    "jquery": "^3.5.1",
     "moment": "^2.29.1",
     "popper.js": "^1.16.1",
     "vue": "^3.2.40",

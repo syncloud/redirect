@@ -7,7 +7,9 @@ export {}
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
-    Confirmation: typeof import('./src/components/Confirmation.vue')['default']
+    Dialog: typeof import('./src/components/Dialog.vue')['default']
+    ElButton: typeof import('element-plus/es')['ElButton']
+    ElDialog: typeof import('element-plus/es')['ElDialog']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
     Menu: typeof import('./src/components/Menu.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

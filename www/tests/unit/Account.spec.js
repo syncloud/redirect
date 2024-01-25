@@ -34,7 +34,7 @@ test('Notifications disable', async () => {
           RouterLink: RouterLinkStub
         },
         stubs: {
-          Confirmation: {
+          Dialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {
@@ -89,7 +89,7 @@ test('Notifications subscribe', async () => {
           RouterLink: RouterLinkStub
         },
         stubs: {
-          Confirmation: {
+          Dialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {
@@ -150,7 +150,7 @@ test('Delete', async () => {
           RouterLink: RouterLinkStub
         },
         stubs: {
-          Confirmation: {
+          Dialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {

@@ -129,7 +129,8 @@
     </div>
   </div>
 
-  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="accountDeleteConfirm">
+  <Dialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
+          id="delete_confirmation" @confirm="accountDeleteConfirm">
     <template v-slot:title>Delete Account</template>
     <template v-slot:text>
       <div>Once you delete your account, there's no going back. All devices you have will be deactivated and domains
@@ -139,9 +140,10 @@
       <br>
       <div>Are you sure?</div>
     </template>
-  </Confirmation>
+  </Dialog>
 
-  <Confirmation ref="cancel_confirmation" id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
+  <Dialog :visible="cancelConfirmationVisible" @cancel="cancelConfirmationVisible = false"
+          id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
     <template v-slot:title>Cancel subscription</template>
     <template v-slot:text>
       <div>
@@ -150,19 +152,19 @@
       <br>
       <div>Are you sure?</div>
     </template>
-  </Confirmation>
+  </Dialog>
 
 </template>
 <script>
 import axios from 'axios'
-import Confirmation from '../components/Confirmation.vue'
+import Dialog from '../components/Dialog.vue'
 import { loadScript } from '@paypal/paypal-js'
 import { ElSwitch } from 'element-plus'
 
 export default {
   name: 'Account',
   components: {
-    Confirmation,
+    Dialog,
     ElSwitch
   },
   props: {
@@ -179,7 +181,9 @@ export default {
       clientId: String,
       paypalLoaded: Boolean,
       userLoaded: Boolean,
-      subscriptionAnnual: false
+      subscriptionAnnual: false,
+      deleteConfirmationVisible: false,
+      cancelConfirmationVisible: false
     }
   },
   mounted () {
@@ -249,9 +253,10 @@ export default {
         .catch(this.onError)
     },
     cancelSubscription: function () {
-      this.$refs.cancel_confirmation.show()
+      this.cancelConfirmationVisible = true
     },
     cancelSubscriptionConfirm: function () {
+      this.cancelConfirmationVisible = false
       axios.delete('/api/plan')
         .then(_ => {
           this.reload()
@@ -259,9 +264,10 @@ export default {
         .catch(this.onError)
     },
     accountDelete: function () {
-      this.$refs.delete_confirmation.show()
+      this.deleteConfirmationVisible = true
     },
     accountDeleteConfirm: function () {
+      this.deleteConfirmationVisible = false
       axios.delete('/api/user')
         .then(_ => {
           this.checkUserSession()
