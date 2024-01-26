@@ -281,7 +281,7 @@ def test_account_delete(driver, ui_mode, selenium):
     selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'delete')))
     driver.find_element_by_id("delete").click()
 
-    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(text(), 'Yes')]"
+    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(., 'Confirm')]"
     selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, confirm_xpath)))
     selenium.find_by_xpath(confirm_xpath).click()
 
