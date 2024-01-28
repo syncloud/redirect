@@ -45,20 +45,74 @@
                       Syncloud Name Servers
                     </li>
                   </ul>
-                  <div style="display: flex; flex-direction: column;">
-                    <el-switch
-                      v-if="this.userLoaded"
-                      style="margin: auto; max-width: 200px"
-                      v-model="subscriptionAnnual"
-                      active-text="Annual"
-                      inactive-text="Monthly"
-                    />
-                    <h4 style="text-align: center" v-if="this.userLoaded && this.subscriptionAnnual">Subscribe for
-                      £60/year</h4>
-                    <h4 style="text-align: center" v-if="this.userLoaded && !this.subscriptionAnnual">Subscribe for
-                      £5/month</h4>
-                    <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
-                  </div>
+                    <el-row justify="center" style="padding-bottom: 20px">
+                      <el-col span="24" >
+                        <el-radio-group
+                          v-if="this.userLoaded"
+                          v-model="this.subscriptionType"
+                          size="large"
+                          style="align-self: center"
+                        >
+                          <el-radio-button label="paypal_month">£5/Month</el-radio-button>
+                          <el-radio-button label="paypal_year" >£60/Year</el-radio-button>
+                          <el-radio-button label="crypto_year" >ETH 0.05/Year</el-radio-button>
+                        </el-radio-group>
+                      </el-col>
+                    </el-row>
+                    <div v-show="this.subscriptionType.startsWith('paypal')" style="margin: auto; max-width: 200px" id="paypal-buttons">
+
+                    </div>
+                    <div v-show="this.subscriptionType.startsWith('crypto')" style="margin: auto; max-width: 400px" >
+                      <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px" >
+                        <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
+                          Amount
+                        </el-col>
+                        <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
+                          0.05 ETH
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="24">Please send to address:</el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="20">
+                          <code style="border: 2px dashed var(--el-border-color);">{{ wallet }}</code>
+                        </el-col>
+                        <el-col :span="4" style="text-align: right" >
+                          <el-button :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
+                          <el-icon style="vertical-align: middle" :size="18" v-show="copied">
+                            <CircleCheck />
+                          </el-icon>
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row" style="padding-top: 2px">
+                        <el-col :span="24">
+                          or Scan the QR code
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="4"/>
+                        <el-col :span="16">
+                          <el-image src="/assets/crypto-wallet-qr.png" ></el-image>
+                        </el-col>
+                        <el-col :span="4"/>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col>
+                          Enter transaction hash:
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col>
+                          <el-input v-model="cryptoTransactionHash"></el-input>
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col style="text-align:right">
+                          <el-button @click="cryptoSubscribe" type="primary">Subscribe</el-button>
+                        </el-col>
+                      </el-row>
+                    </div>
                 </div>
 
                 <div id="premium_active" v-if="this.userLoaded && this.subscriptionId !== undefined">
@@ -160,10 +214,20 @@ import axios from 'axios'
 import Dialog from '../components/Dialog.vue'
 import { loadScript } from '@paypal/paypal-js'
 import { ElSwitch } from 'element-plus'
+import { Check, CircleCheck, CopyDocument, SuccessFilled } from '@element-plus/icons-vue'
 
 export default {
   name: 'Account',
+  computed: {
+    CopyDocument () {
+      return CopyDocument
+    }
+  },
   components: {
+    CircleCheck,
+    SuccessFilled,
+    Check,
+    CopyDocument,
     Dialog,
     ElSwitch
   },
@@ -181,9 +245,12 @@ export default {
       clientId: String,
       paypalLoaded: Boolean,
       userLoaded: Boolean,
-      subscriptionAnnual: false,
       deleteConfirmationVisible: false,
-      cancelConfirmationVisible: false
+      cancelConfirmationVisible: false,
+      subscriptionType: 'paypal_month',
+      cryptoTransactionHash: '',
+      wallet: "0x1c644443EA113Ef5aA17255a777EB909e2217566",
+      copied: false
     }
   },
   mounted () {
@@ -193,6 +260,11 @@ export default {
     this.reload()
   },
   methods: {
+    copy: function () {
+      navigator.clipboard.writeText(this.wallet);
+      this.copied = true
+      setTimeout(() => {this.copied = false}, 2000)
+    },
     reload: function () {
       axios.get('/api/user')
         .then(response => {
@@ -215,6 +287,13 @@ export default {
         })
         .catch(this.onError)
     },
+    cryptoSubscribe: function () {
+      axios.post('/api/plan/subscribe', { subscription_id: this.cryptoTransactionHash })
+        .then(_ => {
+          this.reload()
+        })
+        .catch(this.onError)
+    },
     enablePayPal: function (clientId) {
       loadScript({
         'client-id': clientId,
@@ -226,7 +305,7 @@ export default {
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: this.subscriptionAnnual ? this.planAnnualId : this.planMonthlyId
+                  plan_id: this.subscriptionType === 'paypal_annual' ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {
@@ -286,4 +365,7 @@ export default {
 }
 </script>
 <style>
+.crypto-row {
+  padding-bottom: 10px;
+}
 </style>
