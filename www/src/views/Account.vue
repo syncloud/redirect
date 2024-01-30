@@ -4,9 +4,7 @@
     <div id="has_domains">
       <h2>Account</h2>
       <br/>
-
       <div>
-
         <div class="row">
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
@@ -50,7 +48,7 @@
                         <el-radio-group v-if="this.userLoaded" v-model="this.subscriptionType">
                           <el-radio-button label="paypal_month">£5/Month</el-radio-button>
                           <el-radio-button label="paypal_year" >£60/Year</el-radio-button>
-                          <el-radio-button label="crypto_year" >ETH 0.05/Year</el-radio-button>
+                          <el-radio-button label="crypto_year" id="crypto_year">ETH 0.05/Year</el-radio-button>
                         </el-radio-group>
                       </el-col>
                     </el-row>
@@ -99,12 +97,19 @@
                       </el-row>
                       <el-row class="crypto-row">
                         <el-col>
-                          <el-input v-model="cryptoTransactionId"></el-input>
+                          <el-input v-model="cryptoTransactionId" id="crypto_transaction_id"></el-input>
                         </el-col>
                       </el-row>
                       <el-row class="crypto-row">
                         <el-col style="text-align:right">
-                          <el-button @click="cryptoSubscribe" type="primary" :disabled="cryptoTransactionId.length<10">Subscribe</el-button>
+                          <el-button
+                            @click="cryptoSubscribe"
+                            type="primary"
+                            :disabled="cryptoTransactionId.length<10"
+                            id="crypto_subscribe_btn"
+                          >
+                            Subscribe
+                          </el-button>
                         </el-col>
                       </el-row>
                     </div>
@@ -209,6 +214,7 @@ import axios from 'axios'
 import CustomDialog from '../components/CustomDialog.vue'
 import { loadScript } from '@paypal/paypal-js'
 import { CircleCheck, CopyDocument } from '@element-plus/icons-vue'
+import { markRaw } from 'vue'
 
 export default {
   name: 'Account',
@@ -236,7 +242,7 @@ export default {
       cryptoTransactionId: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
       copied: false,
-      CopyDocument: CopyDocument
+      CopyDocument: markRaw(CopyDocument)
     }
   },
   mounted () {

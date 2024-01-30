@@ -35,7 +35,7 @@ test('Notifications disable', async () => {
           RouterLink: RouterLinkStub
         },
         stubs: {
-          Dialog: {
+          CustomDialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {
@@ -98,7 +98,7 @@ test('Notifications subscribe', async () => {
           RouterLink: RouterLinkStub
         },
         stubs: {
-          Dialog: {
+          CustomDialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {
@@ -167,7 +167,7 @@ test('Delete', async () => {
           RouterLink: RouterLinkStub
         },
         stubs: {
-          Dialog: {
+          CustomDialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {
@@ -197,5 +197,70 @@ test('Delete', async () => {
   await flushPromises()
 
   expect(deleted).toBe(true)
+  wrapper.unmount()
+})
+
+test('Crypto Subscribe', async () => {
+
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/user').reply(200,
+    {
+      data: {
+        active: true,
+        email: 'test@example.com',
+        notification_enabled: true,
+        update_token: '0a'
+      }
+    }
+  )
+  
+  let subscription_id
+  mock.onPost('api/plan/subscribe').reply(function (config) {
+    subscription_id = JSON.parse(config.data).subscription_id
+    return [200, { success: true }]
+  })
+
+  mock.onPost('/api/logout').reply(function (_) {
+    return [200, { success: true }]
+  })
+  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2' } })
+
+  const wrapper = mount(Account,
+    {
+      attachTo: document.body,
+      props: {
+        checkUserSession: jest.fn()
+      },
+      global: {
+        components: {
+          RouterLink: RouterLinkStub
+        },
+        stubs: {
+          CustomDialog: true,
+          'el-col': ElCol,
+          'el-row': ElRow,
+          'el-radio-button': ElRadioButton,
+          'el-radio-group': ElRadioGroup,
+          'el-button': ElButton,
+          'el-image': ElImage,
+          'el-input': ElInput,
+          'el-icon': ElIcon
+        }
+      }
+
+    }
+  )
+
+  await flushPromises()
+
+  await wrapper.find('#crypto_year').trigger('click')
+  await flushPromises()
+  expect(wrapper.find('#crypto_subscribe_btn').attributes("disabled")).toBe("")
+  await wrapper.find('#crypto_transaction_id').setValue('12345678901')
+  await wrapper.find('#crypto_subscribe_btn').trigger('click')
+
+  await flushPromises()
+
+  expect(subscription_id).toBe('12345678901')
   wrapper.unmount()
 })

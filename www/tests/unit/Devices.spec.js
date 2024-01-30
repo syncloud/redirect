@@ -54,7 +54,7 @@ test('Show devices', async () => {
       },
       global: {
         stubs: {
-          Dialog: true
+          CustomDialog: true
         }
       }
     }
@@ -103,7 +103,7 @@ test('Default external port', async () => {
       },
       global: {
         stubs: {
-          Dialog: true
+          CustomDialog: true
         }
       }
     }
@@ -149,7 +149,7 @@ test('Custom external port', async () => {
       },
       global: {
         stubs: {
-          Dialog: true
+          CustomDialog: true
         }
       }
     }
@@ -195,7 +195,7 @@ test('Use locall address and web port 0', async () => {
       },
       global: {
         stubs: {
-          Dialog: true
+          CustomDialog: true
         }
       }
     }
@@ -240,7 +240,7 @@ test('No IPv6', async () => {
       },
       global: {
         stubs: {
-          Dialog: true
+          CustomDialog: true
         }
       }
     }
@@ -298,7 +298,7 @@ test('Delete', async () => {
           $router: mockRouter
         },
         stubs: {
-          Dialog: {
+          CustomDialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {
