@@ -68,12 +68,10 @@
                         <el-col :span="24">Please send to address:</el-col>
                       </el-row>
                       <el-row class="crypto-row">
-                        <el-col :span="22">
-                          <code style="border: 2px dashed var(--el-border-color);">{{ wallet }}</code>
-                        </el-col>
-                        <el-col :span="2" style="text-align: center" >
-                          <el-button :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
-                          <el-icon color="green" style="vertical-align: middle; height: 24px" :size="18" v-show="copied">
+                        <el-col :span="24" style="text-align: center">
+                          <code class="wallet">{{ wallet }}</code>
+                          <el-button text :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
+                          <el-icon color="green" style="padding: 0 10px 0 10px; vertical-align: middle; height: 24px" :size="34" v-show="copied">
                             <CircleCheck />
                           </el-icon>
                         </el-col>
@@ -362,5 +360,27 @@ export default {
 <style>
 .crypto-row {
   padding-bottom: 10px;
+}
+.wallet {
+  border: 2px dashed var(--el-border-color);
+  font-size: 90%;
+}
+@media (max-width: 1000px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 10px;
+  }
+}
+@media (max-width: 767px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 90%;
+  }
+}
+@media (max-width: 430px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 10px;
+  }
 }
 </style>
