@@ -3,6 +3,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Account from '../../src/views/Account.vue'
+import { ElButton, ElRadioGroup, ElRadioButton, ElRow, ElCol, ElImage, ElInput, ElIcon } from 'element-plus'
 
 test('Notifications disable', async () => {
   let notificationsEnabled
@@ -41,7 +42,15 @@ test('Notifications disable', async () => {
               show () {
               }
             }
-          }
+          },
+          'el-col': ElCol,
+          'el-row': ElRow,
+          'el-radio-button': ElRadioButton,
+          'el-radio-group': ElRadioGroup,
+          'el-button': ElButton,
+          'el-image': ElImage,
+          'el-input': ElInput,
+          'el-icon': ElIcon
         }
       }
 
@@ -96,7 +105,15 @@ test('Notifications subscribe', async () => {
               show () {
               }
             }
-          }
+          },
+          'el-col': ElCol,
+          'el-row': ElRow,
+          'el-radio-button': ElRadioButton,
+          'el-radio-group': ElRadioGroup,
+          'el-button': ElButton,
+          'el-image': ElImage,
+          'el-input': ElInput,
+          'el-icon': ElIcon
         }
       }
 
@@ -157,7 +174,15 @@ test('Delete', async () => {
               show () {
               }
             }
-          }
+          },
+          'el-col': ElCol,
+          'el-row': ElRow,
+          'el-radio-button': ElRadioButton,
+          'el-radio-group': ElRadioGroup,
+          'el-button': ElButton,
+          'el-image': ElImage,
+          'el-input': ElInput,
+          'el-icon': ElIcon
         }
       }
 

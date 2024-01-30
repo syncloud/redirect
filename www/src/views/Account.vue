@@ -46,7 +46,7 @@
                     </li>
                   </ul>
                     <el-row justify="center" style="padding-bottom: 20px">
-                      <el-col span="24" >
+                      <el-col :span="24" >
                         <el-radio-group
                           v-if="this.userLoaded"
                           v-model="this.subscriptionType"
@@ -65,7 +65,7 @@
                     <div v-show="this.subscriptionType.startsWith('crypto')" style="margin: auto; max-width: 400px" >
                       <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px" >
                         <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
-                          Amount
+                          Amount (Ethereum)
                         </el-col>
                         <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
                           0.05 ETH
@@ -75,12 +75,12 @@
                         <el-col :span="24">Please send to address:</el-col>
                       </el-row>
                       <el-row class="crypto-row">
-                        <el-col :span="20">
+                        <el-col :span="22">
                           <code style="border: 2px dashed var(--el-border-color);">{{ wallet }}</code>
                         </el-col>
-                        <el-col :span="4" style="text-align: right" >
+                        <el-col :span="2" style="text-align: center" >
                           <el-button :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
-                          <el-icon style="vertical-align: middle" :size="18" v-show="copied">
+                          <el-icon color="green" style="vertical-align: middle; height: 24px" :size="18" v-show="copied">
                             <CircleCheck />
                           </el-icon>
                         </el-col>
@@ -99,17 +99,17 @@
                       </el-row>
                       <el-row class="crypto-row">
                         <el-col>
-                          Enter transaction hash:
+                          Enter transaction ID:
                         </el-col>
                       </el-row>
                       <el-row class="crypto-row">
                         <el-col>
-                          <el-input v-model="cryptoTransactionHash"></el-input>
+                          <el-input v-model="cryptoTransactionId"></el-input>
                         </el-col>
                       </el-row>
                       <el-row class="crypto-row">
                         <el-col style="text-align:right">
-                          <el-button @click="cryptoSubscribe" type="primary">Subscribe</el-button>
+                          <el-button @click="cryptoSubscribe" type="primary" :disabled="cryptoTransactionId.length<10">Subscribe</el-button>
                         </el-col>
                       </el-row>
                     </div>
@@ -248,7 +248,7 @@ export default {
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
       subscriptionType: 'paypal_month',
-      cryptoTransactionHash: '',
+      cryptoTransactionId: '',
       wallet: "0x1c644443EA113Ef5aA17255a777EB909e2217566",
       copied: false
     }
@@ -287,8 +287,11 @@ export default {
         })
         .catch(this.onError)
     },
+    subscribe: function () {
+
+    },
     cryptoSubscribe: function () {
-      axios.post('/api/plan/subscribe', { subscription_id: this.cryptoTransactionHash })
+      axios.post('/api/plan/subscribe', { subscription_id: this.cryptoTransactionId })
         .then(_ => {
           this.reload()
         })
