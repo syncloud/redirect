@@ -213,8 +213,7 @@
 import axios from 'axios'
 import Dialog from '../components/Dialog.vue'
 import { loadScript } from '@paypal/paypal-js'
-import { ElSwitch } from 'element-plus'
-import { Check, CircleCheck, CopyDocument, SuccessFilled } from '@element-plus/icons-vue'
+import { CircleCheck, CopyDocument } from '@element-plus/icons-vue'
 
 export default {
   name: 'Account',
@@ -225,11 +224,8 @@ export default {
   },
   components: {
     CircleCheck,
-    SuccessFilled,
-    Check,
     CopyDocument,
-    Dialog,
-    ElSwitch
+    Dialog
   },
   props: {
     checkUserSession: Function
