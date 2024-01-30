@@ -45,14 +45,9 @@
                       Syncloud Name Servers
                     </li>
                   </ul>
-                    <el-row justify="center" style="padding-bottom: 20px">
-                      <el-col :span="24" >
-                        <el-radio-group
-                          v-if="this.userLoaded"
-                          v-model="this.subscriptionType"
-                          size="large"
-                          style="align-self: center"
-                        >
+                    <el-row  style="padding: 20px 0 20px 0">
+                      <el-col :span="24" style="text-align: center">
+                        <el-radio-group v-if="this.userLoaded" v-model="this.subscriptionType">
                           <el-radio-button label="paypal_month">£5/Month</el-radio-button>
                           <el-radio-button label="paypal_year" >£60/Year</el-radio-button>
                           <el-radio-button label="crypto_year" >ETH 0.05/Year</el-radio-button>
@@ -183,7 +178,7 @@
     </div>
   </div>
 
-  <Dialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
+  <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
           id="delete_confirmation" @confirm="accountDeleteConfirm">
     <template v-slot:title>Delete Account</template>
     <template v-slot:text>
@@ -194,9 +189,9 @@
       <br>
       <div>Are you sure?</div>
     </template>
-  </Dialog>
+  </CustomDialog>
 
-  <Dialog :visible="cancelConfirmationVisible" @cancel="cancelConfirmationVisible = false"
+  <CustomDialog :visible="cancelConfirmationVisible" @cancel="cancelConfirmationVisible = false"
           id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
     <template v-slot:title>Cancel subscription</template>
     <template v-slot:text>
@@ -206,26 +201,20 @@
       <br>
       <div>Are you sure?</div>
     </template>
-  </Dialog>
+  </CustomDialog>
 
 </template>
 <script>
 import axios from 'axios'
-import Dialog from '../components/Dialog.vue'
+import CustomDialog from '../components/CustomDialog.vue'
 import { loadScript } from '@paypal/paypal-js'
 import { CircleCheck, CopyDocument } from '@element-plus/icons-vue'
 
 export default {
   name: 'Account',
-  computed: {
-    CopyDocument () {
-      return CopyDocument
-    }
-  },
   components: {
     CircleCheck,
-    CopyDocument,
-    Dialog
+    CustomDialog
   },
   props: {
     checkUserSession: Function
@@ -245,8 +234,9 @@ export default {
       cancelConfirmationVisible: false,
       subscriptionType: 'paypal_month',
       cryptoTransactionId: '',
-      wallet: "0x1c644443EA113Ef5aA17255a777EB909e2217566",
-      copied: false
+      wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
+      copied: false,
+      CopyDocument: CopyDocument
     }
   },
   mounted () {
@@ -257,9 +247,9 @@ export default {
   },
   methods: {
     copy: function () {
-      navigator.clipboard.writeText(this.wallet);
+      navigator.clipboard.writeText(this.wallet)
       this.copied = true
-      setTimeout(() => {this.copied = false}, 2000)
+      setTimeout(() => { this.copied = false }, 2000)
     },
     reload: function () {
       axios.get('/api/user')

@@ -19,7 +19,7 @@
 
 <script>
 export default {
-  name: 'Dialog',
+  name: 'CustomDialog',
   emits: ['confirm', 'cancel'],
   props: {
     visible: Boolean,

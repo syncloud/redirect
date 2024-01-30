@@ -82,7 +82,7 @@
     </div>
   </div>
 
-  <Dialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
+  <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
                 id="delete_confirmation" @confirm="domainDelete">
     <template v-slot:title>
       Deactivate {{ domainToDelete }}
@@ -90,13 +90,13 @@
     <template v-slot:text>
       Device will be unlinked from the domain.<br>Domain will be released and might be taken by other user.<br>Proceed with caution!
     </template>
-  </Dialog>
+  </CustomDialog>
 </template>
 
 <script>
 import axios from 'axios'
 import moment from 'moment'
-import Dialog from '../components/Dialog.vue'
+import CustomDialog from '../components/CustomDialog.vue'
 
 function sameDay (date1, date2) {
   return (date1.getDate() === date2.getDate() &&
@@ -153,7 +153,7 @@ function convert (domain) {
 export default {
   name: 'Devices',
   components: {
-    Dialog
+    CustomDialog
   },
   props: {
     checkUserSession: Function
