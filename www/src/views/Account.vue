@@ -11,11 +11,11 @@
               <div class="panel-heading">
                 <div class="panel-title">
                   Subscription
-                  <div class="pull-right" id="premium_active"
+                  <div class="pull-right" id="subscription_active"
                        v-if="this.userLoaded && this.subscriptionId !== undefined">
                     <span class="label label-success" style="font-size: 16px;">Active</span>
                   </div>
-                  <div class="pull-right" id="premium_active"
+                  <div class="pull-right" id="subscription-inactive"
                        v-if="this.userLoaded && this.subscriptionId === undefined">
                     You have 30 days to subscribe
                   </div>
@@ -32,7 +32,7 @@
                   <li>Automatic mail DNS records</li>
                   <li>Email support for your device</li>
                 </ul>
-                <div id="request_premium" v-show="this.userLoaded && this.subscriptionId === undefined">
+                <div v-show="this.userLoaded && this.subscriptionId === undefined">
                   <div>
                     For personal domain you need to:
                   </div>
@@ -113,7 +113,7 @@
                     </div>
                 </div>
 
-                <div id="premium_active" v-if="this.userLoaded && this.subscriptionId !== undefined">
+                <div v-if="this.userLoaded && this.subscriptionId !== undefined">
                   <div style="padding-top: 10px">
                     You can activate your device with a personal domain:<br>
                   </div>

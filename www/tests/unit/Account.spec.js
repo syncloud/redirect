@@ -213,7 +213,7 @@ test('Crypto Subscribe', async () => {
       }
     }
   )
-  
+
   let subscription_id
   mock.onPost('api/plan/subscribe').reply(function (config) {
     subscription_id = JSON.parse(config.data).subscription_id
