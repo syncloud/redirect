@@ -247,6 +247,7 @@ def test_subscribe(selenium):
 def test_unsubscribe(selenium):
     selenium.find_by_id('subscription_active')
     selenium.find_by_id('cancel').click()
+    selenium.find_by_xpath("//button[contains(., 'Confirm')]").click()
     selenium.find_by_id('subscription_inactive')
     selenium.screenshot('account-subscription-inactive')
 
@@ -266,11 +267,7 @@ def test_account_delete(driver, ui_mode, selenium):
     menu(selenium, ui_mode, 'account')
     selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'delete')))
     driver.find_element_by_id("delete").click()
-
-    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(., 'Confirm')]"
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, confirm_xpath)))
-    selenium.find_by_xpath(confirm_xpath).click()
-
+    selenium.find_by_xpath("//button[contains(., 'Confirm')]").click()
     selenium.screenshot('account-delete')
 
 
