@@ -20,7 +20,7 @@ CREATE TABLE `user` (
   `registered_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `status` integer DEFAULT 0,
   `status_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (premium_status_id) REFERENCES premium_status(id),
+  FOREIGN KEY (premium_status_id) REFERENCES premium_status(id)
 );
 
 CREATE TABLE `domain` (
