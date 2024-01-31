@@ -9,6 +9,9 @@ const (
 	StatusLocked         int64 = 3
 	StatusSubscribed     int64 = 4
 	StatusUnSubscribed   int64 = 5
+
+	SubscriptionTypePayPal = 1
+	SubscriptionTypeCrypto = 2
 )
 
 type User struct {
@@ -20,6 +23,7 @@ type User struct {
 	NotificationEnabled bool      `json:"notification_enabled"`
 	Timestamp           time.Time `json:"timestamp,omitempty"`
 	SubscriptionId      *string   `json:"subscription_id,omitempty"`
+	SubscriptionType    *int      `json:"subscription_type,omitempty"`
 	Status              int64     `json:"status,omitempty"`
 	StatusAt            time.Time `json:"status_at,omitempty"`
 	RegisteredAt        time.Time `json:"registered_at,omitempty"`
@@ -80,12 +84,17 @@ func (u *User) IsLocked() bool {
 	return u.Status == StatusLocked
 }
 
-func (u *User) Subscribe(subscriptionId string) {
+func (u *User) Subscribe(subscriptionId string, subscriptionType int) {
 	u.SubscriptionId = &subscriptionId
+	u.SubscriptionType = &subscriptionType
 	u.Status = StatusSubscribed
 }
 
 func (u *User) UnSubscribe() {
 	u.SubscriptionId = nil
 	u.Status = StatusUnSubscribed
+}
+
+func (u *User) IsPayPal() bool {
+	return u.SubscriptionType != nil && *u.SubscriptionType == SubscriptionTypePayPal
 }

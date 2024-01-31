@@ -91,6 +91,7 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 			"notification_enabled, "+
 			"timestamp, "+
 			"subscription_id, "+
+			"subscription_type, "+
 			"registered_at, "+
 			"status_at, "+
 			"status "+
@@ -99,7 +100,7 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 
 	user := &model.User{}
 	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
-		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId, &user.RegisteredAt,
+		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId, &user.SubscriptionType, &user.RegisteredAt,
 		&user.StatusAt, &user.Status)
 
 	if err != nil {
@@ -155,6 +156,7 @@ func (m *MySql) UpdateUser(user *model.User) error {
 			"notification_enabled = ?, " +
 			"timestamp = ?, " +
 			"subscription_id = ?, " +
+			"subscription_type = ?, " +
 			"status = ? " +
 			"WHERE id = ?")
 	if err != nil {
@@ -171,6 +173,7 @@ func (m *MySql) UpdateUser(user *model.User) error {
 		user.NotificationEnabled,
 		&now,
 		user.SubscriptionId,
+		user.SubscriptionType,
 		user.Status,
 		user.Id,
 	)

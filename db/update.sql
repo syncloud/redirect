@@ -1,2 +1,2 @@
-alter table user add column `status_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-insert into db_version (version) values ('014');
+alter table user add column `subscription_type` integer NULL;
+insert into db_version (version) values ('015');

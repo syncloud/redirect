@@ -20,7 +20,7 @@ test('Notifications disable', async () => {
     }
   )
 
-  mock.onPost('/api/notification/disable').reply(function (config) {
+  mock.onPost('/api/notification/disable').reply(function (_) {
     notificationsEnabled = false
     return [200, { success: true }]
   })
@@ -83,7 +83,7 @@ test('Notifications subscribe', async () => {
     }
   )
 
-  mock.onPost('/api/notification/enable').reply(function (config) {
+  mock.onPost('/api/notification/enable').reply(function (_) {
     subscribed = true
     return [200, { success: true }]
   })
@@ -201,7 +201,6 @@ test('Delete', async () => {
 })
 
 test('Crypto Subscribe', async () => {
-
   const mock = new MockAdapter(axios)
   mock.onGet('/api/user').reply(200,
     {
@@ -214,9 +213,9 @@ test('Crypto Subscribe', async () => {
     }
   )
 
-  let subscription_id
-  mock.onPost('api/plan/subscribe').reply(function (config) {
-    subscription_id = JSON.parse(config.data).subscription_id
+  let subscriptionId
+  mock.onPost('api/plan/subscribe/crypto').reply(function (config) {
+    subscriptionId = JSON.parse(config.data).subscription_id
     return [200, { success: true }]
   })
 
@@ -255,12 +254,12 @@ test('Crypto Subscribe', async () => {
 
   await wrapper.find('#crypto_year').trigger('click')
   await flushPromises()
-  expect(wrapper.find('#crypto_subscribe_btn').attributes("disabled")).toBe("")
+  expect(wrapper.find('#crypto_subscribe_btn').attributes('disabled')).toBe('')
   await wrapper.find('#crypto_transaction_id').setValue('12345678901')
   await wrapper.find('#crypto_subscribe_btn').trigger('click')
 
   await flushPromises()
 
-  expect(subscription_id).toBe('12345678901')
+  expect(subscriptionId).toBe('12345678901')
   wrapper.unmount()
 })

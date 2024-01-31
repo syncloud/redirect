@@ -61,11 +61,11 @@ func (w WwwUsersStub) Save(_ *model.User) error {
 	panic("implement me")
 }
 
-func (w WwwUsersStub) PlanSubscribe(_ *model.User, _ string) error {
+func (w WwwUsersStub) Subscribe(_ *model.User, _ string, _ int) error {
 	panic("implement me")
 }
 
-func (w WwwUsersStub) PlanUnSubscribe(_ *model.User) error {
+func (w WwwUsersStub) Unsubscribe(_ *model.User) error {
 	panic("implement me")
 }
 

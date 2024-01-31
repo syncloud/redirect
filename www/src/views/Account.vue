@@ -281,7 +281,7 @@ export default {
 
     },
     cryptoSubscribe: function () {
-      axios.post('/api/plan/subscribe', { subscription_id: this.cryptoTransactionId })
+      axios.post('/api/plan/subscribe/crypto', { subscription_id: this.cryptoTransactionId })
         .then(_ => {
           this.reload()
         })
@@ -302,7 +302,7 @@ export default {
                 })
               },
               onApprove: (data, actions) => {
-                axios.post('/api/plan/subscribe', { subscription_id: data.subscriptionID })
+                axios.post('/api/plan/subscribe/paypal', { subscription_id: data.subscriptionID })
                   .then(_ => {
                     this.reload()
                   })

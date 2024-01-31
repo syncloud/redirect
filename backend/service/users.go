@@ -174,27 +174,29 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	return user, nil
 }
 
-func (u *Users) PlanUnSubscribe(user *model.User) error {
+func (u *Users) Unsubscribe(user *model.User) error {
 	if !user.IsSubscribed() {
 		return fmt.Errorf("you have no existing subscrition, please contact support")
 	}
-	err := u.subscriptions.Unsubscribe(*user.SubscriptionId)
-	if err != nil {
-		return err
+	if user.IsPayPal() {
+		err := u.subscriptions.Unsubscribe(*user.SubscriptionId)
+		if err != nil {
+			return err
+		}
 	}
 	user.UnSubscribe()
-	err = u.db.UpdateUser(user)
+	err := u.db.UpdateUser(user)
 	if err != nil {
 		return err
 	}
 	return u.usersMail.SendPlanUnSubscribed(user.Email)
 }
 
-func (u *Users) PlanSubscribe(user *model.User, subscriptionId string) error {
+func (u *Users) Subscribe(user *model.User, subscriptionId string, subscriptionType int) error {
 	if user.IsSubscribed() {
 		return fmt.Errorf("you have an existing subscrition, please contact support")
 	}
-	user.Subscribe(subscriptionId)
+	user.Subscribe(subscriptionId, subscriptionType)
 	err := u.db.UpdateUser(user)
 	if err != nil {
 		return err

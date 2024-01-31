@@ -244,7 +244,7 @@ func TestUsers_PlanSubscribe_Good(t *testing.T) {
 	users := &Users{db, false, actions, mail, &SubscriptionsStub{}}
 	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", Timestamp: time.Now()}
 	_ = users.Save(user)
-	err := users.PlanSubscribe(user, "123")
+	err := users.Subscribe(user, "123", model.SubscriptionTypePayPal)
 	assert.Nil(t, err)
 	assert.Equal(t, "123", *user.SubscriptionId)
 	assert.Equal(t, user.Email, *mail.sentEmail)
@@ -258,7 +258,7 @@ func TestUsers_PlanSubscribe_AlreadySubscribed(t *testing.T) {
 	subscriptionId := "123"
 	user := &model.User{Email: "test@example.com", PasswordHash: "password", Active: true, UpdateToken: "update token", SubscriptionId: &subscriptionId, Timestamp: time.Now()}
 	_ = users.Save(user)
-	err := users.PlanSubscribe(user, "123")
+	err := users.Subscribe(user, "123", model.SubscriptionTypePayPal)
 	assert.NotNil(t, err)
 	assert.Equal(t, "123", *user.SubscriptionId)
 	assert.Nil(t, mail.sentEmail)

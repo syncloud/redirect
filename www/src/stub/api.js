@@ -168,7 +168,12 @@ export function mock () {
           return new Response(200, {}, { message: 'Activated' })
         }
       })
-      this.post('/api/plan/subscribe', function (_schema, request) {
+      this.post('/api/plan/subscribe/paypal', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        state.user.data.subscription_id = attrs.subscription_id
+        return new Response(200, {}, {})
+      })
+      this.post('/api/plan/subscribe/crypto', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
         state.user.data.subscription_id = attrs.subscription_id
         return new Response(200, {}, {})
