@@ -245,9 +245,9 @@ def test_subscribe(selenium):
 
 
 def test_unsubscribe(selenium):
-    selenium.find_element_by_id('subscription_active')
-    selenium.find_element_by_id('cancel').click()
-    selenium.find_element_by_id('subscription_inactive')
+    selenium.find_by_id('subscription_active')
+    selenium.find_by_id('cancel').click()
+    selenium.find_by_id('subscription_inactive')
     selenium.screenshot('account-subscription-inactive')
 
 
