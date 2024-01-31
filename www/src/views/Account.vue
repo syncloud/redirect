@@ -15,7 +15,7 @@
                        v-if="this.userLoaded && this.subscriptionId !== undefined">
                     <span class="label label-success" style="font-size: 16px;">Active</span>
                   </div>
-                  <div class="pull-right" id="subscription-inactive"
+                  <div class="pull-right" id="subscription_inactive"
                        v-if="this.userLoaded && this.subscriptionId === undefined">
                     You have 30 days to subscribe
                   </div>
