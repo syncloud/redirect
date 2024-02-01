@@ -92,6 +92,7 @@ func (u *User) Subscribe(subscriptionId string, subscriptionType int) {
 
 func (u *User) UnSubscribe() {
 	u.SubscriptionId = nil
+	u.SubscriptionType = nil
 	u.Status = StatusUnSubscribed
 }
 
