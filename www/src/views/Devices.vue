@@ -82,20 +82,21 @@
     </div>
   </div>
 
-  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="domainDelete">
+  <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
+                id="delete_confirmation" @confirm="domainDelete">
     <template v-slot:title>
       Deactivate {{ domainToDelete }}
     </template>
     <template v-slot:text>
-      Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
+      Device will be unlinked from the domain.<br>Domain will be released and might be taken by other user.<br>Proceed with caution!
     </template>
-  </Confirmation>
+  </CustomDialog>
 </template>
 
 <script>
 import axios from 'axios'
 import moment from 'moment'
-import Confirmation from '../components/Confirmation.vue'
+import CustomDialog from '../components/CustomDialog.vue'
 
 function sameDay (date1, date2) {
   return (date1.getDate() === date2.getDate() &&
@@ -152,7 +153,7 @@ function convert (domain) {
 export default {
   name: 'Devices',
   components: {
-    Confirmation
+    CustomDialog
   },
   props: {
     checkUserSession: Function
@@ -161,7 +162,8 @@ export default {
     return {
       hasDomains: Boolean,
       domainGroups: Array,
-      domainToDelete: ''
+      domainToDelete: '',
+      deleteConfirmationVisible: false
     }
   },
   mounted () {
@@ -204,9 +206,10 @@ export default {
     },
     domainDeleteConfirm: function (domainName) {
       this.domainToDelete = domainName
-      this.$refs.delete_confirmation.show()
+      this.deleteConfirmationVisible = true
     },
     domainDelete: function () {
+      this.deleteConfirmationVisible = false
       axios.delete('/api/domain', { params: { domain: this.domainToDelete } })
         .then(_ => {
           this.reload()

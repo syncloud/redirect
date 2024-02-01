@@ -1,11 +1,11 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import Menu from '../../src/components/Menu.vue'
+import CustomMenu from '../../src/components/CustomMenu.vue'
 
-test('Menu.vue', async () => {
+test('CustomMenu.vue', async () => {
   const mockRouter = { push: jest.fn() }
 
   const email = 'test@example.com'
-  const wrapper = mount(Menu, {
+  const wrapper = mount(CustomMenu, {
     attachTo: document.body,
     props: { email },
     global: {

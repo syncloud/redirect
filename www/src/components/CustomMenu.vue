@@ -49,7 +49,7 @@
 import axios from 'axios'
 
 export default {
-  name: 'Menu',
+  name: 'CustomMenu',
   props: {
     activeTab: String,
     email: String,

@@ -1,11 +1,11 @@
 <template>
-  <Menu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
+  <CustomMenu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
         v-bind:email="email"/>
   <router-view v-bind:checkUserSession="checkUserSession"/>
 </template>
 <script>
 import axios from 'axios'
-import Menu from './components/Menu.vue'
+import CustomMenu from './components/CustomMenu.vue'
 
 const publicRoutes = [
   '/register',
@@ -22,7 +22,7 @@ const publicRoutes = [
 export default {
   name: 'app',
   components: {
-    Menu
+    CustomMenu
   },
   data () {
     return {

@@ -29,8 +29,8 @@ type WwwUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 	UserSetPassword(request *model.UserPasswordSetRequest) error
 	Save(user *model.User) error
-	PlanSubscribe(user *model.User, subscriptionId string) error
-	PlanUnSubscribe(user *model.User) error
+	Subscribe(user *model.User, subscriptionId string, subscriptionType int) error
+	Unsubscribe(user *model.User) error
 	Activate(token string) error
 	Delete(userId int64) error
 }
@@ -101,9 +101,10 @@ func (w *Www) Start() error {
 	r.HandleFunc("/user", w.Secured(Handle(w.WebUserDelete))).Methods("DELETE")
 	r.HandleFunc("/user", w.Secured(Handle(w.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", w.Secured(Handle(w.WebDomains))).Methods("GET")
-	r.HandleFunc("/plan", w.Secured(Handle(w.WebPlan))).Methods("GET")
-	r.HandleFunc("/plan", w.Secured(Handle(w.WebPlanUnsubscribe))).Methods("DELETE")
-	r.HandleFunc("/plan/subscribe", w.Secured(Handle(w.WebPlanSubscribe))).Methods("POST")
+	r.HandleFunc("/plan", w.Secured(Handle(w.Subscription))).Methods("GET")
+	r.HandleFunc("/plan", w.Secured(Handle(w.Unsubscribe))).Methods("DELETE")
+	r.HandleFunc("/plan/subscribe/paypal", w.Secured(Handle(w.SubscribePayPal))).Methods("POST")
+	r.HandleFunc("/plan/subscribe/crypto", w.Secured(Handle(w.SubscribeCrypto))).Methods("POST")
 	r.HandleFunc("/domain", w.Secured(Handle(w.DomainDelete))).Methods("DELETE")
 	r.NotFoundHandler = http.HandlerFunc(w.notFoundHandler)
 
@@ -275,8 +276,8 @@ func (w *Www) WebDomains(_ http.ResponseWriter, req *http.Request) (interface{},
 	return domains, nil
 }
 
-func (w *Www) WebPlan(http.ResponseWriter, *http.Request) (interface{}, error) {
-	w.statsdClient.Incr("www.plan.get", 1)
+func (w *Www) Subscription(http.ResponseWriter, *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.subscription", 1)
 	return model.PlanResponse{
 		PlanMonthlyId: w.payPalPlanMonthlyId,
 		PlanAnnualId:  w.payPalPlanAnnualId,
@@ -284,38 +285,47 @@ func (w *Www) WebPlan(http.ResponseWriter, *http.Request) (interface{}, error) {
 	}, nil
 }
 
-func (w *Www) WebPlanUnsubscribe(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	w.statsdClient.Incr("www.plan.unsubscribe", 1)
+func (w *Www) Unsubscribe(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.unsubscribe", 1)
 	user, err := w.getSessionUser(req)
 	if err != nil {
 		return nil, err
 	}
 
-	err = w.users.PlanUnSubscribe(user)
+	err = w.users.Unsubscribe(user)
 	if err != nil {
-		log.Println("unable to unsubscribe a plan subscribe for a user", err)
+		log.Println("unable to unsubscribe", err)
 		return nil, errors.New("invalid request")
 	}
 
 	return "OK", nil
 }
 
-func (w *Www) WebPlanSubscribe(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	w.statsdClient.Incr("www.plan.subscribe", 1)
+func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.subscribe.paypal", 1)
+	return w.subscribe(req, model.SubscriptionTypePayPal)
+}
+
+func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	w.statsdClient.Incr("www.subscribe.crypto", 1)
+	return w.subscribe(req, model.SubscriptionTypeCrypto)
+}
+
+func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, error) {
 	user, err := w.getSessionUser(req)
 	if err != nil {
 		return nil, err
 	}
-	request := model.PlanSubscribeRequest{}
+	request := model.SubscribeRequest{}
 	err = json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
-		log.Println("unable to parse plan subscribe request", err)
+		log.Println("unable to parse", err)
 		return nil, errors.New("invalid request")
 	}
 
-	err = w.users.PlanSubscribe(user, request.SubscriptionId)
+	err = w.users.Subscribe(user, request.SubscriptionId, subscriptionType)
 	if err != nil {
-		log.Println("unable to do a plan subscribe for a user", err)
+		log.Println("unable to subscribe a user", err)
 		return nil, errors.New("invalid request")
 	}
 

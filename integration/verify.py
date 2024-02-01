@@ -11,7 +11,6 @@ from syncloudlib.integration.hosts import add_host_alias
 
 import db
 import smtp
-import premium_account
 import api
 
 DIR = dirname(__file__)
@@ -103,15 +102,12 @@ def test_user_create_special_symbols_in_password(domain):
     smtp.clear()
 
 
-def create_user(domain, email, password, artifact_dir, premium=False):
+def create_user(domain, email, password, artifact_dir):
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              json={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
 
     activate_user(domain, artifact_dir)
-
-    if premium:
-        premium_account.premium_buy(email, artifact_dir)
     response = requests.get('https://api.{0}/user/get'.format(domain),
                             params={'email': email, 'password': password},
                             verify=False)

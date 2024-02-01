@@ -1,10 +1,9 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import { mock } from './stub/api'
 import './jQuery'
 import 'bootstrap'
-import { mock } from './stub/api'
-
 if (import.meta.env.DEV) {
   mock()
 }

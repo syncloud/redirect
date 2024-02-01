@@ -4,20 +4,18 @@
     <div id="has_domains">
       <h2>Account</h2>
       <br/>
-
       <div>
-
         <div class="row">
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
                   Subscription
-                  <div class="pull-right" id="premium_active"
+                  <div class="pull-right" id="subscription_active"
                        v-if="this.userLoaded && this.subscriptionId !== undefined">
                     <span class="label label-success" style="font-size: 16px;">Active</span>
                   </div>
-                  <div class="pull-right" id="premium_active"
+                  <div class="pull-right" id="subscription_inactive"
                        v-if="this.userLoaded && this.subscriptionId === undefined">
                     You have 30 days to subscribe
                   </div>
@@ -34,7 +32,7 @@
                   <li>Automatic mail DNS records</li>
                   <li>Email support for your device</li>
                 </ul>
-                <div id="request_premium" v-show="this.userLoaded && this.subscriptionId === undefined">
+                <div v-show="this.userLoaded && this.subscriptionId === undefined">
                   <div>
                     For personal domain you need to:
                   </div>
@@ -45,23 +43,77 @@
                       Syncloud Name Servers
                     </li>
                   </ul>
-                  <div style="display: flex; flex-direction: column;">
-                    <el-switch
-                      v-if="this.userLoaded"
-                      style="margin: auto; max-width: 200px"
-                      v-model="subscriptionAnnual"
-                      active-text="Annual"
-                      inactive-text="Monthly"
-                    />
-                    <h4 style="text-align: center" v-if="this.userLoaded && this.subscriptionAnnual">Subscribe for
-                      £60/year</h4>
-                    <h4 style="text-align: center" v-if="this.userLoaded && !this.subscriptionAnnual">Subscribe for
-                      £5/month</h4>
-                    <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
-                  </div>
+                    <el-row  style="padding: 20px 0 20px 0">
+                      <el-col :span="24" style="text-align: center">
+                        <el-radio-group v-if="this.userLoaded" v-model="this.subscriptionType">
+                          <el-radio-button label="paypal_month">£5/Month</el-radio-button>
+                          <el-radio-button label="paypal_year" >£60/Year</el-radio-button>
+                          <el-radio-button label="crypto_year" id="crypto_year">ETH 0.05/Year</el-radio-button>
+                        </el-radio-group>
+                      </el-col>
+                    </el-row>
+                    <div v-show="this.subscriptionType.startsWith('paypal')" style="margin: auto; max-width: 200px" id="paypal-buttons">
+
+                    </div>
+                    <div v-show="this.subscriptionType.startsWith('crypto')" style="margin: auto; max-width: 400px" >
+                      <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px" >
+                        <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
+                          Amount (Ethereum)
+                        </el-col>
+                        <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
+                          0.05 ETH
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="24">Please send to address:</el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="24" style="text-align: center">
+                          <code class="wallet">{{ wallet }}</code>
+                          <el-button text :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
+                          <el-icon color="green" style="padding: 0 10px 0 10px; vertical-align: middle; height: 24px" :size="34" v-show="copied">
+                            <CircleCheck />
+                          </el-icon>
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row" style="padding-top: 2px">
+                        <el-col :span="24">
+                          or Scan the QR code
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="4"/>
+                        <el-col :span="16">
+                          <el-image src="/assets/crypto-wallet-qr.png" ></el-image>
+                        </el-col>
+                        <el-col :span="4"/>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col>
+                          Enter transaction ID:
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col>
+                          <el-input v-model="cryptoTransactionId" id="crypto_transaction_id"></el-input>
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col style="text-align:right">
+                          <el-button
+                            @click="cryptoSubscribe"
+                            type="primary"
+                            :disabled="cryptoTransactionId.length<10"
+                            id="crypto_subscribe_btn"
+                          >
+                            Subscribe
+                          </el-button>
+                        </el-col>
+                      </el-row>
+                    </div>
                 </div>
 
-                <div id="premium_active" v-if="this.userLoaded && this.subscriptionId !== undefined">
+                <div v-if="this.userLoaded && this.subscriptionId !== undefined">
                   <div style="padding-top: 10px">
                     You can activate your device with a personal domain:<br>
                   </div>
@@ -129,7 +181,8 @@
     </div>
   </div>
 
-  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="accountDeleteConfirm">
+  <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
+          id="delete_confirmation" @confirm="accountDeleteConfirm">
     <template v-slot:title>Delete Account</template>
     <template v-slot:text>
       <div>Once you delete your account, there's no going back. All devices you have will be deactivated and domains
@@ -139,9 +192,10 @@
       <br>
       <div>Are you sure?</div>
     </template>
-  </Confirmation>
+  </CustomDialog>
 
-  <Confirmation ref="cancel_confirmation" id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
+  <CustomDialog :visible="cancelConfirmationVisible" @cancel="cancelConfirmationVisible = false"
+          id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
     <template v-slot:title>Cancel subscription</template>
     <template v-slot:text>
       <div>
@@ -150,20 +204,21 @@
       <br>
       <div>Are you sure?</div>
     </template>
-  </Confirmation>
+  </CustomDialog>
 
 </template>
 <script>
 import axios from 'axios'
-import Confirmation from '../components/Confirmation.vue'
+import CustomDialog from '../components/CustomDialog.vue'
 import { loadScript } from '@paypal/paypal-js'
-import { ElSwitch } from 'element-plus'
+import { CircleCheck, CopyDocument } from '@element-plus/icons-vue'
+import { markRaw } from 'vue'
 
 export default {
   name: 'Account',
   components: {
-    Confirmation,
-    ElSwitch
+    CircleCheck,
+    CustomDialog
   },
   props: {
     checkUserSession: Function
@@ -179,7 +234,13 @@ export default {
       clientId: String,
       paypalLoaded: Boolean,
       userLoaded: Boolean,
-      subscriptionAnnual: false
+      deleteConfirmationVisible: false,
+      cancelConfirmationVisible: false,
+      subscriptionType: 'paypal_month',
+      cryptoTransactionId: '',
+      wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
+      copied: false,
+      CopyDocument: markRaw(CopyDocument)
     }
   },
   mounted () {
@@ -189,6 +250,11 @@ export default {
     this.reload()
   },
   methods: {
+    copy: function () {
+      navigator.clipboard.writeText(this.wallet)
+      this.copied = true
+      setTimeout(() => { this.copied = false }, 2000)
+    },
     reload: function () {
       axios.get('/api/user')
         .then(response => {
@@ -211,6 +277,16 @@ export default {
         })
         .catch(this.onError)
     },
+    subscribe: function () {
+
+    },
+    cryptoSubscribe: function () {
+      axios.post('/api/plan/subscribe/crypto', { subscription_id: this.cryptoTransactionId })
+        .then(_ => {
+          this.reload()
+        })
+        .catch(this.onError)
+    },
     enablePayPal: function (clientId) {
       loadScript({
         'client-id': clientId,
@@ -222,11 +298,11 @@ export default {
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: this.subscriptionAnnual ? this.planAnnualId : this.planMonthlyId
+                  plan_id: this.subscriptionType === 'paypal_annual' ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {
-                axios.post('/api/plan/subscribe', { subscription_id: data.subscriptionID })
+                axios.post('/api/plan/subscribe/paypal', { subscription_id: data.subscriptionID })
                   .then(_ => {
                     this.reload()
                   })
@@ -249,9 +325,10 @@ export default {
         .catch(this.onError)
     },
     cancelSubscription: function () {
-      this.$refs.cancel_confirmation.show()
+      this.cancelConfirmationVisible = true
     },
     cancelSubscriptionConfirm: function () {
+      this.cancelConfirmationVisible = false
       axios.delete('/api/plan')
         .then(_ => {
           this.reload()
@@ -259,9 +336,10 @@ export default {
         .catch(this.onError)
     },
     accountDelete: function () {
-      this.$refs.delete_confirmation.show()
+      this.deleteConfirmationVisible = true
     },
     accountDeleteConfirm: function () {
+      this.deleteConfirmationVisible = false
       axios.delete('/api/user')
         .then(_ => {
           this.checkUserSession()
@@ -280,4 +358,29 @@ export default {
 }
 </script>
 <style>
+.crypto-row {
+  padding-bottom: 10px;
+}
+.wallet {
+  border: 2px dashed var(--el-border-color);
+  font-size: 90%;
+}
+@media (max-width: 1000px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 10px;
+  }
+}
+@media (max-width: 767px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 90%;
+  }
+}
+@media (max-width: 430px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 10px;
+  }
+}
 </style>

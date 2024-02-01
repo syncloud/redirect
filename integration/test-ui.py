@@ -12,8 +12,9 @@ from syncloudlib.integration.hosts import add_host_alias
 import smtp
 
 import db
-import premium_account
+import subscription
 import api
+import ui
 
 DIR = dirname(__file__)
 DEVICE_USER = "user@example.com"
@@ -212,24 +213,8 @@ def test_password_reset(ui_mode, selenium):
     assert by_xpath is not None
 
 
-def test_domain_delete(ui_mode, selenium):
-    domain_delete(ui_mode, 'devices-removed', selenium)
-
-
-def domain_delete(ui_mode, screenshot, selenium):
-    deactivate_xpath = "//div[contains(@class, 'panel')]//button[contains(text(), 'Deactivate')]"
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, deactivate_xpath)))
-    selenium.find_by_xpath(deactivate_xpath).click()
-
-    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(text(), 'Yes')]"
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, confirm_xpath)))
-    selenium.find_by_xpath(confirm_xpath).click()
-
-    device_label = "//h3[text()='Some Device']"
-    selenium.wait_or_screenshot(EC.invisibility_of_element_located((By.XPATH, device_label)))
-    found = selenium.exists_by(By.XPATH, device_label)
-    selenium.screenshot(screenshot)
-    assert not found
+def test_domain_delete(selenium):
+    ui.domain_delete( 'devices-removed', selenium)
 
 
 def test_account(ui_mode, selenium):
@@ -241,7 +226,7 @@ def test_account(ui_mode, selenium):
     selenium.screenshot('account')
 
 
-def test_account_notification(driver, selenium):
+def test_notification(driver, selenium):
     driver.find_element_by_id("chk_email").click()
     driver.find_element_by_id("save").click()
     switch = "//input[@id='chk_email' and @value='false']"
@@ -255,36 +240,34 @@ def test_account_notification(driver, selenium):
     selenium.screenshot('account-notification-on')
 
 
-def test_account_not_premium(selenium):
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'request_premium')))
-    selenium.screenshot('account-premium-request')
+def test_subscribe(selenium):
+    subscription.subscribe_crypto(selenium)
 
 
-def test_account_premium_buy(selenium, artifact_dir):
-    premium_account.premium_buy(DEVICE_USER, artifact_dir)
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'request_premium')))
-    selenium.screenshot('account-premium-approved')
+def test_unsubscribe(selenium):
+    selenium.find_by_id('subscription_active')
+    selenium.find_by_id('cancel').click()
+    selenium.find_by_xpath("//button[contains(., 'Confirm')]").click()
+    selenium.find_by_id('subscription_inactive')
+    selenium.screenshot('account-subscription-inactive')
 
 
-def test_account_premium_acquire(domain):
+def test_resubscribe(selenium):
+    subscription.subscribe_crypto(selenium)
+
+
+def test_domain_when_subscribed(ui_mode, selenium, domain):
     api.domain_acquire(domain, 'syncloudexample.com', DEVICE_USER, DEVICE_PASSWORD)
-
-
-def test_account_premium_delete(ui_mode, selenium):
     menu(selenium, ui_mode, 'devices')
-    selenium.screenshot('premium-domain')
-    domain_delete(ui_mode, 'premium-devices-removed', selenium)
+    selenium.screenshot('domain')
+    ui.domain_delete('devices-removed-when-subscribed', selenium)
 
 
 def test_account_delete(driver, ui_mode, selenium):
     menu(selenium, ui_mode, 'account')
     selenium.wait_or_screenshot(EC.presence_of_element_located((By.ID, 'delete')))
     driver.find_element_by_id("delete").click()
-
-    confirm_xpath = "//div[@id='delete_confirmation']//button[contains(text(), 'Yes')]"
-    selenium.wait_or_screenshot(EC.presence_of_element_located((By.XPATH, confirm_xpath)))
-    selenium.find_by_xpath(confirm_xpath).click()
-
+    selenium.find_by_xpath("//button[contains(., 'Confirm')]").click()
     selenium.screenshot('account-delete')
 
 

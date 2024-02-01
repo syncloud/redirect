@@ -19,7 +19,7 @@ test('index to login (not logged in)', async () => {
         RouterView: { render () { return h('div') } }
       },
       stubs: {
-        Menu: true
+        CustomMenu: true
       },
       mocks: {
         // $route: { path: '/' },
@@ -54,7 +54,7 @@ test('index stay (logged in)', async () => {
         RouterView: { render () { return h('div') } }
       },
       stubs: {
-        Menu: true
+        CustomMenu: true
       },
       mocks: {
         $route: { path: '/' },
@@ -88,7 +88,7 @@ test('login to index (logged in)', async () => {
         RouterView: { render () { return h('div') } }
       },
       stubs: {
-        Menu: true
+        CustomMenu: true
       },
       mocks: {
         // $route: { path: '/login' },
