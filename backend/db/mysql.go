@@ -157,7 +157,8 @@ func (m *MySql) UpdateUser(user *model.User) error {
 			"timestamp = ?, " +
 			"subscription_id = ?, " +
 			"subscription_type = ?, " +
-			"status = ? " +
+			"status = ?, " +
+			"status_at = ? " +
 			"WHERE id = ?")
 	if err != nil {
 		log.Println("sql error: ", err)
@@ -175,6 +176,7 @@ func (m *MySql) UpdateUser(user *model.User) error {
 		user.SubscriptionId,
 		user.SubscriptionType,
 		user.Status,
+		user.StatusAt,
 		user.Id,
 	)
 	if err != nil {
