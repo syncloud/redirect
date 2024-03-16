@@ -284,7 +284,7 @@ def test_user_cleaned_auto_logout(ui_mode, selenium, domain):
 
 
 def sql(query):
-    check_output(f"mysql --host=mysql --user=root --password=root redirect -e '{query}", shell=True)
+    check_output(f"mysql --host=mysql --user=root --password=root redirect -e '{query}'", shell=True)
 
 
 def test_teardown(driver):
