@@ -310,12 +310,14 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		statsd *statsd.Client,
 		config *utils.Config,
 		domains *service.Domains,
+		paypal *subscription.PayPal,
 	) *user.Cleaner {
 		return user.NewCleaner(
 			database,
 			state,
 			mail,
 			domains,
+			paypal,
 			config.UserCleanerEnabled(),
 			logger,
 		)

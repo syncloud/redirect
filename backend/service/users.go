@@ -184,7 +184,7 @@ func (u *Users) Unsubscribe(user *model.User) error {
 			return err
 		}
 	}
-	user.UnSubscribe()
+	user.UnSubscribe(time.Now())
 	err := u.db.UpdateUser(user)
 	if err != nil {
 		return err

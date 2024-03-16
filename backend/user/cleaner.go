@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/plutov/paypal/v4"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 	"time"
@@ -24,10 +25,15 @@ type Mail interface {
 	SendAccountLockSoon(to string) error
 	SendAccountLocked(to string) error
 	SendAccountRemoved(to string) error
+	SendPlanUnSubscribed(to string) error
 }
 
 type Remover interface {
 	DeleteAllDomains(userId int64) error
+}
+
+type PayPalSubscriptionChecker interface {
+	GetSubscriptionDetails(id string) (*paypal.SubscriptionDetailResp, error)
 }
 
 type Cleaner struct {
@@ -35,16 +41,25 @@ type Cleaner struct {
 	state    State
 	mail     Mail
 	remover  Remover
+	checker  PayPalSubscriptionChecker
 	enabled  bool
 	logger   *zap.Logger
 }
 
-func NewCleaner(database Database, state State, mail Mail, remover Remover, enabled bool, logger *zap.Logger) *Cleaner {
+func NewCleaner(
+	database Database,
+	state State,
+	mail Mail,
+	remover Remover,
+	checker PayPalSubscriptionChecker,
+	enabled bool,
+	logger *zap.Logger) *Cleaner {
 	return &Cleaner{
 		database: database,
 		state:    state,
 		mail:     mail,
 		remover:  remover,
+		checker:  checker,
 		enabled:  enabled,
 		logger:   logger,
 	}
@@ -62,7 +77,7 @@ func (c *Cleaner) Start() error {
 			if err != nil {
 				c.logger.Error("unable to clean users", zap.Error(err))
 			}
-			time.Sleep(10 * time.Second)
+			time.Sleep(60 * time.Second)
 		}
 	}()
 	return nil
@@ -86,7 +101,30 @@ func (c *Cleaner) Clean(now time.Time) error {
 		return err
 	}
 	if user.IsSubscribed() {
-		return c.state.Set(id)
+		if !user.IsPayPal() {
+			return c.state.Set(id)
+		}
+
+		details, err := c.checker.GetSubscriptionDetails(*user.SubscriptionId)
+		if err != nil {
+			return err
+		}
+		if details.SubscriptionStatus == paypal.SubscriptionStatusActive {
+			return c.state.Set(id)
+		}
+
+		c.logger.Info("paypal subscription is not active", zap.String("status", string(details.SubscriptionStatus)))
+		user.UnSubscribe(now)
+		err = c.database.UpdateUser(user)
+		if err != nil {
+			return err
+		}
+		err = c.remover.DeleteAllDomains(id)
+		if err != nil {
+			return err
+		}
+		return c.mail.SendPlanUnSubscribed(user.Email)
+
 	}
 	if user.IsStatusCreated() {
 		user.TrialEmailSent(now)
@@ -143,6 +181,5 @@ func (c *Cleaner) Clean(now time.Time) error {
 			return err
 		}
 	}
-	//TODO: lock accounts without subscription after 1 day
 	return c.state.Set(id)
 }

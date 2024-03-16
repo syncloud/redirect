@@ -8,7 +8,6 @@ const (
 	StatusLockEmailSent  int64 = 2
 	StatusLocked         int64 = 3
 	StatusSubscribed     int64 = 4
-	StatusUnSubscribed   int64 = 5
 
 	SubscriptionTypePayPal = 1
 	SubscriptionTypeCrypto = 2
@@ -33,20 +32,16 @@ func (u *User) IsSubscribed() bool {
 	return u.SubscriptionId != nil
 }
 
-func (u *User) IsNDaysSinceRegistration(now time.Time, days int) bool {
-	return u.RegisteredAt.Before(now.AddDate(0, 0, -days))
-}
-
 func (u *User) IsNDaysSinceStatus(now time.Time, days int) bool {
 	return u.StatusAt.Before(now.AddDate(0, 0, -days))
 }
 
 func (u *User) IsReadyForLockEmail(now time.Time) bool {
-	return u.Status == StatusTrialEmailSent && u.IsNDaysSinceRegistration(now, 20)
+	return u.Status == StatusTrialEmailSent && u.IsNDaysSinceStatus(now, 20)
 }
 
 func (u *User) IsReadyForAccountLock(now time.Time) bool {
-	return u.Status == StatusLockEmailSent && u.IsNDaysSinceRegistration(now, 30)
+	return u.Status == StatusLockEmailSent && u.IsNDaysSinceStatus(now, 10)
 }
 
 func (u *User) IsReadyForAccountRemove(now time.Time) bool {
@@ -90,10 +85,11 @@ func (u *User) Subscribe(subscriptionId string, subscriptionType int) {
 	u.Status = StatusSubscribed
 }
 
-func (u *User) UnSubscribe() {
+func (u *User) UnSubscribe(now time.Time) {
 	u.SubscriptionId = nil
 	u.SubscriptionType = nil
-	u.Status = StatusUnSubscribed
+	u.StatusAt = now
+	u.Status = StatusLocked
 }
 
 func (u *User) IsPayPal() bool {
