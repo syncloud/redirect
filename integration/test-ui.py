@@ -281,6 +281,7 @@ def test_user_cleaned_auto_logout(ui_mode, selenium, domain):
     selenium.driver.get("https://www.{0}".format(domain))
     selenium.find_by_id('email')
     selenium.find_by_id("password")
+    selenium.screenshot('user-clear')
 
 
 def sql(query):
