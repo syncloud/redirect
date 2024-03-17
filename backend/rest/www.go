@@ -8,8 +8,8 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
+	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -56,6 +56,7 @@ type Www struct {
 	store               *sessions.CookieStore
 	count404            int64
 	socket              string
+	logger              *zap.Logger
 }
 
 func NewWww(
@@ -70,6 +71,7 @@ func NewWww(
 	payPalClientId string,
 	authSecretSey []byte,
 	socket string,
+	logger *zap.Logger,
 ) *Www {
 	return &Www{
 		statsdClient:        statsdClient,
@@ -83,6 +85,7 @@ func NewWww(
 		payPalClientId:      payPalClientId,
 		store:               sessions.NewCookieStore(authSecretSey),
 		socket:              socket,
+		logger:              logger,
 	}
 }
 
@@ -95,17 +98,17 @@ func (w *Www) Start() error {
 	r.HandleFunc("/user/create", Handle(w.UserCreateV2)).Methods("POST")
 	r.HandleFunc("/user/login", Handle(w.UserLogin)).Methods("POST")
 
-	r.HandleFunc("/logout", w.Secured(Handle(w.UserLogout))).Methods("POST")
-	r.HandleFunc("/notification/enable", w.Secured(Handle(w.WebNotificationEnable))).Methods("POST")
-	r.HandleFunc("/notification/disable", w.Secured(Handle(w.WebNotificationDisable))).Methods("POST")
-	r.HandleFunc("/user", w.Secured(Handle(w.WebUserDelete))).Methods("DELETE")
-	r.HandleFunc("/user", w.Secured(Handle(w.WebUser))).Methods("GET")
-	r.HandleFunc("/domains", w.Secured(Handle(w.WebDomains))).Methods("GET")
-	r.HandleFunc("/plan", w.Secured(Handle(w.Subscription))).Methods("GET")
-	r.HandleFunc("/plan", w.Secured(Handle(w.Unsubscribe))).Methods("DELETE")
-	r.HandleFunc("/plan/subscribe/paypal", w.Secured(Handle(w.SubscribePayPal))).Methods("POST")
-	r.HandleFunc("/plan/subscribe/crypto", w.Secured(Handle(w.SubscribeCrypto))).Methods("POST")
-	r.HandleFunc("/domain", w.Secured(Handle(w.DomainDelete))).Methods("DELETE")
+	r.HandleFunc("/logout", w.Secured(HandleUser(w.UserLogout))).Methods("POST")
+	r.HandleFunc("/notification/enable", w.Secured(HandleUser(w.WebNotificationEnable))).Methods("POST")
+	r.HandleFunc("/notification/disable", w.Secured(HandleUser(w.WebNotificationDisable))).Methods("POST")
+	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUserDelete))).Methods("DELETE")
+	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUser))).Methods("GET")
+	r.HandleFunc("/domains", w.Secured(HandleUser(w.WebDomains))).Methods("GET")
+	r.HandleFunc("/plan", w.Secured(HandleUser(w.Subscription))).Methods("GET")
+	r.HandleFunc("/plan", w.Secured(HandleUser(w.Unsubscribe))).Methods("DELETE")
+	r.HandleFunc("/plan/subscribe/paypal", w.Secured(HandleUser(w.SubscribePayPal))).Methods("POST")
+	r.HandleFunc("/plan/subscribe/crypto", w.Secured(HandleUser(w.SubscribeCrypto))).Methods("POST")
+	r.HandleFunc("/domain", w.Secured(HandleUser(w.DomainDelete))).Methods("DELETE")
 	r.NotFoundHandler = http.HandlerFunc(w.notFoundHandler)
 
 	r.Use(headers)
@@ -142,12 +145,16 @@ func (w *Www) Start() error {
 		IdleTimeout:  15 * time.Second,
 	}
 	l := netutil.LimitListener(listener, 1000)
-	log.Printf("Started backend (%s)\n", w.socket)
+	w.logger.Info("Started backend", zap.String("socket", w.socket))
 	return srv.Serve(l)
 }
 
 func (w *Www) getSession(r *http.Request) (*sessions.Session, error) {
-	return w.store.Get(r, "session")
+	get, err := w.store.Get(r, "session")
+	if err != nil {
+		w.logger.Error("unable to get session", zap.Error(err))
+	}
+	return get, err
 }
 
 func (w *Www) setSessionEmail(resp http.ResponseWriter, r *http.Request, email string) error {
@@ -176,6 +183,7 @@ func (w *Www) getSessionEmail(r *http.Request) (*string, error) {
 	}
 	email, found := session.Values["email"]
 	if !found {
+		w.logger.Error("no session found")
 		return nil, fmt.Errorf("no session found")
 	}
 
@@ -190,7 +198,7 @@ func (w *Www) getSessionUser(r *http.Request) (*model.User, error) {
 	}
 	user, err := w.users.GetUserByEmail(*email)
 	if err != nil {
-		log.Println("unable to get a user", err)
+		w.logger.Error("unable to get a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 	if user == nil {
@@ -199,84 +207,62 @@ func (w *Www) getSessionUser(r *http.Request) (*model.User, error) {
 	return user, nil
 }
 
-func (w *Www) Secured(handle func(_ http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+func (w *Www) Secured(handle func(_ http.ResponseWriter, r *http.Request, user model.User)) func(w http.ResponseWriter, r *http.Request) {
 	return func(resp http.ResponseWriter, r *http.Request) {
-		_, err := w.getSessionEmail(r)
+		user, err := w.getSessionUser(r)
 		if err != nil {
-			log.Printf("error %v", err)
 			fail(resp, model.NewServiceErrorWithCode("Unauthorized", 401))
 			return
 		}
-		handle(resp, r)
+		handle(resp, r, *user)
 	}
 }
 
-func (w *Www) WebNotificationEnable(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) WebNotificationEnable(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.notification.enable", 1)
-	user, err := w.getSessionUser(req)
-	if err != nil {
-		return nil, err
-	}
 	user.NotificationEnabled = true
-	return "OK", w.users.Save(user)
+	return "OK", w.users.Save(&user)
 }
 
-func (w *Www) WebNotificationDisable(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) WebNotificationDisable(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.notification.disable", 1)
-	user, err := w.getSessionUser(req)
-	if err != nil {
-		return nil, err
-	}
 	user.NotificationEnabled = false
-	return "OK", w.users.Save(user)
+	return "OK", w.users.Save(&user)
 }
 
-func (w *Www) WebUserDelete(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) WebUserDelete(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.user.delete", 1)
-	user, err := w.getSessionUser(req)
+	err := w.domains.DeleteAllDomains(user.Id)
 	if err != nil {
-		return nil, err
-	}
-
-	err = w.domains.DeleteAllDomains(user.Id)
-	if err != nil {
-		log.Println("unable to delete domains for a user", err)
+		w.logger.Error("unable to delete domains for a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 	err = w.users.Delete(user.Id)
 	if err != nil {
-		log.Println("unable to delete a user", err)
+		w.logger.Error("unable to delete a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 
 	return "OK", nil
 }
 
-func (w *Www) WebUser(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) WebUser(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.user.get", 1)
-	user, err := w.getSessionUser(req)
-	if err != nil {
-		return nil, err
-	}
 	return user, nil
 }
 
-func (w *Www) WebDomains(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) WebDomains(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.domains", 1)
-	user, err := w.getSessionUser(req)
+	domains, err := w.domains.GetDomains(&user)
 	if err != nil {
-		return nil, err
-	}
-	domains, err := w.domains.GetDomains(user)
-	if err != nil {
-		log.Println("unable to get domains for a user", err)
+		w.logger.Error("unable to get domains for a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 
 	return domains, nil
 }
 
-func (w *Www) Subscription(http.ResponseWriter, *http.Request) (interface{}, error) {
+func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.subscription", 1)
 	return model.PlanResponse{
 		PlanMonthlyId: w.payPalPlanMonthlyId,
@@ -285,28 +271,23 @@ func (w *Www) Subscription(http.ResponseWriter, *http.Request) (interface{}, err
 	}, nil
 }
 
-func (w *Www) Unsubscribe(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.unsubscribe", 1)
-	user, err := w.getSessionUser(req)
+	err := w.users.Unsubscribe(&user)
 	if err != nil {
-		return nil, err
-	}
-
-	err = w.users.Unsubscribe(user)
-	if err != nil {
-		log.Println("unable to unsubscribe", err)
+		w.logger.Error("unable to unsubscribe", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 
 	return "OK", nil
 }
 
-func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.subscribe.paypal", 1)
 	return w.subscribe(req, model.SubscriptionTypePayPal)
 }
 
-func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.subscribe.crypto", 1)
 	return w.subscribe(req, model.SubscriptionTypeCrypto)
 }
@@ -319,13 +300,13 @@ func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, e
 	request := model.SubscribeRequest{}
 	err = json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
-		log.Println("unable to parse", err)
+		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 
 	err = w.users.Subscribe(user, request.SubscriptionId, subscriptionType)
 	if err != nil {
-		log.Println("unable to subscribe a user", err)
+		w.logger.Error("unable to subscribe a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 
@@ -337,24 +318,24 @@ func (w *Www) WebUserPasswordReset(_ http.ResponseWriter, req *http.Request) (in
 	request := model.UserPasswordResetRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
-		log.Println("unable to parse domain acquire request", err)
+		w.logger.Error("unable to parse domain acquire request", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 	user, err := w.users.GetUserByEmail(request.Email)
 	if err != nil {
-		log.Println("unable to get a user", err)
+		w.logger.Error("unable to get a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 
 	if user != nil && user.Active {
 		action, err := w.actions.UpsertPasswordAction(user.Id)
 		if err != nil {
-			log.Println("unable to upsert action", err)
+			w.logger.Error("unable to upsert action", zap.Error(err))
 			return nil, errors.New("invalid request")
 		}
 		err = w.mail.SendResetPassword(user.Email, action.Token)
 		if err != nil {
-			log.Println("unable to send mail", err)
+			w.logger.Error("unable to send mail", zap.Error(err))
 			return nil, errors.New("invalid request")
 		}
 	}
@@ -371,7 +352,7 @@ func (w *Www) requestIp(req *http.Request) (*string, error) {
 	requestAddr := req.RemoteAddr
 	ip, _, err := net.SplitHostPort(requestAddr)
 	if err != nil {
-		log.Println("cannot parse request addr", err)
+		w.logger.Error("cannot parse request addr", zap.Error(err))
 		return nil, err
 	}
 	return &ip, nil
@@ -382,12 +363,12 @@ func (w *Www) WebUserActivate(_ http.ResponseWriter, req *http.Request) (interfa
 	request := model.UserActivateRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
-		log.Println("unable to parse user activate request", err)
+		w.logger.Error("unable to parse user activate request", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 	err = w.users.Activate(request.Token)
 	if err != nil {
-		log.Println("unable to activate user", err)
+		w.logger.Error("unable to activate user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 	return "User was activated", nil
@@ -398,24 +379,20 @@ func (w *Www) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{
 	request := model.UserCreateRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
-		log.Println("unable to parse user create request", err)
+		w.logger.Error("unable to parse user create request", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 
 	return w.users.CreateNewUser(request)
 }
 
-func (w *Www) DomainDelete(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+func (w *Www) DomainDelete(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.domain.delete", 1)
 	domain := req.URL.Query().Get("domain")
 	if domain == "" {
 		return nil, errors.New("missing domain")
 	}
-	user, err := w.getSessionUser(req)
-	if err != nil {
-		return nil, err
-	}
-	err = w.domains.DeleteDomain(user.Id, domain)
+	err := w.domains.DeleteDomain(user.Id, domain)
 	return "Domain deleted", err
 }
 
@@ -424,7 +401,7 @@ func (w *Www) UserSetPassword(_ http.ResponseWriter, req *http.Request) (interfa
 	request := &model.UserPasswordSetRequest{}
 	err := json.NewDecoder(req.Body).Decode(request)
 	if err != nil {
-		log.Println("unable to parse user set password request", err)
+		w.logger.Error("unable to parse user set password request", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 	err = w.users.UserSetPassword(request)
@@ -436,7 +413,7 @@ func (w *Www) UserLogin(resp http.ResponseWriter, r *http.Request) (interface{},
 	request := &model.UserAuthenticateRequest{}
 	err := json.NewDecoder(r.Body).Decode(request)
 	if err != nil {
-		log.Println("unable to parse user login request", err)
+		w.logger.Error("unable to parse user login request", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
 	_, err = w.users.Authenticate(request.Email, request.Password)
@@ -448,7 +425,7 @@ func (w *Www) UserLogin(resp http.ResponseWriter, r *http.Request) (interface{},
 	return "User logged in", err
 }
 
-func (w *Www) UserLogout(resp http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (w *Www) UserLogout(resp http.ResponseWriter, r *http.Request, _ model.User) (interface{}, error) {
 	w.statsdClient.Incr("www.user.logout", 1)
 	http.SetCookie(resp, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
 	err := w.clearSessionEmail(resp, r)
@@ -458,7 +435,7 @@ func (w *Www) UserLogout(resp http.ResponseWriter, r *http.Request) (interface{}
 func (w *Www) notFoundHandler(resp http.ResponseWriter, r *http.Request) {
 	w.count404++
 	if w.count404%100 == 0 {
-		log.Printf("404 counter: %v\n", w.count404)
+		w.logger.Info("404", zap.Int64("counter", w.count404))
 	}
 	http.NotFound(resp, r)
 }

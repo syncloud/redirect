@@ -255,6 +255,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.PayPalClientId(),
 			secretKey,
 			config.GetWwwSocket(),
+			logger,
 		), nil
 	})
 	if err != nil {
