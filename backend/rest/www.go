@@ -183,7 +183,7 @@ func (w *Www) getSessionEmail(r *http.Request) (*string, error) {
 	}
 	email, found := session.Values["email"]
 	if !found {
-		w.logger.Error("no session found")
+		w.logger.Info("no session found")
 		return nil, fmt.Errorf("no session found")
 	}
 
