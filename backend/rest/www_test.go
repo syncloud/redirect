@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/smira/go-statsd"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/model"
 	"net/http"
 	"net/http/httptest"
@@ -105,6 +106,7 @@ func TestLogin_CreateSession(t *testing.T) {
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -142,6 +144,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -194,6 +197,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -232,6 +236,7 @@ func TestLogout_ClearSession(t *testing.T) {
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -247,7 +252,7 @@ func TestLogout_ClearSession(t *testing.T) {
 	}
 	req.AddCookie(&http.Cookie{Name: "session", Value: "MTYyOTY3MDk0OHxEdi1CQkFFQ180SUFBUkFCRUFBQUJQLUNBQUE9fEZHUw9y4LnPQcECsWcJCSehnQXkmZM0nJrMDfjsaXsW"})
 	rr := httptest.NewRecorder()
-	_, err = www.UserLogout(rr, req)
+	_, err = www.UserLogout(rr, req, model.User{})
 	if err != nil {
 		t.Fatal(err)
 	}

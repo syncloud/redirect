@@ -33,10 +33,10 @@ def module_setup(request, ui_mode, log_dir, artifact_dir, device):
         device.run_ssh('cp /var/log/apache2/redirect_ssl_web-error.log {0}/{1}/web-error.log'.format(TMP_DIR, ui_mode), throw=False)
         device.run_ssh('journalctl | tail -500 > {0}/{1}/journalctl.log'.format(TMP_DIR, ui_mode), throw=False)
         device.scp_from_device('{0}/*'.format(TMP_DIR), artifact_dir)
-        sql = 'mysql --host=mysql --user=root --password=root redirect -e'
-        check_output("{0} 'select * from action' > {1}/{2}/db-action.log || true".format(sql, artifact_dir, ui_mode), shell=True)
-        check_output("{0} 'select * from user' > {1}/{2}/db-user.log".format(sql, artifact_dir, ui_mode), shell=True)
-        check_output("{0} 'select * from domain' > {1}/{2}/db-domain.log".format(sql, artifact_dir, ui_mode), shell=True)
+        query = 'mysql --host=mysql --user=root --password=root redirect -e'
+        check_output("{0} 'select * from action' > {1}/{2}/db-action.log || true".format(query, artifact_dir, ui_mode), shell=True)
+        check_output("{0} 'select * from user' > {1}/{2}/db-user.log".format(query, artifact_dir, ui_mode), shell=True)
+        check_output("{0} 'select * from domain' > {1}/{2}/db-domain.log".format(query, artifact_dir, ui_mode), shell=True)
         check_output('cp -R {0} {1}'.format(log_dir, artifact_dir), shell=True)
         check_output('cp /videos/* {0}'.format(artifact_dir), shell=True)
         check_output('chmod -R a+r {0}'.format(artifact_dir), shell=True)
@@ -64,6 +64,10 @@ def test_index(domain, selenium):
 
 
 def test_register(ui_mode, selenium):
+    register(ui_mode, selenium)
+
+
+def register(ui_mode, selenium):
     menu(selenium, ui_mode, 'register')
 
     selenium.find_by(By.ID, 'register_email')
@@ -269,6 +273,19 @@ def test_account_delete(driver, ui_mode, selenium):
     driver.find_element_by_id("delete").click()
     selenium.find_by_xpath("//button[contains(., 'Confirm')]").click()
     selenium.screenshot('account-delete')
+
+
+def test_user_cleaned_auto_logout(ui_mode, selenium, domain):
+    register(ui_mode, selenium)
+    sql("delete from user")
+    selenium.driver.get("https://www.{0}".format(domain))
+    selenium.find_by_id('email')
+    selenium.find_by_id("password")
+    selenium.screenshot('user-clear')
+
+
+def sql(query):
+    check_output(f"mysql --host=mysql --user=root --password=root redirect -e '{query}'", shell=True)
 
 
 def test_teardown(driver):
