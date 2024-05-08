@@ -175,11 +175,11 @@ def test_user_create_existing_case_difference(domain, artifact_dir):
 
 
 def test_get_user_data(domain, artifact_dir):
-    email = 'test_get_user_data@syncloud.test'
+    email = 'test-get-user-data@syncloud.test'
     password = 'pass123456'
     user_token = create_user(domain, email, password, artifact_dir)
 
-    user_domain = "test_get_user_data"
+    user_domain = "test-get-user-data"
     update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     update_data = {
@@ -223,7 +223,7 @@ def test_get_user_data(domain, artifact_dir):
             'device_title': 'Some Device',
             'last_update': user_data["domains"][0]["last_update"],
             'update_token': update_token,
-            'name': 'test_get_user_data.syncloud.test'
+            'name': 'test-get-user-data.syncloud.test'
         }]
     }
 
@@ -255,11 +255,11 @@ def test_get_user_no_domains(domain, artifact_dir):
 
 
 def test_free_domain_availability(domain, artifact_dir):
-    email = 'test_domain_availability@syncloud.test'
+    email = 'test-domain-availability@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    full_domain = 'domain_availability.syncloud.test'
+    full_domain = 'domain-availability.syncloud.test'
     request = {
         'domain': full_domain,
         'email': email,
@@ -271,7 +271,7 @@ def test_free_domain_availability(domain, artifact_dir):
                              verify=False)
     assert response.status_code == 200, response.text
 
-    user_domain = 'domain_availability'
+    user_domain = 'domain-availability'
     api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     response = requests.post('https://api.{0}/domain/availability'.format(domain),
@@ -388,7 +388,7 @@ def test_domain_new(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    user_domain = "test_domain_new"
+    user_domain = "test-domain-new"
     acquire_data = dict(
         user_domain=user_domain,
         device_mac_address='00:00:00:00:00:00',
@@ -412,7 +412,7 @@ def test_domain_new(domain, artifact_dir):
         'device_name': 'my-super-board',
         'map_local_address': False,
         'device_title': 'My Super Board',
-        'name': 'test_domain_new.syncloud.test'
+        'name': 'test-domain-new.syncloud.test'
     }
 
     data = get_domain(update_token, domain)
@@ -425,7 +425,7 @@ def test_domain_new_v2(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    request_domain = "test_domain_new_v2.syncloud.test"
+    request_domain = "test-domain-new-v2.syncloud.test"
     acquire_data = dict(
         domain=request_domain,
         device_mac_address='00:00:00:00:00:00',
@@ -444,7 +444,7 @@ def test_domain_new_v2(domain, artifact_dir):
 
     expected_data = {
         'update_token': update_token,
-        'user_domain': 'test_domain_new_v2',
+        'user_domain': 'test-domain-new-v2',
         'device_mac_address': '00:00:00:00:00:00',
         'device_name': 'my-super-board',
         'device_title': 'My Super Board',
@@ -461,7 +461,7 @@ def test_domain_lower_case(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    request_domain = "test_domain_LOWER_case.syncloud.test"
+    request_domain = "test-domain-LOWER-case.syncloud.test"
     acquire_data = dict(
         domain=request_domain,
         device_mac_address='00:00:00:00:00:00',
@@ -480,12 +480,12 @@ def test_domain_lower_case(domain, artifact_dir):
 
     expected_data = {
         'update_token': update_token,
-        'user_domain': 'test_domain_lower_case',
+        'user_domain': 'test-domain-lower-case',
         'device_mac_address': '00:00:00:00:00:00',
         'device_name': 'my-super-board',
         'device_title': 'My Super Board',
         'map_local_address': False,
-        'name': 'test_domain_lower_case.syncloud.test'
+        'name': 'test-domain-lower-case.syncloud.test'
     }
 
     data = get_domain(update_token, domain)
@@ -498,7 +498,7 @@ def test_domain_existing(domain, artifact_dir):
     password_1 = 'pass123456_'
     create_user(domain, email_1, password_1, artifact_dir)
 
-    user_domain = "test_domain_existing"
+    user_domain = "test-domain-existing"
     acquire_data = dict(
         user_domain=user_domain,
         device_mac_address='00:00:00:00:00:00',
@@ -533,7 +533,7 @@ def test_domain_existing(domain, artifact_dir):
         'device_name': 'my-super-board',
         'device_title': 'My Super Board',
         'map_local_address': False,
-        'name': 'test_domain_existing.syncloud.test'
+        'name': 'test-domain-existing.syncloud.test'
     }
 
     data = get_domain(update_token, domain)
@@ -546,7 +546,7 @@ def test_domain_twice(domain, artifact_dir):
     password = 'pass123456_'
     create_user(domain, email, password, artifact_dir)
 
-    user_domain = "test_domain_twice"
+    user_domain = "test-domain-twice"
     acquire_data = dict(
         user_domain=user_domain,
         device_mac_address='00:00:00:00:00:00',
@@ -581,7 +581,7 @@ def test_domain_twice(domain, artifact_dir):
         'device_name': 'my-super-board-2',
         'device_title': 'My Super Board 2',
         'map_local_address': False,
-        'name': 'test_domain_twice.syncloud.test'
+        'name': 'test-domain-twice.syncloud.test'
     }
 
     data = get_domain(update_token2, domain)
@@ -594,7 +594,7 @@ def test_domain_wrong_mac_address_format(domain, artifact_dir):
     password = 'pass123456_'
     create_user(domain, email, password, artifact_dir)
 
-    user_domain = "test_domain_wrong_mac_address_format"
+    user_domain = "test-domain-wrong-mac-address-format"
     acquire_data = {
         'user_domain': user_domain,
         'device_mac_address': 'wrong_format',
@@ -614,7 +614,7 @@ def test_domain_update_date(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    user_domain = "test_domain_update_date"
+    user_domain = "test-domain-update-date"
     update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
     api.domain_update(domain, update_token, '127.0.0.1')
     domain_info = get_domain(update_token, domain)
@@ -637,7 +637,7 @@ def test_domain_update_ip_changed(domain, artifact_dir):
     email = 'test_domain_update_ip_changed@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
-    user_domain = "test_domain_update_ip_changed"
+    user_domain = "test-domain-update-ip-changed"
     update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
     response = api.domain_update(domain, update_token, '127.0.0.1')
     assert response.status_code == 200
@@ -655,7 +655,7 @@ def test_domain_update_ip_changed(domain, artifact_dir):
         'web_port': 10001,
         'web_protocol': 'https',
         'map_local_address': False,
-        'name': 'test_domain_update_ip_changed.syncloud.test',
+        'name': 'test-domain-update-ip-changed.syncloud.test',
         'platform_version': '1'
     }
 
@@ -668,7 +668,7 @@ def test_domain_update_platform_version(domain, artifact_dir):
     email = 'test_domain_update_platform_version@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
-    user_domain = "test_domain_update_platform_version"
+    user_domain = "test-domain-update-platform-version"
 
     update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
     response = api.domain_update(domain, update_token, '127.0.0.1', '366')
@@ -681,12 +681,12 @@ def test_domain_update_platform_version(domain, artifact_dir):
         'device_name': 'some-device',
         'device_title': 'Some Device',
         'ip': '127.0.0.1',
-        'user_domain': 'test_domain_update_platform_version',
+        'user_domain': 'test-domain-update-platform-version',
         'web_local_port': 80,
         'web_port': 10001,
         'web_protocol': 'https',
         'map_local_address': False,
-        'name': 'test_domain_update_platform_version.syncloud.test'
+        'name': 'test-domain-update-platform-version.syncloud.test'
     }
     domain_data = get_domain(update_token, domain)
     domain_data.pop('last_update', None)
@@ -697,7 +697,7 @@ def test_domain_update_local_ip_changed(domain, artifact_dir):
     email = 'test_domain_update_local_ip_changed@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
-    user_domain = "test_domain_update_local_ip_changed"
+    user_domain = "test-domain-update-local-ip-changed"
 
     update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
@@ -740,7 +740,7 @@ def test_domain_update_local_ip_changed(domain, artifact_dir):
         'web_port': 10001,
         'web_protocol': 'http',
         'map_local_address': False,
-        'name': 'test_domain_update_local_ip_changed.syncloud.test'
+        'name': 'test-domain-update-local-ip-changed.syncloud.test'
     }
     domain_data = get_domain(update_token, domain)
     domain_data.pop('last_update', None)
@@ -751,7 +751,7 @@ def test_domain_update_server_side_client_ip(domain, artifact_dir):
     email = 'test_domain_update_server_side_client_ip@syncloud.test'
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
-    user_domain = "test_domain_update_server_side_client_ip"
+    user_domain = "test-domain-update-server-side-client-ip"
 
     update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
@@ -777,7 +777,7 @@ def test_domain_update_server_side_client_ip(domain, artifact_dir):
         'device_name': 'some-device',
         'device_title': 'Some Device',
         'map_local_address': False,
-        'name': 'test_domain_update_server_side_client_ip.syncloud.test'
+        'name': 'test-domain-update-server-side-client-ip.syncloud.test'
     }
 
     domain_data = get_domain(update_token, domain)
@@ -791,7 +791,7 @@ def test_domain_update_map_local_address(domain, artifact_dir):
     password = 'pass123456'
     create_user(domain, email, password, artifact_dir)
 
-    user_domain = "test_domain_update_map_local_address"
+    user_domain = "test-domain-update-map-local-address"
     update_token = api.domain_acquire(domain, '{}.{}'.format(user_domain, domain), email, password)
 
     update_data = {
@@ -820,7 +820,7 @@ def test_domain_update_map_local_address(domain, artifact_dir):
         'web_protocol': 'http',
         'web_port': 10001,
         'web_local_port': 80,
-        'name': 'test_domain_update_map_local_address.syncloud.test'
+        'name': 'test-domain-update-map-local-address.syncloud.test'
     }
 
     domain_data = get_domain(update_token, domain)
@@ -887,7 +887,7 @@ def test_certbot_support(domain, artifact_dir):
     password = 'pass123456'
     token = create_user(domain, email, password, artifact_dir)
 
-    user_domain = 'test_certbot_support.{}'.format(domain)
+    user_domain = 'test-certbot-support.{}'.format(domain)
     update_token = api.domain_acquire(domain, user_domain, email, password)
 
     response = requests.post('https://api.{0}/certbot/present'.format(domain),

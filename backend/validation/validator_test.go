@@ -40,8 +40,15 @@ func TestFreeDomainShort(t *testing.T) {
 	assert.Equal(t, len(validator.errors), 1)
 }
 
+func TestFreeDomainContainsUnderscore(t *testing.T) {
+	domain := "under_score.syncloud.it"
+	validator := New()
+	validator.Domain(&domain, "", "syncloud.it")
+	assert.Equal(t, len(validator.errors), 1)
+}
+
 func TestFreeDomainLong(t *testing.T) {
-	domain := "12345678901234567890123456789012345678901234567890_.syncloud.it"
+	domain := "123456789012345678901234567890123456789012345678901.syncloud.it"
 	validator := New()
 	validator.Domain(&domain, "", "syncloud.it")
 	assert.Equal(t, 1, len(validator.errors))
