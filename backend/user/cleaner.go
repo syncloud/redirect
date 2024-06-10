@@ -93,6 +93,8 @@ func (c *Cleaner) Clean(now time.Time) error {
 	if err != nil {
 		return err
 	}
+	c.logger.Info("cleaner", zap.Int("user id", id))
+
 	if id == 0 {
 		return c.state.Set(id)
 	}
@@ -101,7 +103,11 @@ func (c *Cleaner) Clean(now time.Time) error {
 		return err
 	}
 	if user.IsSubscribed() {
+		c.logger.Info("cleaner user subscribed")
+
 		if !user.IsPayPal() {
+			c.logger.Info("cleaner not paypal user")
+
 			return c.state.Set(id)
 		}
 
