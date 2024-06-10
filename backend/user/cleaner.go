@@ -93,7 +93,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	if err != nil {
 		return err
 	}
-	c.logger.Info("cleaner", zap.Int("user id", id))
+	c.logger.Info("cleaner", zap.Int64("user id", id))
 
 	if id == 0 {
 		return c.state.Set(id)
