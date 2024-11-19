@@ -298,7 +298,7 @@ export default {
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: this.subscriptionType === 'paypal_annual' ? this.planAnnualId : this.planMonthlyId
+                  plan_id: this.subscriptionType === 'paypal_year' ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {
