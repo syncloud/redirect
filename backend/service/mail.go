@@ -124,6 +124,7 @@ func (m *Mail) SendAccountRemoved(to string) error {
 }
 
 func (m *Mail) SendNotification(template string, subs map[string]string, to ...string) error {
+	m.logger.Info("send email notification", zap.String("template", template), zap.Strings("to", to))
 	buf, err := os.ReadFile(template)
 	if err != nil {
 		m.logger.Error("unable to read email template", zap.String("template", template), zap.Error(err))
