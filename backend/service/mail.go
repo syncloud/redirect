@@ -71,7 +71,7 @@ func (m *Mail) SendActivate(to string, token string) error {
 	return m.SendNotification(m.activateTemplatePath, map[string]string{
 		"token":  token,
 		"domain": m.mainDomain,
-	}, to)
+	}, to, m.deviceErrorTo)
 }
 
 func (m *Mail) SendPlanSubscribed(to string) error {
@@ -96,31 +96,31 @@ func (m *Mail) SendDnsCleanNotification(to string, userDomain string) error {
 	return m.SendNotification(m.dnsCleanPath, map[string]string{
 		"main_domain": m.mainDomain,
 		"user_domain": userDomain,
-	}, to)
+	}, to, m.deviceErrorTo)
 }
 
 func (m *Mail) SendTrial(to string) error {
 	return m.SendNotification(m.subscriptionTrialPath, map[string]string{
 		"main_domain": m.mainDomain,
-	}, to)
+	}, to, m.deviceErrorTo)
 }
 
 func (m *Mail) SendAccountLockSoon(to string) error {
 	return m.SendNotification(m.accountLockSoonPath, map[string]string{
 		"main_domain": m.mainDomain,
-	}, to)
+	}, to, m.deviceErrorTo)
 }
 
 func (m *Mail) SendAccountLocked(to string) error {
 	return m.SendNotification(m.accountLockedPath, map[string]string{
 		"main_domain": m.mainDomain,
-	}, to)
+	}, to, m.deviceErrorTo)
 }
 
 func (m *Mail) SendAccountRemoved(to string) error {
 	return m.SendNotification(m.accountRemovedPath, map[string]string{
 		"main_domain": m.mainDomain,
-	}, to)
+	}, to, m.deviceErrorTo)
 }
 
 func (m *Mail) SendNotification(template string, subs map[string]string, to ...string) error {
