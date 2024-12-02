@@ -71,7 +71,7 @@ func (m *Mail) SendActivate(to string, token string) error {
 	return m.SendNotification(m.activateTemplatePath, map[string]string{
 		"token":  token,
 		"domain": m.mainDomain,
-	}, to, m.deviceErrorTo)
+	}, to)
 }
 
 func (m *Mail) SendPlanSubscribed(to string) error {
