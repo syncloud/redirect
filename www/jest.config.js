@@ -12,6 +12,9 @@ module.exports = {
     '^.+\\.vue$': '@vue/vue3-jest'
   },
   testEnvironment: 'jsdom',
+  testPathIgnorePatterns: [
+    '<rootDir>/e2e/'
+  ],
   setupFiles: ['./tests/setup.js'],
   setupFilesAfterEnv: ['./tests/setup-after-env.js'],
   testEnvironmentOptions: {

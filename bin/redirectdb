@@ -1,165 +1,152 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
+set -euo pipefail
 
-from subprocess import check_output, STDOUT, Popen, PIPE
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="${DIR}/../../config.cfg"
+SCRIPT_BASE="${DIR}/../db"
 
-class Runner:
-    def __init__(self, host, user, passwd):
-        self.host = host
-        self.user = user
-        self.passwd = passwd
+usage() {
+  echo "Usage:"
+  echo "  $0 create <dbname>"
+  echo "  $0 backup <dbname> <filename>"
+  echo "  $0 restore <dbname> <filename>"
+  echo "  $0 migrate <dbname_src> <dbname_dst> <scripts...>"
+}
 
-    def __mysql_command(self, executable, command):
-        cmd = '{0} --host={1} --user={2}'.format(executable, self.host, self.user)
-        if self.passwd:
-            cmd += ' --password={0}'.format(self.passwd)
-        cmd += ' '+command
-        return cmd
+ini_get_mysql_value() {
+  local key="$1"
+  awk -v key="$key" '
+    /^\[mysql\]/ { section=1; next }
+    /^\[/ { section=0 }
+    section == 1 {
+      line=$0
+      gsub(/^[ \t]+|[ \t]+$/, "", line)
+      if (line ~ /^#/ || line ~ /^;/ || line == "") next
+      pos=index(line, "=")
+      if (pos == 0) next
+      k=substr(line, 1, pos-1)
+      v=substr(line, pos+1)
+      gsub(/^[ \t]+|[ \t]+$/, "", k)
+      gsub(/^[ \t]+|[ \t]+$/, "", v)
+      if (k == key) {
+        print v
+        exit
+      }
+    }
+  ' "${CONFIG_FILE}"
+}
 
-    def _run_command(self, command):
-        print command
-        output = check_output(command, stderr=STDOUT, shell=True)
-        if output:
-            print(output)
+MYSQL_HOST="$(ini_get_mysql_value "host")"
+MYSQL_USER="$(ini_get_mysql_value "user")"
+MYSQL_PASS="$(ini_get_mysql_value "passwd")"
 
-    def run_command(self, command):
-        print command
-        pipes = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
-        std_out, std_err = pipes.communicate()
+if [[ -z "${MYSQL_HOST}" || -z "${MYSQL_USER}" ]]; then
+  echo "missing mysql host/user in ${CONFIG_FILE}" >&2
+  exit 1
+fi
 
-        if pipes.returncode != 0:
-            err_msg = "%s. Code: %s" % (std_err.strip(), pipes.returncode)
-            raise Exception(err_msg)
-        elif len(std_err):
-            print(std_err)
+mysql_base_args() {
+  local -a args=(--host="${MYSQL_HOST}" --user="${MYSQL_USER}")
+  if [[ -n "${MYSQL_PASS}" ]]; then
+    args+=(--password="${MYSQL_PASS}")
+  fi
+  printf '%s\n' "${args[@]}"
+}
 
-        if std_out:
-            print(std_out)
+run_mysql_exec() {
+  local query="$1"
+  local -a args=()
+  while IFS= read -r a; do args+=("$a"); done < <(mysql_base_args)
+  mysql "${args[@]}" --execute="${query}"
+}
 
-    def run(self, database, script):
-        command = self.__mysql_command('mysql', '{0} < {1}'.format(database, script))
-        self.run_command(command)
+run_mysql_file() {
+  local dbname="$1"
+  local filename="$2"
+  local -a args=()
+  while IFS= read -r a; do args+=("$a"); done < <(mysql_base_args)
+  mysql "${args[@]}" "${dbname}" < "${filename}"
+}
 
-    def execute(self, query):
-        command = self.__mysql_command('mysql', '--execute="{0}"'.format(query))
-        self.run_command(command)
+run_mysqldump_backup() {
+  local dbname="$1"
+  local filename="$2"
+  local -a args=()
+  while IFS= read -r a; do args+=("$a"); done < <(mysql_base_args)
+  mysqldump "${args[@]}" --compact "${dbname}" > "${filename}"
+}
 
-    def create(self, database):
-        self.execute('create database {0};'.format(database))
+create_db() {
+  local dbname="$1"
+  run_mysql_exec "drop database if exists ${dbname};"
+  run_mysql_exec "create database ${dbname};"
+  run_mysql_file "${dbname}" "${SCRIPT_BASE}/init.sql"
+}
 
-    def drop(self, database):
-        self.execute('drop database if exists {0};'.format(database))
+backup_db() {
+  local dbname="$1"
+  local filename="$2"
+  run_mysqldump_backup "${dbname}" "${filename}"
+}
 
-    def backup(self, database, filename):
-        command = self.__mysql_command('mysqldump', '--compact {0} > {1}'.format(database, filename))
-        self.run_command(command)
+restore_db() {
+  local dbname="$1"
+  local filename="$2"
+  run_mysql_exec "drop database if exists ${dbname};"
+  run_mysql_exec "create database ${dbname};"
+  run_mysql_exec "set global foreign_key_checks=0;"
+  run_mysql_file "${dbname}" "${filename}"
+  run_mysql_exec "set global foreign_key_checks=1;"
+}
 
-    def restore(self, database, filename):
-        self.drop(database)
-        self.create(database)
-        self.execute('set global foreign_key_checks=0;')
-        self.run(database, filename)
-        self.execute('set global foreign_key_checks=1;')
+migrate_db() {
+  local dbname_src="$1"
+  local dbname_dst="$2"
+  shift 2
+  local scripts=("$@")
+  local database_src_temp="redirect_backup"
+  local backup_filename="${HOME}/temp-redirect-backup"
 
+  backup_db "${dbname_src}" "${backup_filename}"
+  restore_db "${database_src_temp}" "${backup_filename}"
 
-from ConfigParser import ConfigParser
-from os.path import join, dirname
+  run_mysql_exec "drop database if exists ${dbname_dst};"
+  run_mysql_exec "create database ${dbname_dst};"
+  run_mysql_exec "set global foreign_key_checks=0;"
+  run_mysql_file "${dbname_dst}" "${SCRIPT_BASE}/init.sql"
+  for script in "${scripts[@]}"; do
+    run_mysql_file "${dbname_dst}" "${SCRIPT_BASE}/${script}"
+  done
+  run_mysql_exec "set global foreign_key_checks=1;"
+}
 
+if [[ $# -lt 1 ]]; then
+  usage
+  exit 1
+fi
 
-def get_runner():
-    config = ConfigParser()
-    config.read(join(dirname(__file__), '../../config.cfg'))
-    host = config.get('mysql', 'host')
-    user = config.get('mysql', 'user')
-    passwd = config.get('mysql', 'passwd')
+action="$1"
+shift
 
-    runner = Runner(host, user, passwd)
-    return runner
-
-
-import argparse
-
-
-def create_args_parser():
-    parser = argparse.ArgumentParser(description='Redirect database tool')
-
-    subparsers = parser.add_subparsers(help='available commands', dest='action')
-
-    sub = subparsers.add_parser('create', help="creates redirect database")
-    sub.add_argument('dbname', help="database name")
-
-    sub = subparsers.add_parser('backup', help="backups redirect database")
-    sub.add_argument('dbname', help="database name")
-    sub.add_argument('filename', help="backup filename")
-
-    sub = subparsers.add_parser('restore', help="restores redirect database")
-    sub.add_argument('dbname', help="database name")
-    sub.add_argument('filename', help="backup filename")
-
-    sub = subparsers.add_parser('migrate', help="migrates redirect database")
-    sub.add_argument('dbname_src', help="source database name")
-    sub.add_argument('dbname_dst', help="destination database name")
-    sub.add_argument('scripts', nargs='+', type=str, help="upgrade scripts")
-
-    return parser
-
-
-def create(runner, args):
-    script_base = join(dirname(__file__), '../db')
-
-    runner.drop(args.dbname)
-    runner.create(args.dbname)
-    runner.run(args.dbname, join(script_base, 'init.sql'))
-
-def backup(runner, args):
-    runner.backup(args.dbname, args.filename)
-
-def restore(runner, args):
-    runner.restore(args.dbname, args.filename)
-
-def migrate(runner, args):
-    database_src_temp = 'redirect_backup'
-    backup_filename = '~/temp-redirect-backup'
-
-    script_base = join(dirname(__file__), '../db')
-
-    # backup source database
-    runner.backup(args.dbname_src, backup_filename)
-
-    # restore source database under different name
-    runner.restore(database_src_temp, backup_filename)
-
-    # drop and create destination database
-    runner.drop(args.dbname_dst)
-    runner.create(args.dbname_dst)
-
-    # switch off foreign key constraints
-    runner.execute('set global foreign_key_checks=0;')
-
-    # create new structure of database
-    runner.run(args.dbname_dst, join(script_base, 'init.sql'))
-
-    # run all migration scripts
-    for script in args.scripts:
-        runner.run(args.dbname_dst, join(script_base, script))
-
-    # switch on foreign key constraints
-    runner.execute('set global foreign_key_checks=1;')
-
-
-if __name__=='__main__':
-    parser = create_args_parser()
-    args = parser.parse_args()
-
-    runner = get_runner()
-
-    if (args.action == 'create'):
-        create(runner, args)
-
-    if (args.action == 'backup'):
-        backup(runner, args)
-
-    if (args.action == 'restore'):
-        restore(runner, args)
-
-    if (args.action == 'migrate'):
-        migrate(runner, args)
+case "${action}" in
+  create)
+    [[ $# -eq 1 ]] || { usage; exit 1; }
+    create_db "$1"
+    ;;
+  backup)
+    [[ $# -eq 2 ]] || { usage; exit 1; }
+    backup_db "$1" "$2"
+    ;;
+  restore)
+    [[ $# -eq 2 ]] || { usage; exit 1; }
+    restore_db "$1" "$2"
+    ;;
+  migrate)
+    [[ $# -ge 3 ]] || { usage; exit 1; }
+    migrate_db "$@"
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
