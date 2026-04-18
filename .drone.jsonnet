@@ -73,14 +73,25 @@ local build(arch) = [{
             ]
         },
         {
-            name: "test-ui-playwright",
+            name: "test-ui-playwright-desktop",
             image: "mcr.microsoft.com/playwright:" + playwright,
             environment: {
                 CI: "true",
                 PLAYWRIGHT_DOMAIN: "syncloud.test"
             },
             commands: [
-                "./ci/test-ui-playwright"
+                "./ci/playwright.sh desktop"
+            ]
+        },
+        {
+            name: "test-ui-playwright-mobile",
+            image: "mcr.microsoft.com/playwright:" + playwright,
+            environment: {
+                CI: "true",
+                PLAYWRIGHT_DOMAIN: "syncloud.test"
+            },
+            commands: [
+                "./ci/playwright.sh mobile"
             ]
         },
         {
