@@ -2,7 +2,7 @@ local name = "redirect";
 local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
-local browser = "firefox";
+local playwright = "v1.50.1-jammy";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -72,51 +72,18 @@ local build(arch) = [{
             ]
         },
         {
-             name: 'selenium-video',
-             image: 'selenium/video:ffmpeg-4.3.1-20220208',
-             detach: true,
-             environment: {
-               DISPLAY_CONTAINER_NAME: 'selenium',
-               FILE_NAME: 'video.mkv',
-             },
-             volumes: [
-               {
-                 name: 'shm',
-                 path: '/dev/shm',
-               },
-               {
-                 name: 'videos',
-                 path: '/videos',
-               },
-             ],
-           },
-        {
-            name: "test-ui-desktop",
-            image: "python:3.9-slim-bullseye",
+            name: "test-ui-playwright",
+            image: "mcr.microsoft.com/playwright:" + playwright,
+            environment: {
+                CI: "true",
+                PLAYWRIGHT_DOMAIN: "syncloud.test"
+            },
             commands: [
-              "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-              "cd integration",
-              "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test --browser=" + browser,
-            ],
-             volumes: [{
-               name: 'videos',
-               path: '/videos',
-             }],
-        },
-        {
-            name: "test-ui-mobile",
-            image: "python:3.9-slim-bullseye",
-            commands: [
-              "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-              "cd integration",
-              "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test --browser=" + browser,
-            ],
-             volumes: [{
-               name: 'videos',
-               path: '/videos',
-             }],
+                "./ci/recreatedb",
+                "cd www",
+                "npm ci",
+                "EXIT_CODE=0; npm run test:e2e || EXIT_CODE=$?; cd ..; mkdir -p artifact; cp -r www/playwright-report artifact/playwright-report 2>/dev/null || true; cp -r www/test-results artifact/playwright-results 2>/dev/null || true; exit $EXIT_CODE"
+            ]
         },
         {
             name: "artifact",
@@ -160,14 +127,6 @@ local build(arch) = [{
             }
         },
         {
-            name: "selenium",
-            image: "selenium/standalone-" + browser + ":4.14.1",
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
-        },
-        {
             name: "www.syncloud.test",
             image: "syncloud/platform-buster-amd64",
             privileged: true,
@@ -184,14 +143,6 @@ local build(arch) = [{
         }
     ],
     volumes: [
-        {
-         name: "shm",
-         temp: {}
-        },
-          {
-            name: 'videos',
-            temp: {},
-          },
     ]
 }];
 

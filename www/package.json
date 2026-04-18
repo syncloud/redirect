@@ -7,7 +7,9 @@
     "build": "vite build",
     "serve": "vite preview",
     "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@babel/preset-env": "^7.19.3",
+    "@playwright/test": "^1.50.1",
     "@rollup/plugin-inject": "^5.0.5",
     "@types/jest": "^29.1.1",
     "@vitejs/plugin-vue": "^1.6.1",
