@@ -64,7 +64,7 @@
         </div>
       </div>
     </div>
-    <div id="no_domains" v-bind:class="{ invisible:  hasDomains}">
+    <div id="no_domains" data-testid="no-devices" v-bind:class="{ invisible:  hasDomains}">
       <div class="row">
         <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
         <div class="col-8 col-md-8 col-sm-8 col-lg-8">

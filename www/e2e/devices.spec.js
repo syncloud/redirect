@@ -16,5 +16,5 @@ test('user can view and deactivate a device domain', async ({ page }) => {
   await page.getByTestId('device-delete').first().click()
   await page.getByTestId('dialog-confirm').click()
 
-  await expect(page.getByTestId('device-title')).toHaveCount(0)
+  await expect(page.getByTestId('no-devices')).toBeVisible()
 })
