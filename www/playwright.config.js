@@ -32,7 +32,6 @@ module.exports = defineConfig({
     },
     {
       name: 'mobile',
-      testMatch: [/.*\.mobile\.spec\.js$/],
       use: {
         ...devices['Pixel 5']
       }
