@@ -6,6 +6,10 @@ test('user can reset password and log in with the new password', async ({ page }
   const originalPassword = 'password123'
   const { email } = await registerActivateAndLogin(page, 'reset', originalPassword)
 
+  const navbar = page.locator('#navbar')
+  if (await navbar.isVisible()) {
+    await navbar.click()
+  }
   await page.locator('#logout').click()
   await expect(page.locator('#login')).toBeVisible()
 
