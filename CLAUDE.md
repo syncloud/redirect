@@ -87,9 +87,9 @@ Current intent:
 - screenshots are taken explicitly on failure in `www/e2e/fixtures.js`
 - videos are retained in `www/test-results`
 
-This mirrors the old Selenium confidence model:
-- full desktop run
-- full mobile run
+The layout is:
+- full desktop run (`test-ui-desktop` in Drone)
+- full mobile run (`test-ui-mobile` in Drone)
 - extra mobile-specific checks where needed
 
 ## CI artifacts
@@ -135,7 +135,7 @@ Those directories are populated from:
 
 - `backend/` — Go backend binaries and services
 - `www/` — Vue 3 frontend using Vite
-- `integration/` — Python integration tests and legacy Selenium UI tests
+- `integration/` — Python integration tests (API)
 - `.drone.jsonnet` — Drone pipelines
 
 ## Frontend test split
