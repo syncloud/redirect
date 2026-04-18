@@ -3,6 +3,7 @@ local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
 local playwright = "v1.50.1-jammy";
+local platform = "26.04.2";
 
 local build(arch) = [{
     kind: "pipeline",
@@ -128,7 +129,7 @@ local build(arch) = [{
         },
         {
             name: "www.syncloud.test",
-            image: "syncloud/platform-buster-amd64",
+            image: "syncloud/platform-bookworm-amd64:" + platform,
             privileged: true,
             volumes: [
                 {
