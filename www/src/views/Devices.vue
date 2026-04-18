@@ -11,7 +11,7 @@
               <div class="panel-heading">
                 <div class="panel-title">
                   <h3 style="margin-top: 5px; margin-bottom: 5px">
-                    <span id="name">
+                    <span id="name" data-testid="domain-name">
                       {{ domain.name }}
                     </span>
                     <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
@@ -20,9 +20,9 @@
               </div>
               <ul class="list-group">
                 <li class="list-group-item clearfix">
-                  <h3 id="title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
+                  <h3 id="title" data-testid="device-title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
 
-                  <button type="button" class="btn btn-default pull-right" id="delete" @click="domainDeleteConfirm(domain.name)">
+                  <button type="button" class="btn btn-default pull-right" id="delete" data-testid="device-delete" @click="domainDeleteConfirm(domain.name)">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate
                   </button>
 

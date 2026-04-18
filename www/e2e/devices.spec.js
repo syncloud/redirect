@@ -10,11 +10,11 @@ test('user can view and deactivate a device domain', async ({ page }) => {
   await acquireDomain(userDomain, email, password)
   await page.goto('/')
 
-  await expect(page.getByText('Some Device')).toBeVisible()
-  await expect(page.getByText(userDomain)).toBeVisible()
+  await expect(page.getByTestId('device-title')).toHaveText('Some Device')
+  await expect(page.getByTestId('domain-name')).toHaveText(userDomain)
 
-  await page.locator('#delete').first().click()
-  await page.getByRole('button', { name: 'Confirm' }).click()
+  await page.getByTestId('device-delete').first().click()
+  await page.getByTestId('dialog-confirm').click()
 
-  await expect(page.getByText('Some Device')).toHaveCount(0)
+  await expect(page.getByTestId('device-title')).toHaveCount(0)
 })

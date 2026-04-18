@@ -19,6 +19,6 @@ test('user can toggle notifications, subscribe with crypto, and cancel subscript
   await expect(page.locator('#subscription_active')).toBeVisible()
 
   await page.locator('#cancel').click()
-  await page.getByRole('button', { name: 'Confirm' }).click()
+  await page.getByTestId('dialog-confirm').click()
   await expect(page.locator('#subscription_inactive')).toBeVisible()
 })
