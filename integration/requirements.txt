@@ -1,2 +1,2 @@
 pytest==6.2.4
-syncloud-lib==301
+syncloud-lib==366
