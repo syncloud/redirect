@@ -1,0 +1,17 @@
+#!/bin/bash -e
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+apt-get update && apt-get install -y default-mysql-client
+${DIR}/recreatedb
+
+cd ${DIR}/../www
+npm ci
+EXIT_CODE=0
+npm run test:e2e || EXIT_CODE=$?
+
+cd ${DIR}/..
+mkdir -p artifact
+cp -r www/playwright-report artifact/playwright-report 2>/dev/null || true
+cp -r www/test-results artifact/playwright-results 2>/dev/null || true
+
+exit $EXIT_CODE

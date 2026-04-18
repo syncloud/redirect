@@ -80,10 +80,7 @@ local build(arch) = [{
                 PLAYWRIGHT_DOMAIN: "syncloud.test"
             },
             commands: [
-                "./ci/recreatedb",
-                "cd www",
-                "npm ci",
-                "EXIT_CODE=0; npm run test:e2e || EXIT_CODE=$?; cd ..; mkdir -p artifact; cp -r www/playwright-report artifact/playwright-report 2>/dev/null || true; cp -r www/test-results artifact/playwright-results 2>/dev/null || true; exit $EXIT_CODE"
+                "./ci/test-ui-playwright"
             ]
         },
         {
