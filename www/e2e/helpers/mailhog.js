@@ -18,7 +18,9 @@ async function fetchMessages () {
 }
 
 function bodyFromMessage(message) {
-  return message.Content.Body.replace(/=\r\n/g, '')
+  return message.Content.Body
+    .replace(/=\r\n/g, '')
+    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
 }
 
 async function waitForMessage(extract, attempts = 10) {

@@ -83,11 +83,40 @@ This mirrors the old Selenium confidence model:
 
 ## CI artifacts
 
-Artifacts are uploaded by the `artifact` step. For Playwright, useful outputs are:
-- `artifact/playwright-report/`
-- `artifact/playwright-results/`
+Artifacts are uploaded by the `artifact` step and served by an nginx file browser at `http://ci.syncloud.org:8081`.
 
-Those are populated from:
+List build artifacts:
+```sh
+curl -s "http://ci.syncloud.org:8081/files/redirect/{N}/"
+```
+
+Typical layout for a redirect build:
+```
+{N}/
+  redirect-{N}.tar.gz
+  distro/
+  playwright-report/
+  playwright-results/
+    <test-slug>/
+      error-context.md
+      failure-full-page.png
+      trace.zip
+      video.webm
+```
+
+Fetch a Playwright failure's page snapshot + error:
+```sh
+curl -s "http://ci.syncloud.org:8081/files/redirect/{N}/playwright-results/<slug>/error-context.md"
+```
+
+Download the trace and inspect URLs or network calls locally:
+```sh
+curl -O "http://ci.syncloud.org:8081/files/redirect/{N}/playwright-results/<slug>/trace.zip"
+unzip -q trace.zip -d trace/
+grep -oE "/some-path\?[^\" ]*" trace/0-trace.trace | head
+```
+
+Those directories are populated from:
 - `www/playwright-report/`
 - `www/test-results/`
 
