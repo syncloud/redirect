@@ -10,6 +10,9 @@ fi
 apt-get update && apt-get install -y default-mysql-client
 ${DIR}/recreatedb
 
+IP=$(getent hosts www.syncloud.test | awk '{print $1}')
+echo "$IP syncloud.test api.syncloud.test auth.syncloud.test" >> /etc/hosts
+
 cd ${DIR}/../www
 npm ci
 EXIT_CODE=0

@@ -58,6 +58,17 @@ The UI test migration separates test runners:
 If Jest starts executing `www/e2e/*.spec.js`, CI will fail before Playwright even starts.
 Keep `www/jest.config.js` ignoring `e2e/`.
 
+## Locator conventions
+
+Prefer `data-testid` over role/text locators for anything asserted or clicked in a Playwright test. When a new element needs to be targeted by a test, add a `data-testid="..."` attribute to the Vue template and use `page.getByTestId(...)` in the spec.
+
+Why:
+- Role + accessible-name matching is a partial-match by default and breaks when another element on the page contains the same text (e.g. `Account` vs `Delete this account`).
+- Text matching couples tests to copy changes and translations.
+- `data-testid` is stable, explicit, and survives refactors of DOM structure.
+
+Use role/text locators only for elements genuinely verified as user-facing semantics (e.g. asserting a button literally reads "Confirm"), not as the primary hook.
+
 ## Playwright notes
 
 Playwright tests live in:

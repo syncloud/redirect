@@ -5,7 +5,7 @@ test('user can toggle notifications, subscribe with crypto, and cancel subscript
   await registerActivateAndLogin(page, 'account')
   await page.goto('/account')
 
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
+  await expect(page.getByTestId('account-title')).toBeVisible()
 
   const checkbox = page.locator('#chk_email')
   const initialValue = await checkbox.isChecked()

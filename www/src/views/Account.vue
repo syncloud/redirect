@@ -2,7 +2,7 @@
 
   <div class="container">
     <div id="has_domains">
-      <h2>Account</h2>
+      <h2 data-testid="account-title">Account</h2>
       <br/>
       <div>
         <div class="row">
