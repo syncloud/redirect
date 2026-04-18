@@ -19,8 +19,12 @@ EXIT_CODE=0
 npx playwright test --project=${PROJECT} || EXIT_CODE=$?
 
 cd ${DIR}/..
-mkdir -p artifact
-cp -r www/playwright-report artifact/playwright-report-${PROJECT} 2>/dev/null || true
-cp -r www/test-results artifact/playwright-results-${PROJECT} 2>/dev/null || true
+OUT=artifact/${PROJECT}
+mkdir -p ${OUT}
+for dir in www/test-results/*/; do
+    name=$(basename ${dir})
+    [[ -f ${dir}video.webm ]] && cp ${dir}video.webm ${OUT}/${name}.webm
+    [[ -f ${dir}failure-full-page.png ]] && cp ${dir}failure-full-page.png ${OUT}/${name}.png
+done
 
 exit $EXIT_CODE
