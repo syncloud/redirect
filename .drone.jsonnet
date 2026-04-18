@@ -2,7 +2,7 @@ local name = "redirect";
 local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
-local playwright = "v1.50.1-jammy";
+local playwright = "v1.59.1-jammy";
 local platform = "26.04.2";
 
 local build(arch) = [{
