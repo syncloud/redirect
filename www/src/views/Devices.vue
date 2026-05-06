@@ -50,8 +50,42 @@
                 </li>
                 <li class="list-group-item clearfix" v-if="domain.name_servers">
                   <span>Name Servers: </span>
+                  <span
+                    v-if="domain.ns_check_state === 'matched'"
+                    class="label label-success"
+                    data-testid="ns-status-matched"
+                    style="margin-left: 5px"
+                  >Matched</span>
+                  <span
+                    v-if="domain.ns_check_state === 'mismatched'"
+                    class="label label-danger"
+                    data-testid="ns-status-mismatched"
+                    style="margin-left: 5px"
+                  >Not set at registrar</span>
+                  <span
+                    v-if="domain.ns_check_state === 'checking'"
+                    class="label label-default"
+                    data-testid="ns-status-checking"
+                    style="margin-left: 5px"
+                  >Checking...</span>
+                  <button
+                    type="button"
+                    class="btn btn-default btn-xs pull-right"
+                    data-testid="ns-revalidate"
+                    :disabled="domain.ns_check_state === 'checking'"
+                    @click="checkNameServers(domain)"
+                  >Revalidate</button>
                   <div v-for="(name_server, name_server_index) in domain.name_servers" :key="name_server_index">
                     <code>{{ name_server }}</code>
+                  </div>
+                  <div
+                    v-if="domain.ns_check_state === 'mismatched' && domain.ns_check_actual && domain.ns_check_actual.length > 0"
+                    style="padding-top: 5px; font-size: 90%"
+                  >
+                    Currently set at registrar:
+                    <div v-for="(ns, i) in domain.ns_check_actual" :key="i">
+                      <code>{{ ns }}</code>
+                    </div>
                   </div>
                 </li>
                 <li class="list-group-item clearfix">
@@ -147,6 +181,8 @@ function convert (domain) {
   domain.has_ipv6_address = !!domain.ipv6
   domain.online = online(domain.last_update)
   domain.nice_last_update = niceTimestamp(domain.last_update, new Date())
+  domain.ns_check_state = 'unchecked'
+  domain.ns_check_actual = []
   return domain
 }
 
@@ -182,7 +218,11 @@ export default {
             let group = []
             const groups = []
             domains.forEach(domain => {
-              group.push(convert(domain))
+              const converted = convert(domain)
+              group.push(converted)
+              if (converted.name_servers) {
+                this.checkNameServers(converted)
+              }
               if (group.length === 2) {
                 groups.push(group)
                 group = []
@@ -202,6 +242,20 @@ export default {
           } else {
             this.$router.push('/error')
           }
+        })
+    },
+    checkNameServers: function (domain) {
+      domain.ns_check_state = 'checking'
+      domain.ns_check_actual = []
+      axios.get('/api/domain/check_nameservers', { params: { domain: domain.name } })
+        .then(response => {
+          const result = response.data.data
+          domain.ns_check_state = result.matched ? 'matched' : 'mismatched'
+          domain.ns_check_actual = result.actual || []
+        })
+        .catch(_ => {
+          domain.ns_check_state = 'mismatched'
+          domain.ns_check_actual = []
         })
     },
     domainDeleteConfirm: function (domainName) {

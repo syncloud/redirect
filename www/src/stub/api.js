@@ -121,6 +121,20 @@ export function mock () {
       this.get('/api/domains', function (_schema, request) {
         return new Response(200, {}, state.domains)
       })
+      this.get('/api/domain/check_nameservers', function (_schema, request) {
+        const name = request.queryParams.domain
+        const domain = state.domains.data.find(d => d.name === name)
+        if (!domain || !domain.name_servers) {
+          return new Response(200, {}, { data: { matched: true } })
+        }
+        return new Response(200, {}, {
+          data: {
+            matched: false,
+            expected: domain.name_servers,
+            actual: ['ns1.registrar.example', 'ns2.registrar.example']
+          }
+        })
+      })
       this.post('/api/logout', function (_schema, request) {
         state.loggedIn = false
         return new Response(200, {}, {})
