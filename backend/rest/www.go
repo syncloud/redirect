@@ -23,6 +23,10 @@ type WwwDomains interface {
 	DeleteAllDomains(userId int64) error
 }
 
+type WwwNsChecker interface {
+	Check(userId int64, domainName string) (*model.NameServerCheckResult, error)
+}
+
 type WwwUsers interface {
 	GetUserByEmail(userEmail string) (*model.User, error)
 	CreateNewUser(request model.UserCreateRequest) (*model.User, error)
@@ -46,6 +50,7 @@ type WwwMail interface {
 type Www struct {
 	statsdClient        metrics.StatsdClient
 	domains             WwwDomains
+	nsChecker           WwwNsChecker
 	users               WwwUsers
 	actions             WwwActions
 	mail                WwwMail
@@ -62,6 +67,7 @@ type Www struct {
 func NewWww(
 	statsdClient metrics.StatsdClient,
 	domains WwwDomains,
+	nsChecker WwwNsChecker,
 	users WwwUsers,
 	actions WwwActions,
 	mail WwwMail,
@@ -76,6 +82,7 @@ func NewWww(
 	return &Www{
 		statsdClient:        statsdClient,
 		domains:             domains,
+		nsChecker:           nsChecker,
 		users:               users,
 		actions:             actions,
 		mail:                mail,
@@ -109,6 +116,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan/subscribe/paypal", w.Secured(HandleUser(w.SubscribePayPal))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/crypto", w.Secured(HandleUser(w.SubscribeCrypto))).Methods("POST")
 	r.HandleFunc("/domain", w.Secured(HandleUser(w.DomainDelete))).Methods("DELETE")
+	r.HandleFunc("/domain/check_nameservers", w.Secured(HandleUser(w.WebDomainCheckNameServers))).Methods("GET")
 	r.NotFoundHandler = http.HandlerFunc(w.notFoundHandler)
 
 	r.Use(headers)
@@ -260,6 +268,20 @@ func (w *Www) WebDomains(_ http.ResponseWriter, _ *http.Request, user model.User
 	}
 
 	return domains, nil
+}
+
+func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.statsdClient.Incr("www.domain.check_nameservers", 1)
+	domainName := req.URL.Query().Get("domain")
+	if domainName == "" {
+		return nil, errors.New("invalid request")
+	}
+	result, err := w.nsChecker.Check(user.Id, domainName)
+	if err != nil {
+		w.logger.Error("unable to check nameservers", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return result, nil
 }
 
 func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (interface{}, error) {

@@ -95,6 +95,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func() *dns.PublicResolver {
+		return dns.NewPublicResolver()
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(database *db.MySql) *service.Actions {
 		return service.NewActions(database)
 
@@ -178,6 +185,18 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(
+		database *db.MySql,
+		amazonDns *dns.AmazonDns,
+		resolver *dns.PublicResolver,
+		config *utils.Config,
+	) *service.NsChecker {
+		return service.NewNsChecker(database, amazonDns, resolver, config.AwsHostedZoneId())
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func() *http.Client {
 		return probe.NewClient()
 	})
@@ -233,6 +252,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		statsd *statsd.Client,
 		domains *service.Domains,
+		nsChecker *service.NsChecker,
 		users *service.Users,
 		mail *service.Mail,
 		actions *service.Actions,
@@ -246,6 +266,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return rest.NewWww(
 			statsd,
 			domains,
+			nsChecker,
 			users,
 			actions,
 			mail,

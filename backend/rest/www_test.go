@@ -34,6 +34,13 @@ func (w WwwDomainsStub) DeleteAllDomains(_ int64) error {
 	panic("implement me")
 }
 
+type WwwNsCheckerStub struct {
+}
+
+func (w WwwNsCheckerStub) Check(_ int64, _ string) (*model.NameServerCheckResult, error) {
+	panic("implement me")
+}
+
 type WwwUsersStub struct {
 	authenticated bool
 }
@@ -97,6 +104,7 @@ func TestLogin_CreateSession(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
@@ -135,6 +143,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
@@ -188,6 +197,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
@@ -227,6 +237,7 @@ func TestLogout_ClearSession(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},

@@ -22,9 +22,11 @@
                 </div>
               </div>
               <div class="panel-body">
-                <div>
+                <div v-if="this.userLoaded && this.subscriptionId === undefined">
                   Subscription is required after 30 days of a free trial period.<br>
                   Additionally you can use your personal domain on active subscription (like example.com)<br><br>
+                </div>
+                <div>
                   We provide the following features for your device:
                 </div>
                 <ul style="padding-top: 10px">
