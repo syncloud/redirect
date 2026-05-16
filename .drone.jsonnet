@@ -4,6 +4,9 @@ local dind = "19.03.8-dind";
 local node = "18.12.0";
 local playwright = "v1.59.1-jammy";
 local platform = "26.04.2";
+local docker_image = "syncloud/redirect";
+local version = "${DRONE_BRANCH}-${DRONE_BUILD_NUMBER}";
+local image_tag = docker_image + ":" + version;
 
 local build(arch) = [{
     kind: "pipeline",
@@ -73,6 +76,54 @@ local build(arch) = [{
             ]
         },
         {
+            name: "docker",
+            image: "plugins/docker:20.18",
+            settings: {
+                repo: docker_image,
+                username: { from_secret: "DOCKER_USERNAME" },
+                password: { from_secret: "DOCKER_PASSWORD" },
+                tags: [
+                    version,
+                    "${DRONE_BRANCH}",
+                ],
+            },
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
+            name: "docker latest",
+            image: "plugins/docker:20.18",
+            settings: {
+                repo: docker_image,
+                username: { from_secret: "DOCKER_USERNAME" },
+                password: { from_secret: "DOCKER_PASSWORD" },
+                tags: ["latest"],
+            },
+            when: {
+                event: ["push"],
+                branch: ["stable"],
+            },
+        },
+        {
+            name: "deploy test",
+            image: "debian:bookworm-slim",
+            environment: {
+                DEPLOY_HOST: "www.syncloud.test",
+                DEPLOY_USER: "root",
+                DEPLOY_URL: "https://api.syncloud.test",
+            },
+            commands: [
+                "./ci/test-init.sh",
+                "./ci/deploy-prepare.sh",
+                "./ci/deploy-run.sh " + image_tag,
+                "./ci/deploy-verify.sh",
+            ],
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
             name: "test-ui-desktop",
             image: "mcr.microsoft.com/playwright:" + playwright,
             environment: {
@@ -93,6 +144,38 @@ local build(arch) = [{
             commands: [
                 "./ci/ui.sh mobile"
             ]
+        },
+        {
+            name: "deploy uat",
+            image: "debian:bookworm-slim",
+            environment: {
+                DEPLOY_HOST: { from_secret: "uat_deploy_host" },
+                DEPLOY_USER: { from_secret: "uat_deploy_user" },
+                DEPLOY_KEY: { from_secret: "uat_deploy_key" },
+                DEPLOY_URL: { from_secret: "uat_deploy_url" },
+            },
+            commands: [
+                "./ci/deploy-prepare.sh",
+                "./ci/deploy-run.sh " + image_tag,
+                "./ci/deploy-verify.sh",
+            ],
+            when: { event: ["push"] },
+        },
+        {
+            name: "deploy prod",
+            image: "debian:bookworm-slim",
+            environment: {
+                DEPLOY_HOST: { from_secret: "prod_deploy_host" },
+                DEPLOY_USER: { from_secret: "prod_deploy_user" },
+                DEPLOY_KEY: { from_secret: "prod_deploy_key" },
+                DEPLOY_URL: { from_secret: "prod_deploy_url" },
+            },
+            commands: [
+                "./ci/deploy-prepare.sh",
+                "./ci/deploy-run.sh " + image_tag,
+                "./ci/deploy-verify.sh",
+            ],
+            when: { event: ["push"], branch: ["stable"] },
         },
         {
             name: "artifact",
