@@ -47,6 +47,15 @@ if [ "$web_code" != "200" ]; then
 fi
 echo "web UI OK ($web_code)"
 
+db_body=$(curl -k -s -X POST "${DEPLOY_URL}/domain/update" \
+    -H 'Content-Type: application/json' \
+    -d '{"token":"00000000-0000-0000-0000-000000000000","ipv4_enabled":true}')
+if ! echo "$db_body" | grep -q "unknown domain update token"; then
+    echo "DB smoke failed; /domain/update with bogus token returned: $db_body"
+    exit 1
+fi
+echo "DB smoke OK"
+
 if [ -n "${SMOKE_TOKEN:-}" ]; then
     body=$(curl -k -s -X POST "${DEPLOY_URL}/domain/update" \
         -H 'Content-Type: application/json' \
