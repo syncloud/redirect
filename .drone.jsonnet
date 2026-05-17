@@ -57,7 +57,7 @@ local build(arch) = [{
             ]
         },
         {
-            name: "test-integration",
+            name: "systemd install",
             image: "python:3.9-slim-bullseye",
             environment: {
                 access_key_id: {
@@ -72,10 +72,10 @@ local build(arch) = [{
             },
             commands: [
                 "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-	            "pip install -r integration/requirements.txt",
-	            "./ci/recreatedb",
+                "pip install -r integration/requirements.txt",
+                "./ci/recreatedb",
                 "cd integration",
-                "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
+                "py.test -x -vv -s verify.py::test_start verify.py::test_index --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ]
         },
         {
@@ -121,6 +121,30 @@ local build(arch) = [{
                 "./ci/deploy-prepare.sh",
                 "./ci/deploy-run.sh " + image_tag,
                 "./ci/deploy-verify.sh",
+            ],
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
+            name: "test-api",
+            image: "python:3.9-slim-bullseye",
+            environment: {
+                access_key_id: {
+                  from_secret: "access_key_id"
+                },
+                secret_access_key: {
+                  from_secret: "secret_access_key"
+                },
+                hosted_zone_id: {
+                  from_secret: "hosted_zone_id"
+                },
+            },
+            commands: [
+                "apt-get update && apt-get install -y default-mysql-client",
+                "pip install -r integration/requirements.txt",
+                "cd integration",
+                "py.test -x -vv -s verify.py --deselect verify.py::test_start --deselect verify.py::test_index --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ],
             when: {
                 event: ["push", "tag"],
