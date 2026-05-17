@@ -16,7 +16,21 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 if ! docker info >/dev/null 2>&1; then
-    systemctl start docker
+    systemctl start docker 2>/dev/null || true
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    nohup dockerd --storage-driver=vfs >/var/log/dockerd.log 2>&1 &
+    for i in $(seq 1 30); do
+        if docker info >/dev/null 2>&1; then break; fi
+        sleep 1
+    done
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    echo "docker daemon failed to start"
+    tail -60 /var/log/dockerd.log 2>/dev/null || true
+    exit 1
 fi
 
 for svc in redirect.api redirect.www; do
