@@ -6,9 +6,11 @@ import (
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/subscription"
+	"github.com/syncloud/redirect/version"
 )
 
 func main() {
+	fmt.Printf("redirect cli build=%s sha=%s time=%s\n", version.BuildNumber, version.GitSha, version.BuildTime)
 	var configFile string
 	var secretFile string
 	var mailDir string
