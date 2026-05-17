@@ -180,6 +180,7 @@ local build(arch) = [{
                 DEPLOY_USER: { from_secret: "uat_deploy_user" },
                 DEPLOY_KEY: { from_secret: "uat_deploy_key" },
                 DEPLOY_URL: { from_secret: "uat_deploy_url" },
+                SMOKE_TOKEN: { from_secret: "uat_smoke_token" },
             },
             commands: [
                 "./ci/deploy-prepare.sh",
@@ -196,6 +197,7 @@ local build(arch) = [{
                 DEPLOY_USER: { from_secret: "prod_deploy_user" },
                 DEPLOY_KEY: { from_secret: "prod_deploy_key" },
                 DEPLOY_URL: { from_secret: "prod_deploy_url" },
+                SMOKE_TOKEN: { from_secret: "prod_smoke_token" },
             },
             commands: [
                 "./ci/deploy-prepare.sh",

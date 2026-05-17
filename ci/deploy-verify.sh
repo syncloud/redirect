@@ -7,12 +7,18 @@ if ! command -v curl >/dev/null; then
 fi
 
 URL_HOST=$(echo "$DEPLOY_URL" | sed -E 's|https?://([^/:]+).*|\1|')
-if ! getent hosts "$URL_HOST" >/dev/null 2>&1; then
-    IP=$(getent hosts "$DEPLOY_HOST" | awk '{print $1}')
-    if [ -n "$IP" ]; then
-        echo "$IP $URL_HOST" >> /etc/hosts
-    fi
-fi
+WWW_URL=$(echo "$DEPLOY_URL" | sed -E 's|//api\.|//www.|')
+WWW_HOST=$(echo "$WWW_URL" | sed -E 's|https?://([^/:]+).*|\1|')
+
+resolve_alias() {
+    local host=$1
+    if getent hosts "$host" >/dev/null 2>&1; then return; fi
+    local ip
+    ip=$(getent hosts "$DEPLOY_HOST" | awk '{print $1}')
+    [ -n "$ip" ] && echo "$ip $host" >> /etc/hosts
+}
+resolve_alias "$URL_HOST"
+resolve_alias "$WWW_HOST"
 
 KEYFILE=/tmp/_deploy_key
 SSH="ssh -i $KEYFILE -o StrictHostKeyChecking=no"
@@ -32,4 +38,22 @@ if [ "$code" != "200" ]; then
     $SSH $REMOTE sudo -n docker logs redirect-api 2>&1 | tail -40 || true
     $SSH $REMOTE sudo -n docker logs redirect-www 2>&1 | tail -40 || true
     exit 1
+fi
+
+web_code=$(curl -k -s -o /dev/null -w "%{http_code}" "${WWW_URL}/")
+if [ "$web_code" != "200" ]; then
+    echo "web UI did not respond at ${WWW_URL}/: http_code=$web_code"
+    exit 1
+fi
+echo "web UI OK ($web_code)"
+
+if [ -n "${SMOKE_TOKEN:-}" ]; then
+    body=$(curl -k -s -X POST "${DEPLOY_URL}/domain/update" \
+        -H 'Content-Type: application/json' \
+        -d "{\"token\":\"${SMOKE_TOKEN}\",\"ipv4_enabled\":true}")
+    echo "smoke /domain/update response: $body"
+    if ! echo "$body" | grep -q '"success":true'; then
+        echo "smoke /domain/update failed"
+        exit 1
+    fi
 fi
