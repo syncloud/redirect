@@ -33,7 +33,3 @@ if [ "$code" != "200" ]; then
     $SSH $REMOTE sudo -n docker logs redirect-www 2>&1 | tail -40 || true
     exit 1
 fi
-
-echo "=== post-migration host state ==="
-$SSH $REMOTE "ls -la /var/www/redirect/ /var/www/redirect/current/ /var/www/redirect/current/bin/ 2>&1 | head -40" || true
-$SSH $REMOTE "readlink /var/www/redirect/current; which mysqldump" || true

@@ -141,7 +141,7 @@ local build(arch) = [{
                 },
             },
             commands: [
-                "apt-get update && apt-get install -y default-mysql-client",
+                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
                 "pip install -r integration/requirements.txt",
                 "IP=$(getent hosts www.syncloud.test | awk '{print $1}')",
                 "echo \"$IP syncloud.test api.syncloud.test auth.syncloud.test\" >> /etc/hosts",
