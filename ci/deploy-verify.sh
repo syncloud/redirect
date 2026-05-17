@@ -6,6 +6,14 @@ if ! command -v curl >/dev/null; then
     apt-get install -y curl
 fi
 
+URL_HOST=$(echo "$DEPLOY_URL" | sed -E 's|https?://([^/:]+).*|\1|')
+if ! getent hosts "$URL_HOST" >/dev/null 2>&1; then
+    IP=$(getent hosts "$DEPLOY_HOST" | awk '{print $1}')
+    if [ -n "$IP" ]; then
+        echo "$IP $URL_HOST" >> /etc/hosts
+    fi
+fi
+
 KEYFILE=/tmp/_deploy_key
 SSH="ssh -i $KEYFILE -o StrictHostKeyChecking=no"
 REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
