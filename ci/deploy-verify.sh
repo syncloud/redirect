@@ -49,7 +49,7 @@ echo "web UI OK ($web_code)"
 
 db_body=$(curl -k -s -X POST "${DEPLOY_URL}/domain/update" \
     -H 'Content-Type: application/json' \
-    -d '{"token":"00000000-0000-0000-0000-000000000000","ipv4_enabled":true}')
+    -d '{"token":"00000000-0000-0000-0000-000000000000","ipv4_enabled":true,"web_protocol":"https","web_local_port":443}')
 if ! echo "$db_body" | grep -q "unknown domain update token"; then
     echo "DB smoke failed; /domain/update with bogus token returned: $db_body"
     exit 1
