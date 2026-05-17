@@ -75,7 +75,7 @@ local build(arch) = [{
                 "pip install -r integration/requirements.txt",
                 "./ci/recreatedb",
                 "cd integration",
-                "py.test -x -vv -s verify.py::test_start verify.py::test_index --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
+                "py.test -x -vv -s test-systemd.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ]
         },
         {
@@ -143,10 +143,8 @@ local build(arch) = [{
             commands: [
                 "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
                 "pip install -r integration/requirements.txt",
-                "IP=$(getent hosts www.syncloud.test | awk '{print $1}')",
-                "echo \"$IP syncloud.test api.syncloud.test auth.syncloud.test\" >> /etc/hosts",
                 "cd integration",
-                "py.test -x -vv -s verify.py --deselect verify.py::test_start --deselect verify.py::test_index --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
+                "py.test -x -vv -s test.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ],
             when: {
                 event: ["push", "tag"],
