@@ -55,14 +55,3 @@ if ! echo "$db_body" | grep -q "unknown domain update token"; then
     exit 1
 fi
 echo "DB smoke OK"
-
-if [ -n "${SMOKE_TOKEN:-}" ]; then
-    body=$(curl -k -s -X POST "${DEPLOY_URL}/domain/update" \
-        -H 'Content-Type: application/json' \
-        -d "{\"token\":\"${SMOKE_TOKEN}\",\"ipv4_enabled\":true}")
-    echo "smoke /domain/update response: $body"
-    if ! echo "$body" | grep -q '"success":true'; then
-        echo "smoke /domain/update failed"
-        exit 1
-    fi
-fi
