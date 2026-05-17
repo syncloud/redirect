@@ -15,6 +15,10 @@ if ! command -v docker >/dev/null 2>&1; then
     apt-get install -y docker.io
 fi
 
+if ! docker info >/dev/null 2>&1; then
+    systemctl start docker
+fi
+
 for svc in redirect.api redirect.www; do
     if systemctl is-active --quiet "$svc"; then
         systemctl stop "$svc"
