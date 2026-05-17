@@ -31,14 +31,17 @@ local build(arch) = [{
             ]
         },
         {
+            name: "test backend",
+            image: "golang:" + go,
+            commands: [
+                "./backend/test.sh",
+            ]
+        },
+        {
             name: "build backend",
             image: "golang:" + go,
             commands: [
-                "cd backend",
-                "go test ./... -cover",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/cli ./cmd/cli",
+                "./backend/build.sh ${DRONE_BUILD_NUMBER}",
             ]
         },
         {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
@@ -10,9 +12,11 @@ import (
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/user"
+	"github.com/syncloud/redirect/version"
 )
 
 func main() {
+	fmt.Printf("redirect api build=%s sha=%s time=%s\n", version.BuildNumber, version.GitSha, version.BuildTime)
 	var configFile string
 	var secretFile string
 	var mailDir string

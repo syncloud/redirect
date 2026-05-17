@@ -10,4 +10,5 @@ _site
 venv
 build
 *.tar.gz
-api
+/api
+.replies
