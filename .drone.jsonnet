@@ -247,7 +247,7 @@ local build(arch) = [{
         },
         {
             name: "www.syncloud.test",
-            image: "syncloud/platform-bookworm-amd64:" + platform,
+            image: "syncloud/bootstrap-bookworm-amd64:" + platform,
             privileged: true,
             volumes: [
                 {
