@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import App from '@/App'
+import App from '../../src/App.vue'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
@@ -13,21 +13,22 @@ test('index to login (not logged in)', async () => {
     { }
   )
 
-  mount(App, {
+  const wrapper = mount(App, {
     global: {
       components: {
         RouterView: { render () { return h('div') } }
       },
       stubs: {
-        Menu: true
+        CustomMenu: true
       },
       mocks: {
-        $route: { path: '/' },
+        // $route: { path: '/' },
         $router: mockRouter
       }
     }
   })
 
+  wrapper.vm.$options.watch.$route.call(wrapper.vm, { path: '/' }, {})
   await flushPromises()
   expect(mockRouter.push).toHaveBeenCalledWith('/login')
 })
@@ -53,7 +54,7 @@ test('index stay (logged in)', async () => {
         RouterView: { render () { return h('div') } }
       },
       stubs: {
-        Menu: true
+        CustomMenu: true
       },
       mocks: {
         $route: { path: '/' },
@@ -81,21 +82,22 @@ test('login to index (logged in)', async () => {
     }
   )
 
-  mount(App, {
+  const wrapper = mount(App, {
     global: {
       components: {
         RouterView: { render () { return h('div') } }
       },
       stubs: {
-        Menu: true
+        CustomMenu: true
       },
       mocks: {
-        $route: { path: '/login' },
+        // $route: { path: '/login' },
         $router: mockRouter
       }
     }
   })
 
+  wrapper.vm.$options.watch.$route.call(wrapper.vm, { path: '/login' }, {})
   await flushPromises()
   expect(mockRouter.push).toHaveBeenCalledWith('/')
 })

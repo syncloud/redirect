@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/smira/go-statsd"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/model"
 	"net/http"
 	"net/http/httptest"
@@ -30,6 +31,13 @@ func (w WwwDomainsStub) GetDomains(_ *model.User) ([]*model.Domain, error) {
 }
 
 func (w WwwDomainsStub) DeleteAllDomains(_ int64) error {
+	panic("implement me")
+}
+
+type WwwNsCheckerStub struct {
+}
+
+func (w WwwNsCheckerStub) Check(_ int64, _ string) (*model.NameServerCheckResult, error) {
 	panic("implement me")
 }
 
@@ -61,7 +69,11 @@ func (w WwwUsersStub) Save(_ *model.User) error {
 	panic("implement me")
 }
 
-func (w WwwUsersStub) PlanSubscribe(_ *model.User, _ string) error {
+func (w WwwUsersStub) Subscribe(_ *model.User, _ string, _ int) error {
+	panic("implement me")
+}
+
+func (w WwwUsersStub) Unsubscribe(_ *model.User) error {
 	panic("implement me")
 }
 
@@ -74,10 +86,6 @@ func (w WwwUsersStub) Delete(_ int64) error {
 }
 
 type WwwActionsStub struct {
-}
-
-func (w WwwActionsStub) DeleteActions(_ int64) error {
-	panic("implement me")
 }
 
 func (w WwwActionsStub) UpsertPasswordAction(_ int64) (*model.Action, error) {
@@ -96,14 +104,17 @@ func TestLogin_CreateSession(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -132,14 +143,17 @@ func TestLoginAgain_NotError(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -183,14 +197,17 @@ func TestLoginFresh_NotError(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -220,14 +237,17 @@ func TestLogout_ClearSession(t *testing.T) {
 	www := NewWww(
 		&StatsdClientStub{},
 		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		"example.com",
-		"paypal_plan_id",
+		"paypal_plan_monthly_id",
+		"paypal_plan_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
+		log.Default(),
 	)
 	email := "test@example.com"
 	password := "password"
@@ -243,7 +263,7 @@ func TestLogout_ClearSession(t *testing.T) {
 	}
 	req.AddCookie(&http.Cookie{Name: "session", Value: "MTYyOTY3MDk0OHxEdi1CQkFFQ180SUFBUkFCRUFBQUJQLUNBQUE9fEZHUw9y4LnPQcECsWcJCSehnQXkmZM0nJrMDfjsaXsW"})
 	rr := httptest.NewRecorder()
-	_, err = www.UserLogout(rr, req)
+	_, err = www.UserLogout(rr, req, model.User{})
 	if err != nil {
 		t.Fatal(err)
 	}

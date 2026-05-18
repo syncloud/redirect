@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"github.com/smira/go-statsd"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
 	"testing"
@@ -8,8 +9,9 @@ import (
 )
 
 type DatabaseStub struct {
-	domain *model.Domain
-	user   *model.User
+	domain        *model.Domain
+	user          *model.User
+	domainUpdated bool
 }
 
 func (d *DatabaseStub) GetUser(id int64) (*model.User, error) {
@@ -26,6 +28,7 @@ func (d *DatabaseStub) GetDomainByToken(token string) (*model.Domain, error) {
 
 func (d *DatabaseStub) UpdateDomain(domain *model.Domain) error {
 	d.domain = domain
+	d.domainUpdated = true
 	return nil
 }
 
@@ -33,7 +36,7 @@ type RemoverStub struct {
 	deleted bool
 }
 
-func (r *RemoverStub) DeleteDomainRecords(domain *model.Domain) error {
+func (r *RemoverStub) DeleteDomain(userId int64, domainName string) error {
 	r.deleted = true
 	return nil
 }
@@ -47,113 +50,100 @@ func (m *MailStub) SendDnsCleanNotification(to string, userDomain string) error 
 	return nil
 }
 
-type GraphiteStub struct {
-	value float64
+type StatsStub struct {
+	value int64
 }
 
-func (g *GraphiteStub) CounterAdd(name string, value float64) {
-	g.value += value
+func (g *StatsStub) Incr(stat string, count int64, tags ...statsd.Tag) {
+	g.value += count
 }
 
-func TestCleaner_Clean_NotRemoveDNSForSubscribedUsers(t *testing.T) {
+func TestCleaner_Clean_ActiveSubscribed_NotRemoveDomain(t *testing.T) {
 	subscriptionId := "123"
 	now := time.Now()
+	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &now}
 	database := &DatabaseStub{
-		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &now},
+		domain: domain,
 		user:   &model.User{SubscriptionId: &subscriptionId},
 	}
-	dns := &RemoverStub{}
+	remover := &RemoverStub{}
 	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
+	stats := &StatsStub{}
+	cleaner := NewCleaner(database, remover, mail, stats)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
-	assert.False(t, dns.deleted)
+	assert.False(t, remover.deleted)
+	assert.False(t, database.domainUpdated)
+	assert.Equal(t, &now, database.domain.LastUpdate)
 }
 
-func TestCleaner_Clean_NotRemoveDNSLessThanAMonthOfInactivity(t *testing.T) {
+func TestCleaner_Clean_NotActiveSubscribed_NotRemoveDomain(t *testing.T) {
+	subscriptionId := "123"
+	now := time.Now()
+	timestamp := now.AddDate(0, -1, -1)
+	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp}
+	database := &DatabaseStub{
+		domain: domain,
+		user:   &model.User{SubscriptionId: &subscriptionId},
+	}
+	remover := &RemoverStub{}
+	mail := &MailStub{}
+	stats := &StatsStub{}
+	cleaner := NewCleaner(database, remover, mail, stats)
+	err := cleaner.Clean(now)
+	assert.Nil(t, err)
+	assert.False(t, remover.deleted)
+	assert.True(t, database.domainUpdated)
+	assert.Equal(t, &now, database.domain.LastUpdate)
+}
+
+func TestCleaner_Clean_Active_NotRemoveDomain(t *testing.T) {
 	now := time.Now()
 	database := &DatabaseStub{
 		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &now},
 		user:   &model.User{},
 	}
-	dns := &RemoverStub{}
+	remover := &RemoverStub{}
 	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
+	stats := &StatsStub{}
+	cleaner := NewCleaner(database, remover, mail, stats)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
-	assert.False(t, dns.deleted)
+	assert.False(t, remover.deleted)
+	assert.False(t, database.domainUpdated)
 }
 
-func TestCleaner_Clean_RemoveDNSMoreThanAMonthOfInactivity(t *testing.T) {
+func TestCleaner_Clean_NotActive_RemoveDomain(t *testing.T) {
 	now := time.Now()
 	timestamp := now.AddDate(0, -1, -1)
 	database := &DatabaseStub{
 		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp},
 		user:   &model.User{Email: "test"},
 	}
-	dns := &RemoverStub{}
+	remover := &RemoverStub{}
 	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
+	stats := &StatsStub{}
+	cleaner := NewCleaner(database, remover, mail, stats)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
-	assert.True(t, dns.deleted)
+	assert.True(t, remover.deleted)
+	assert.False(t, database.domainUpdated)
 }
 
-func TestCleaner_Clean_RemoveDNSUnknownLastUpdate(t *testing.T) {
+func TestCleaner_Clean_UnknownLastUpdate_RemoveDomain(t *testing.T) {
 	now := time.Now()
 	database := &DatabaseStub{
 		domain: &model.Domain{Id: 1, Name: "test.com"},
 		user:   &model.User{Email: "test"},
 	}
-	dns := &RemoverStub{}
+	remover := &RemoverStub{}
 	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
+	stats := &StatsStub{}
+	cleaner := NewCleaner(database, remover, mail, stats)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
-	assert.True(t, dns.deleted)
-}
-
-func TestCleaner_Clean_RemoveAndUpdateTime(t *testing.T) {
-	now := time.Now()
-	timestamp := now.AddDate(0, -1, -1)
-	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp}
-	database := &DatabaseStub{
-		domain: domain,
-		user:   &model.User{},
-	}
-	dns := &RemoverStub{}
-	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
-	err := cleaner.Clean(now)
-	assert.Nil(t, err)
-	assert.True(t, dns.deleted)
-	assert.Equal(t, &now, domain.LastUpdate)
-}
-
-func TestCleaner_Clean_RemoveAndResetIPs(t *testing.T) {
-	now := time.Now()
-	timestamp := now.AddDate(0, -1, -1)
-	ip := "1.1.1.1"
-	ipv6 := "fe80::"
-	domain := &model.Domain{Id: 1, Name: "test.com", LastUpdate: &timestamp, Ip: &ip, Ipv6: &ipv6}
-	database := &DatabaseStub{
-		domain: domain,
-		user:   &model.User{},
-	}
-	dns := &RemoverStub{}
-	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
-	err := cleaner.Clean(now)
-	assert.Nil(t, err)
-	assert.True(t, dns.deleted)
-	assert.Nil(t, domain.Ip)
-	assert.Nil(t, domain.Ipv6)
+	assert.True(t, remover.deleted)
+	assert.False(t, database.domainUpdated)
 }
 
 func TestCleaner_Clean_RemoveSendNotification(t *testing.T) {
@@ -164,14 +154,15 @@ func TestCleaner_Clean_RemoveSendNotification(t *testing.T) {
 		domain: domain,
 		user:   &model.User{},
 	}
-	dns := &RemoverStub{}
+	remover := &RemoverStub{}
 	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
+	stats := &StatsStub{}
+	cleaner := NewCleaner(database, remover, mail, stats)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
-	assert.True(t, dns.deleted)
+	assert.True(t, remover.deleted)
 	assert.True(t, mail.sent)
+	assert.False(t, database.domainUpdated)
 }
 
 func TestCleaner_Clean_NotRemoveNotSendNotification(t *testing.T) {
@@ -180,12 +171,12 @@ func TestCleaner_Clean_NotRemoveNotSendNotification(t *testing.T) {
 		domain: &model.Domain{Id: 1, Name: "test.com", LastUpdate: &now},
 		user:   &model.User{},
 	}
-	dns := &RemoverStub{}
+	remover := &RemoverStub{}
 	mail := &MailStub{}
-	graphite := &GraphiteStub{}
-	cleaner := NewCleaner(database, dns, mail, graphite)
+	stats := &StatsStub{}
+	cleaner := NewCleaner(database, remover, mail, stats)
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
-	assert.False(t, dns.deleted)
+	assert.False(t, remover.deleted)
 	assert.False(t, mail.sent)
 }

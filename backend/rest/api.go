@@ -9,6 +9,7 @@ import (
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/probe"
+	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
 	"log"
 	"net"
@@ -56,6 +57,7 @@ type Api struct {
 	domain       string
 	count404     int64
 	socket       string
+	logger       *zap.Logger
 }
 
 func NewApi(
@@ -67,6 +69,7 @@ func NewApi(
 	certbot ApiCertbot,
 	domain string,
 	socket string,
+	logger *zap.Logger,
 ) *Api {
 	return &Api{
 		statsdClient: statsdClient,
@@ -77,6 +80,7 @@ func NewApi(
 		certbot:      certbot,
 		domain:       domain,
 		socket:       socket,
+		logger:       logger,
 	}
 }
 

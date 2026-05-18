@@ -2,9 +2,8 @@ import { mount } from '@vue/test-utils'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
-import Devices from '@/views/Devices'
-
-jest.setTimeout(30000)
+import Devices from '../../src/views/Devices.vue'
+import { ElButton, ElDialog } from 'element-plus'
 
 test('Show devices', async () => {
   const mock = new MockAdapter(axios)
@@ -52,6 +51,11 @@ test('Show devices', async () => {
       attachTo: document.body,
       props: {
         checkUserSession: jest.fn()
+      },
+      global: {
+        stubs: {
+          CustomDialog: true
+        }
       }
     }
   )
@@ -96,6 +100,11 @@ test('Default external port', async () => {
       attachTo: document.body,
       props: {
         checkUserSession: jest.fn()
+      },
+      global: {
+        stubs: {
+          CustomDialog: true
+        }
       }
     }
   )
@@ -137,6 +146,11 @@ test('Custom external port', async () => {
       attachTo: document.body,
       props: {
         checkUserSession: jest.fn()
+      },
+      global: {
+        stubs: {
+          CustomDialog: true
+        }
       }
     }
   )
@@ -178,6 +192,11 @@ test('Use locall address and web port 0', async () => {
       attachTo: document.body,
       props: {
         checkUserSession: jest.fn()
+      },
+      global: {
+        stubs: {
+          CustomDialog: true
+        }
       }
     }
   )
@@ -218,6 +237,11 @@ test('No IPv6', async () => {
       attachTo: document.body,
       props: {
         checkUserSession: jest.fn()
+      },
+      global: {
+        stubs: {
+          CustomDialog: true
+        }
       }
     }
   )
@@ -274,7 +298,7 @@ test('Delete', async () => {
           $router: mockRouter
         },
         stubs: {
-          Confirmation: {
+          CustomDialog: {
             template: '<button :id="id" />',
             props: { id: String },
             methods: {
@@ -289,9 +313,12 @@ test('Delete', async () => {
 
   await flushPromises()
 
+  // await expect(wrapper.find('#delete_confirmation').exists()).toBe(false)
   await wrapper.find('#delete').trigger('click')
   await wrapper.find('#delete_confirmation').trigger('confirm')
   await flushPromises()
+
+  // await expect(wrapper.find('#delete_confirmation').exists()).toBe(false)
 
   expect(deletedDomain).toBe('test.example.com')
   wrapper.unmount()

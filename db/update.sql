@@ -1,2 +1,2 @@
---alter table user add column `registration_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
---insert into db_version (version) values ('013');
+alter table user add column `subscription_type` integer NULL;
+insert into db_version (version) values ('015');

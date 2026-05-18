@@ -83,3 +83,10 @@ func (d *Domain) DnsIpv4() *string {
 func IsFree(domain string, mainDomain string) bool {
 	return strings.HasSuffix(domain, fmt.Sprintf(".%s", mainDomain))
 }
+
+type NameServerCheckResult struct {
+	Matched  bool     `json:"matched"`
+	Expected []string `json:"expected,omitempty"`
+	Actual   []string `json:"actual,omitempty"`
+	Error    string   `json:"error,omitempty"`
+}

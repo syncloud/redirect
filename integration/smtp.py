@@ -1,11 +1,9 @@
-
 import datetime
 import json
 import quopri
 import time
 from os.path import join
-
-from urllib.parse import urlparse
+import re
 
 import requests
 
@@ -37,16 +35,4 @@ def clear():
 
 
 def get_token(body):
-    link_index = body.find('https://')
-    link = body[link_index:].split(' ')[0].strip()
-    parts = urlparse(link)
-    token = parts.query.replace('token=', '')
-    return token
-
-
-def get_activate_url(body):
-    return body.split('activate your account: ')[1].strip()
-
-
-def get_reset_url(body):
-    return body.split('reset your password: ')[1].strip()
+    return re.search(r'https://.*token=(.*)\r', body.replace('=\r\n', '')).group(1)

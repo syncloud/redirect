@@ -1,7 +1,10 @@
 package service
 
 import (
+	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
@@ -138,22 +141,34 @@ func (d *Domains) DeleteDomain(userId int64, domainName string) error {
 
 func (d *Domains) deleteDomain(domain *model.Domain) error {
 	err := d.amazonDns.DeleteDomainRecords(domain)
-	if err != nil {
+	if err != nil && !isNoSuchHostedZone(err, domain.HostedZoneId) {
 		return err
 	}
 
 	if d.freeHostedZoneId != domain.HostedZoneId {
 		err = d.amazonDns.DeleteCertbotRecord(domain.HostedZoneId, fmt.Sprintf("_acme-challenge.%s", domain.FQDN()))
-		if err != nil {
+		if err != nil && !isNoSuchHostedZone(err, domain.HostedZoneId) {
 			return err
 		}
 		err = d.amazonDns.DeleteHostedZone(domain.HostedZoneId)
-		if err != nil {
+		if err != nil && !isNoSuchHostedZone(err, domain.HostedZoneId) {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func isNoSuchHostedZone(err error, id string) bool {
+	var aErr awserr.Error
+	if errors.As(err, &aErr) {
+		switch aErr.Code() {
+		case route53.ErrCodeNoSuchHostedZone:
+			log.Printf("no such hosted zone: %s, ignoring", id)
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Domains) Availability(request model.DomainAvailabilityRequest) (*model.Domain, error) {
@@ -189,7 +204,7 @@ func (d *Domains) findAndCheck(domain *string, isFree bool, user *model.User, fi
 			}}}
 		}
 	} else {
-		if !isFree && user.SubscriptionId == nil {
+		if !isFree && !user.IsSubscribed() {
 			return nil, fmt.Errorf("non free domain name requires a premium subscription")
 		}
 	}
@@ -294,6 +309,9 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	}
 	if user == nil || !user.Active {
 		return nil, model.NewServiceError("unknown domain update token")
+	}
+	if user.IsLocked() {
+		return nil, model.NewServiceError("user is locked")
 	}
 
 	var ipv4 *string

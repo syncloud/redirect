@@ -1,8 +1,7 @@
-Subject: Syncloud Premium Subscription
+Subject: Syncloud subscription
 Hello,
 
 You have successfully subscribed for our premium services.
 More details at https://www.{domain}
 
-Thanks,
-Syncloud
+Thank you for choosing Syncloud

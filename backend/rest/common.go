@@ -81,3 +81,14 @@ func Handle(f func(w http.ResponseWriter, r *http.Request) (interface{}, error))
 		}
 	}
 }
+
+func HandleUser(f func(w http.ResponseWriter, r *http.Request, user model.User) (interface{}, error)) func(w http.ResponseWriter, r *http.Request, user model.User) {
+	return func(w http.ResponseWriter, r *http.Request, user model.User) {
+		data, err := f(w, r, user)
+		if err != nil {
+			fail(w, err)
+		} else {
+			success(w, data)
+		}
+	}
+}

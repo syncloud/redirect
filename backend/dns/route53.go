@@ -1,12 +1,15 @@
 package dns
 
 import (
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
+	"go.uber.org/zap"
 	"log"
 	"strings"
 )
@@ -49,13 +52,15 @@ type AmazonDns struct {
 	client       Route53
 	statsdClient metrics.StatsdClient
 	txtLimit     int
+	logger       *zap.Logger
 }
 
-func New(statsdClient metrics.StatsdClient, client Route53, txtLimit int) *AmazonDns {
+func New(statsdClient metrics.StatsdClient, client Route53, txtLimit int, logger *zap.Logger) *AmazonDns {
 	return &AmazonDns{
 		client,
 		statsdClient,
 		txtLimit,
+		logger,
 	}
 }
 
@@ -67,6 +72,14 @@ func (a *AmazonDns) CreateHostedZone(domain string) (*string, error) {
 		Name:             aws.String(domain),
 	})
 	if err != nil {
+		a.logger.Warn("create hosted zone", zap.Error(err))
+		var aErr awserr.Error
+		if errors.As(err, &aErr) {
+			switch aErr.Code() {
+			case route53.ErrCodeInvalidDomainName:
+				return nil, model.NewServiceErrorWithCode("Invalid domain name", 400)
+			}
+		}
 		return nil, err
 	}
 	id := strings.ReplaceAll(*zone.HostedZone.Id, "/hostedzone/", "")

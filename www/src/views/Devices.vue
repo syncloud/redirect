@@ -11,7 +11,7 @@
               <div class="panel-heading">
                 <div class="panel-title">
                   <h3 style="margin-top: 5px; margin-bottom: 5px">
-                    <span id="name">
+                    <span id="name" data-testid="domain-name">
                       {{ domain.name }}
                     </span>
                     <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
@@ -20,9 +20,9 @@
               </div>
               <ul class="list-group">
                 <li class="list-group-item clearfix">
-                  <h3 id="title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
+                  <h3 id="title" data-testid="device-title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
 
-                  <button type="button" class="btn btn-default pull-right" id="delete" @click="domainDeleteConfirm(domain.name)">
+                  <button type="button" class="btn btn-default pull-right" id="delete" data-testid="device-delete" @click="domainDeleteConfirm(domain.name)">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate
                   </button>
 
@@ -50,8 +50,42 @@
                 </li>
                 <li class="list-group-item clearfix" v-if="domain.name_servers">
                   <span>Name Servers: </span>
+                  <span
+                    v-if="domain.ns_check_state === 'matched'"
+                    class="label label-success"
+                    data-testid="ns-status-matched"
+                    style="margin-left: 5px"
+                  >Matched</span>
+                  <span
+                    v-if="domain.ns_check_state === 'mismatched'"
+                    class="label label-danger"
+                    data-testid="ns-status-mismatched"
+                    style="margin-left: 5px"
+                  >Not set at registrar</span>
+                  <span
+                    v-if="domain.ns_check_state === 'checking'"
+                    class="label label-default"
+                    data-testid="ns-status-checking"
+                    style="margin-left: 5px"
+                  >Checking...</span>
+                  <button
+                    type="button"
+                    class="btn btn-default btn-xs pull-right"
+                    data-testid="ns-revalidate"
+                    :disabled="domain.ns_check_state === 'checking'"
+                    @click="checkNameServers(domain)"
+                  >Revalidate</button>
                   <div v-for="(name_server, name_server_index) in domain.name_servers" :key="name_server_index">
                     <code>{{ name_server }}</code>
+                  </div>
+                  <div
+                    v-if="domain.ns_check_state === 'mismatched' && domain.ns_check_actual && domain.ns_check_actual.length > 0"
+                    style="padding-top: 5px; font-size: 90%"
+                  >
+                    Currently set at registrar:
+                    <div v-for="(ns, i) in domain.ns_check_actual" :key="i">
+                      <code>{{ ns }}</code>
+                    </div>
                   </div>
                 </li>
                 <li class="list-group-item clearfix">
@@ -64,7 +98,7 @@
         </div>
       </div>
     </div>
-    <div id="no_domains" v-bind:class="{ invisible:  hasDomains}">
+    <div id="no_domains" data-testid="no-devices" v-bind:class="{ invisible:  hasDomains}">
       <div class="row">
         <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
         <div class="col-8 col-md-8 col-sm-8 col-lg-8">
@@ -73,7 +107,7 @@
             <p>You do not have any activated devices.<br/>Buy or build your first Syncloud device and activate it.</p>
             <br/>
             <p style="text-align:center;">
-              <a class="btn btn-primary btn-lg" href="http://syncloud.org" role="button">Learn more</a>
+              <a class="btn btn-primary btn-lg" href="https://www.syncloud.org" role="button">Learn more</a>
             </p>
           </div>
         </div>
@@ -82,20 +116,21 @@
     </div>
   </div>
 
-  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="domainDelete">
+  <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
+                id="delete_confirmation" @confirm="domainDelete">
     <template v-slot:title>
       Deactivate {{ domainToDelete }}
     </template>
     <template v-slot:text>
-      Device will be unlinked from the domain. Domain will be released and might be taken by other user. Proceed with caution!
+      Device will be unlinked from the domain.<br>Domain will be released and might be taken by other user.<br>Proceed with caution!
     </template>
-  </Confirmation>
+  </CustomDialog>
 </template>
 
 <script>
 import axios from 'axios'
 import moment from 'moment'
-import Confirmation from '@/components/Confirmation'
+import CustomDialog from '../components/CustomDialog.vue'
 
 function sameDay (date1, date2) {
   return (date1.getDate() === date2.getDate() &&
@@ -146,13 +181,15 @@ function convert (domain) {
   domain.has_ipv6_address = !!domain.ipv6
   domain.online = online(domain.last_update)
   domain.nice_last_update = niceTimestamp(domain.last_update, new Date())
+  domain.ns_check_state = 'unchecked'
+  domain.ns_check_actual = []
   return domain
 }
 
 export default {
   name: 'Devices',
   components: {
-    Confirmation
+    CustomDialog
   },
   props: {
     checkUserSession: Function
@@ -161,7 +198,8 @@ export default {
     return {
       hasDomains: Boolean,
       domainGroups: Array,
-      domainToDelete: ''
+      domainToDelete: '',
+      deleteConfirmationVisible: false
     }
   },
   mounted () {
@@ -180,7 +218,11 @@ export default {
             let group = []
             const groups = []
             domains.forEach(domain => {
-              group.push(convert(domain))
+              const converted = convert(domain)
+              group.push(converted)
+              if (converted.name_servers) {
+                this.checkNameServers(converted)
+              }
               if (group.length === 2) {
                 groups.push(group)
                 group = []
@@ -202,11 +244,26 @@ export default {
           }
         })
     },
+    checkNameServers: function (domain) {
+      domain.ns_check_state = 'checking'
+      domain.ns_check_actual = []
+      axios.get('/api/domain/check_nameservers', { params: { domain: domain.name } })
+        .then(response => {
+          const result = response.data.data
+          domain.ns_check_state = result.matched ? 'matched' : 'mismatched'
+          domain.ns_check_actual = result.actual || []
+        })
+        .catch(_ => {
+          domain.ns_check_state = 'mismatched'
+          domain.ns_check_actual = []
+        })
+    },
     domainDeleteConfirm: function (domainName) {
       this.domainToDelete = domainName
-      this.$refs.delete_confirmation.show()
+      this.deleteConfirmationVisible = true
     },
     domainDelete: function () {
+      this.deleteConfirmationVisible = false
       axios.delete('/api/domain', { params: { domain: this.domainToDelete } })
         .then(_ => {
           this.reload()

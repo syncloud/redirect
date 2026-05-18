@@ -12,17 +12,21 @@ import (
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
+	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
+	"github.com/syncloud/redirect/subscription"
+	"github.com/syncloud/redirect/user"
 	"github.com/syncloud/redirect/utils"
-	"log"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
+	var logger = log.Default()
 
 	c := container.New()
 
@@ -36,7 +40,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(config *utils.Config) *db.MySql {
-		return db.NewMySql(config.GetMySqlHost(), config.GetMySqlDB(), config.GetMySqlLogin(), config.GetMySqlPassword())
+		return db.NewMySql(
+			config.GetMySqlHost(),
+			config.GetMySqlDB(),
+			config.GetMySqlLogin(),
+			config.GetMySqlPassword(),
+			logger,
+		)
 	})
 	if err != nil {
 		return nil, err
@@ -79,7 +89,14 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(statsd *statsd.Client, route53 *route53.Route53) *dns.AmazonDns {
-		return dns.New(statsd, route53, 255)
+		return dns.New(statsd, route53, 255, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func() *dns.PublicResolver {
+		return dns.NewPublicResolver()
 	})
 	if err != nil {
 		return nil, err
@@ -102,7 +119,28 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(smtp *smtp.Smtp, config *utils.Config) *service.Mail {
-		return service.NewMail(smtp, mailPath, config.MailFrom(), config.MailDeviceErrorTo(), config.Domain())
+		return service.NewMail(
+			smtp,
+			mailPath,
+			config.MailFrom(),
+			config.MailDeviceErrorTo(),
+			config.Domain(),
+			logger,
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		config *utils.Config,
+	) (*subscription.PayPal, error) {
+		return subscription.New(
+			config.PayPalClientId(),
+			config.PayPalSecretId(),
+			config.PayPalUrl(),
+			logger,
+		)
 	})
 	if err != nil {
 		return nil, err
@@ -113,12 +151,14 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		actions *service.Actions,
 		config *utils.Config,
+		subscriptions *subscription.PayPal,
 	) *service.Users {
 		return service.NewUsers(
 			database,
 			config.ActivateByEmail(),
 			actions,
 			mail,
+			subscriptions,
 		)
 	})
 	if err != nil {
@@ -140,6 +180,18 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		config *utils.Config,
 	) *service.Domains {
 		return service.NewDomains(amazonDns, database, users, config.Domain(), config.AwsHostedZoneId(), detector)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		database *db.MySql,
+		amazonDns *dns.AmazonDns,
+		resolver *dns.PublicResolver,
+		config *utils.Config,
+	) *service.NsChecker {
+		return service.NewNsChecker(database, amazonDns, resolver, config.AwsHostedZoneId())
 	})
 	if err != nil {
 		return nil, err
@@ -190,6 +242,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			certbot,
 			config.Domain(),
 			config.GetApiSocket(),
+			logger,
 		)
 	})
 	if err != nil {
@@ -199,6 +252,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		statsd *statsd.Client,
 		domains *service.Domains,
+		nsChecker *service.NsChecker,
 		users *service.Users,
 		mail *service.Mail,
 		actions *service.Actions,
@@ -206,20 +260,23 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	) (*rest.Www, error) {
 		secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
 		if err != nil {
-			log.Fatalf("unable to decode secre key %v", err)
+			logger.Error("unable to decode secret key", zap.Error(err))
 			return nil, err
 		}
 		return rest.NewWww(
 			statsd,
 			domains,
+			nsChecker,
 			users,
 			actions,
 			mail,
 			config.Domain(),
-			config.PayPalPlanId(),
+			config.PayPalPlanMonthlyId(),
+			config.PayPalPlanAnnualId(),
 			config.PayPalClientId(),
 			secretKey,
 			config.GetWwwSocket(),
+			logger,
 		), nil
 	})
 	if err != nil {
@@ -241,15 +298,50 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(
 		database *db.MySql,
-		amazonDns *dns.AmazonDns,
+		domains *service.Domains,
 		mail *service.Mail,
-		graphite *metrics.GraphiteClient,
+		statsd *statsd.Client,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
-			amazonDns,
+			domains,
 			mail,
-			graphite,
+			statsd,
+		)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	err = c.Singleton(func() *user.CleanerState {
+		return user.NewCleanerState(
+			logger,
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	err = c.Singleton(func(
+		database *db.MySql,
+		state *user.CleanerState,
+		mail *service.Mail,
+		statsd *statsd.Client,
+		config *utils.Config,
+		domains *service.Domains,
+		paypal *subscription.PayPal,
+	) *user.Cleaner {
+		return user.NewCleaner(
+			database,
+			state,
+			mail,
+			domains,
+			paypal,
+			config.UserCleanerEnabled(),
+			logger,
 		)
 	})
 	if err != nil {

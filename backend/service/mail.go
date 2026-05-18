@@ -3,131 +3,144 @@ package service
 import (
 	"fmt"
 	"github.com/syncloud/redirect/smtp"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"strings"
 )
 
 type Mail struct {
-	smtp                      *smtp.Smtp
-	resetPasswordTemplatePath string
-	setPasswordTemplatePath   string
-	activateTemplatePath      string
-	planSubscribeTemplatePath string
-	releaseAnnouncementPath   string
-	dnsCleanPath              string
-	from                      string
-	deviceErrorTo             string
-	mainDomain                string
+	smtp                        *smtp.Smtp
+	resetPasswordTemplatePath   string
+	setPasswordTemplatePath     string
+	activateTemplatePath        string
+	planSubscribeTemplatePath   string
+	planUnSubscribeTemplatePath string
+	releaseAnnouncementPath     string
+	dnsCleanPath                string
+	subscriptionTrialPath       string
+	accountLockSoonPath         string
+	accountLockedPath           string
+	accountRemovedPath          string
+	from                        string
+	deviceErrorTo               string
+	mainDomain                  string
+	logger                      *zap.Logger
 }
 
 func NewMail(smtp *smtp.Smtp,
 	mailPath string,
 	from string,
 	deviceErrorTo string,
-	mainDomain string) *Mail {
+	mainDomain string,
+	logger *zap.Logger,
+) *Mail {
 
 	return &Mail{
-		smtp:                      smtp,
-		resetPasswordTemplatePath: mailPath + "/reset_password.txt",
-		setPasswordTemplatePath:   mailPath + "/set_password.txt",
-		activateTemplatePath:      mailPath + "/activate.txt",
-		planSubscribeTemplatePath: mailPath + "/plan_subscribe.txt",
-		releaseAnnouncementPath:   mailPath + "/release_announcement.txt",
-		dnsCleanPath:              mailPath + "/dns_clean.txt",
-		from:                      from,
-		deviceErrorTo:             deviceErrorTo,
-		mainDomain:                mainDomain,
+		smtp:                        smtp,
+		resetPasswordTemplatePath:   mailPath + "/reset_password.txt",
+		setPasswordTemplatePath:     mailPath + "/set_password.txt",
+		activateTemplatePath:        mailPath + "/activate.txt",
+		planSubscribeTemplatePath:   mailPath + "/plan_subscribe.txt",
+		planUnSubscribeTemplatePath: mailPath + "/plan_unsubscribe.txt",
+		releaseAnnouncementPath:     mailPath + "/release_announcement.txt",
+		dnsCleanPath:                mailPath + "/dns_clean.txt",
+		subscriptionTrialPath:       mailPath + "/subscription_trial.txt",
+		accountLockSoonPath:         mailPath + "/account_lock_soon.txt",
+		accountLockedPath:           mailPath + "/account_locked.txt",
+		accountRemovedPath:          mailPath + "/account_removed.txt",
+		from:                        from,
+		deviceErrorTo:               deviceErrorTo,
+		mainDomain:                  mainDomain,
+		logger:                      logger,
 	}
 }
 
 func (m *Mail) SendResetPassword(to string, token string) error {
-	buf, err := os.ReadFile(m.resetPasswordTemplatePath)
-	if err != nil {
-		return err
-	}
-	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain, "token": token})
-	if err != nil {
-		return err
-	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
-	return err
+	return m.SendNotification(m.resetPasswordTemplatePath, map[string]string{
+		"token":  token,
+		"domain": m.mainDomain,
+	}, to)
 }
 
 func (m *Mail) SendSetPassword(to string) error {
-	buf, err := os.ReadFile(m.setPasswordTemplatePath)
-	if err != nil {
-		return err
-	}
-	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{})
-	if err != nil {
-		return err
-	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
-	return err
+	return m.SendNotification(m.setPasswordTemplatePath, map[string]string{}, to)
 }
 
 func (m *Mail) SendActivate(to string, token string) error {
-	buf, err := os.ReadFile(m.activateTemplatePath)
-	if err != nil {
-		return err
-	}
-	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{"token": token, "domain": m.mainDomain})
-	if err != nil {
-		return err
-	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
-	return err
+	return m.SendNotification(m.activateTemplatePath, map[string]string{
+		"token":  token,
+		"domain": m.mainDomain,
+	}, to)
 }
 
 func (m *Mail) SendPlanSubscribed(to string) error {
-	buf, err := os.ReadFile(m.planSubscribeTemplatePath)
-	if err != nil {
-		return err
-	}
-	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain})
-	if err != nil {
-		return err
-	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to, m.deviceErrorTo)
-	return err
+	return m.SendNotification(m.planSubscribeTemplatePath, map[string]string{
+		"domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendPlanUnSubscribed(to string) error {
+	return m.SendNotification(m.planUnSubscribeTemplatePath, map[string]string{
+		"domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
 }
 
 func (m *Mail) SendReleaseAnnouncement(to string) error {
-	buf, err := os.ReadFile(m.releaseAnnouncementPath)
-	if err != nil {
-		return err
-	}
-	template := string(buf)
-	subject, body, err := ParseBody(template, map[string]string{"domain": m.mainDomain})
-	if err != nil {
-		return err
-	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
-	return err
+	return m.SendNotification(m.releaseAnnouncementPath, map[string]string{
+		"domain": m.mainDomain,
+	}, to)
 }
 
 func (m *Mail) SendDnsCleanNotification(to string, userDomain string) error {
-	buf, err := os.ReadFile(m.dnsCleanPath)
+	return m.SendNotification(m.dnsCleanPath, map[string]string{
+		"main_domain": m.mainDomain,
+		"user_domain": userDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendTrial(to string) error {
+	return m.SendNotification(m.subscriptionTrialPath, map[string]string{
+		"main_domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendAccountLockSoon(to string) error {
+	return m.SendNotification(m.accountLockSoonPath, map[string]string{
+		"main_domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendAccountLocked(to string) error {
+	return m.SendNotification(m.accountLockedPath, map[string]string{
+		"main_domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendAccountRemoved(to string) error {
+	return m.SendNotification(m.accountRemovedPath, map[string]string{
+		"main_domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendNotification(template string, subs map[string]string, to ...string) error {
+	m.logger.Info("send email notification", zap.String("template", template), zap.Strings("to", to))
+	buf, err := os.ReadFile(template)
 	if err != nil {
+		m.logger.Error("unable to read email template", zap.String("template", template), zap.Error(err))
 		return err
 	}
-	template := string(buf)
-	subject, body, err := ParseBody(template,
-		map[string]string{
-			"main_domain": m.mainDomain,
-			"user_domain": userDomain,
-		},
-	)
+	subject, body, err := ParseBody(string(buf), subs)
 	if err != nil {
+		m.logger.Error("unable to parse email template", zap.String("template", template), zap.Error(err))
 		return err
 	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to)
-	return err
+	err = m.smtp.Send(m.from, "text/plain", body, subject, to...)
+	if err != nil {
+		m.logger.Error("unable to send email", zap.Strings("to", to), zap.Error(err))
+		return err
+	}
+	return nil
 }
 
 func (m *Mail) SendLogs(to string, data string, includeSupport bool) error {

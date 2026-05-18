@@ -50,6 +50,9 @@ func (v *FieldValidator) Domain(domain *string, field string, mainDomain string)
 			if strings.HasSuffix(*domain, suffix) {
 				parts := strings.Split(*domain, suffix)
 				subDomain := parts[0]
+				if strings.Contains(subDomain, "_") {
+					v.addFieldError(field, "Cannot contain underscores '_'")
+				}
 				var valid = regexp.MustCompile(`^[\w-]+$`)
 				if !valid.MatchString(subDomain) {
 					v.addFieldError(field, "Invalid characters")

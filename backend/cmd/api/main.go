@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
@@ -10,14 +11,16 @@ import (
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
-	"os"
+	"github.com/syncloud/redirect/user"
+	"github.com/syncloud/redirect/version"
 )
 
 func main() {
+	fmt.Printf("redirect api build=%s sha=%s time=%s\n", version.BuildNumber, version.GitSha, version.BuildTime)
 	var configFile string
 	var secretFile string
 	var mailDir string
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use: "api",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.EnableStdOutLog()
@@ -29,11 +32,13 @@ func main() {
 				api *rest.Api,
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
+				userCleaner *user.Cleaner,
 				graphite *metrics.GraphiteClient,
 			) error {
 				services := []service.Startable{
 					database,
 					dnsCleaner,
+					userCleaner,
 					graphite,
 					api,
 				}
@@ -47,16 +52,12 @@ func main() {
 			})
 		},
 	}
-	cmd.Flags().StringVar(&configFile, "config-file", "", "config file")
-	_ = cmd.MarkFlagRequired("config-file")
-	cmd.Flags().StringVar(&secretFile, "secret-file", "", "secret file")
-	_ = cmd.MarkFlagRequired("secret-file")
-	cmd.Flags().StringVar(&mailDir, "mail-dir", "", "mail dir")
-	_ = cmd.MarkFlagRequired("mail-dir")
+	cmd.Flags().StringVar(&configFile, "config-file", ioc.ConfigFile, "config file")
+	cmd.Flags().StringVar(&secretFile, "secret-file", ioc.SecretFile, "secret file")
+	cmd.Flags().StringVar(&mailDir, "mail-dir", ioc.MailDir, "mail dir")
 
 	err := cmd.Execute()
 	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
+		panic(err)
 	}
 }

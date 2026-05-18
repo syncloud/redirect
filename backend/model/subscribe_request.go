@@ -1,5 +1,5 @@
 package model
 
-type PlanSubscribeRequest struct {
+type SubscribeRequest struct {
 	SubscriptionId string `json:"subscription_id"`
 }

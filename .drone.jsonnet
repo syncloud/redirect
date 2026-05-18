@@ -1,6 +1,12 @@
 local name = "redirect";
 local go = "1.20.4-buster";
 local dind = "19.03.8-dind";
+local node = "18.12.0";
+local playwright = "v1.59.1-jammy";
+local platform = "26.04.2";
+local docker_image = "syncloud/redirect";
+local version = "${DRONE_BRANCH}-${DRONE_BUILD_NUMBER}";
+local image_tag = docker_image + ":" + version;
 
 local build(arch) = [{
     kind: "pipeline",
@@ -13,7 +19,7 @@ local build(arch) = [{
     steps: [
         {
             name: "build web",
-            image: "node:16.1.0",
+            image: "node:" + node,
             commands: [
                 "mkdir build",
                 "cd www",
@@ -25,14 +31,17 @@ local build(arch) = [{
             ]
         },
         {
+            name: "test backend",
+            image: "golang:" + go,
+            commands: [
+                "./backend/test.sh",
+            ]
+        },
+        {
             name: "build backend",
             image: "golang:" + go,
             commands: [
-                "cd backend",
-                "go test ./... -cover",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/api ./cmd/api",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/www ./cmd/www",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../build/bin/notification ./cmd/notification"
+                "./backend/build.sh ${DRONE_BUILD_NUMBER}",
             ]
         },
         {
@@ -48,8 +57,8 @@ local build(arch) = [{
             ]
         },
         {
-            name: "test-integration",
-            image: "python:3.9-buster",
+            name: "systemd install",
+            image: "python:3.9-slim-bullseye",
             environment: {
                 access_key_id: {
                   from_secret: "access_key_id"
@@ -63,39 +72,137 @@ local build(arch) = [{
             },
             commands: [
                 "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-	            "pip install -r integration/requirements.txt",
-	            "./ci/recreatedb",
+                "pip install -r integration/requirements.txt",
+                "./ci/recreatedb",
                 "cd integration",
-                "py.test -x -vv -s verify.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
+                "py.test -x -vv -s test-systemd.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ]
         },
         {
-            name: "test-ui-desktop",
-            image: "python:3.9-buster",
+            name: "docker",
+            image: "plugins/docker:20.18",
+            settings: {
+                repo: docker_image,
+                username: { from_secret: "DOCKER_USERNAME" },
+                password: { from_secret: "DOCKER_PASSWORD" },
+                tags: [
+                    version,
+                    "${DRONE_BRANCH}",
+                ],
+            },
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
+            name: "docker latest",
+            image: "plugins/docker:20.18",
+            settings: {
+                repo: docker_image,
+                username: { from_secret: "DOCKER_USERNAME" },
+                password: { from_secret: "DOCKER_PASSWORD" },
+                tags: ["latest"],
+            },
+            when: {
+                event: ["push"],
+                branch: ["stable"],
+            },
+        },
+        {
+            name: "deploy test",
+            image: "debian:bookworm-slim",
+            environment: {
+                DEPLOY_HOST: "www.syncloud.test",
+                DEPLOY_USER: "root",
+                DEPLOY_URL: "https://api.syncloud.test",
+            },
             commands: [
-              "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-              "cd integration",
-              "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=desktop --domain=syncloud.test --device-host=www.syncloud.test ",
+                "./ci/test-init.sh",
+                "./ci/deploy-prepare.sh",
+                "./ci/deploy-run.sh " + image_tag,
+                "./ci/deploy-verify.sh",
             ],
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
+            name: "test-api",
+            image: "python:3.9-slim-bullseye",
+            environment: {
+                access_key_id: {
+                  from_secret: "access_key_id"
+                },
+                secret_access_key: {
+                  from_secret: "secret_access_key"
+                },
+                hosted_zone_id: {
+                  from_secret: "hosted_zone_id"
+                },
+            },
+            commands: [
+                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
+                "pip install -r integration/requirements.txt",
+                "cd integration",
+                "py.test -x -vv -s test.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
+            ],
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
+            name: "test-ui-desktop",
+            image: "mcr.microsoft.com/playwright:" + playwright,
+            environment: {
+                CI: "true",
+                PLAYWRIGHT_DOMAIN: "syncloud.test"
+            },
+            commands: [
+                "./ci/ui.sh desktop"
+            ]
         },
         {
             name: "test-ui-mobile",
-            image: "python:3.9-buster",
+            image: "mcr.microsoft.com/playwright:" + playwright,
+            environment: {
+                CI: "true",
+                PLAYWRIGHT_DOMAIN: "syncloud.test"
+            },
             commands: [
-              "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-              "cd integration",
-              "pip install -r requirements.txt",
-              "py.test -x -s test-ui.py --ui-mode=mobile --domain=syncloud.test --device-host=www.syncloud.test ",
+                "./ci/ui.sh mobile"
+            ]
+        },
+        {
+            name: "deploy uat",
+            image: "debian:bookworm-slim",
+            environment: {
+                DEPLOY_HOST: { from_secret: "uat_deploy_host" },
+                DEPLOY_USER: { from_secret: "uat_deploy_user" },
+                DEPLOY_KEY: { from_secret: "uat_deploy_key" },
+                DEPLOY_URL: { from_secret: "uat_deploy_url" },
+            },
+            commands: [
+                "./ci/deploy-prepare.sh",
+                "./ci/deploy-run.sh " + image_tag,
+                "./ci/deploy-verify.sh",
             ],
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
+            when: { event: ["push"] },
+        },
+        {
+            name: "deploy prod",
+            image: "debian:bookworm-slim",
+            environment: {
+                DEPLOY_HOST: { from_secret: "prod_deploy_host" },
+                DEPLOY_USER: { from_secret: "prod_deploy_user" },
+                DEPLOY_KEY: { from_secret: "prod_deploy_key" },
+                DEPLOY_URL: { from_secret: "prod_deploy_url" },
+            },
+            commands: [
+                "./ci/deploy-prepare.sh",
+                "./ci/deploy-run.sh " + image_tag,
+                "./ci/deploy-verify.sh",
+            ],
+            when: { event: ["push"], branch: ["stable"] },
         },
         {
             name: "artifact",
@@ -139,16 +246,8 @@ local build(arch) = [{
             }
         },
         {
-            name: "selenium",
-            image: "selenium/standalone-firefox:4.0.0-beta-3-prerelease-20210402",
-            volumes: [{
-                name: "shm",
-                path: "/dev/shm"
-            }]
-        },
-        {
             name: "www.syncloud.test",
-            image: "syncloud/platform-buster-amd64",
+            image: "syncloud/bootstrap-bookworm-amd64:" + platform,
             privileged: true,
             volumes: [
                 {
@@ -163,10 +262,6 @@ local build(arch) = [{
         }
     ],
     volumes: [
-        {
-         name: "shm",
-         temp: {}
-        }
     ]
 }];
 

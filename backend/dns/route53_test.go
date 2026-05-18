@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/smira/go-statsd"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/model"
 	"testing"
 )
@@ -43,7 +44,7 @@ func (r *Route53Stub) GetHostedZone(input *route53.GetHostedZoneInput) (*route53
 
 func TestAmazonDns_CreateCertbotRecord_QuoteValue(t *testing.T) {
 	client := &Route53Stub{}
-	amazonDns := New(&StatsdClientStub{}, client, 10)
+	amazonDns := New(&StatsdClientStub{}, client, 10, log.Default())
 	err := amazonDns.CreateCertbotRecord("", "name", []string{"value"})
 	assert.Nil(t, err)
 	record := client.resourceRecordSetsInput.ChangeBatch.Changes[0].ResourceRecordSet.ResourceRecords[0]
@@ -53,7 +54,7 @@ func TestAmazonDns_CreateCertbotRecord_QuoteValue(t *testing.T) {
 
 func TestAmazonDns_UpdateDomainRecords_Dkim255CharsLimit(t *testing.T) {
 	client := &Route53Stub{}
-	amazonDns := New(&StatsdClientStub{}, client, 10)
+	amazonDns := New(&StatsdClientStub{}, client, 10, log.Default())
 	dkimKey := "12345abcde"
 	domain := &model.Domain{DkimKey: &dkimKey}
 	err := amazonDns.UpdateDomainRecords(domain)

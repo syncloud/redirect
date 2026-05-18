@@ -3,6 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
 	"testing"
@@ -13,6 +15,7 @@ type DnsStub struct {
 	recordsDeleted    bool
 	certbotDeleted    bool
 	updated           bool
+	error             error
 }
 
 func (dns *DnsStub) GetHostedZoneNameServers(_ string) ([]*string, error) {
@@ -20,26 +23,41 @@ func (dns *DnsStub) GetHostedZoneNameServers(_ string) ([]*string, error) {
 }
 
 func (dns *DnsStub) DeleteHostedZone(_ string) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.hostedZoneDeleted = true
 	return nil
 }
 
 func (dns *DnsStub) CreateHostedZone(_ string) (*string, error) {
+	if dns.error != nil {
+		return nil, dns.error
+	}
 	id := "123"
 	return &id, nil
 }
 
 func (dns *DnsStub) UpdateDomainRecords(_ *model.Domain) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.updated = true
 	return nil
 }
 
 func (dns *DnsStub) DeleteDomainRecords(_ *model.Domain) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.recordsDeleted = true
 	return nil
 }
 
 func (dns *DnsStub) DeleteCertbotRecord(_ string, _ string) error {
+	if dns.error != nil {
+		return dns.error
+	}
 	dns.certbotDeleted = true
 	return nil
 }
@@ -51,6 +69,7 @@ type DomainsDbStub struct {
 	inserted     bool
 	deleted      bool
 	hostedZoneId string
+	userStatus   int64
 }
 
 func (db *DomainsDbStub) GetDomainByToken(_ string) (*model.Domain, error) {
@@ -69,7 +88,7 @@ func (db *DomainsDbStub) GetUserDomains(_ int64) ([]*model.Domain, error) {
 
 func (db *DomainsDbStub) GetUser(_ int64) (*model.User, error) {
 	if db.found {
-		return &model.User{Id: db.userId, Active: true}, nil
+		return &model.User{Id: db.userId, Active: true, Status: db.userStatus}, nil
 	}
 	return nil, nil
 }
@@ -340,6 +359,21 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone(t *testing.T) {
 
 }
 
+func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone_IgnoreNoSuchHostedZoneError(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+	dnsStub := &DnsStub{error: awserr.New(route53.ErrCodeNoSuchHostedZone, "not found", nil)}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(dnsStub, db, users, "syncloud.it", "2", &DetectorStub{})
+	err := domains.DeleteDomain(1, "test.com")
+
+	assert.Nil(t, err)
+	assert.False(t, dnsStub.hostedZoneDeleted)
+	assert.False(t, dnsStub.recordsDeleted)
+	assert.False(t, dnsStub.certbotDeleted)
+	assert.True(t, db.deleted)
+
+}
+
 func TestGetDomains_Free_NoNameServers(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
@@ -387,4 +421,28 @@ func TestDomains_Update_Ipv6_Changed(t *testing.T) {
 	assert.Equal(t, "fe80::0000:0000:0000:0000", *domain.Ipv6)
 	assert.True(t, db.updated)
 	assert.True(t, dnsStub.updated)
+}
+
+func TestDomains_Update_LockedUser_Error(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1", userStatus: model.StatusLocked}
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	token := "123"
+	ipv6 := "fe80::0000:0000:0000:0000"
+	requestIp := "fe80::1111:1111:1111:1111"
+	webLocalPort := 443
+	webProtocol := "https"
+	detector := &DetectorStub{changed: true}
+	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "2", detector)
+	_, err := domainService.Update(model.DomainUpdateRequest{
+		MapLocalAddress: false,
+		WebLocalPort:    &webLocalPort,
+		WebProtocol:     &webProtocol,
+		Token:           &token,
+		Ipv6:            &ipv6,
+		Ipv4Enabled:     false,
+		Ipv6Enabled:     true,
+	}, &requestIp)
+
+	assert.Error(t, err)
 }

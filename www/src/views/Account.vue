@@ -2,24 +2,144 @@
 
   <div class="container">
     <div id="has_domains">
-      <h2>Account</h2>
+      <h2 data-testid="account-title">Account</h2>
       <br/>
-
       <div>
-
         <div class="row">
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
                 <div class="panel-title">
-                  Free Services
+                  Subscription
+                  <div class="pull-right" id="subscription_active"
+                       v-if="this.userLoaded && this.subscriptionId !== undefined">
+                    <span class="label label-success" style="font-size: 16px;">Active</span>
+                  </div>
+                  <div class="pull-right" id="subscription_inactive"
+                       v-if="this.userLoaded && this.subscriptionId === undefined">
+                    You have 30 days to subscribe
+                  </div>
                 </div>
               </div>
               <div class="panel-body">
-                DNS (*.syncloud.it)
+                <div v-if="this.userLoaded && this.subscriptionId === undefined">
+                  Subscription is required after 30 days of a free trial period.<br>
+                  Additionally you can use your personal domain on active subscription (like example.com)<br><br>
+                </div>
+                <div>
+                  We provide the following features for your device:
+                </div>
+                <ul style="padding-top: 10px">
+                  <li>Automatic IP DNS updates</li>
+                  <li>Automatic mail DNS records</li>
+                  <li>Email support for your device</li>
+                </ul>
+                <div v-show="this.userLoaded && this.subscriptionId === undefined">
+                  <div>
+                    For personal domain you need to:
+                  </div>
+                  <ul>
+                    <li>Have you own a domain (like example.com)</li>
+                    <li>Be able to change Nameservers for your domain</li>
+                    <li>Allow Syncloud to manage DNS records for that domain name by setting
+                      Syncloud Name Servers
+                    </li>
+                  </ul>
+                    <el-row  style="padding: 20px 0 20px 0">
+                      <el-col :span="24" style="text-align: center">
+                        <el-radio-group v-if="this.userLoaded" v-model="this.subscriptionType">
+                          <el-radio-button label="paypal_month">£5/Month</el-radio-button>
+                          <el-radio-button label="paypal_year" >£60/Year</el-radio-button>
+                          <el-radio-button label="crypto_year" id="crypto_year">ETH 0.05/Year</el-radio-button>
+                        </el-radio-group>
+                      </el-col>
+                    </el-row>
+                    <div v-show="this.subscriptionType.startsWith('paypal')" style="margin: auto; max-width: 200px" id="paypal-buttons">
+
+                    </div>
+                    <div v-show="this.subscriptionType.startsWith('crypto')" style="margin: auto; max-width: 400px" >
+                      <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px" >
+                        <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
+                          Amount (Ethereum)
+                        </el-col>
+                        <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
+                          0.05 ETH
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="24">Please send to address:</el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="24" style="text-align: center">
+                          <code class="wallet">{{ wallet }}</code>
+                          <el-button text :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
+                          <el-icon color="green" style="padding: 0 10px 0 10px; vertical-align: middle; height: 24px" :size="34" v-show="copied">
+                            <CircleCheck />
+                          </el-icon>
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row" style="padding-top: 2px">
+                        <el-col :span="24">
+                          or Scan the QR code
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col :span="4"/>
+                        <el-col :span="16">
+                          <el-image src="/assets/crypto-wallet-qr.png" ></el-image>
+                        </el-col>
+                        <el-col :span="4"/>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col>
+                          Enter transaction ID:
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col>
+                          <el-input v-model="cryptoTransactionId" id="crypto_transaction_id"></el-input>
+                        </el-col>
+                      </el-row>
+                      <el-row class="crypto-row">
+                        <el-col style="text-align:right">
+                          <el-button
+                            @click="cryptoSubscribe"
+                            type="primary"
+                            :disabled="cryptoTransactionId.length<10"
+                            id="crypto_subscribe_btn"
+                          >
+                            Subscribe
+                          </el-button>
+                        </el-col>
+                      </el-row>
+                    </div>
+                </div>
+
+                <div v-if="this.userLoaded && this.subscriptionId !== undefined">
+                  <div style="padding-top: 10px">
+                    You can activate your device with a personal domain:<br>
+                  </div>
+                  <ol>
+                    <li>Reactivate from Settings - Activation and select a Premium mode</li>
+                    <li>
+                      Copy Name Servers for your
+                      <router-link to="/">domain</router-link>
+                      (Under this domain Name Servers list)
+                    </li>
+                    <li>
+                      Update Name Servers on your domain registrar page (GoDaddy for example)
+                    </li>
+                  </ol>
+
+                  <button type="button" class="btn btn-danger pull-right" id="cancel" @click="cancelSubscription">
+                    <span class="glyphicon glyphicon-remove" aria-hidden="true" style="padding-right: 5px"></span>Cancel
+                  </button>
+
+                </div>
               </div>
             </div>
           </div>
+
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -38,60 +158,7 @@
               </div>
             </div>
           </div>
-          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <div class="panel-title">
-                  Subscription
-                  <div class="pull-right" id="premium_active" v-if="this.subscriptionId">
-                    <span class="label label-success" style="font-size: 16px;">Active</span>
-                  </div>
-                </div>
-              </div>
-              <div class="panel-body">
-                <div>Improve Syncloud device experience with your domain name (ex. example.com).
-                </div>
-                <ul style="padding-top: 10px">
-                  <li>Automatic IP DNS updates</li>
-                  <li>Automatic mail DNS records</li>
-                </ul>
-                <div id="request_premium" v-if="!this.subscriptionId">
-                  <div>
-                    What you need to have:
-                  </div>
-                  <ul>
-                    <li>You own a domain (like example.com)</li>
-                    <li>You can change Nameservers for your domain</li>
-                    <li>You are ready to allow Syncloud to manage DNS records for that domain name by setting
-                      Syncloud Name Servers
-                    </li>
-                  </ul>
-                  <div style="margin: auto">
-                    <h4 style="text-align: center" v-if="this.payPalLoaded">Subscribe for £5/month</h4>
-                    <div style="margin: auto; max-width: 200px" id="paypal-buttons"></div>
-                  </div>
-                </div>
 
-                <div id="premium_active" v-if="this.subscriptionId">
-                  <div style="padding-top: 10px">
-                  You can activate your device in a premium (personal domain) mode:<br>
-                  </div>
-                  <ol>
-                    <li>Reactivate from Settings - Activation and select a Premium mode</li>
-                    <li>
-                      Copy Name Servers for your
-                      <router-link to="/">domain</router-link>
-                      (Under this domain Name Servers list)
-                    </li>
-                    <li>
-                      Update Name Servers on your domain registrar page (GoDaddy for example)
-                    </li>
-                  </ol>
-
-                </div>
-              </div>
-            </div>
-          </div>
           <div class="col-6 col-md-6 col-sm-6 col-lg-6">
             <div class="panel panel-danger">
               <div class="panel-heading">
@@ -116,7 +183,8 @@
     </div>
   </div>
 
-  <Confirmation ref="delete_confirmation" id="delete_confirmation" @confirm="accountDeleteConfirm" @cancel="reload">
+  <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
+          id="delete_confirmation" @confirm="accountDeleteConfirm">
     <template v-slot:title>Delete Account</template>
     <template v-slot:text>
       <div>Once you delete your account, there's no going back. All devices you have will be deactivated and domains
@@ -126,18 +194,33 @@
       <br>
       <div>Are you sure?</div>
     </template>
-  </Confirmation>
+  </CustomDialog>
+
+  <CustomDialog :visible="cancelConfirmationVisible" @cancel="cancelConfirmationVisible = false"
+          id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
+    <template v-slot:title>Cancel subscription</template>
+    <template v-slot:text>
+      <div>
+        You are about to cancel your subscription
+      </div>
+      <br>
+      <div>Are you sure?</div>
+    </template>
+  </CustomDialog>
 
 </template>
 <script>
 import axios from 'axios'
-import Confirmation from '@/components/Confirmation'
+import CustomDialog from '../components/CustomDialog.vue'
 import { loadScript } from '@paypal/paypal-js'
+import { CircleCheck, CopyDocument } from '@element-plus/icons-vue'
+import { markRaw } from 'vue'
 
 export default {
   name: 'Account',
   components: {
-    Confirmation
+    CircleCheck,
+    CustomDialog
   },
   props: {
     checkUserSession: Function
@@ -148,38 +231,65 @@ export default {
       premiumStatusId: Number,
       subscriptionId: String,
       domainGroups: Array,
-      planId: String,
+      planMonthlyId: String,
+      planAnnualId: String,
       clientId: String,
-      payPalLoaded: Boolean
+      paypalLoaded: Boolean,
+      userLoaded: Boolean,
+      deleteConfirmationVisible: false,
+      cancelConfirmationVisible: false,
+      subscriptionType: 'paypal_month',
+      cryptoTransactionId: '',
+      wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
+      copied: false,
+      CopyDocument: markRaw(CopyDocument)
     }
   },
   mounted () {
-    this.subscriptionId = null
-    this.payPalLoaded = false
+    this.subscriptionId = undefined
+    this.paypalLoaded = false
+    this.userLoaded = false
     this.reload()
   },
   methods: {
+    copy: function () {
+      navigator.clipboard.writeText(this.wallet)
+      this.copied = true
+      setTimeout(() => { this.copied = false }, 2000)
+    },
     reload: function () {
-      axios.get('api/user')
+      axios.get('/api/user')
         .then(response => {
           this.notificationEnabled = response.data.data.notification_enabled
           this.subscriptionId = response.data.data.subscription_id
+          this.userLoaded = true
           this.loadPlan(this.subscriptionId)
         })
         .catch(this.onError)
     },
     loadPlan: function (subscriptionId) {
-      axios.get('api/plan')
+      axios.get('/api/plan')
         .then(response => {
-          this.planId = response.data.data.plan_id
+          this.planAnnualId = response.data.data.plan_annual_id
+          this.planMonthlyId = response.data.data.plan_monthly_id
           this.clientId = response.data.data.client_id
-          if (!subscriptionId && !this.payPalLoaded) {
-            this.enablePayPal(this.clientId, this.planId)
+          if (!subscriptionId && !this.paypalLoaded) {
+            this.enablePayPal(this.clientId)
           }
         })
         .catch(this.onError)
     },
-    enablePayPal: function (clientId, planId) {
+    subscribe: function () {
+
+    },
+    cryptoSubscribe: function () {
+      axios.post('/api/plan/subscribe/crypto', { subscription_id: this.cryptoTransactionId })
+        .then(_ => {
+          this.reload()
+        })
+        .catch(this.onError)
+    },
+    enablePayPal: function (clientId) {
       loadScript({
         'client-id': clientId,
         vault: true,
@@ -190,11 +300,11 @@ export default {
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: planId
+                  plan_id: this.subscriptionType === 'paypal_year' ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {
-                axios.post('api/plan/subscribe', { subscription_id: data.subscriptionID })
+                axios.post('/api/plan/subscribe/paypal', { subscription_id: data.subscriptionID })
                   .then(_ => {
                     this.reload()
                   })
@@ -202,7 +312,7 @@ export default {
               }
             })
             .render('#paypal-buttons')
-          this.payPalLoaded = true
+          this.paypalLoaded = true
         })
         .catch((err) => {
           console.error('failed to load the PayPal JS SDK script', err)
@@ -210,17 +320,29 @@ export default {
     },
     notificationSave: function () {
       const action = this.notificationEnabled ? 'enable' : 'disable'
-      axios.post('api/notification/' + action)
+      axios.post('/api/notification/' + action)
+        .then(_ => {
+          this.reload()
+        })
+        .catch(this.onError)
+    },
+    cancelSubscription: function () {
+      this.cancelConfirmationVisible = true
+    },
+    cancelSubscriptionConfirm: function () {
+      this.cancelConfirmationVisible = false
+      axios.delete('/api/plan')
         .then(_ => {
           this.reload()
         })
         .catch(this.onError)
     },
     accountDelete: function () {
-      this.$refs.delete_confirmation.show()
+      this.deleteConfirmationVisible = true
     },
     accountDeleteConfirm: function () {
-      axios.delete('api/user')
+      this.deleteConfirmationVisible = false
+      axios.delete('/api/user')
         .then(_ => {
           this.checkUserSession()
         })
@@ -238,4 +360,29 @@ export default {
 }
 </script>
 <style>
+.crypto-row {
+  padding-bottom: 10px;
+}
+.wallet {
+  border: 2px dashed var(--el-border-color);
+  font-size: 90%;
+}
+@media (max-width: 1000px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 10px;
+  }
+}
+@media (max-width: 767px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 90%;
+  }
+}
+@media (max-width: 430px) {
+  .wallet {
+    border: 2px dashed var(--el-border-color);
+    font-size: 10px;
+  }
+}
 </style>
