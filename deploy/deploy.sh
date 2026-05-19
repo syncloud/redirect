@@ -165,7 +165,7 @@ docker run -d \
     --restart=unless-stopped \
     --net=host \
     --pid=host \
-    -v /:/host:ro,rslave \
+    -v /:/host:ro \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
