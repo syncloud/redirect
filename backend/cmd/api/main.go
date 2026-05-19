@@ -8,7 +8,6 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
-	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/user"
@@ -33,13 +32,11 @@ func main() {
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
 				userCleaner *user.Cleaner,
-				graphite *metrics.GraphiteClient,
 			) error {
 				services := []service.Startable{
 					database,
 					dnsCleaner,
 					userCleaner,
-					graphite,
 					api,
 				}
 				for _, s := range services {

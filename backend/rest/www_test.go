@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/smira/go-statsd"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/model"
@@ -12,12 +11,6 @@ import (
 	"net/http/httptest"
 	"testing"
 )
-
-type StatsdClientStub struct {
-}
-
-func (n StatsdClientStub) Incr(_ string, _ int64, _ ...statsd.Tag) {
-}
 
 type WwwDomainsStub struct {
 }
@@ -102,7 +95,6 @@ func (w WwwMailStub) SendResetPassword(_ string, _ string) error {
 func TestLogin_CreateSession(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{},
 		&WwwDomainsStub{},
 		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
@@ -141,7 +133,6 @@ func TestLogin_CreateSession(t *testing.T) {
 func TestLoginAgain_NotError(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{},
 		&WwwDomainsStub{},
 		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
@@ -195,7 +186,6 @@ func TestLoginAgain_NotError(t *testing.T) {
 func TestLoginFresh_NotError(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{},
 		&WwwDomainsStub{},
 		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},
@@ -235,7 +225,6 @@ func TestLoginFresh_NotError(t *testing.T) {
 func TestLogout_ClearSession(t *testing.T) {
 
 	www := NewWww(
-		&StatsdClientStub{},
 		&WwwDomainsStub{},
 		&WwwNsCheckerStub{},
 		&WwwUsersStub{authenticated: true},

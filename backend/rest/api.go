@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/kr/pretty"
-	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/probe"
 	"go.uber.org/zap"
@@ -48,20 +47,18 @@ type ApiCertbot interface {
 }
 
 type Api struct {
-	statsdClient metrics.StatsdClient
-	domains      ApiDomains
-	users        ApiUsers
-	mail         ApiMail
-	probe        ApiPortProbe
-	certbot      ApiCertbot
-	domain       string
-	count404     int64
-	socket       string
-	logger       *zap.Logger
+	domains  ApiDomains
+	users    ApiUsers
+	mail     ApiMail
+	probe    ApiPortProbe
+	certbot  ApiCertbot
+	domain   string
+	count404 int64
+	socket   string
+	logger   *zap.Logger
 }
 
 func NewApi(
-	statsdClient metrics.StatsdClient,
 	service ApiDomains,
 	users ApiUsers,
 	mail ApiMail,
@@ -72,15 +69,14 @@ func NewApi(
 	logger *zap.Logger,
 ) *Api {
 	return &Api{
-		statsdClient: statsdClient,
-		domains:      service,
-		users:        users,
-		mail:         mail,
-		probe:        probe,
-		certbot:      certbot,
-		domain:       domain,
-		socket:       socket,
-		logger:       logger,
+		domains: service,
+		users:   users,
+		mail:    mail,
+		probe:   probe,
+		certbot: certbot,
+		domain:  domain,
+		socket:  socket,
+		logger:  logger,
 	}
 }
 
@@ -150,7 +146,6 @@ func (a *Api) Status(_ http.ResponseWriter, req *http.Request) (interface{}, err
 }
 
 func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
-	a.statsdClient.Incr("rest.domain.acquire", 1)
 	err := req.ParseForm()
 	if err != nil {
 		log.Println("unable to parse form", err)
@@ -198,7 +193,6 @@ func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) UserCreate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.user.create", 1)
 	err := req.ParseForm()
 	if err != nil {
 		log.Println("unable to parse form", err)
@@ -216,7 +210,6 @@ func (a *Api) UserCreate(_ http.ResponseWriter, req *http.Request) (interface{},
 }
 
 func (a *Api) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.user.create", 1)
 	request := model.UserCreateRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -228,7 +221,6 @@ func (a *Api) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{
 }
 
 func (a *Api) DomainAcquireV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.domain.acquire_v2", 1)
 	request := model.DomainAcquireRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -243,7 +235,6 @@ func (a *Api) DomainAcquireV2(_ http.ResponseWriter, req *http.Request) (interfa
 }
 
 func (a *Api) DomainAvailability(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.domain.availability", 1)
 	request := model.DomainAvailabilityRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -258,7 +249,6 @@ func (a *Api) DomainAvailability(_ http.ResponseWriter, req *http.Request) (inte
 }
 
 func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.domain.update", 1)
 	request := model.DomainUpdateRequest{MapLocalAddress: false, Ipv4Enabled: true, Ipv6Enabled: true}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -286,7 +276,6 @@ func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{
 }
 
 func (a *Api) CertbotPresent(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.certbot.present", 1)
 	request := model.CertbotPresentRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -298,7 +287,6 @@ func (a *Api) CertbotPresent(_ http.ResponseWriter, req *http.Request) (interfac
 }
 
 func (a *Api) CertbotCleanUp(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.certbot.cleanup", 1)
 	request := model.CertbotCleanUpRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -310,7 +298,6 @@ func (a *Api) CertbotCleanUp(_ http.ResponseWriter, req *http.Request) (interfac
 }
 
 func (a *Api) DomainGet(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.domain.get", 1)
 	keys, ok := req.URL.Query()["token"]
 	if !ok {
 		return nil, errors.New("no token")
@@ -340,7 +327,6 @@ func (a *Api) requestIp(req *http.Request) (*string, error) {
 
 func (a *Api) UserGet(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 
-	a.statsdClient.Incr("rest.user.get", 1)
 	emails, ok := req.URL.Query()["email"]
 	if !ok {
 		return nil, errors.New("no email")
@@ -374,7 +360,6 @@ func (a *Api) UserGet(_ http.ResponseWriter, req *http.Request) (interface{}, er
 
 func (a *Api) User(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 
-	a.statsdClient.Incr("rest.user", 1)
 	request := &model.UserAuthenticateRequest{}
 	err := json.NewDecoder(req.Body).Decode(request)
 	if err != nil {
@@ -404,7 +389,6 @@ func (a *Api) User(_ http.ResponseWriter, req *http.Request) (interface{}, error
 }
 
 func (a *Api) UserLog(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.user.log", 1)
 
 	err := req.ParseForm()
 	if err != nil {
@@ -426,7 +410,6 @@ func (a *Api) UserLog(_ http.ResponseWriter, req *http.Request) (interface{}, er
 }
 
 func (a *Api) UserLogV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.user_v2.log", 1)
 
 	request := model.SendLogsRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
@@ -447,7 +430,6 @@ func (a *Api) UserLogV2(_ http.ResponseWriter, req *http.Request) (interface{}, 
 }
 
 func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
-	a.statsdClient.Incr("rest.probe.port_v2", 1)
 	tokenParam, ok := req.URL.Query()["token"]
 	if !ok {
 		fail(w, model.SingleParameterError("token", "Missing"))
@@ -494,7 +476,6 @@ func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-	a.statsdClient.Incr("rest.probe.port_v3", 1)
 	request := model.PortProbeRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {

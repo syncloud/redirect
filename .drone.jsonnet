@@ -57,28 +57,6 @@ local build(arch) = [{
             ]
         },
         {
-            name: "systemd install",
-            image: "python:3.9-slim-bullseye",
-            environment: {
-                access_key_id: {
-                  from_secret: "access_key_id"
-                },
-                secret_access_key: {
-                  from_secret: "secret_access_key"
-                },
-                hosted_zone_id: {
-                  from_secret: "hosted_zone_id"
-                },
-            },
-            commands: [
-                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-                "pip install -r integration/requirements.txt",
-                "./ci/recreatedb",
-                "cd integration",
-                "py.test -x -vv -s test-systemd.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
-            ]
-        },
-        {
             name: "docker",
             image: "plugins/docker:20.18",
             settings: {
@@ -227,10 +205,6 @@ local build(arch) = [{
         }
     ],
     services: [
-        {
-            name: "statsd",
-            image: "graphiteapp/graphite-statsd:1.1.10-4"
-        },
         {
             name: "mail",
             image: "mailhog/mailhog:v1.0.0",

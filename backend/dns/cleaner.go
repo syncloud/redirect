@@ -2,7 +2,6 @@ package dns
 
 import (
 	"fmt"
-	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"time"
 )
@@ -22,23 +21,17 @@ type Mail interface {
 	SendDnsCleanNotification(to string, userDomain string) error
 }
 
-type Graphite interface {
-	CounterAdd(name string, value float64)
-}
-
 type Cleaner struct {
-	database     Database
-	remover      Remover
-	mail         Mail
-	statsdClient metrics.StatsdClient
+	database Database
+	remover  Remover
+	mail     Mail
 }
 
-func NewCleaner(database Database, dns Remover, mail Mail, statsdClient metrics.StatsdClient) *Cleaner {
+func NewCleaner(database Database, dns Remover, mail Mail) *Cleaner {
 	return &Cleaner{
-		database:     database,
-		remover:      dns,
-		mail:         mail,
-		statsdClient: statsdClient,
+		database: database,
+		remover:  dns,
+		mail:     mail,
 	}
 }
 
@@ -59,7 +52,6 @@ func (c *Cleaner) Clean(now time.Time) error {
 	monthOld := now.AddDate(0, -1, 0)
 	token, err := c.database.GetDomainTokenUpdatedBefore(monthOld)
 	if err != nil {
-		c.statsdClient.Incr("cleaner.domain.error", 1)
 		return err
 	}
 	if token == "" {
@@ -68,7 +60,6 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	domain, err := c.database.GetDomainByToken(token)
 	if err != nil {
-		c.statsdClient.Incr("cleaner.domain.error", 1)
 		return err
 	}
 	if domain == nil {
@@ -85,27 +76,22 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	user, err := c.database.GetUser(domain.UserId)
 	if err != nil {
-		c.statsdClient.Incr("cleaner.domain.error", 1)
 		return err
 	}
 	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, format, user.IsSubscribed())
 	if !user.IsSubscribed() {
-		c.statsdClient.Incr("cleaner.domain.delete", 1)
 		err = c.remover.DeleteDomain(user.Id, domain.Name)
 		if err != nil {
-			c.statsdClient.Incr("cleaner.domain.error", 1)
 			return err
 		}
 		err = c.mail.SendDnsCleanNotification(user.Email, domain.Name)
 		if err != nil {
-			c.statsdClient.Incr("cleaner.domain.error", 1)
 			fmt.Printf("cannot send dns clean email: %s\n", err)
 		}
 	} else {
 		domain.LastUpdate = &now
 		err = c.database.UpdateDomain(domain)
 		if err != nil {
-			c.statsdClient.Incr("cleaner.domain.error", 1)
 			return err
 		}
 	}

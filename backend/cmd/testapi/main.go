@@ -9,7 +9,6 @@ import (
 func main() {
 	domain := os.Getenv("DOMAIN")
 	api := rest.NewApi(
-		TestStatsdClient{},
 		&TestDomains{},
 		&TestUsers{},
 		&TestMail{},
