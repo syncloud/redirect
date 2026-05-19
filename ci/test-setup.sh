@@ -26,7 +26,7 @@ for v in access_key_id secret_access_key hosted_zone_id; do
     fi
 done
 
-$SSH $REMOTE "sudo -n mkdir -p /tmp/syncloud-redirect-setup"
+$SSH $REMOTE "sudo -n rm -rf /tmp/syncloud-redirect-setup && sudo -n mkdir -p /tmp/syncloud-redirect-setup/config"
 $SCP "$STAGE_LOCAL/." "${REMOTE}:/tmp/syncloud-redirect-setup/config/"
 $SCP config/common "${REMOTE}:/tmp/syncloud-redirect-setup/common"
 $SCP db "${REMOTE}:/tmp/syncloud-redirect-setup/db"
