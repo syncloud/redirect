@@ -36,9 +36,7 @@ STAGE=/tmp/syncloud-redirect-setup
 apt-get update
 apt-get install -y --no-install-recommends apache2 openssl default-mysql-client
 
-if ! id -u redirect >/dev/null 2>&1; then
-    adduser --disabled-password --gecos "" redirect
-fi
+adduser --disabled-password --gecos "" redirect
 REDIRECT_UID=$(id -u redirect)
 REDIRECT_GID=$(id -g redirect)
 
@@ -59,7 +57,7 @@ echo "export SYNCLOUD_DOMAIN=$SYNCLOUD_DOMAIN" >> /etc/apache2/envvars
 a2dissite 000-default
 a2ensite redirect
 a2enmod rewrite ssl proxy proxy_http
-systemctl start apache2 2>/dev/null || apachectl start
+systemctl restart apache2
 
 mysql --host="$DB_HOST" --user=root --password=root -e "CREATE DATABASE redirect"
 mysql --host="$DB_HOST" --user=root --password=root redirect < "$STAGE/db/init.sql"
