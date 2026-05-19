@@ -82,6 +82,20 @@ func (config *Config) GetWwwSocket() string {
 	return value
 }
 
+func (config *Config) GetApiMetricsAddr() string {
+	if value, err := config.parser.Get("metrics", "api_addr"); err == nil {
+		return value
+	}
+	return ":9091"
+}
+
+func (config *Config) GetWwwMetricsAddr() string {
+	if value, err := config.parser.Get("metrics", "www_addr"); err == nil {
+		return value
+	}
+	return ":9092"
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {
@@ -100,38 +114,6 @@ func (config *Config) AwsSecretAccessKey() string {
 
 func (config *Config) AwsHostedZoneId() string {
 	value, err := config.parser.Get("aws", "hosted_zone_id")
-	if err != nil {
-		log.Fatalln("Cannot read config: ", err)
-	}
-	return value
-}
-
-func (config *Config) StatsdServer() string {
-	value, err := config.parser.Get("stats", "server")
-	if err != nil {
-		log.Fatalln("Cannot read config: ", err)
-	}
-	return value
-}
-
-func (config *Config) StatsdPrefix() string {
-	value, err := config.parser.Get("stats", "prefix")
-	if err != nil {
-		log.Fatalln("Cannot read config: ", err)
-	}
-	return value
-}
-
-func (config *Config) GraphitePrefix() string {
-	value, err := config.parser.Get("graphite", "prefix")
-	if err != nil {
-		log.Fatalln("Cannot read config: ", err)
-	}
-	return value
-}
-
-func (config *Config) GraphiteHost() string {
-	value, err := config.parser.Get("graphite", "host")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}

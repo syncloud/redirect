@@ -49,18 +49,18 @@ type Route53 interface {
 }
 
 type AmazonDns struct {
-	client       Route53
-	statsdClient metrics.StatsdClient
-	txtLimit     int
-	logger       *zap.Logger
+	client   Route53
+	metrics  *metrics.Metrics
+	txtLimit int
+	logger   *zap.Logger
 }
 
-func New(statsdClient metrics.StatsdClient, client Route53, txtLimit int, logger *zap.Logger) *AmazonDns {
+func New(client Route53, metrics *metrics.Metrics, txtLimit int, logger *zap.Logger) *AmazonDns {
 	return &AmazonDns{
-		client,
-		statsdClient,
-		txtLimit,
-		logger,
+		client:   client,
+		metrics:  metrics,
+		txtLimit: txtLimit,
+		logger:   logger,
 	}
 }
 
@@ -218,18 +218,18 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 }
 
 func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error {
-	a.statsdClient.Incr("dns.client.connect", 1)
+	a.metrics.DnsClient("connect")
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
 		HostedZoneId: aws.String(hostedZoneId),
 	}
 	_, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {
-		a.statsdClient.Incr("dns.client.error", 1)
+		a.metrics.DnsClient("error")
 		return err
 	}
 
-	a.statsdClient.Incr("dns.client.commit", 1)
+	a.metrics.DnsClient("commit")
 	return nil
 }
 

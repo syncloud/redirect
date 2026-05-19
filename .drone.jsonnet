@@ -1,5 +1,5 @@
 local name = "redirect";
-local go = "1.20.4-buster";
+local go = "1.23";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
 local playwright = "v1.59.1-jammy";
@@ -57,28 +57,6 @@ local build(arch) = [{
             ]
         },
         {
-            name: "systemd install",
-            image: "python:3.9-slim-bullseye",
-            environment: {
-                access_key_id: {
-                  from_secret: "access_key_id"
-                },
-                secret_access_key: {
-                  from_secret: "secret_access_key"
-                },
-                hosted_zone_id: {
-                  from_secret: "hosted_zone_id"
-                },
-            },
-            commands: [
-                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
-                "pip install -r integration/requirements.txt",
-                "./ci/recreatedb",
-                "cd integration",
-                "py.test -x -vv -s test-systemd.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
-            ]
-        },
-        {
             name: "docker",
             image: "plugins/docker:20.18",
             settings: {
@@ -115,9 +93,16 @@ local build(arch) = [{
                 DEPLOY_HOST: "www.syncloud.test",
                 DEPLOY_USER: "root",
                 DEPLOY_URL: "https://api.syncloud.test",
+                DEPLOY_ENV: "integration",
+                SYNCLOUD_DOMAIN: "syncloud.test",
+                DB_HOST: "mysql",
+                access_key_id: { from_secret: "access_key_id" },
+                secret_access_key: { from_secret: "secret_access_key" },
+                hosted_zone_id: { from_secret: "hosted_zone_id" },
             },
             commands: [
                 "./ci/test-init.sh",
+                "./ci/test-setup.sh",
                 "./ci/deploy-prepare.sh",
                 "./ci/deploy-run.sh " + image_tag,
                 "./ci/deploy-verify.sh",
@@ -227,10 +212,6 @@ local build(arch) = [{
         }
     ],
     services: [
-        {
-            name: "statsd",
-            image: "graphiteapp/graphite-statsd:1.1.10-4"
-        },
         {
             name: "mail",
             image: "mailhog/mailhog:v1.0.0",

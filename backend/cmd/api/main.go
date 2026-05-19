@@ -12,6 +12,7 @@ import (
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/user"
+	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/version"
 )
 
@@ -33,13 +34,15 @@ func main() {
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
 				userCleaner *user.Cleaner,
-				graphite *metrics.GraphiteClient,
+				metricsCollector *metrics.Metrics,
+				config *utils.Config,
 			) error {
+				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector)
 				services := []service.Startable{
 					database,
 					dnsCleaner,
 					userCleaner,
-					graphite,
+					metricsServer,
 					api,
 				}
 				for _, s := range services {
