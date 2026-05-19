@@ -94,6 +94,9 @@ local build(arch) = [{
                 DEPLOY_USER: "root",
                 DEPLOY_URL: "https://api.syncloud.test",
                 DEPLOY_ENV: "integration",
+                access_key_id: { from_secret: "access_key_id" },
+                secret_access_key: { from_secret: "secret_access_key" },
+                hosted_zone_id: { from_secret: "hosted_zone_id" },
             },
             commands: [
                 "./ci/test-init.sh",
