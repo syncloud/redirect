@@ -100,6 +100,7 @@ local build(arch) = [{
             },
             commands: [
                 "./ci/test-init.sh",
+                "./ci/test-setup.sh",
                 "./ci/deploy-prepare.sh",
                 "./ci/deploy-run.sh " + image_tag,
                 "./ci/deploy-verify.sh",

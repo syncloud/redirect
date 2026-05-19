@@ -84,8 +84,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(route53 *route53.Route53, m *metrics.Metrics) *dns.AmazonDns {
-		return dns.New(route53, m, 255, logger)
+	err = c.Singleton(func(route53 *route53.Route53, metrics *metrics.Metrics) *dns.AmazonDns {
+		return dns.New(route53, metrics, 255, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -226,7 +226,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		prober *probe.Service,
 		certbot *service.Certbot,
-		m *metrics.Metrics,
+		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
@@ -235,7 +235,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mail,
 			prober,
 			certbot,
-			m,
+			metrics,
 			config.Domain(),
 			config.GetApiSocket(),
 			logger,
@@ -251,7 +251,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		users *service.Users,
 		mail *service.Mail,
 		actions *service.Actions,
-		m *metrics.Metrics,
+		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
 		secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
@@ -265,7 +265,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			users,
 			actions,
 			mail,
-			m,
+			metrics,
 			config.Domain(),
 			config.PayPalPlanMonthlyId(),
 			config.PayPalPlanAnnualId(),
@@ -283,13 +283,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		database *db.MySql,
 		domains *service.Domains,
 		mail *service.Mail,
-		m *metrics.Metrics,
+		metrics *metrics.Metrics,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
 			domains,
 			mail,
-			m,
+			metrics,
 		)
 	})
 

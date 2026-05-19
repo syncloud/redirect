@@ -8,17 +8,11 @@ fi
 
 TAG=$1
 REDIRECT_DIR=/var/www/redirect
-IMAGE_NAME=syncloud/redirect
 STAGE=/tmp/syncloud-redirect
 
 if ! command -v docker >/dev/null 2>&1; then
     apt-get update
     apt-get install -y docker.io
-fi
-
-if ! command -v apache2 >/dev/null 2>&1 || ! command -v openssl >/dev/null 2>&1 || ! command -v mysql >/dev/null 2>&1; then
-    apt-get update
-    apt-get install -y --no-install-recommends apache2 openssl default-mysql-client
 fi
 
 if ! docker info >/dev/null 2>&1; then
@@ -48,94 +42,22 @@ for svc in redirect.api redirect.www collectd; do
     fi
 done
 
-if ! id -u redirect >/dev/null 2>&1; then
-    adduser --disabled-password --gecos "" redirect
-fi
 REDIRECT_UID=$(id -u redirect)
 REDIRECT_GID=$(id -g redirect)
 
-mkdir -p "$REDIRECT_DIR"
-chown "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR"
-
-STAGED_CONFIG=$STAGE/config
-if [ -d "$STAGED_CONFIG" ]; then
-    for f in config.cfg secret.cfg; do
-        if [ -f "$STAGED_CONFIG/$f" ]; then
-            install -o "$REDIRECT_UID" -g "$REDIRECT_GID" -m 0640 "$STAGED_CONFIG/$f" "$REDIRECT_DIR/$f"
-        fi
-    done
-fi
-
 mkdir -p "$REDIRECT_DIR/current"
 
-if [ -d "$STAGE/web" ]; then
-    WEB_TARGET=$REDIRECT_DIR/current/www
-    rm -rf "$WEB_TARGET"
-    cp -r "$STAGE/web" "$WEB_TARGET"
-fi
+rm -rf "$REDIRECT_DIR/current/www"
+cp -r "$STAGE/web" "$REDIRECT_DIR/current/www"
 
-if [ -d "$STAGE/bin" ]; then
-    rm -rf "$REDIRECT_DIR/current/bin"
-    cp -r "$STAGE/bin" "$REDIRECT_DIR/current/bin"
-    chmod -R +x "$REDIRECT_DIR/current/bin"
-fi
+rm -rf "$REDIRECT_DIR/current/bin"
+cp -r "$STAGE/bin" "$REDIRECT_DIR/current/bin"
+chmod -R +x "$REDIRECT_DIR/current/bin"
 
-if [ -d "$STAGE/db" ]; then
-    rm -rf "$REDIRECT_DIR/current/db"
-    cp -r "$STAGE/db" "$REDIRECT_DIR/current/db"
-fi
+rm -rf "$REDIRECT_DIR/current/db"
+cp -r "$STAGE/db" "$REDIRECT_DIR/current/db"
 
 chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
-
-cfg_get() {
-    local section=$1 key=$2
-    awk -v s="[$section]" -v k="$key" '
-        $0 == s { in_s = 1; next }
-        /^\[/ { in_s = 0 }
-        in_s && $1 == k { sub(/^[^=]*=[[:space:]]*/, ""); print; exit }
-    ' "$REDIRECT_DIR/config.cfg"
-}
-
-SYNCLOUD_DOMAIN=$(cfg_get redirect domain)
-DB_HOST=$(cfg_get mysql host)
-DB_USER=$(cfg_get mysql user)
-DB_PASS=$(cfg_get mysql passwd)
-DB_NAME=$(cfg_get mysql db)
-: "${DB_NAME:=redirect}"
-
-if [ ! -f "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN/fullchain.pem" ]; then
-    mkdir -p "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN"
-    openssl req -x509 -newkey rsa:4096 \
-        -keyout "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN/privkey.pem" \
-        -out "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN/fullchain.pem" \
-        -nodes -days 365 \
-        -subj "/CN=$SYNCLOUD_DOMAIN"
-fi
-
-if [ -f "$STAGE/common/apache/redirect.conf" ]; then
-    install -m 0644 "$STAGE/common/apache/redirect.conf" /etc/apache2/sites-available/redirect.conf
-    if ! grep -q "^export SYNCLOUD_DOMAIN=" /etc/apache2/envvars; then
-        echo "export SYNCLOUD_DOMAIN=$SYNCLOUD_DOMAIN" >> /etc/apache2/envvars
-    fi
-    a2query -s 000-default >/dev/null 2>&1 && a2dissite 000-default
-    a2query -s redirect >/dev/null 2>&1 || a2ensite redirect
-    a2enmod rewrite ssl proxy proxy_http >/dev/null
-    if systemctl is-active --quiet apache2; then
-        systemctl restart apache2
-    else
-        systemctl start apache2 2>/dev/null || apachectl start
-    fi
-fi
-
-if [ -d "$STAGED_CONFIG" ] && [ -d "$STAGE/db" ] && [ -n "$DB_HOST" ]; then
-    if ! mysql --host="$DB_HOST" --user="$DB_USER" --password="$DB_PASS" -e "use $DB_NAME" 2>/dev/null; then
-        mysql --host="$DB_HOST" --user="$DB_USER" --password="$DB_PASS" -e "CREATE DATABASE $DB_NAME"
-        mysql --host="$DB_HOST" --user="$DB_USER" --password="$DB_PASS" "$DB_NAME" < "$STAGE/db/init.sql"
-        if [ -f "$STAGE/db/update.sql" ]; then
-            mysql --host="$DB_HOST" --user="$DB_USER" --password="$DB_PASS" "$DB_NAME" < "$STAGE/db/update.sql"
-        fi
-    fi
-fi
 
 rm -f "$REDIRECT_DIR/redirect.api.socket" "$REDIRECT_DIR/redirect.www.socket"
 

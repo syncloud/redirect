@@ -55,10 +55,10 @@ type AmazonDns struct {
 	logger   *zap.Logger
 }
 
-func New(client Route53, m *metrics.Metrics, txtLimit int, logger *zap.Logger) *AmazonDns {
+func New(client Route53, metrics *metrics.Metrics, txtLimit int, logger *zap.Logger) *AmazonDns {
 	return &AmazonDns{
 		client:   client,
-		metrics:  m,
+		metrics:  metrics,
 		txtLimit: txtLimit,
 		logger:   logger,
 	}

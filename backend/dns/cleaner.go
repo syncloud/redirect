@@ -29,12 +29,12 @@ type Cleaner struct {
 	metrics  *metrics.Metrics
 }
 
-func NewCleaner(database Database, dns Remover, mail Mail, m *metrics.Metrics) *Cleaner {
+func NewCleaner(database Database, dns Remover, mail Mail, metrics *metrics.Metrics) *Cleaner {
 	return &Cleaner{
 		database: database,
 		remover:  dns,
 		mail:     mail,
-		metrics:  m,
+		metrics:  metrics,
 	}
 }
 

@@ -34,10 +34,10 @@ func main() {
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
 				userCleaner *user.Cleaner,
-				m *metrics.Metrics,
+				metricsCollector *metrics.Metrics,
 				config *utils.Config,
 			) error {
-				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), m)
+				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector)
 				services := []service.Startable{
 					database,
 					dnsCleaner,
