@@ -127,7 +127,7 @@ if [ -f "$STAGE/common/apache/redirect.conf" ]; then
     fi
 fi
 
-if [ -n "$DB_HOST" ] && [ -d "$STAGE/db" ]; then
+if [ -d "$STAGED_CONFIG" ] && [ -d "$STAGE/db" ] && [ -n "$DB_HOST" ]; then
     if ! mysql --host="$DB_HOST" --user="$DB_USER" --password="$DB_PASS" -e "use $DB_NAME" 2>/dev/null; then
         mysql --host="$DB_HOST" --user="$DB_USER" --password="$DB_PASS" -e "CREATE DATABASE $DB_NAME"
         mysql --host="$DB_HOST" --user="$DB_USER" --password="$DB_PASS" "$DB_NAME" < "$STAGE/db/init.sql"
