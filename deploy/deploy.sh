@@ -39,7 +39,7 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-for svc in redirect.api redirect.www; do
+for svc in redirect.api redirect.www collectd; do
     if systemctl is-active --quiet "$svc"; then
         systemctl stop "$svc"
     fi
@@ -157,7 +157,19 @@ run_container() {
 run_container redirect-api api
 run_container redirect-www www
 
-for name in redirect-api redirect-www; do
+NODE_EXPORTER_IMAGE=prom/node-exporter:v1.8.2
+docker pull "$NODE_EXPORTER_IMAGE"
+docker rm -f node-exporter 2>/dev/null || true
+docker run -d \
+    --name node-exporter \
+    --restart=unless-stopped \
+    --net=host \
+    --pid=host \
+    -v /:/host:ro,rslave \
+    "$NODE_EXPORTER_IMAGE" \
+    --path.rootfs=/host
+
+for name in redirect-api redirect-www node-exporter; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break
