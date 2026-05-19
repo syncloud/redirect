@@ -20,3 +20,7 @@ REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
 
 $SSH $REMOTE "sudo -n rm -rf /tmp/syncloud-redirect && mkdir -p /tmp/syncloud-redirect"
 $SCP deploy "${REMOTE}:/tmp/syncloud-redirect/"
+
+if [ -n "$DEPLOY_ENV" ] && [ -d "config/env/$DEPLOY_ENV" ]; then
+    $SCP "config/env/$DEPLOY_ENV" "${REMOTE}:/tmp/syncloud-redirect/config"
+fi

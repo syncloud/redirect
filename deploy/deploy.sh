@@ -51,6 +51,15 @@ REDIRECT_GID=$(id -g redirect)
 mkdir -p "$REDIRECT_DIR"
 chown "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR"
 
+STAGED_CONFIG=/tmp/syncloud-redirect/config
+if [ -d "$STAGED_CONFIG" ]; then
+    for f in config.cfg secret.cfg; do
+        if [ -f "$STAGED_CONFIG/$f" ]; then
+            install -o "$REDIRECT_UID" -g "$REDIRECT_GID" -m 0640 "$STAGED_CONFIG/$f" "$REDIRECT_DIR/$f"
+        fi
+    done
+fi
+
 rm -f "$REDIRECT_DIR/redirect.api.socket" "$REDIRECT_DIR/redirect.www.socket"
 
 docker pull "$TAG"

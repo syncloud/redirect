@@ -8,9 +8,11 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/user"
+	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/version"
 )
 
@@ -32,11 +34,15 @@ func main() {
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
 				userCleaner *user.Cleaner,
+				m *metrics.Metrics,
+				config *utils.Config,
 			) error {
+				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), m)
 				services := []service.Startable{
 					database,
 					dnsCleaner,
 					userCleaner,
+					metricsServer,
 					api,
 				}
 				for _, s := range services {

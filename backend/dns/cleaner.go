@@ -2,6 +2,7 @@ package dns
 
 import (
 	"fmt"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"time"
 )
@@ -25,13 +26,15 @@ type Cleaner struct {
 	database Database
 	remover  Remover
 	mail     Mail
+	metrics  *metrics.Metrics
 }
 
-func NewCleaner(database Database, dns Remover, mail Mail) *Cleaner {
+func NewCleaner(database Database, dns Remover, mail Mail, m *metrics.Metrics) *Cleaner {
 	return &Cleaner{
 		database: database,
 		remover:  dns,
 		mail:     mail,
+		metrics:  m,
 	}
 }
 
@@ -52,6 +55,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	monthOld := now.AddDate(0, -1, 0)
 	token, err := c.database.GetDomainTokenUpdatedBefore(monthOld)
 	if err != nil {
+		c.metrics.Cleaner("error")
 		return err
 	}
 	if token == "" {
@@ -60,6 +64,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	domain, err := c.database.GetDomainByToken(token)
 	if err != nil {
+		c.metrics.Cleaner("error")
 		return err
 	}
 	if domain == nil {
@@ -76,22 +81,27 @@ func (c *Cleaner) Clean(now time.Time) error {
 	}
 	user, err := c.database.GetUser(domain.UserId)
 	if err != nil {
+		c.metrics.Cleaner("error")
 		return err
 	}
 	fmt.Printf("id: %d, domain: %s, last update: %s, user subscribed: %v\n", domain.Id, domain.Name, format, user.IsSubscribed())
 	if !user.IsSubscribed() {
+		c.metrics.Cleaner("delete")
 		err = c.remover.DeleteDomain(user.Id, domain.Name)
 		if err != nil {
+			c.metrics.Cleaner("error")
 			return err
 		}
 		err = c.mail.SendDnsCleanNotification(user.Email, domain.Name)
 		if err != nil {
+			c.metrics.Cleaner("error")
 			fmt.Printf("cannot send dns clean email: %s\n", err)
 		}
 	} else {
 		domain.LastUpdate = &now
 		err = c.database.UpdateDomain(domain)
 		if err != nil {
+			c.metrics.Cleaner("error")
 			return err
 		}
 	}

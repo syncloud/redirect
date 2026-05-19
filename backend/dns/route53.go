@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"go.uber.org/zap"
@@ -49,15 +50,17 @@ type Route53 interface {
 
 type AmazonDns struct {
 	client   Route53
+	metrics  *metrics.Metrics
 	txtLimit int
 	logger   *zap.Logger
 }
 
-func New(client Route53, txtLimit int, logger *zap.Logger) *AmazonDns {
+func New(client Route53, m *metrics.Metrics, txtLimit int, logger *zap.Logger) *AmazonDns {
 	return &AmazonDns{
-		client,
-		txtLimit,
-		logger,
+		client:   client,
+		metrics:  m,
+		txtLimit: txtLimit,
+		logger:   logger,
 	}
 }
 
@@ -215,15 +218,18 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 }
 
 func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error {
+	a.metrics.DnsClient("connect")
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
 		HostedZoneId: aws.String(hostedZoneId),
 	}
 	_, err := a.client.ChangeResourceRecordSets(input)
 	if err != nil {
+		a.metrics.DnsClient("error")
 		return err
 	}
 
+	a.metrics.DnsClient("commit")
 	return nil
 }
 

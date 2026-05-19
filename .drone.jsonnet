@@ -1,5 +1,5 @@
 local name = "redirect";
-local go = "1.20.4-buster";
+local go = "1.23";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
 local playwright = "v1.59.1-jammy";
@@ -93,6 +93,7 @@ local build(arch) = [{
                 DEPLOY_HOST: "www.syncloud.test",
                 DEPLOY_USER: "root",
                 DEPLOY_URL: "https://api.syncloud.test",
+                DEPLOY_ENV: "integration",
             },
             commands: [
                 "./ci/test-init.sh",

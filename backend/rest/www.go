@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
@@ -52,6 +53,7 @@ type Www struct {
 	users               WwwUsers
 	actions             WwwActions
 	mail                WwwMail
+	metrics             *metrics.Metrics
 	domain              string
 	payPalPlanMonthlyId string
 	payPalPlanAnnualId  string
@@ -68,6 +70,7 @@ func NewWww(
 	users WwwUsers,
 	actions WwwActions,
 	mail WwwMail,
+	m *metrics.Metrics,
 	domain string,
 	payPalPlanMonthlyId string,
 	payPalPlanAnnualId string,
@@ -82,6 +85,7 @@ func NewWww(
 		users:               users,
 		actions:             actions,
 		mail:                mail,
+		metrics:             m,
 		domain:              domain,
 		payPalPlanMonthlyId: payPalPlanMonthlyId,
 		payPalPlanAnnualId:  payPalPlanAnnualId,
@@ -223,16 +227,19 @@ func (w *Www) Secured(handle func(_ http.ResponseWriter, r *http.Request, user m
 }
 
 func (w *Www) WebNotificationEnable(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("notification_enable")
 	user.NotificationEnabled = true
 	return "OK", w.users.Save(&user)
 }
 
 func (w *Www) WebNotificationDisable(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("notification_disable")
 	user.NotificationEnabled = false
 	return "OK", w.users.Save(&user)
 }
 
 func (w *Www) WebUserDelete(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("user_delete")
 	err := w.domains.DeleteAllDomains(user.Id)
 	if err != nil {
 		w.logger.Error("unable to delete domains for a user", zap.Error(err))
@@ -248,10 +255,12 @@ func (w *Www) WebUserDelete(_ http.ResponseWriter, _ *http.Request, user model.U
 }
 
 func (w *Www) WebUser(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("user_get")
 	return user, nil
 }
 
 func (w *Www) WebDomains(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("domains")
 	domains, err := w.domains.GetDomains(&user)
 	if err != nil {
 		w.logger.Error("unable to get domains for a user", zap.Error(err))
@@ -262,6 +271,7 @@ func (w *Www) WebDomains(_ http.ResponseWriter, _ *http.Request, user model.User
 }
 
 func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("domain_check_nameservers")
 	domainName := req.URL.Query().Get("domain")
 	if domainName == "" {
 		return nil, errors.New("invalid request")
@@ -275,6 +285,7 @@ func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request
 }
 
 func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (interface{}, error) {
+	w.metrics.Request("subscription")
 	return model.PlanResponse{
 		PlanMonthlyId: w.payPalPlanMonthlyId,
 		PlanAnnualId:  w.payPalPlanAnnualId,
@@ -283,6 +294,7 @@ func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (inte
 }
 
 func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("unsubscribe")
 	err := w.users.Unsubscribe(&user)
 	if err != nil {
 		w.logger.Error("unable to unsubscribe", zap.Error(err))
@@ -293,10 +305,12 @@ func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.Use
 }
 
 func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
+	w.metrics.Request("subscribe_paypal")
 	return w.subscribe(req, model.SubscriptionTypePayPal)
 }
 
 func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
+	w.metrics.Request("subscribe_crypto")
 	return w.subscribe(req, model.SubscriptionTypeCrypto)
 }
 
@@ -322,6 +336,7 @@ func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, e
 }
 
 func (w *Www) WebUserPasswordReset(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	w.metrics.Request("user_reset_password")
 	request := model.UserPasswordResetRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -366,6 +381,7 @@ func (w *Www) requestIp(req *http.Request) (*string, error) {
 }
 
 func (w *Www) WebUserActivate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	w.metrics.Request("user_activate")
 	request := model.UserActivateRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -381,6 +397,7 @@ func (w *Www) WebUserActivate(_ http.ResponseWriter, req *http.Request) (interfa
 }
 
 func (w *Www) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	w.metrics.Request("user_create")
 	request := model.UserCreateRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -392,6 +409,7 @@ func (w *Www) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{
 }
 
 func (w *Www) DomainDelete(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("domain_delete")
 	domain := req.URL.Query().Get("domain")
 	if domain == "" {
 		return nil, errors.New("missing domain")
@@ -401,6 +419,7 @@ func (w *Www) DomainDelete(_ http.ResponseWriter, req *http.Request, user model.
 }
 
 func (w *Www) UserSetPassword(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	w.metrics.Request("user_set_password")
 	request := &model.UserPasswordSetRequest{}
 	err := json.NewDecoder(req.Body).Decode(request)
 	if err != nil {
@@ -412,6 +431,7 @@ func (w *Www) UserSetPassword(_ http.ResponseWriter, req *http.Request) (interfa
 }
 
 func (w *Www) UserLogin(resp http.ResponseWriter, r *http.Request) (interface{}, error) {
+	w.metrics.Request("user_login")
 	request := &model.UserAuthenticateRequest{}
 	err := json.NewDecoder(r.Body).Decode(request)
 	if err != nil {
@@ -428,6 +448,7 @@ func (w *Www) UserLogin(resp http.ResponseWriter, r *http.Request) (interface{},
 }
 
 func (w *Www) UserLogout(resp http.ResponseWriter, r *http.Request, _ model.User) (interface{}, error) {
+	w.metrics.Request("user_logout")
 	http.SetCookie(resp, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
 	err := w.clearSessionEmail(resp, r)
 	return "User logged out", err

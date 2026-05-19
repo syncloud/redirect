@@ -11,6 +11,7 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
@@ -69,8 +70,22 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(route53 *route53.Route53) *dns.AmazonDns {
-		return dns.New(route53, 255, logger)
+	err = c.Singleton(func() *metrics.Metrics {
+		return metrics.New()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql) *metrics.DbGauges {
+		return metrics.NewDbGauges(database, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(route53 *route53.Route53, m *metrics.Metrics) *dns.AmazonDns {
+		return dns.New(route53, m, 255, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -211,6 +226,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		prober *probe.Service,
 		certbot *service.Certbot,
+		m *metrics.Metrics,
 		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
@@ -219,6 +235,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mail,
 			prober,
 			certbot,
+			m,
 			config.Domain(),
 			config.GetApiSocket(),
 			logger,
@@ -234,6 +251,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		users *service.Users,
 		mail *service.Mail,
 		actions *service.Actions,
+		m *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
 		secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
@@ -247,6 +265,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			users,
 			actions,
 			mail,
+			m,
 			config.Domain(),
 			config.PayPalPlanMonthlyId(),
 			config.PayPalPlanAnnualId(),
@@ -264,11 +283,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		database *db.MySql,
 		domains *service.Domains,
 		mail *service.Mail,
+		m *metrics.Metrics,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
 			domains,
 			mail,
+			m,
 		)
 	})
 

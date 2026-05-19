@@ -82,6 +82,20 @@ func (config *Config) GetWwwSocket() string {
 	return value
 }
 
+func (config *Config) GetApiMetricsAddr() string {
+	if value, err := config.parser.Get("metrics", "api_addr"); err == nil {
+		return value
+	}
+	return ":9091"
+}
+
+func (config *Config) GetWwwMetricsAddr() string {
+	if value, err := config.parser.Get("metrics", "www_addr"); err == nil {
+		return value
+	}
+	return ":9092"
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {

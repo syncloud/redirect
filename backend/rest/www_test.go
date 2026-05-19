@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"net/http"
 	"net/http/httptest"
@@ -100,6 +101,7 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",
@@ -138,6 +140,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",
@@ -191,6 +194,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",
@@ -230,6 +234,7 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",

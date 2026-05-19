@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/kr/pretty"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/probe"
 	"go.uber.org/zap"
@@ -52,6 +53,7 @@ type Api struct {
 	mail     ApiMail
 	probe    ApiPortProbe
 	certbot  ApiCertbot
+	metrics  *metrics.Metrics
 	domain   string
 	count404 int64
 	socket   string
@@ -64,6 +66,7 @@ func NewApi(
 	mail ApiMail,
 	probe ApiPortProbe,
 	certbot ApiCertbot,
+	m *metrics.Metrics,
 	domain string,
 	socket string,
 	logger *zap.Logger,
@@ -74,6 +77,7 @@ func NewApi(
 		mail:    mail,
 		probe:   probe,
 		certbot: certbot,
+		metrics: m,
 		domain:  domain,
 		socket:  socket,
 		logger:  logger,
@@ -146,6 +150,7 @@ func (a *Api) Status(_ http.ResponseWriter, req *http.Request) (interface{}, err
 }
 
 func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
+	a.metrics.Request("domain_acquire")
 	err := req.ParseForm()
 	if err != nil {
 		log.Println("unable to parse form", err)
@@ -193,6 +198,7 @@ func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) UserCreate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("user_create")
 	err := req.ParseForm()
 	if err != nil {
 		log.Println("unable to parse form", err)
@@ -210,6 +216,7 @@ func (a *Api) UserCreate(_ http.ResponseWriter, req *http.Request) (interface{},
 }
 
 func (a *Api) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("user_create")
 	request := model.UserCreateRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -221,6 +228,7 @@ func (a *Api) UserCreateV2(_ http.ResponseWriter, req *http.Request) (interface{
 }
 
 func (a *Api) DomainAcquireV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("domain_acquire_v2")
 	request := model.DomainAcquireRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -235,6 +243,7 @@ func (a *Api) DomainAcquireV2(_ http.ResponseWriter, req *http.Request) (interfa
 }
 
 func (a *Api) DomainAvailability(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("domain_availability")
 	request := model.DomainAvailabilityRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -249,6 +258,7 @@ func (a *Api) DomainAvailability(_ http.ResponseWriter, req *http.Request) (inte
 }
 
 func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("domain_update")
 	request := model.DomainUpdateRequest{MapLocalAddress: false, Ipv4Enabled: true, Ipv6Enabled: true}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -276,6 +286,7 @@ func (a *Api) DomainUpdate(_ http.ResponseWriter, req *http.Request) (interface{
 }
 
 func (a *Api) CertbotPresent(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("certbot_present")
 	request := model.CertbotPresentRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -287,6 +298,7 @@ func (a *Api) CertbotPresent(_ http.ResponseWriter, req *http.Request) (interfac
 }
 
 func (a *Api) CertbotCleanUp(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("certbot_cleanup")
 	request := model.CertbotCleanUpRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -298,6 +310,7 @@ func (a *Api) CertbotCleanUp(_ http.ResponseWriter, req *http.Request) (interfac
 }
 
 func (a *Api) DomainGet(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("domain_get")
 	keys, ok := req.URL.Query()["token"]
 	if !ok {
 		return nil, errors.New("no token")
@@ -326,7 +339,7 @@ func (a *Api) requestIp(req *http.Request) (*string, error) {
 }
 
 func (a *Api) UserGet(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-
+	a.metrics.Request("user_get")
 	emails, ok := req.URL.Query()["email"]
 	if !ok {
 		return nil, errors.New("no email")
@@ -359,7 +372,7 @@ func (a *Api) UserGet(_ http.ResponseWriter, req *http.Request) (interface{}, er
 }
 
 func (a *Api) User(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-
+	a.metrics.Request("user")
 	request := &model.UserAuthenticateRequest{}
 	err := json.NewDecoder(req.Body).Decode(request)
 	if err != nil {
@@ -389,7 +402,7 @@ func (a *Api) User(_ http.ResponseWriter, req *http.Request) (interface{}, error
 }
 
 func (a *Api) UserLog(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-
+	a.metrics.Request("user_log")
 	err := req.ParseForm()
 	if err != nil {
 		return nil, errors.New("invalid request")
@@ -410,7 +423,7 @@ func (a *Api) UserLog(_ http.ResponseWriter, req *http.Request) (interface{}, er
 }
 
 func (a *Api) UserLogV2(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
-
+	a.metrics.Request("user_log_v2")
 	request := model.SendLogsRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {
@@ -430,6 +443,7 @@ func (a *Api) UserLogV2(_ http.ResponseWriter, req *http.Request) (interface{}, 
 }
 
 func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
+	a.metrics.Request("probe_port_v2")
 	tokenParam, ok := req.URL.Query()["token"]
 	if !ok {
 		fail(w, model.SingleParameterError("token", "Missing"))
@@ -476,6 +490,7 @@ func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
+	a.metrics.Request("probe_port_v3")
 	request := model.PortProbeRequest{}
 	err := json.NewDecoder(req.Body).Decode(&request)
 	if err != nil {

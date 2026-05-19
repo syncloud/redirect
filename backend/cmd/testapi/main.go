@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
 	"os"
 )
@@ -14,6 +15,7 @@ func main() {
 		&TestMail{},
 		&TestPortProbe{},
 		&TestCertbot{},
+		metrics.New(),
 		domain,
 		os.Getenv("SOCKET"),
 		log.Default(),

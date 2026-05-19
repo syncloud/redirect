@@ -7,8 +7,10 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
+	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/version"
 )
 
@@ -28,9 +30,14 @@ func main() {
 			return c.Call(func(
 				www *rest.Www,
 				database *db.MySql,
+				m *metrics.Metrics,
+				gauges *metrics.DbGauges,
+				config *utils.Config,
 			) error {
+				metricsServer := metrics.NewServer(config.GetWwwMetricsAddr(), log.Default(), m, gauges)
 				services := []service.Startable{
 					database,
+					metricsServer,
 					www,
 				}
 				for _, s := range services {
