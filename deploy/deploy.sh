@@ -66,6 +66,14 @@ if [ -d "$STAGED_CONFIG" ]; then
     done
 fi
 
+if [ -d "$STAGE/web" ]; then
+    WEB_TARGET=$REDIRECT_DIR/current/www
+    mkdir -p "$REDIRECT_DIR/current"
+    rm -rf "$WEB_TARGET"
+    cp -r "$STAGE/web" "$WEB_TARGET"
+    chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
+fi
+
 cfg_get() {
     local section=$1 key=$2
     awk -v s="[$section]" -v k="$key" '
