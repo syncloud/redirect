@@ -66,13 +66,26 @@ if [ -d "$STAGED_CONFIG" ]; then
     done
 fi
 
+mkdir -p "$REDIRECT_DIR/current"
+
 if [ -d "$STAGE/web" ]; then
     WEB_TARGET=$REDIRECT_DIR/current/www
-    mkdir -p "$REDIRECT_DIR/current"
     rm -rf "$WEB_TARGET"
     cp -r "$STAGE/web" "$WEB_TARGET"
-    chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
 fi
+
+if [ -d "$STAGE/bin" ]; then
+    rm -rf "$REDIRECT_DIR/current/bin"
+    cp -r "$STAGE/bin" "$REDIRECT_DIR/current/bin"
+    chmod -R +x "$REDIRECT_DIR/current/bin"
+fi
+
+if [ -d "$STAGE/db" ]; then
+    rm -rf "$REDIRECT_DIR/current/db"
+    cp -r "$STAGE/db" "$REDIRECT_DIR/current/db"
+fi
+
+chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
 
 cfg_get() {
     local section=$1 key=$2
