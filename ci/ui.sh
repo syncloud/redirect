@@ -7,7 +7,7 @@ if [[ -z "$PROJECT" ]]; then
     exit 1
 fi
 
-apt-get update && apt-get install -y default-mysql-client
+apt-get update && apt-get install -y default-mysql-client sshpass openssh-client
 ${DIR}/recreatedb
 
 IP=$(getent hosts www.syncloud.test | awk '{print $1}')
@@ -26,5 +26,6 @@ for dir in www/test-results/*/; do
     [[ -f ${dir}video.webm ]] && cp ${dir}video.webm ${OUT}/${name}.webm
     [[ -f ${dir}failure-full-page.png ]] && cp ${dir}failure-full-page.png ${OUT}/${name}.png
 done
+cp -r www/test-results/logs ${OUT}/logs
 
 exit $EXIT_CODE
