@@ -5,6 +5,7 @@ const domain = process.env.PLAYWRIGHT_DOMAIN || 'syncloud.test'
 module.exports = defineConfig({
   testDir: './e2e',
   outputDir: 'test-results',
+  globalTeardown: require.resolve('./e2e/global-teardown.js'),
   timeout: 60 * 1000,
   expect: {
     timeout: 10 * 1000
