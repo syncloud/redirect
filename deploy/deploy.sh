@@ -10,9 +10,10 @@ TAG=$1
 REDIRECT_DIR=/var/www/redirect
 STAGE=/tmp/syncloud-redirect
 
-if ! command -v docker >/dev/null 2>&1; then
+PKGS="docker.io apache2 default-mysql-client confget"
+if ! dpkg -s $PKGS >/dev/null 2>&1; then
     apt-get update
-    apt-get install -y docker.io
+    apt-get install -y --no-install-recommends $PKGS
 fi
 
 if ! docker info >/dev/null 2>&1; then
@@ -33,6 +34,9 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! id -u redirect >/dev/null 2>&1; then
+    adduser --disabled-password --gecos "" redirect
+fi
 REDIRECT_UID=$(id -u redirect)
 REDIRECT_GID=$(id -g redirect)
 
@@ -49,6 +53,38 @@ rm -rf "$REDIRECT_DIR/current/db"
 cp -r "$STAGE/db" "$REDIRECT_DIR/current/db"
 
 chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
+
+cfg() {
+    confget -f "$REDIRECT_DIR/secret.cfg" -s "$1" "$2" 2>/dev/null \
+    || confget -f "$REDIRECT_DIR/config.cfg" -s "$1" "$2"
+}
+
+SYNCLOUD_DOMAIN=$(cfg redirect domain)
+install -m 0644 "$STAGE/common/apache/redirect.conf" /etc/apache2/sites-available/redirect.conf
+if ! grep -q "^export SYNCLOUD_DOMAIN=" /etc/apache2/envvars; then
+    echo "export SYNCLOUD_DOMAIN=$SYNCLOUD_DOMAIN" >> /etc/apache2/envvars
+fi
+a2dissite 000-default 2>/dev/null || true
+a2ensite redirect
+a2enmod rewrite ssl proxy proxy_http
+systemctl restart apache2 2>/dev/null || apachectl restart
+
+crontab -u redirect "$STAGE/common/cron/crontab"
+
+DB_HOST=$(cfg mysql host)
+DB_USER=$(cfg mysql user)
+DB_PASS=$(cfg mysql passwd)
+DB_NAME=$(cfg mysql db)
+DB_TARGET_VERSION=$(awk -F"'" '/insert into db_version/ {v=$2} END{print v}' "$STAGE/db/update.sql")
+MYSQL="mysql --host=$DB_HOST --user=$DB_USER --password=$DB_PASS"
+if ! $MYSQL -e "use $DB_NAME" 2>/dev/null; then
+    $MYSQL -e "create database $DB_NAME"
+    $MYSQL "$DB_NAME" < "$STAGE/db/init.sql"
+fi
+DB_CURRENT_VERSION=$($MYSQL -N -B "$DB_NAME" -e "select version from db_version order by timestamp desc limit 1" 2>/dev/null || true)
+if [ "$DB_CURRENT_VERSION" != "$DB_TARGET_VERSION" ]; then
+    $MYSQL "$DB_NAME" < "$STAGE/db/update.sql"
+fi
 
 rm -f "$REDIRECT_DIR/redirect.api.socket" "$REDIRECT_DIR/redirect.www.socket"
 

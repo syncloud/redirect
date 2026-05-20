@@ -1,13 +1,15 @@
 #!/bin/bash
 set -ex
 
-# Provision the test host so deploy.sh runs against the same shape as UAT/prod:
-# apache2 + SSL cert + redirect.conf + mysql schema + config.cfg/secret.cfg
-# already in place. Real envs have all of this from prior installs; this script
-# is the test-env equivalent and must not run against UAT/prod.
+# Test-env-only bits that deploy.sh can't cover on a fresh host:
+# 1. /var/www/redirect/{config,secret}.cfg from the in-repo template
+#    (with @secret@ placeholders substituted from drone secrets).
+#    UAT/prod have these on-disk from one-time provisioning long ago.
+# 2. A self-signed SSL cert at /etc/letsencrypt/live/$SYNCLOUD_DOMAIN/.
+#    UAT/prod use letsencrypt.
 
 if [ -z "$DEPLOY_ENV" ] || [ ! -d "config/env/$DEPLOY_ENV" ]; then
-    echo "DEPLOY_ENV must be set to a dir under config/env/ (e.g. integration)" >&2
+    echo "DEPLOY_ENV must be set to a dir under config/env/" >&2
     exit 1
 fi
 
@@ -25,16 +27,14 @@ sed -i "s#@hosted_zone_id@#$hosted_zone_id#g"       "$STAGE_LOCAL/secret.cfg"
 
 $SSH $REMOTE "sudo -n rm -rf /tmp/syncloud-redirect-setup && sudo -n mkdir -p /tmp/syncloud-redirect-setup/config"
 $SCP "$STAGE_LOCAL/." "${REMOTE}:/tmp/syncloud-redirect-setup/config/"
-$SCP config/common "${REMOTE}:/tmp/syncloud-redirect-setup/common"
-$SCP db "${REMOTE}:/tmp/syncloud-redirect-setup/db"
 
-$SSH $REMOTE sudo -n SYNCLOUD_DOMAIN="$SYNCLOUD_DOMAIN" DB_HOST="$DB_HOST" bash -s <<'REMOTE_SCRIPT'
+$SSH $REMOTE sudo -n SYNCLOUD_DOMAIN="$SYNCLOUD_DOMAIN" bash -s <<'REMOTE_SCRIPT'
 set -ex
 REDIRECT_DIR=/var/www/redirect
 STAGE=/tmp/syncloud-redirect-setup
 
 apt-get update
-apt-get install -y --no-install-recommends apache2 openssl default-mysql-client
+apt-get install -y --no-install-recommends openssl
 
 adduser --disabled-password --gecos "" redirect
 REDIRECT_UID=$(id -u redirect)
@@ -51,15 +51,4 @@ openssl req -x509 -newkey rsa:4096 \
     -out "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN/fullchain.pem" \
     -nodes -days 365 \
     -subj "/CN=$SYNCLOUD_DOMAIN"
-
-install -m 0644 "$STAGE/common/apache/redirect.conf" /etc/apache2/sites-available/redirect.conf
-echo "export SYNCLOUD_DOMAIN=$SYNCLOUD_DOMAIN" >> /etc/apache2/envvars
-a2dissite 000-default
-a2ensite redirect
-a2enmod rewrite ssl proxy proxy_http
-systemctl restart apache2
-
-mysql --host="$DB_HOST" --user=root --password=root -e "CREATE DATABASE redirect"
-mysql --host="$DB_HOST" --user=root --password=root redirect < "$STAGE/db/init.sql"
-mysql --host="$DB_HOST" --user=root --password=root redirect < "$STAGE/db/update.sql"
 REMOTE_SCRIPT
