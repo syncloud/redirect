@@ -33,7 +33,7 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-for svc in redirect.api redirect.www collectd; do
+for svc in redirect.api redirect.www; do
     if systemctl is-active --quiet "$svc"; then
         systemctl stop "$svc"
     fi
