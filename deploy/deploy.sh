@@ -33,15 +33,6 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-for svc in redirect.api redirect.www; do
-    if systemctl is-active --quiet "$svc"; then
-        systemctl stop "$svc"
-    fi
-    if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
-        systemctl disable "$svc"
-    fi
-done
-
 REDIRECT_UID=$(id -u redirect)
 REDIRECT_GID=$(id -g redirect)
 
