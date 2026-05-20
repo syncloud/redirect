@@ -2,13 +2,11 @@ package ioc
 
 import (
 	"encoding/base64"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/golobby/container/v3"
-	"github.com/smira/go-statsd"
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
@@ -52,22 +50,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *statsd.Client {
-		return statsd.NewClient(fmt.Sprintf("%s:8125", config.StatsdServer()),
-			statsd.MaxPacketSize(1400),
-			statsd.MetricPrefix(fmt.Sprintf("%s.", config.StatsdPrefix())))
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	err = c.Singleton(func(config *utils.Config) *metrics.GraphiteClient {
-		return metrics.New(config.GraphitePrefix(), config.GraphiteHost(), 2003)
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	err = c.Singleton(func(config *utils.Config) *session.Session {
 		return session.Must(session.NewSession(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(
@@ -88,8 +70,22 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(statsd *statsd.Client, route53 *route53.Route53) *dns.AmazonDns {
-		return dns.New(statsd, route53, 255, logger)
+	err = c.Singleton(func() *metrics.Metrics {
+		return metrics.New()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql) *metrics.DbGauges {
+		return metrics.NewDbGauges(database, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(route53 *route53.Route53, metrics *metrics.Metrics) *dns.AmazonDns {
+		return dns.New(route53, metrics, 255, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -225,21 +221,21 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(
-		statsd *statsd.Client,
 		domains *service.Domains,
 		users *service.Users,
 		mail *service.Mail,
 		prober *probe.Service,
 		certbot *service.Certbot,
+		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
-			statsd,
 			domains,
 			users,
 			mail,
 			prober,
 			certbot,
+			metrics,
 			config.Domain(),
 			config.GetApiSocket(),
 			logger,
@@ -250,12 +246,12 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(
-		statsd *statsd.Client,
 		domains *service.Domains,
 		nsChecker *service.NsChecker,
 		users *service.Users,
 		mail *service.Mail,
 		actions *service.Actions,
+		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
 		secretKey, err := base64.StdEncoding.DecodeString(config.AuthSecretSey())
@@ -264,12 +260,12 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			return nil, err
 		}
 		return rest.NewWww(
-			statsd,
 			domains,
 			nsChecker,
 			users,
 			actions,
 			mail,
+			metrics,
 			config.Domain(),
 			config.PayPalPlanMonthlyId(),
 			config.PayPalPlanAnnualId(),
@@ -285,28 +281,15 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(
 		database *db.MySql,
-		graphite *metrics.GraphiteClient,
-	) *metrics.Publisher {
-		return metrics.NewPublisher(
-			graphite,
-			database,
-		)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	err = c.Singleton(func(
-		database *db.MySql,
 		domains *service.Domains,
 		mail *service.Mail,
-		statsd *statsd.Client,
+		metrics *metrics.Metrics,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
 			domains,
 			mail,
-			statsd,
+			metrics,
 		)
 	})
 
@@ -329,7 +312,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		database *db.MySql,
 		state *user.CleanerState,
 		mail *service.Mail,
-		statsd *statsd.Client,
 		config *utils.Config,
 		domains *service.Domains,
 		paypal *subscription.PayPal,

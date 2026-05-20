@@ -1,8 +1,8 @@
 package dns
 
 import (
-	"github.com/smira/go-statsd"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"testing"
 	"time"
@@ -50,14 +50,6 @@ func (m *MailStub) SendDnsCleanNotification(to string, userDomain string) error 
 	return nil
 }
 
-type StatsStub struct {
-	value int64
-}
-
-func (g *StatsStub) Incr(stat string, count int64, tags ...statsd.Tag) {
-	g.value += count
-}
-
 func TestCleaner_Clean_ActiveSubscribed_NotRemoveDomain(t *testing.T) {
 	subscriptionId := "123"
 	now := time.Now()
@@ -68,8 +60,7 @@ func TestCleaner_Clean_ActiveSubscribed_NotRemoveDomain(t *testing.T) {
 	}
 	remover := &RemoverStub{}
 	mail := &MailStub{}
-	stats := &StatsStub{}
-	cleaner := NewCleaner(database, remover, mail, stats)
+	cleaner := NewCleaner(database, remover, mail, metrics.New())
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, remover.deleted)
@@ -88,8 +79,7 @@ func TestCleaner_Clean_NotActiveSubscribed_NotRemoveDomain(t *testing.T) {
 	}
 	remover := &RemoverStub{}
 	mail := &MailStub{}
-	stats := &StatsStub{}
-	cleaner := NewCleaner(database, remover, mail, stats)
+	cleaner := NewCleaner(database, remover, mail, metrics.New())
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, remover.deleted)
@@ -105,8 +95,7 @@ func TestCleaner_Clean_Active_NotRemoveDomain(t *testing.T) {
 	}
 	remover := &RemoverStub{}
 	mail := &MailStub{}
-	stats := &StatsStub{}
-	cleaner := NewCleaner(database, remover, mail, stats)
+	cleaner := NewCleaner(database, remover, mail, metrics.New())
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, remover.deleted)
@@ -122,8 +111,7 @@ func TestCleaner_Clean_NotActive_RemoveDomain(t *testing.T) {
 	}
 	remover := &RemoverStub{}
 	mail := &MailStub{}
-	stats := &StatsStub{}
-	cleaner := NewCleaner(database, remover, mail, stats)
+	cleaner := NewCleaner(database, remover, mail, metrics.New())
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, remover.deleted)
@@ -138,8 +126,7 @@ func TestCleaner_Clean_UnknownLastUpdate_RemoveDomain(t *testing.T) {
 	}
 	remover := &RemoverStub{}
 	mail := &MailStub{}
-	stats := &StatsStub{}
-	cleaner := NewCleaner(database, remover, mail, stats)
+	cleaner := NewCleaner(database, remover, mail, metrics.New())
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, remover.deleted)
@@ -156,8 +143,7 @@ func TestCleaner_Clean_RemoveSendNotification(t *testing.T) {
 	}
 	remover := &RemoverStub{}
 	mail := &MailStub{}
-	stats := &StatsStub{}
-	cleaner := NewCleaner(database, remover, mail, stats)
+	cleaner := NewCleaner(database, remover, mail, metrics.New())
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.True(t, remover.deleted)
@@ -173,8 +159,7 @@ func TestCleaner_Clean_NotRemoveNotSendNotification(t *testing.T) {
 	}
 	remover := &RemoverStub{}
 	mail := &MailStub{}
-	stats := &StatsStub{}
-	cleaner := NewCleaner(database, remover, mail, stats)
+	cleaner := NewCleaner(database, remover, mail, metrics.New())
 	err := cleaner.Clean(now)
 	assert.Nil(t, err)
 	assert.False(t, remover.deleted)

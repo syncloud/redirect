@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"net/http"
 	"net/http/httptest"
@@ -117,8 +118,8 @@ func TestLogin_SpecialSymbol(t *testing.T) {
 
 	users := &ApiUsersStub{}
 	api := NewApi(
-		&StatsdClientStub{}, &ApiDomainsStub{}, users, &ApiMailStub{},
-		&ApiPortProbeStub{}, &ApiCertbotStub{}, "example.com", "", log.Default())
+		&ApiDomainsStub{}, users, &ApiMailStub{},
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), "example.com", "", log.Default())
 	email := "test@example.com"
 	password := "password;&\" "
 	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}
@@ -145,8 +146,8 @@ func TestDomainUpdate_Ipv4Enabled(t *testing.T) {
 
 	domains := &ApiDomainsStub{}
 	api := NewApi(
-		&StatsdClientStub{}, domains, &ApiUsersStub{}, &ApiMailStub{},
-		&ApiPortProbeStub{}, &ApiCertbotStub{}, "example.com", "", log.Default())
+		domains, &ApiUsersStub{}, &ApiMailStub{},
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), "example.com", "", log.Default())
 	request := `
 { "port": 1, "token": "123", "ip": "1.1.1", "ipv6": "aaa.bbb.111" }
 `
@@ -169,8 +170,8 @@ func TestDomainUpdate_Ipv4Disabled(t *testing.T) {
 
 	domains := &ApiDomainsStub{}
 	api := NewApi(
-		&StatsdClientStub{}, domains, &ApiUsersStub{}, &ApiMailStub{},
-		&ApiPortProbeStub{}, &ApiCertbotStub{}, "example.com", "", log.Default())
+		domains, &ApiUsersStub{}, &ApiMailStub{},
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), "example.com", "", log.Default())
 	request := `
 { "ipv4_enabled": false}
 `
