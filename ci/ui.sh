@@ -26,8 +26,6 @@ for dir in www/test-results/*/; do
     [[ -f ${dir}video.webm ]] && cp ${dir}video.webm ${OUT}/${name}.webm
     [[ -f ${dir}failure-full-page.png ]] && cp ${dir}failure-full-page.png ${OUT}/${name}.png
 done
-if [[ -d www/test-results/logs ]]; then
-    cp -r www/test-results/logs ${OUT}/logs
-fi
+cp -r www/test-results/logs ${OUT}/logs
 
 exit $EXIT_CODE
