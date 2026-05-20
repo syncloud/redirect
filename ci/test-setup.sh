@@ -1,13 +1,6 @@
 #!/bin/bash
 set -ex
 
-# Test-env-only bits that deploy.sh can't cover on a fresh host:
-# 1. /var/www/redirect/{config,secret}.cfg from the in-repo template
-#    (with @secret@ placeholders substituted from drone secrets).
-#    UAT/prod have these on-disk from one-time provisioning long ago.
-# 2. A self-signed SSL cert at /etc/letsencrypt/live/$SYNCLOUD_DOMAIN/.
-#    UAT/prod use letsencrypt.
-
 if [ -z "$DEPLOY_ENV" ] || [ ! -d "config/env/$DEPLOY_ENV" ]; then
     echo "DEPLOY_ENV must be set to a dir under config/env/" >&2
     exit 1
