@@ -36,14 +36,9 @@ STAGE=/tmp/syncloud-redirect-setup
 apt-get update
 apt-get install -y --no-install-recommends openssl
 
-adduser --disabled-password --gecos "" redirect
-REDIRECT_UID=$(id -u redirect)
-REDIRECT_GID=$(id -g redirect)
-
 mkdir -p "$REDIRECT_DIR"
-chown "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR"
-install -o "$REDIRECT_UID" -g "$REDIRECT_GID" -m 0640 "$STAGE/config/config.cfg" "$REDIRECT_DIR/config.cfg"
-install -o "$REDIRECT_UID" -g "$REDIRECT_GID" -m 0640 "$STAGE/config/secret.cfg" "$REDIRECT_DIR/secret.cfg"
+install -m 0640 "$STAGE/config/config.cfg" "$REDIRECT_DIR/config.cfg"
+install -m 0640 "$STAGE/config/secret.cfg" "$REDIRECT_DIR/secret.cfg"
 
 mkdir -p "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN"
 openssl req -x509 -newkey rsa:4096 \

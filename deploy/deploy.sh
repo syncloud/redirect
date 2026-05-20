@@ -40,6 +40,8 @@ fi
 REDIRECT_UID=$(id -u redirect)
 REDIRECT_GID=$(id -g redirect)
 
+chown "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR" "$REDIRECT_DIR/config.cfg" "$REDIRECT_DIR/secret.cfg"
+
 mkdir -p "$REDIRECT_DIR/current"
 
 rm -rf "$REDIRECT_DIR/current/www"
