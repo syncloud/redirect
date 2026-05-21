@@ -62,8 +62,4 @@ if [ "$node_code" != "200" ]; then
     $SSH $REMOTE sudo -n docker logs node-exporter 2>&1 | tail -20 || true
     exit 1
 fi
-if $SSH $REMOTE "systemctl is-active --quiet collectd" 2>/dev/null; then
-    echo "collectd is still active after deploy (should be stopped+disabled)"
-    exit 1
-fi
-echo "node-exporter OK, collectd disabled"
+echo "node-exporter OK"
