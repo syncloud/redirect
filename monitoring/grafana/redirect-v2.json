@@ -231,7 +231,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short", "min": 0 }
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "stacking": { "mode": "normal", "group": "A" },
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "barAlignment": 0
+          }
+        }
       }
     },
     {
@@ -248,7 +258,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short", "min": 0 }
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "stacking": { "mode": "normal", "group": "A" },
+            "fillOpacity": 100,
+            "lineWidth": 0,
+            "barAlignment": 0
+          }
+        }
       }
     }
   ]
