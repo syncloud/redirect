@@ -6,6 +6,7 @@ type Metrics struct {
 	requests  *prometheus.CounterVec
 	dnsClient *prometheus.CounterVec
 	cleaner   *prometheus.CounterVec
+	rogue     *prometheus.CounterVec
 }
 
 func New() *Metrics {
@@ -31,6 +32,13 @@ func New() *Metrics {
 			},
 			[]string{"result"},
 		),
+		rogue: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "redirect_rogue_updates_total",
+				Help: "/domain/update calls whose token doesn't match any active user, by platform_version.",
+			},
+			[]string{"platform_version"},
+		),
 	}
 }
 
@@ -46,14 +54,20 @@ func (m *Metrics) Cleaner(result string) {
 	m.cleaner.WithLabelValues(result).Inc()
 }
 
+func (m *Metrics) Rogue(platformVersion string) {
+	m.rogue.WithLabelValues(platformVersion).Inc()
+}
+
 func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	m.requests.Describe(ch)
 	m.dnsClient.Describe(ch)
 	m.cleaner.Describe(ch)
+	m.rogue.Describe(ch)
 }
 
 func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	m.requests.Collect(ch)
 	m.dnsClient.Collect(ch)
 	m.cleaner.Collect(ch)
+	m.rogue.Collect(ch)
 }

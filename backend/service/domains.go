@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/syncloud/redirect/change"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/utils"
 	"github.com/syncloud/redirect/validation"
@@ -17,6 +18,7 @@ type Domains struct {
 	amazonDns        DomainsDns
 	db               DomainsDb
 	users            DomainsUsers
+	metrics          *metrics.Metrics
 	domain           string
 	freeHostedZoneId string
 	detector         change.Detector
@@ -50,6 +52,7 @@ func NewDomains(
 	dnsImpl DomainsDns,
 	db DomainsDb,
 	users DomainsUsers,
+	metrics *metrics.Metrics,
 	domain string,
 	freeHostedZoneId string,
 	detector change.Detector,
@@ -58,6 +61,7 @@ func NewDomains(
 		amazonDns:        dnsImpl,
 		db:               db,
 		users:            users,
+		metrics:          metrics,
 		domain:           domain,
 		freeHostedZoneId: freeHostedZoneId,
 		detector:         detector}
@@ -300,6 +304,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, err
 	}
 	if domain == nil {
+		d.metrics.Rogue(ptrOrEmpty(platformVersion))
 		return nil, model.NewServiceError("unknown domain update token")
 	}
 
@@ -308,6 +313,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, err
 	}
 	if user == nil || !user.Active {
+		d.metrics.Rogue(ptrOrEmpty(platformVersion))
 		return nil, model.NewServiceError("unknown domain update token")
 	}
 	if user.IsLocked() {
@@ -356,4 +362,11 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	domain.BackwardCompatibleDomain(d.domain)
 
 	return domain, nil
+}
+
+func ptrOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

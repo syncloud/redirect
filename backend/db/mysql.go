@@ -654,6 +654,29 @@ func (m *MySql) GetDomainCount() (int64, error) {
 	return m.GetCount(`select count(*) from domain`)
 }
 
+func (m *MySql) GetActiveDevicesByPlatformVersion(window time.Duration) (map[string]int64, error) {
+	rows, err := m.db.Query(`
+select coalesce(platform_version, ''), count(*)
+from domain
+where timestampdiff(minute, last_update, now()) < ?
+group by platform_version
+`, int(window.Minutes()))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int64{}
+	for rows.Next() {
+		var v string
+		var n int64
+		if err := rows.Scan(&v, &n); err != nil {
+			return nil, err
+		}
+		out[v] = n
+	}
+	return out, rows.Err()
+}
+
 func (m *MySql) GetAllUsersCount() (int64, error) {
 	return m.GetCount("select count(*) from user")
 }
