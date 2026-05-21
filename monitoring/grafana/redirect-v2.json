@@ -219,19 +219,19 @@
     },
     {
       "type": "timeseries",
-      "title": "Rogue updates by platform_version ($env)",
+      "title": "Rogue devices by platform_version, 24h window ($env)",
       "id": 11,
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
       "targets": [
         {
-          "expr": "sum(rate(redirect_rogue_updates_total{env=\"$env\"}[5m])) by (platform_version)",
+          "expr": "redirect_rogue_devices{env=\"$env\"}",
           "legendFormat": "{{platform_version}}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "ops", "min": 0 }
+        "defaults": { "unit": "short", "min": 0 }
       }
     },
     {

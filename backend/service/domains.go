@@ -304,7 +304,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, err
 	}
 	if domain == nil {
-		d.metrics.Rogue(ptrOrEmpty(platformVersion))
+		d.metrics.Rogue(ptrOrEmpty(platformVersion), *request.Token)
 		return nil, model.NewServiceError("unknown domain update token")
 	}
 
@@ -313,7 +313,7 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 		return nil, err
 	}
 	if user == nil || !user.Active {
-		d.metrics.Rogue(ptrOrEmpty(platformVersion))
+		d.metrics.Rogue(ptrOrEmpty(platformVersion), *request.Token)
 		return nil, model.NewServiceError("unknown domain update token")
 	}
 	if user.IsLocked() {
