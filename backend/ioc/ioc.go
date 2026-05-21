@@ -173,9 +173,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		users *service.Users,
 		detector *change.RequestDetector,
 		amazonDns *dns.AmazonDns,
+		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *service.Domains {
-		return service.NewDomains(amazonDns, database, users, config.Domain(), config.AwsHostedZoneId(), detector)
+		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector)
 	})
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"testing"
 )
@@ -154,7 +155,7 @@ func TestAcquireFreeDomain_ExistingMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -173,7 +174,7 @@ func TestAcquireFreeDomain_ExistingNotMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	userDomain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -193,7 +194,7 @@ func TestAcquireFreeDomain_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -213,7 +214,7 @@ func TestAcquirePremiumDomain_FreeUser_NotAvailable(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -232,7 +233,7 @@ func TestAcquirePremiumDomain_PremiumUser_Available(t *testing.T) {
 	dnsStub := &DnsStub{}
 	subscriptionId := "1"
 	users := &DomainsUsersStub{authenticated: true, userId: 1, subscriptionId: &subscriptionId}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -252,7 +253,7 @@ func TestFreeAvailability_SameUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -268,7 +269,7 @@ func TestFreeAvailability_OtherUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -284,7 +285,7 @@ func TestFreeAvailability_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -300,7 +301,7 @@ func TestPremiumAvailability_FreeUser_NotAvailable(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -317,7 +318,7 @@ func TestPremiumAvailability_PremiumUser_NotAvailable(t *testing.T) {
 	dnsStub := &DnsStub{}
 	subscriptionId := "1"
 	users := &DomainsUsersStub{authenticated: true, userId: 1, subscriptionId: &subscriptionId}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{})
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -333,7 +334,7 @@ func TestDeleteDomain_Free_DeleteRecords(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "1", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", &DetectorStub{})
 	err := domains.DeleteDomain(1, "test.syncloud.it")
 
 	assert.Nil(t, err)
@@ -348,7 +349,7 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "2", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{})
 	err := domains.DeleteDomain(1, "test.com")
 
 	assert.Nil(t, err)
@@ -363,7 +364,7 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone_IgnoreNoSuchHostedZoneE
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{error: awserr.New(route53.ErrCodeNoSuchHostedZone, "not found", nil)}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, "syncloud.it", "2", &DetectorStub{})
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{})
 	err := domains.DeleteDomain(1, "test.com")
 
 	assert.Nil(t, err)
@@ -378,7 +379,7 @@ func TestGetDomains_Free_NoNameServers(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "1", &DetectorStub{})
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", &DetectorStub{})
 	domains, err := domainService.GetDomains(&model.User{Id: 1})
 
 	assert.Nil(t, err)
@@ -389,7 +390,7 @@ func TestGetDomains_Premium_NameServers(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "2", &DetectorStub{})
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{})
 	domains, err := domainService.GetDomains(&model.User{Id: 1})
 
 	assert.Nil(t, err)
@@ -406,7 +407,7 @@ func TestDomains_Update_Ipv6_Changed(t *testing.T) {
 	webLocalPort := 443
 	webProtocol := "https"
 	detector := &DetectorStub{changed: true}
-	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "2", detector)
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", detector)
 	domain, err := domainService.Update(model.DomainUpdateRequest{
 		MapLocalAddress: false,
 		WebLocalPort:    &webLocalPort,
@@ -433,7 +434,7 @@ func TestDomains_Update_LockedUser_Error(t *testing.T) {
 	webLocalPort := 443
 	webProtocol := "https"
 	detector := &DetectorStub{changed: true}
-	domainService := NewDomains(dnsStub, db, users, "syncloud.it", "2", detector)
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", detector)
 	_, err := domainService.Update(model.DomainUpdateRequest{
 		MapLocalAddress: false,
 		WebLocalPort:    &webLocalPort,
