@@ -225,7 +225,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
       "targets": [
         {
-          "expr": "redirect_rogue_devices{env=\"$env\"}",
+          "expr": "label_replace(redirect_rogue_devices{env=\"$env\"}, \"platform_version\", \"unknown\", \"platform_version\", \"\")",
           "legendFormat": "{{platform_version}}",
           "refId": "A"
         }
