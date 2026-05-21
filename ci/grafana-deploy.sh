@@ -15,20 +15,16 @@ PASS=$(awk -F= '/^[[:space:]]*admin_password[[:space:]]*=/{gsub(/^[[:space:]]+|[
 DS_UID=$(curl -s -u "${USER}:${PASS}" http://127.0.0.1:3000/api/datasources \
   | python3 -c "import json,sys; print(next(d['uid'] for d in json.load(sys.stdin) if d['type']=='prometheus'))")
 
-python3 <<EOF
-import json, os
+python3 - "${DS_UID}" <<'EOF' | curl -fsS -u "${USER}:${PASS}" -X POST -H 'Content-Type: application/json' --data @- http://127.0.0.1:3000/api/dashboards/db
+import json, sys
+ds_uid = sys.argv[1]
 with open('/tmp/redirect-v2-dashboard.json') as f:
     raw = f.read()
-raw = raw.replace('\${DS_PROMETHEUS}', '${DS_UID}')
+raw = raw.replace('${DS_PROMETHEUS}', ds_uid)
 d = json.loads(raw)
 d.pop('__inputs', None)
 d.pop('id', None)
-payload = {'dashboard': d, 'overwrite': True, 'folderId': 0, 'message': 'CI auto-deploy'}
-with open('/tmp/import.json', 'w') as f:
-    json.dump(payload, f)
+print(json.dumps({'dashboard': d, 'overwrite': True, 'folderId': 0, 'message': 'CI auto-deploy'}))
 EOF
-
-curl -fsS -u "${USER}:${PASS}" -X POST -H 'Content-Type: application/json' \
-  --data @/tmp/import.json http://127.0.0.1:3000/api/dashboards/db
 echo
 REMOTE_SCRIPT
