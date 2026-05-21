@@ -10,7 +10,7 @@ TAG=$1
 REDIRECT_DIR=/var/www/redirect
 STAGE=/tmp/syncloud-redirect
 
-PKGS="docker.io apache2 default-mysql-client confget"
+PKGS="docker.io apache2 default-mysql-client python3"
 if ! dpkg -s $PKGS >/dev/null 2>&1; then
     apt-get update
     apt-get install -y --no-install-recommends $PKGS
@@ -57,8 +57,12 @@ cp -r "$STAGE/db" "$REDIRECT_DIR/current/db"
 chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
 
 cfg() {
-    confget -f "$REDIRECT_DIR/secret.cfg" -s "$1" "$2" 2>/dev/null \
-    || confget -f "$REDIRECT_DIR/config.cfg" -s "$1" "$2"
+    python3 -c "
+import configparser
+c = configparser.ConfigParser()
+c.read(['$REDIRECT_DIR/config.cfg', '$REDIRECT_DIR/secret.cfg'])
+print(c['$1']['$2'])
+"
 }
 
 SYNCLOUD_DOMAIN=$(cfg redirect domain)
