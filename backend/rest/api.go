@@ -193,7 +193,7 @@ func (a *Api) DomainAcquireV1(w http.ResponseWriter, req *http.Request) {
 		fail(w, err)
 		return
 	} else {
-		_, _ = fmt.Fprintf(w, string(responseJson))
+		_, _ = fmt.Fprint(w, string(responseJson))
 	}
 }
 
@@ -486,7 +486,7 @@ func (a *Api) PortProbeV2(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.WriteHeader(result.StatusCode)
-	_, _ = fmt.Fprintf(w, string(responseJson))
+	_, _ = fmt.Fprint(w, string(responseJson))
 }
 
 func (a *Api) PortProbeV3(_ http.ResponseWriter, req *http.Request) (interface{}, error) {

@@ -59,7 +59,7 @@ func success(w http.ResponseWriter, data interface{}) {
 	if err != nil {
 		fail(w, err)
 	} else {
-		_, _ = fmt.Fprintf(w, string(responseJson))
+		_, _ = fmt.Fprint(w, string(responseJson))
 	}
 }
 

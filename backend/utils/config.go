@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/bigkevmcd/go-configparser"
 	"log"
+	"os"
 )
 
 type Config struct {
@@ -18,20 +19,39 @@ func (config *Config) Load(path string, secret string) {
 	if err != nil {
 		log.Fatalln("Cannot load config: ", path, err)
 	}
-	secretParser, err := configparser.NewConfigParserFromFile(secret)
+	config.parser = parser
+	config.mergeSecret(secret, true)
+}
+
+func (config *Config) Merge(path string) {
+	config.mergeSecret(path, true)
+}
+
+func (config *Config) mergeSecret(path string, required bool) {
+	if _, err := os.Stat(path); err != nil {
+		if required {
+			log.Fatalln("Cannot load secret config: ", path, err)
+		}
+		return
+	}
+	secretParser, err := configparser.NewConfigParserFromFile(path)
 	if err != nil {
-		log.Fatalln("Cannot load secret config: ", secret, err)
+		log.Fatalln("Cannot load secret config: ", path, err)
 	}
 	for _, section := range secretParser.Sections() {
+		if !config.parser.HasSection(section) {
+			if err := config.parser.AddSection(section); err != nil {
+				log.Fatalln("Cannot apply secret config: ", err)
+			}
+		}
 		items, _ := secretParser.Items(section)
 		for key, value := range items {
-			err := parser.Set(section, key, value)
+			err := config.parser.Set(section, key, value)
 			if err != nil {
 				log.Fatalln("Cannot apply secret config: ", err)
 			}
 		}
 	}
-	config.parser = parser
 }
 
 func (config *Config) GetMySqlLogin() string {
@@ -241,6 +261,30 @@ func (config *Config) PayPalClientId() string {
 
 func (config *Config) PayPalSecretId() string {
 	result, err := config.parser.Get("paypal", "secret_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
+func (config *Config) StripeSecretKey() string {
+	result, err := config.parser.Get("stripe", "secret_key")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
+func (config *Config) StripePriceMonthlyId() string {
+	result, err := config.parser.Get("stripe", "price_monthly_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
+}
+
+func (config *Config) StripePriceAnnualId() string {
+	result, err := config.parser.Get("stripe", "price_annual_id")
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}

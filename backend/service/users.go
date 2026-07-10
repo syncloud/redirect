@@ -38,7 +38,7 @@ type UsersMail interface {
 }
 
 type Subscriptions interface {
-	Unsubscribe(id string) error
+	Unsubscribe(subscriptionType int, id string) error
 }
 
 type Users struct {
@@ -178,8 +178,8 @@ func (u *Users) Unsubscribe(user *model.User) error {
 	if !user.IsSubscribed() {
 		return fmt.Errorf("you have no existing subscrition, please contact support")
 	}
-	if user.IsPayPal() {
-		err := u.subscriptions.Unsubscribe(*user.SubscriptionId)
+	if user.IsPayPal() || user.IsStripe() {
+		err := u.subscriptions.Unsubscribe(*user.SubscriptionType, *user.SubscriptionId)
 		if err != nil {
 			return err
 		}

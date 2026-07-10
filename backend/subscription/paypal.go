@@ -40,3 +40,11 @@ func (p *PayPal) GetSubscriptionDetails(id string) (*paypal.SubscriptionDetailRe
 	}
 	return p.client.GetSubscriptionDetails(context.Background(), id)
 }
+
+func (p *PayPal) IsActive(id string) (bool, error) {
+	details, err := p.GetSubscriptionDetails(id)
+	if err != nil {
+		return false, err
+	}
+	return details.SubscriptionStatus == paypal.SubscriptionStatusActive, nil
+}

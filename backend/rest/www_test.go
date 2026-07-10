@@ -93,6 +93,17 @@ func (w WwwMailStub) SendResetPassword(_ string, _ string) error {
 	panic("implement me")
 }
 
+type WwwStripeStub struct {
+}
+
+func (w WwwStripeStub) CreateCheckout(_ string) (string, error) {
+	panic("implement me")
+}
+
+func (w WwwStripeStub) GetCheckoutSubscription(_ string) (string, error) {
+	panic("implement me")
+}
+
 func TestLogin_CreateSession(t *testing.T) {
 
 	www := NewWww(
@@ -101,6 +112,7 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		&WwwStripeStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
@@ -140,6 +152,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		&WwwStripeStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
@@ -194,6 +207,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		&WwwStripeStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
@@ -234,6 +248,7 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwUsersStub{authenticated: true},
 		&WwwActionsStub{},
 		&WwwMailStub{},
+		&WwwStripeStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
