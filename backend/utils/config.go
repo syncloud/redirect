@@ -267,23 +267,28 @@ func (config *Config) PayPalSecretId() string {
 	return result
 }
 
-func (config *Config) optional(section string, key string) string {
-	if value, err := config.parser.Get(section, key); err == nil {
-		return value
-	}
-	return ""
-}
-
 func (config *Config) StripeSecretKey() string {
-	return config.optional("stripe", "secret_key")
+	result, err := config.parser.Get("stripe", "secret_key")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
 }
 
 func (config *Config) StripePriceMonthlyId() string {
-	return config.optional("stripe", "price_monthly_id")
+	result, err := config.parser.Get("stripe", "price_monthly_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
 }
 
 func (config *Config) StripePriceAnnualId() string {
-	return config.optional("stripe", "price_annual_id")
+	result, err := config.parser.Get("stripe", "price_annual_id")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return result
 }
 
 func (config *Config) UserCleanerEnabled() bool {
