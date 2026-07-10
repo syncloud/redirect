@@ -14,7 +14,7 @@ IP=$(getent hosts www.syncloud.test | awk '{print $1}')
 echo "$IP syncloud.test api.syncloud.test auth.syncloud.test" >> /etc/hosts
 
 cd ${DIR}/../www
-npm ci
+bash ${DIR}/npm.sh ci
 EXIT_CODE=0
 npx playwright test --project=${PROJECT} || EXIT_CODE=$?
 

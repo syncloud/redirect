@@ -23,7 +23,7 @@ local build(arch) = [{
             commands: [
                 "mkdir build",
                 "cd www",
-                "npm install",
+                "bash ../ci/npm.sh install",
                 "npm run test",
                 "npm run lint",
                 "npm run build",
