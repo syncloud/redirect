@@ -9,7 +9,7 @@ test('user can toggle notifications, subscribe with crypto, and cancel subscript
 
   const checkbox = page.locator('#chk_email')
   const initialValue = await checkbox.isChecked()
-  await checkbox.click()
+  await page.getByTestId('notification-toggle').click()
   await page.locator('#save').click()
   await expect(checkbox).toBeChecked({ checked: !initialValue })
 
