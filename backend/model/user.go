@@ -11,6 +11,7 @@ const (
 
 	SubscriptionTypePayPal = 1
 	SubscriptionTypeCrypto = 2
+	SubscriptionTypeStripe = 3
 )
 
 type User struct {
@@ -94,4 +95,8 @@ func (u *User) UnSubscribe(now time.Time) {
 
 func (u *User) IsPayPal() bool {
 	return u.SubscriptionType != nil && *u.SubscriptionType == SubscriptionTypePayPal
+}
+
+func (u *User) IsStripe() bool {
+	return u.SubscriptionType != nil && *u.SubscriptionType == SubscriptionTypeStripe
 }

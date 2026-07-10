@@ -4,182 +4,192 @@
     <div id="has_domains">
       <h2 data-testid="account-title">Account</h2>
       <br/>
-      <div>
-        <div class="row">
-          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <div class="panel-title">
-                  Subscription
-                  <div class="pull-right" id="subscription_active"
-                       v-if="this.userLoaded && this.subscriptionId !== undefined">
-                    <span class="label label-success" style="font-size: 16px;">Active</span>
-                  </div>
-                  <div class="pull-right" id="subscription_inactive"
-                       v-if="this.userLoaded && this.subscriptionId === undefined">
-                    You have 30 days to subscribe
-                  </div>
-                </div>
+      <el-row :gutter="20">
+        <el-col :xs="24" :md="12">
+          <el-card class="account-card" shadow="never">
+            <template #header>
+              <div class="card-header">
+                <span>Subscription</span>
+                <el-tag
+                  id="subscription_active"
+                  type="success"
+                  size="large"
+                  v-if="userLoaded && subscriptionId !== undefined"
+                >Active</el-tag>
+                <span
+                  id="subscription_inactive"
+                  class="trial-note"
+                  v-if="userLoaded && subscriptionId === undefined"
+                >You have 30 days to subscribe</span>
               </div>
-              <div class="panel-body">
-                <div v-if="this.userLoaded && this.subscriptionId === undefined">
-                  Subscription is required after 30 days of a free trial period.<br>
-                  Additionally you can use your personal domain on active subscription (like example.com)<br><br>
-                </div>
-                <div>
-                  We provide the following features for your device:
-                </div>
-                <ul style="padding-top: 10px">
-                  <li>Automatic IP DNS updates</li>
-                  <li>Automatic mail DNS records</li>
-                  <li>Email support for your device</li>
-                </ul>
-                <div v-show="this.userLoaded && this.subscriptionId === undefined">
-                  <div>
-                    For personal domain you need to:
-                  </div>
-                  <ul>
-                    <li>Have you own a domain (like example.com)</li>
-                    <li>Be able to change Nameservers for your domain</li>
-                    <li>Allow Syncloud to manage DNS records for that domain name by setting
-                      Syncloud Name Servers
-                    </li>
-                  </ul>
-                    <el-row  style="padding: 20px 0 20px 0">
-                      <el-col :span="24" style="text-align: center">
-                        <el-radio-group v-if="this.userLoaded" v-model="this.subscriptionType">
-                          <el-radio-button label="paypal_month">£5/Month</el-radio-button>
-                          <el-radio-button label="paypal_year" >£60/Year</el-radio-button>
-                          <el-radio-button label="crypto_year" id="crypto_year">ETH 0.05/Year</el-radio-button>
-                        </el-radio-group>
+            </template>
+
+            <div v-if="userLoaded && subscriptionId === undefined">
+              Subscription is required after 30 days of a free trial period.<br>
+              Additionally you can use your personal domain on active subscription (like example.com)<br><br>
+            </div>
+            <div>
+              We provide the following features for your device:
+            </div>
+            <ul>
+              <li>Automatic IP DNS updates</li>
+              <li>Automatic mail DNS records</li>
+              <li>Email support for your device</li>
+            </ul>
+
+            <div v-show="userLoaded && subscriptionId === undefined">
+              <div>
+                For personal domain you need to:
+              </div>
+              <ul>
+                <li>Have you own a domain (like example.com)</li>
+                <li>Be able to change Nameservers for your domain</li>
+                <li>Allow Syncloud to manage DNS records for that domain name by setting
+                  Syncloud Name Servers
+                </li>
+              </ul>
+              <div class="pay-section-label">Billing</div>
+              <el-radio-group v-if="userLoaded" v-model="period" size="large">
+                <el-radio-button label="month">Monthly · £5</el-radio-button>
+                <el-radio-button label="year">Annual · £60</el-radio-button>
+              </el-radio-group>
+
+              <div class="pay-section-label">Pay with</div>
+              <div class="pay-methods">
+                <el-button
+                  type="primary"
+                  size="large"
+                  class="pay-button"
+                  id="stripe_subscribe_btn"
+                  data-testid="stripe-subscribe"
+                  :icon="CreditCard"
+                  @click="stripeCheckout"
+                >Card</el-button>
+
+                <div id="paypal-buttons" class="pay-paypal"></div>
+
+                <div class="pay-crypto">
+                  <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
+                    Or pay with crypto (0.05 ETH / year)
+                  </el-button>
+                  <div v-show="cryptoOpen" class="crypto-details">
+                    <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px">
+                      <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
+                        Amount (Ethereum)
+                      </el-col>
+                      <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
+                        0.05 ETH
                       </el-col>
                     </el-row>
-                    <div v-show="this.subscriptionType.startsWith('paypal')" style="margin: auto; max-width: 200px" id="paypal-buttons">
-
-                    </div>
-                    <div v-show="this.subscriptionType.startsWith('crypto')" style="margin: auto; max-width: 400px" >
-                      <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px" >
-                        <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
-                          Amount (Ethereum)
-                        </el-col>
-                        <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
-                          0.05 ETH
-                        </el-col>
-                      </el-row>
-                      <el-row class="crypto-row">
-                        <el-col :span="24">Please send to address:</el-col>
-                      </el-row>
-                      <el-row class="crypto-row">
-                        <el-col :span="24" style="text-align: center">
-                          <code class="wallet">{{ wallet }}</code>
-                          <el-button text :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
-                          <el-icon color="green" style="padding: 0 10px 0 10px; vertical-align: middle; height: 24px" :size="34" v-show="copied">
-                            <CircleCheck />
-                          </el-icon>
-                        </el-col>
-                      </el-row>
-                      <el-row class="crypto-row" style="padding-top: 2px">
-                        <el-col :span="24">
-                          or Scan the QR code
-                        </el-col>
-                      </el-row>
-                      <el-row class="crypto-row">
-                        <el-col :span="4"/>
-                        <el-col :span="16">
-                          <el-image src="/assets/crypto-wallet-qr.png" ></el-image>
-                        </el-col>
-                        <el-col :span="4"/>
-                      </el-row>
-                      <el-row class="crypto-row">
-                        <el-col>
-                          Enter transaction ID:
-                        </el-col>
-                      </el-row>
-                      <el-row class="crypto-row">
-                        <el-col>
-                          <el-input v-model="cryptoTransactionId" id="crypto_transaction_id"></el-input>
-                        </el-col>
-                      </el-row>
-                      <el-row class="crypto-row">
-                        <el-col style="text-align:right">
-                          <el-button
-                            @click="cryptoSubscribe"
-                            type="primary"
-                            :disabled="cryptoTransactionId.length<10"
-                            id="crypto_subscribe_btn"
-                          >
-                            Subscribe
-                          </el-button>
-                        </el-col>
-                      </el-row>
-                    </div>
-                </div>
-
-                <div v-if="this.userLoaded && this.subscriptionId !== undefined">
-                  <div style="padding-top: 10px">
-                    You can activate your device with a personal domain:<br>
+                    <el-row class="crypto-row">
+                      <el-col :span="24">Please send to address:</el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col :span="24" style="text-align: center">
+                        <code class="wallet">{{ wallet }}</code>
+                        <el-button text :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
+                        <el-icon color="green" style="padding: 0 10px 0 10px; vertical-align: middle; height: 24px" :size="34" v-show="copied">
+                          <CircleCheck />
+                        </el-icon>
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row" style="padding-top: 2px">
+                      <el-col :span="24">
+                        or Scan the QR code
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col :span="4"/>
+                      <el-col :span="16">
+                        <el-image src="/assets/crypto-wallet-qr.png"></el-image>
+                      </el-col>
+                      <el-col :span="4"/>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col>
+                        Enter transaction ID:
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col>
+                        <el-input v-model="cryptoTransactionId" id="crypto_transaction_id"></el-input>
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col style="text-align:right">
+                        <el-button
+                          @click="cryptoSubscribe"
+                          type="primary"
+                          :disabled="cryptoTransactionId.length<10"
+                          id="crypto_subscribe_btn"
+                        >
+                          Subscribe
+                        </el-button>
+                      </el-col>
+                    </el-row>
                   </div>
-                  <ol>
-                    <li>Reactivate from Settings - Activation and select a Premium mode</li>
-                    <li>
-                      Copy Name Servers for your
-                      <router-link to="/">domain</router-link>
-                      (Under this domain Name Servers list)
-                    </li>
-                    <li>
-                      Update Name Servers on your domain registrar page (GoDaddy for example)
-                    </li>
-                  </ol>
-
-                  <button type="button" class="btn btn-danger pull-right" id="cancel" @click="cancelSubscription">
-                    <span class="glyphicon glyphicon-remove" aria-hidden="true" style="padding-right: 5px"></span>Cancel
-                  </button>
-
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <div class="panel-title">
-                  Email notifications
-                </div>
+            <div v-if="userLoaded && subscriptionId !== undefined">
+              <div style="padding-top: 10px">
+                You can activate your device with a personal domain:<br>
               </div>
-              <div class="panel-body">
-                <div class="pull-left">
-                  <input v-model="notificationEnabled" type="checkbox" id="chk_email" :value="notificationEnabled">
-                  <label for="chk_email" style="font-weight: normal; padding-left: 5px">Send me notifications</label>
-                </div>
-                <button type="button" class="btn btn-default pull-right" @click="notificationSave" id="save">
-                  <span class="glyphicon glyphicon-ok" style="padding-right: 5px"></span>Save
-                </button>
+              <ol>
+                <li>Reactivate from Settings - Activation and select a Premium mode</li>
+                <li>
+                  Copy Name Servers for your
+                  <router-link to="/">domain</router-link>
+                  (Under this domain Name Servers list)
+                </li>
+                <li>
+                  Update Name Servers on your domain registrar page (GoDaddy for example)
+                </li>
+              </ol>
+
+              <div style="text-align: right">
+                <el-button type="danger" id="cancel" :icon="Close" @click="cancelSubscription">Cancel</el-button>
               </div>
             </div>
-          </div>
+          </el-card>
+        </el-col>
 
-          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
-            <div class="panel panel-danger">
-              <div class="panel-heading">
-                <div class="panel-title">
-                  Danger Zone
-                </div>
+        <el-col :xs="24" :md="12">
+          <el-card class="account-card" shadow="never">
+            <template #header>
+              <div class="card-header">
+                <span>Email notifications</span>
               </div>
-              <div class="panel-body clearfix">
-                <h4>Delete this account</h4>
-                <div class="pull-left">
-                  Delete your account all domains and personal data.
-                </div>
-                <button type="button" class="btn btn-danger pull-right" id="delete" @click="accountDelete">
-                  <span class="glyphicon glyphicon-remove" aria-hidden="true" style="padding-right: 5px"></span>Delete
-                </button>
-              </div>
+            </template>
+            <div class="card-actions">
+              <el-switch
+                id="chk_email"
+                data-testid="notification-toggle"
+                v-model="notificationEnabled"
+                active-text="Send me notifications"
+              />
+              <el-button type="primary" id="save" :icon="Check" @click="notificationSave">Save</el-button>
             </div>
-          </div>
+          </el-card>
+        </el-col>
 
-        </div>
-      </div>
+        <el-col :xs="24" :md="12">
+          <el-card class="account-card danger-card" shadow="never">
+            <template #header>
+              <div class="card-header">
+                <span>Danger Zone</span>
+              </div>
+            </template>
+            <h4>Delete this account</h4>
+            <div class="card-actions">
+              <span>Delete your account all domains and personal data.</span>
+              <el-button type="danger" id="delete" :icon="Delete" @click="accountDelete">Delete</el-button>
+            </div>
+          </el-card>
+        </el-col>
+
+      </el-row>
     </div>
   </div>
 
@@ -213,7 +223,7 @@
 import axios from 'axios'
 import CustomDialog from '../components/CustomDialog.vue'
 import { loadScript } from '@paypal/paypal-js'
-import { CircleCheck, CopyDocument } from '@element-plus/icons-vue'
+import { CircleCheck, CopyDocument, Check, Close, Delete, CreditCard } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 
 export default {
@@ -238,18 +248,28 @@ export default {
       userLoaded: Boolean,
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
-      subscriptionType: 'paypal_month',
+      period: 'month',
+      cryptoOpen: false,
       cryptoTransactionId: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
       copied: false,
-      CopyDocument: markRaw(CopyDocument)
+      CopyDocument: markRaw(CopyDocument),
+      Check: markRaw(Check),
+      Close: markRaw(Close),
+      Delete: markRaw(Delete),
+      CreditCard: markRaw(CreditCard)
     }
   },
   mounted () {
     this.subscriptionId = undefined
     this.paypalLoaded = false
     this.userLoaded = false
-    this.reload()
+    const sessionId = this.$route && this.$route.query ? this.$route.query.stripe_session_id : undefined
+    if (sessionId) {
+      this.confirmStripe(sessionId)
+    } else {
+      this.reload()
+    }
   },
   methods: {
     copy: function () {
@@ -289,18 +309,35 @@ export default {
         })
         .catch(this.onError)
     },
+    stripeCheckout: function () {
+      const plan = this.period === 'year' ? 'annual' : 'monthly'
+      axios.post('/api/plan/subscribe/stripe/checkout', { plan: plan })
+        .then(response => {
+          window.location.href = response.data.data.url
+        })
+        .catch(this.onError)
+    },
+    confirmStripe: function (sessionId) {
+      axios.post('/api/plan/subscribe/stripe', { subscription_id: sessionId })
+        .then(_ => {
+          this.$router.replace({ query: {} })
+          this.reload()
+        })
+        .catch(this.onError)
+    },
     enablePayPal: function (clientId) {
       loadScript({
-        'client-id': clientId,
+        clientId: clientId,
         vault: true,
-        intent: 'subscription'
+        intent: 'subscription',
+        disableFunding: 'card'
       })
         .then((paypal) => {
           paypal
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: this.subscriptionType === 'paypal_year' ? this.planAnnualId : this.planMonthlyId
+                  plan_id: this.period === 'year' ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {
@@ -360,6 +397,51 @@ export default {
 }
 </script>
 <style>
+.account-card {
+  margin-bottom: 20px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.trial-note {
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.danger-card {
+  --el-card-border-color: var(--el-color-danger);
+}
+.pay-section-label {
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  margin: 20px 0 8px 0;
+}
+.pay-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+}
+.pay-button {
+  width: 100%;
+}
+.pay-paypal {
+  min-height: 1px;
+}
+.pay-crypto {
+  margin-top: 4px;
+}
+.crypto-details {
+  max-width: 400px;
+  padding-top: 8px;
+}
 .crypto-row {
   padding-bottom: 10px;
 }

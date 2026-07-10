@@ -2,6 +2,9 @@ package ioc
 
 import (
 	"encoding/base64"
+	"fmt"
+	"path/filepath"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -31,6 +34,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err := c.Singleton(func() *utils.Config {
 		config := utils.NewConfig()
 		config.Load(configPath, secretPath)
+		config.Merge(filepath.Join(filepath.Dir(secretPath), "payments.cfg"))
 		return config
 	})
 	if err != nil {
@@ -143,11 +147,37 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(
+		config *utils.Config,
+	) *subscription.Stripe {
+		return subscription.NewStripe(
+			config.StripeSecretKey(),
+			config.StripePriceMonthlyId(),
+			config.StripePriceAnnualId(),
+			fmt.Sprintf("https://www.%s/account?stripe_session_id={CHECKOUT_SESSION_ID}", config.Domain()),
+			fmt.Sprintf("https://www.%s/account", config.Domain()),
+			logger,
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		paypal *subscription.PayPal,
+		stripe *subscription.Stripe,
+	) *subscription.Router {
+		return subscription.NewRouter(paypal, stripe)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
 		database *db.MySql,
 		mail *service.Mail,
 		actions *service.Actions,
 		config *utils.Config,
-		subscriptions *subscription.PayPal,
+		subscriptions *subscription.Router,
 	) *service.Users {
 		return service.NewUsers(
 			database,
@@ -252,6 +282,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		users *service.Users,
 		mail *service.Mail,
 		actions *service.Actions,
+		stripe *subscription.Stripe,
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
@@ -266,6 +297,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			users,
 			actions,
 			mail,
+			stripe,
 			metrics,
 			config.Domain(),
 			config.PayPalPlanMonthlyId(),
@@ -315,14 +347,14 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		config *utils.Config,
 		domains *service.Domains,
-		paypal *subscription.PayPal,
+		router *subscription.Router,
 	) *user.Cleaner {
 		return user.NewCleaner(
 			database,
 			state,
 			mail,
 			domains,
-			paypal,
+			router,
 			config.UserCleanerEnabled(),
 			logger,
 		)

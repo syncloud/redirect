@@ -1,7 +1,6 @@
 package user
 
 import (
-	"github.com/plutov/paypal/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/model"
@@ -87,16 +86,12 @@ func (m *MailStub) SendTrial(_ string) error {
 	return nil
 }
 
-type PayPalStub struct {
-	status paypal.SubscriptionStatus
+type CheckerStub struct {
+	active bool
 }
 
-func (p *PayPalStub) GetSubscriptionDetails(_ string) (*paypal.SubscriptionDetailResp, error) {
-	return &paypal.SubscriptionDetailResp{
-		SubscriptionDetails: paypal.SubscriptionDetails{
-			SubscriptionStatus: p.status,
-		},
-	}, nil
+func (c *CheckerStub) IsActive(_ int, _ string) (bool, error) {
+	return c.active, nil
 }
 
 type RemoverStub struct {
@@ -117,7 +112,7 @@ func TestCleaner_Clean_Subscribed_Skip(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	checker := &PayPalStub{status: paypal.SubscriptionStatusActive}
+	checker := &CheckerStub{active: true}
 	cleaner := NewCleaner(database, state, mail, remover, checker, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
@@ -135,7 +130,7 @@ func TestCleaner_Clean_Locked_Skip(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -151,7 +146,7 @@ func TestCleaner_Clean_StatusCreated_SendTrial(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -168,7 +163,7 @@ func TestCleaner_Clean_StatusCreated_SendTrial_Once(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -194,7 +189,7 @@ func TestCleaner_Clean_StatusTrialSent_LessThan20Days_Skip(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -212,7 +207,7 @@ func TestCleaner_Clean_StatusTrialSent_MoreThan20Days_SendLockEmail(t *testing.T
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -230,7 +225,7 @@ func TestCleaner_Clean_StatusLockSoonSent_LessThan10Days_Skip(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -249,7 +244,7 @@ func TestCleaner_Clean_StatusLockSoonSent_MoreThan10Days_Lock(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
@@ -269,7 +264,7 @@ func TestCleaner_Clean_StatusLocked_MoreThan10Days_Remove(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.True(t, remover.domainsRemoved)
@@ -286,7 +281,7 @@ func TestCleaner_Clean_StatusLocked_LessThan10Days_NotRemove(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.False(t, remover.domainsRemoved)
@@ -304,7 +299,7 @@ func TestCleaner_Clean_Crypto_SkipForNow(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	checker := &PayPalStub{}
+	checker := &CheckerStub{}
 
 	cleaner := NewCleaner(database, state, mail, remover, checker, true, log.Default())
 	err := cleaner.Clean(now)
@@ -326,7 +321,7 @@ func TestCleaner_Clean_PayPalUnsubscribe_Lock(t *testing.T) {
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	checker := &PayPalStub{}
+	checker := &CheckerStub{}
 
 	cleaner := NewCleaner(database, state, mail, remover, checker, true, log.Default())
 	err := cleaner.Clean(now)
@@ -339,13 +334,53 @@ func TestCleaner_Clean_PayPalUnsubscribe_Lock(t *testing.T) {
 	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
 }
 
+func TestCleaner_Clean_StripeInactive_Lock(t *testing.T) {
+	now := time.Now()
+	subscriptionId := "1"
+	subscriptionType := model.SubscriptionTypeStripe
+	user := &model.User{Id: 2, SubscriptionId: &subscriptionId, SubscriptionType: &subscriptionType}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	checker := &CheckerStub{active: false}
+
+	cleaner := NewCleaner(database, state, mail, remover, checker, true, log.Default())
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.True(t, user.IsLocked())
+	assert.True(t, mail.unsubscribed)
+	assert.True(t, remover.domainsRemoved)
+	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
+}
+
+func TestCleaner_Clean_StripeActive_Skip(t *testing.T) {
+	now := time.Now()
+	subscriptionId := "1"
+	subscriptionType := model.SubscriptionTypeStripe
+	user := &model.User{Id: 2, SubscriptionId: &subscriptionId, SubscriptionType: &subscriptionType}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	checker := &CheckerStub{active: true}
+
+	cleaner := NewCleaner(database, state, mail, remover, checker, true, log.Default())
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), state.userId)
+	assert.False(t, user.IsLocked())
+	assert.False(t, mail.unsubscribed)
+	assert.False(t, remover.domainsRemoved)
+}
+
 func TestCleaner_Clean_Last_ResetToZero(t *testing.T) {
 	now := time.Now()
 	database := &DatabaseStub{user: nil}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
 	remover := &RemoverStub{}
-	cleaner := NewCleaner(database, state, mail, remover, &PayPalStub{}, true, log.Default())
+	cleaner := NewCleaner(database, state, mail, remover, &CheckerStub{}, true, log.Default())
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), state.userId)

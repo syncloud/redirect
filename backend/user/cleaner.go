@@ -1,7 +1,6 @@
 package user
 
 import (
-	"github.com/plutov/paypal/v4"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 	"time"
@@ -32,8 +31,8 @@ type Remover interface {
 	DeleteAllDomains(userId int64) error
 }
 
-type PayPalSubscriptionChecker interface {
-	GetSubscriptionDetails(id string) (*paypal.SubscriptionDetailResp, error)
+type SubscriptionChecker interface {
+	IsActive(subscriptionType int, id string) (bool, error)
 }
 
 type Cleaner struct {
@@ -41,7 +40,7 @@ type Cleaner struct {
 	state    State
 	mail     Mail
 	remover  Remover
-	checker  PayPalSubscriptionChecker
+	checker  SubscriptionChecker
 	enabled  bool
 	logger   *zap.Logger
 }
@@ -51,7 +50,7 @@ func NewCleaner(
 	state State,
 	mail Mail,
 	remover Remover,
-	checker PayPalSubscriptionChecker,
+	checker SubscriptionChecker,
 	enabled bool,
 	logger *zap.Logger) *Cleaner {
 	return &Cleaner{
@@ -105,21 +104,21 @@ func (c *Cleaner) Clean(now time.Time) error {
 	if user.IsSubscribed() {
 		c.logger.Info("cleaner user subscribed")
 
-		if !user.IsPayPal() {
-			c.logger.Info("cleaner not paypal user")
+		if !user.IsPayPal() && !user.IsStripe() {
+			c.logger.Info("cleaner subscription type is not auto-managed")
 
 			return c.state.Set(id)
 		}
 
-		details, err := c.checker.GetSubscriptionDetails(*user.SubscriptionId)
+		active, err := c.checker.IsActive(*user.SubscriptionType, *user.SubscriptionId)
 		if err != nil {
 			return err
 		}
-		if details.SubscriptionStatus == paypal.SubscriptionStatusActive {
+		if active {
 			return c.state.Set(id)
 		}
 
-		c.logger.Info("paypal subscription is not active", zap.String("status", string(details.SubscriptionStatus)))
+		c.logger.Info("subscription is not active", zap.Int("type", *user.SubscriptionType))
 		user.UnSubscribe(now)
 		err = c.database.UpdateUser(user)
 		if err != nil {
