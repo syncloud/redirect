@@ -48,7 +48,6 @@ type WwwMail interface {
 }
 
 type WwwStripe interface {
-	Enabled() bool
 	CreateCheckout(plan string) (string, error)
 	GetCheckoutSubscription(sessionId string) (string, error)
 }
@@ -301,7 +300,6 @@ func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (inte
 		PlanMonthlyId: w.payPalPlanMonthlyId,
 		PlanAnnualId:  w.payPalPlanAnnualId,
 		ClientId:      w.payPalClientId,
-		StripeEnabled: w.stripe.Enabled(),
 	}, nil
 }
 

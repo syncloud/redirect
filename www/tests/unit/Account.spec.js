@@ -295,7 +295,7 @@ test('Stripe Checkout', async () => {
     return [200, { data: { url: 'https://checkout.stripe.test/session' } }]
   })
 
-  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2', stripe_enabled: true } })
+  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2' } })
 
   const originalLocation = window.location
   Object.defineProperty(window, 'location', { configurable: true, writable: true, value: { href: '' } })

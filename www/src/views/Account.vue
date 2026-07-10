@@ -57,7 +57,6 @@
               <div class="pay-section-label">Pay with</div>
               <div class="pay-methods">
                 <el-button
-                  v-if="stripeEnabled"
                   type="primary"
                   size="large"
                   class="pay-button"
@@ -246,7 +245,6 @@ export default {
       planAnnualId: String,
       clientId: String,
       paypalLoaded: Boolean,
-      stripeEnabled: false,
       userLoaded: Boolean,
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
@@ -295,7 +293,6 @@ export default {
           this.planAnnualId = response.data.data.plan_annual_id
           this.planMonthlyId = response.data.data.plan_monthly_id
           this.clientId = response.data.data.client_id
-          this.stripeEnabled = response.data.data.stripe_enabled === true
           if (!subscriptionId && !this.paypalLoaded) {
             this.enablePayPal(this.clientId)
           }

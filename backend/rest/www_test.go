@@ -96,10 +96,6 @@ func (w WwwMailStub) SendResetPassword(_ string, _ string) error {
 type WwwStripeStub struct {
 }
 
-func (w WwwStripeStub) Enabled() bool {
-	return false
-}
-
 func (w WwwStripeStub) CreateCheckout(_ string) (string, error) {
 	panic("implement me")
 }
