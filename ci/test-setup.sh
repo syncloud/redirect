@@ -32,7 +32,6 @@ apt-get install -y --no-install-recommends openssl
 mkdir -p "$REDIRECT_DIR"
 install -m 0640 "$STAGE/config/config.cfg" "$REDIRECT_DIR/config.cfg"
 install -m 0640 "$STAGE/config/secret.cfg" "$REDIRECT_DIR/secret.cfg"
-install -m 0640 "$STAGE/config/payments.cfg" "$REDIRECT_DIR/payments.cfg"
 
 mkdir -p "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN"
 openssl req -x509 -newkey rsa:4096 \
