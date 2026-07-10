@@ -331,7 +331,6 @@ test('Stripe Checkout', async () => {
 
   await flushPromises()
 
-  await wrapper.find('#stripe_month').trigger('click')
   await wrapper.find('#stripe_subscribe_btn').trigger('click')
 
   await flushPromises()

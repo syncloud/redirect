@@ -48,79 +48,88 @@
                   Syncloud Name Servers
                 </li>
               </ul>
-              <el-row style="padding: 20px 0 20px 0">
-                <el-col :span="24" style="text-align: center">
-                  <el-radio-group v-if="userLoaded" v-model="subscriptionType">
-                    <el-radio-button label="paypal_month">£5/Month</el-radio-button>
-                    <el-radio-button label="paypal_year">£60/Year</el-radio-button>
-                    <el-radio-button v-if="stripeEnabled" label="stripe_month" id="stripe_month">Card £5/Month</el-radio-button>
-                    <el-radio-button v-if="stripeEnabled" label="stripe_year" id="stripe_year">Card £60/Year</el-radio-button>
-                    <el-radio-button label="crypto_year" id="crypto_year">ETH 0.05/Year</el-radio-button>
-                  </el-radio-group>
-                </el-col>
-              </el-row>
-              <div v-show="subscriptionType.startsWith('paypal')" style="margin: auto; max-width: 200px" id="paypal-buttons">
-              </div>
-              <div v-show="subscriptionType.startsWith('stripe')" style="text-align: center; padding-top: 10px">
-                <el-button type="primary" id="stripe_subscribe_btn" data-testid="stripe-subscribe" @click="stripeCheckout">
-                  Subscribe with card
-                </el-button>
-              </div>
-              <div v-show="subscriptionType.startsWith('crypto')" style="margin: auto; max-width: 400px">
-                <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px">
-                  <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
-                    Amount (Ethereum)
-                  </el-col>
-                  <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
-                    0.05 ETH
-                  </el-col>
-                </el-row>
-                <el-row class="crypto-row">
-                  <el-col :span="24">Please send to address:</el-col>
-                </el-row>
-                <el-row class="crypto-row">
-                  <el-col :span="24" style="text-align: center">
-                    <code class="wallet">{{ wallet }}</code>
-                    <el-button text :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
-                    <el-icon color="green" style="padding: 0 10px 0 10px; vertical-align: middle; height: 24px" :size="34" v-show="copied">
-                      <CircleCheck />
-                    </el-icon>
-                  </el-col>
-                </el-row>
-                <el-row class="crypto-row" style="padding-top: 2px">
-                  <el-col :span="24">
-                    or Scan the QR code
-                  </el-col>
-                </el-row>
-                <el-row class="crypto-row">
-                  <el-col :span="4"/>
-                  <el-col :span="16">
-                    <el-image src="/assets/crypto-wallet-qr.png"></el-image>
-                  </el-col>
-                  <el-col :span="4"/>
-                </el-row>
-                <el-row class="crypto-row">
-                  <el-col>
-                    Enter transaction ID:
-                  </el-col>
-                </el-row>
-                <el-row class="crypto-row">
-                  <el-col>
-                    <el-input v-model="cryptoTransactionId" id="crypto_transaction_id"></el-input>
-                  </el-col>
-                </el-row>
-                <el-row class="crypto-row">
-                  <el-col style="text-align:right">
-                    <el-button
-                      @click="cryptoSubscribe"
-                      type="primary"
-                      :disabled="cryptoTransactionId.length<10"
-                      id="crypto_subscribe_btn"
-                    >
-                      Subscribe
-                    </el-button>
-                  </el-col>
-                </el-row>
+              <div class="pay-section-label">Billing</div>
+              <el-radio-group v-if="userLoaded" v-model="period" size="large">
+                <el-radio-button label="month">Monthly · £5</el-radio-button>
+                <el-radio-button label="year">Annual · £60</el-radio-button>
+              </el-radio-group>
+
+              <div class="pay-section-label">Pay with</div>
+              <div class="pay-methods">
+                <el-button
+                  v-if="stripeEnabled"
+                  type="primary"
+                  size="large"
+                  class="pay-button"
+                  id="stripe_subscribe_btn"
+                  data-testid="stripe-subscribe"
+                  :icon="CreditCard"
+                  @click="stripeCheckout"
+                >Card</el-button>
+
+                <div id="paypal-buttons" class="pay-paypal"></div>
+
+                <div class="pay-crypto">
+                  <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
+                    Or pay with crypto (0.05 ETH / year)
+                  </el-button>
+                  <div v-show="cryptoOpen" class="crypto-details">
+                    <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px">
+                      <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
+                        Amount (Ethereum)
+                      </el-col>
+                      <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
+                        0.05 ETH
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col :span="24">Please send to address:</el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col :span="24" style="text-align: center">
+                        <code class="wallet">{{ wallet }}</code>
+                        <el-button text :icon="CopyDocument" size="small" @click="copy" v-show="!copied"></el-button>
+                        <el-icon color="green" style="padding: 0 10px 0 10px; vertical-align: middle; height: 24px" :size="34" v-show="copied">
+                          <CircleCheck />
+                        </el-icon>
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row" style="padding-top: 2px">
+                      <el-col :span="24">
+                        or Scan the QR code
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col :span="4"/>
+                      <el-col :span="16">
+                        <el-image src="/assets/crypto-wallet-qr.png"></el-image>
+                      </el-col>
+                      <el-col :span="4"/>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col>
+                        Enter transaction ID:
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col>
+                        <el-input v-model="cryptoTransactionId" id="crypto_transaction_id"></el-input>
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col style="text-align:right">
+                        <el-button
+                          @click="cryptoSubscribe"
+                          type="primary"
+                          :disabled="cryptoTransactionId.length<10"
+                          id="crypto_subscribe_btn"
+                        >
+                          Subscribe
+                        </el-button>
+                      </el-col>
+                    </el-row>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -215,7 +224,7 @@
 import axios from 'axios'
 import CustomDialog from '../components/CustomDialog.vue'
 import { loadScript } from '@paypal/paypal-js'
-import { CircleCheck, CopyDocument, Check, Close, Delete } from '@element-plus/icons-vue'
+import { CircleCheck, CopyDocument, Check, Close, Delete, CreditCard } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 
 export default {
@@ -241,14 +250,16 @@ export default {
       userLoaded: Boolean,
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
-      subscriptionType: 'paypal_month',
+      period: 'month',
+      cryptoOpen: false,
       cryptoTransactionId: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
       copied: false,
       CopyDocument: markRaw(CopyDocument),
       Check: markRaw(Check),
       Close: markRaw(Close),
-      Delete: markRaw(Delete)
+      Delete: markRaw(Delete),
+      CreditCard: markRaw(CreditCard)
     }
   },
   mounted () {
@@ -302,7 +313,7 @@ export default {
         .catch(this.onError)
     },
     stripeCheckout: function () {
-      const plan = this.subscriptionType === 'stripe_year' ? 'annual' : 'monthly'
+      const plan = this.period === 'year' ? 'annual' : 'monthly'
       axios.post('/api/plan/subscribe/stripe/checkout', { plan: plan })
         .then(response => {
           window.location.href = response.data.data.url
@@ -321,14 +332,15 @@ export default {
       loadScript({
         clientId: clientId,
         vault: true,
-        intent: 'subscription'
+        intent: 'subscription',
+        disableFunding: 'card'
       })
         .then((paypal) => {
           paypal
             .Buttons({
               createSubscription: (data, actions) => {
                 return actions.subscription.create({
-                  plan_id: this.subscriptionType === 'paypal_year' ? this.planAnnualId : this.planMonthlyId
+                  plan_id: this.period === 'year' ? this.planAnnualId : this.planMonthlyId
                 })
               },
               onApprove: (data, actions) => {
@@ -408,6 +420,30 @@ export default {
 }
 .danger-card {
   --el-card-border-color: var(--el-color-danger);
+}
+.pay-section-label {
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  margin: 20px 0 8px 0;
+}
+.pay-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+}
+.pay-button {
+  width: 100%;
+}
+.pay-paypal {
+  min-height: 1px;
+}
+.pay-crypto {
+  margin-top: 4px;
+}
+.crypto-details {
+  max-width: 400px;
+  padding-top: 8px;
 }
 .crypto-row {
   padding-bottom: 10px;
