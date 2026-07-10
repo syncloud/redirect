@@ -120,7 +120,7 @@ func (a *UsersMailStub) SendResetPassword(to string, token string) error {
 type SubscriptionsStub struct {
 }
 
-func (s *SubscriptionsStub) Unsubscribe(id string) error {
+func (s *SubscriptionsStub) Unsubscribe(subscriptionType int, id string) error {
 	//TODO implement me
 	panic("implement me")
 }

@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/bigkevmcd/go-configparser"
 	"log"
+	"os"
 )
 
 type Config struct {
@@ -18,20 +19,39 @@ func (config *Config) Load(path string, secret string) {
 	if err != nil {
 		log.Fatalln("Cannot load config: ", path, err)
 	}
-	secretParser, err := configparser.NewConfigParserFromFile(secret)
+	config.parser = parser
+	config.mergeSecret(secret, true)
+}
+
+func (config *Config) Merge(path string) {
+	config.mergeSecret(path, true)
+}
+
+func (config *Config) mergeSecret(path string, required bool) {
+	if _, err := os.Stat(path); err != nil {
+		if required {
+			log.Fatalln("Cannot load secret config: ", path, err)
+		}
+		return
+	}
+	secretParser, err := configparser.NewConfigParserFromFile(path)
 	if err != nil {
-		log.Fatalln("Cannot load secret config: ", secret, err)
+		log.Fatalln("Cannot load secret config: ", path, err)
 	}
 	for _, section := range secretParser.Sections() {
+		if !config.parser.HasSection(section) {
+			if err := config.parser.AddSection(section); err != nil {
+				log.Fatalln("Cannot apply secret config: ", err)
+			}
+		}
 		items, _ := secretParser.Items(section)
 		for key, value := range items {
-			err := parser.Set(section, key, value)
+			err := config.parser.Set(section, key, value)
 			if err != nil {
 				log.Fatalln("Cannot apply secret config: ", err)
 			}
 		}
 	}
-	config.parser = parser
 }
 
 func (config *Config) GetMySqlLogin() string {
@@ -245,6 +265,25 @@ func (config *Config) PayPalSecretId() string {
 		log.Fatalln("Cannot read config: ", err)
 	}
 	return result
+}
+
+func (config *Config) optional(section string, key string) string {
+	if value, err := config.parser.Get(section, key); err == nil {
+		return value
+	}
+	return ""
+}
+
+func (config *Config) StripeSecretKey() string {
+	return config.optional("stripe", "secret_key")
+}
+
+func (config *Config) StripePriceMonthlyId() string {
+	return config.optional("stripe", "price_monthly_id")
+}
+
+func (config *Config) StripePriceAnnualId() string {
+	return config.optional("stripe", "price_annual_id")
 }
 
 func (config *Config) UserCleanerEnabled() bool {

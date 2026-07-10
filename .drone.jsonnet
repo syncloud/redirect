@@ -1,5 +1,5 @@
 local name = "redirect";
-local go = "1.23";
+local go = "1.25";
 local dind = "19.03.8-dind";
 local node = "18.12.0";
 local playwright = "v1.59.1-jammy";
@@ -165,6 +165,14 @@ local build(arch) = [{
                 DEPLOY_USER: { from_secret: "uat_deploy_user" },
                 DEPLOY_KEY: { from_secret: "uat_deploy_key" },
                 DEPLOY_URL: { from_secret: "uat_deploy_url" },
+                PAYPAL_URL: "https://api-m.sandbox.paypal.com",
+                PAYPAL_PLAN_MONTHLY_ID: { from_secret: "uat_paypal_plan_monthly_id" },
+                PAYPAL_PLAN_ANNUAL_ID: { from_secret: "uat_paypal_plan_annual_id" },
+                PAYPAL_CLIENT_ID: { from_secret: "uat_paypal_client_id" },
+                PAYPAL_SECRET_ID: { from_secret: "uat_paypal_secret_id" },
+                STRIPE_SECRET_KEY: { from_secret: "uat_stripe_secret_key" },
+                STRIPE_PRICE_MONTHLY_ID: { from_secret: "uat_stripe_price_monthly_id" },
+                STRIPE_PRICE_ANNUAL_ID: { from_secret: "uat_stripe_price_annual_id" },
             },
             commands: [
                 "./ci/deploy-prepare.sh",
@@ -182,6 +190,14 @@ local build(arch) = [{
                 DEPLOY_USER: { from_secret: "prod_deploy_user" },
                 DEPLOY_KEY: { from_secret: "prod_deploy_key" },
                 DEPLOY_URL: { from_secret: "prod_deploy_url" },
+                PAYPAL_URL: "https://api-m.paypal.com",
+                PAYPAL_PLAN_MONTHLY_ID: { from_secret: "prod_paypal_plan_monthly_id" },
+                PAYPAL_PLAN_ANNUAL_ID: { from_secret: "prod_paypal_plan_annual_id" },
+                PAYPAL_CLIENT_ID: { from_secret: "prod_paypal_client_id" },
+                PAYPAL_SECRET_ID: { from_secret: "prod_paypal_secret_id" },
+                STRIPE_SECRET_KEY: { from_secret: "prod_stripe_secret_key" },
+                STRIPE_PRICE_MONTHLY_ID: { from_secret: "prod_stripe_price_monthly_id" },
+                STRIPE_PRICE_ANNUAL_ID: { from_secret: "prod_stripe_price_annual_id" },
             },
             commands: [
                 "./ci/deploy-prepare.sh",

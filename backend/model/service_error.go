@@ -1,6 +1,6 @@
 package model
 
-import "fmt"
+import "errors"
 
 type ServiceError struct {
 	InternalError error
@@ -12,9 +12,9 @@ func (e *ServiceError) Error() string {
 }
 
 func NewServiceError(message string) *ServiceError {
-	return &ServiceError{InternalError: fmt.Errorf(message), StatusCode: 400}
+	return &ServiceError{InternalError: errors.New(message), StatusCode: 400}
 }
 
 func NewServiceErrorWithCode(message string, code int) *ServiceError {
-	return &ServiceError{InternalError: fmt.Errorf(message), StatusCode: code}
+	return &ServiceError{InternalError: errors.New(message), StatusCode: code}
 }

@@ -11,7 +11,7 @@ test('user can toggle notifications, subscribe with crypto, and cancel subscript
   const initialValue = await checkbox.isChecked()
   await checkbox.click()
   await page.locator('#save').click()
-  await expect(checkbox).toHaveJSProperty('checked', !initialValue)
+  await expect(checkbox).toBeChecked({ checked: !initialValue })
 
   await page.locator('#crypto_year').click()
   await page.locator('#crypto_transaction_id').fill('12345678901')

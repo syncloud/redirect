@@ -47,12 +47,19 @@ type WwwMail interface {
 	SendResetPassword(to string, token string) error
 }
 
+type WwwStripe interface {
+	Enabled() bool
+	CreateCheckout(plan string) (string, error)
+	GetCheckoutSubscription(sessionId string) (string, error)
+}
+
 type Www struct {
 	domains             WwwDomains
 	nsChecker           WwwNsChecker
 	users               WwwUsers
 	actions             WwwActions
 	mail                WwwMail
+	stripe              WwwStripe
 	metrics             *metrics.Metrics
 	domain              string
 	payPalPlanMonthlyId string
@@ -70,6 +77,7 @@ func NewWww(
 	users WwwUsers,
 	actions WwwActions,
 	mail WwwMail,
+	stripe WwwStripe,
 	metrics *metrics.Metrics,
 	domain string,
 	payPalPlanMonthlyId string,
@@ -85,6 +93,7 @@ func NewWww(
 		users:               users,
 		actions:             actions,
 		mail:                mail,
+		stripe:              stripe,
 		metrics:             metrics,
 		domain:              domain,
 		payPalPlanMonthlyId: payPalPlanMonthlyId,
@@ -115,6 +124,8 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Unsubscribe))).Methods("DELETE")
 	r.HandleFunc("/plan/subscribe/paypal", w.Secured(HandleUser(w.SubscribePayPal))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/crypto", w.Secured(HandleUser(w.SubscribeCrypto))).Methods("POST")
+	r.HandleFunc("/plan/subscribe/stripe/checkout", w.Secured(HandleUser(w.StripeCheckout))).Methods("POST")
+	r.HandleFunc("/plan/subscribe/stripe", w.Secured(HandleUser(w.SubscribeStripe))).Methods("POST")
 	r.HandleFunc("/domain", w.Secured(HandleUser(w.DomainDelete))).Methods("DELETE")
 	r.HandleFunc("/domain/check_nameservers", w.Secured(HandleUser(w.WebDomainCheckNameServers))).Methods("GET")
 	r.NotFoundHandler = http.HandlerFunc(w.notFoundHandler)
@@ -290,6 +301,7 @@ func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (inte
 		PlanMonthlyId: w.payPalPlanMonthlyId,
 		PlanAnnualId:  w.payPalPlanAnnualId,
 		ClientId:      w.payPalClientId,
+		StripeEnabled: w.stripe.Enabled(),
 	}, nil
 }
 
@@ -312,6 +324,47 @@ func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.
 func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
 	w.metrics.Request("subscribe_crypto")
 	return w.subscribe(req, model.SubscriptionTypeCrypto)
+}
+
+func (w *Www) StripeCheckout(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
+	w.metrics.Request("subscribe_stripe_checkout")
+	request := model.StripeCheckoutRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		w.logger.Error("unable to parse", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	url, err := w.stripe.CreateCheckout(request.Plan)
+	if err != nil {
+		w.logger.Error("unable to create stripe checkout", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return model.StripeCheckoutResponse{Url: url}, nil
+}
+
+func (w *Www) SubscribeStripe(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
+	w.metrics.Request("subscribe_stripe")
+	user, err := w.getSessionUser(req)
+	if err != nil {
+		return nil, err
+	}
+	request := model.SubscribeRequest{}
+	err = json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		w.logger.Error("unable to parse", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	subscriptionId, err := w.stripe.GetCheckoutSubscription(request.SubscriptionId)
+	if err != nil {
+		w.logger.Error("unable to confirm stripe checkout", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	err = w.users.Subscribe(user, subscriptionId, model.SubscriptionTypeStripe)
+	if err != nil {
+		w.logger.Error("unable to subscribe a user", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return "OK", nil
 }
 
 func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, error) {

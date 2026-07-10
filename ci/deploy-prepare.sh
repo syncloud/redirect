@@ -24,3 +24,25 @@ $SCP bin "${REMOTE}:/tmp/syncloud-redirect/"
 $SCP db "${REMOTE}:/tmp/syncloud-redirect/"
 $SCP config/common "${REMOTE}:/tmp/syncloud-redirect/common"
 $SCP build/www "${REMOTE}:/tmp/syncloud-redirect/web"
+
+if [ -n "${PAYPAL_CLIENT_ID:-}" ]; then
+    set +x
+    PAYMENTS="[paypal]
+plan_monthly_id = ${PAYPAL_PLAN_MONTHLY_ID}
+plan_annual_id = ${PAYPAL_PLAN_ANNUAL_ID}
+client_id = ${PAYPAL_CLIENT_ID}
+secret_id = ${PAYPAL_SECRET_ID}
+url = ${PAYPAL_URL}
+"
+    if [ -n "${STRIPE_SECRET_KEY:-}" ]; then
+        PAYMENTS="${PAYMENTS}
+[stripe]
+secret_key = ${STRIPE_SECRET_KEY}
+price_monthly_id = ${STRIPE_PRICE_MONTHLY_ID}
+price_annual_id = ${STRIPE_PRICE_ANNUAL_ID}
+"
+    fi
+    printf '%s' "$PAYMENTS" | $SSH $REMOTE "sudo -n tee /var/www/redirect/payments.cfg >/dev/null"
+    set -x
+    $SSH $REMOTE "sudo -n chmod 600 /var/www/redirect/payments.cfg"
+fi

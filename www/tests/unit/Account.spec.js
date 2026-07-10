@@ -3,7 +3,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Account from '../../src/views/Account.vue'
-import { ElButton, ElRadioGroup, ElRadioButton, ElRow, ElCol, ElImage, ElInput, ElIcon } from 'element-plus'
+import { ElButton, ElRadioGroup, ElRadioButton, ElRow, ElCol, ElImage, ElInput, ElIcon, ElSwitch, ElCard, ElTag } from 'element-plus'
 
 test('Notifications disable', async () => {
   let notificationsEnabled
@@ -50,7 +50,10 @@ test('Notifications disable', async () => {
           'el-button': ElButton,
           'el-image': ElImage,
           'el-input': ElInput,
-          'el-icon': ElIcon
+          'el-icon': ElIcon,
+          'el-switch': ElSwitch,
+          'el-card': ElCard,
+          'el-tag': ElTag
         }
       }
 
@@ -113,7 +116,10 @@ test('Notifications subscribe', async () => {
           'el-button': ElButton,
           'el-image': ElImage,
           'el-input': ElInput,
-          'el-icon': ElIcon
+          'el-icon': ElIcon,
+          'el-switch': ElSwitch,
+          'el-card': ElCard,
+          'el-tag': ElTag
         }
       }
 
@@ -182,7 +188,10 @@ test('Delete', async () => {
           'el-button': ElButton,
           'el-image': ElImage,
           'el-input': ElInput,
-          'el-icon': ElIcon
+          'el-icon': ElIcon,
+          'el-switch': ElSwitch,
+          'el-card': ElCard,
+          'el-tag': ElTag
         }
       }
 
@@ -243,7 +252,10 @@ test('Crypto Subscribe', async () => {
           'el-button': ElButton,
           'el-image': ElImage,
           'el-input': ElInput,
-          'el-icon': ElIcon
+          'el-icon': ElIcon,
+          'el-switch': ElSwitch,
+          'el-card': ElCard,
+          'el-tag': ElTag
         }
       }
 
@@ -261,5 +273,72 @@ test('Crypto Subscribe', async () => {
   await flushPromises()
 
   expect(subscriptionId).toBe('12345678901')
+  wrapper.unmount()
+})
+
+test('Stripe Checkout', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/user').reply(200,
+    {
+      data: {
+        active: true,
+        email: 'test@example.com',
+        notification_enabled: true,
+        update_token: '0a'
+      }
+    }
+  )
+
+  let checkoutPlan
+  mock.onPost('/api/plan/subscribe/stripe/checkout').reply(function (config) {
+    checkoutPlan = JSON.parse(config.data).plan
+    return [200, { data: { url: 'https://checkout.stripe.test/session' } }]
+  })
+
+  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2', stripe_enabled: true } })
+
+  const originalLocation = window.location
+  Object.defineProperty(window, 'location', { configurable: true, writable: true, value: { href: '' } })
+
+  const wrapper = mount(Account,
+    {
+      attachTo: document.body,
+      props: {
+        checkUserSession: jest.fn()
+      },
+      global: {
+        components: {
+          RouterLink: RouterLinkStub
+        },
+        stubs: {
+          CustomDialog: true,
+          'el-col': ElCol,
+          'el-row': ElRow,
+          'el-radio-button': ElRadioButton,
+          'el-radio-group': ElRadioGroup,
+          'el-button': ElButton,
+          'el-image': ElImage,
+          'el-input': ElInput,
+          'el-icon': ElIcon,
+          'el-switch': ElSwitch,
+          'el-card': ElCard,
+          'el-tag': ElTag
+        }
+      }
+
+    }
+  )
+
+  await flushPromises()
+
+  await wrapper.find('#stripe_month').trigger('click')
+  await wrapper.find('#stripe_subscribe_btn').trigger('click')
+
+  await flushPromises()
+
+  expect(checkoutPlan).toBe('monthly')
+  expect(window.location.href).toBe('https://checkout.stripe.test/session')
+
+  Object.defineProperty(window, 'location', { configurable: true, writable: true, value: originalLocation })
   wrapper.unmount()
 })
