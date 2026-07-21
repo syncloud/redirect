@@ -5,8 +5,6 @@ vhostHTTPSPort = 4443
 
 webServer.addr = "127.0.0.1"
 webServer.port = 7500
-webServer.user = "admin"
-webServer.password = "__FRPS_ADMIN_PASSWORD__"
 
 enablePrometheus = true
 

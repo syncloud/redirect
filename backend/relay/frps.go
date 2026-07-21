@@ -4,40 +4,27 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
 var trafficLine = regexp.MustCompile(`^frp_server_traffic_(?:in|out)\{[^}]*name="([^"]+)"[^}]*\}\s+([0-9.eE+-]+)$`)
 
 type FrpsMetrics struct {
-	url          string
-	user         string
-	passwordFile string
-	client       *http.Client
+	url    string
+	client *http.Client
 }
 
-func NewFrpsMetrics(url string, user string, passwordFile string) *FrpsMetrics {
+func NewFrpsMetrics(url string) *FrpsMetrics {
 	return &FrpsMetrics{
-		url:          url,
-		user:         user,
-		passwordFile: passwordFile,
-		client:       &http.Client{Timeout: 5 * time.Second},
+		url:    url,
+		client: &http.Client{Timeout: 5 * time.Second},
 	}
 }
 
 func (f *FrpsMetrics) Fetch() (map[string]int64, error) {
-	request, err := http.NewRequest("GET", f.url, nil)
-	if err != nil {
-		return nil, err
-	}
-	if password, err := os.ReadFile(f.passwordFile); err == nil {
-		request.SetBasicAuth(f.user, strings.TrimSpace(string(password)))
-	}
-	response, err := f.client.Do(request)
+	response, err := f.client.Get(f.url)
 	if err != nil {
 		return nil, err
 	}

@@ -98,12 +98,7 @@ fi
 nginx -t
 systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || nginx
 
-FRPS_ADMIN_FILE="$REDIRECT_DIR/frps.admin"
-[ -f "$FRPS_ADMIN_FILE" ] || openssl rand -hex 16 > "$FRPS_ADMIN_FILE"
-chmod 600 "$FRPS_ADMIN_FILE"
-sed -e "s/__FRPS_ADMIN_PASSWORD__/$(cat "$FRPS_ADMIN_FILE")/g" \
-    "$STAGE/common/frp/frps.toml" > "$REDIRECT_DIR/frps.toml"
-chmod 600 "$REDIRECT_DIR/frps.toml"
+install -m 0644 "$STAGE/common/frp/frps.toml" "$REDIRECT_DIR/frps.toml"
 
 crontab -u redirect "$STAGE/common/cron/crontab"
 

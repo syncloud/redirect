@@ -254,7 +254,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(config *utils.Config) *relay.FrpsMetrics {
-		return relay.NewFrpsMetrics(config.GetFrpsMetricsUrl(), config.GetFrpsAdminUser(), config.GetFrpsAdminPasswordFile())
+		return relay.NewFrpsMetrics(config.GetFrpsMetricsUrl())
 	})
 	if err != nil {
 		return nil, err
