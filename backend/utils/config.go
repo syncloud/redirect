@@ -127,7 +127,7 @@ func (config *Config) GetRelayMonthlyLimitBytes() int64 {
 	if value, err := config.parser.GetInt64("relay", "monthly_limit_bytes"); err == nil {
 		return value
 	}
-	return 0
+	return 10 * 1024 * 1024 * 1024
 }
 
 func (config *Config) GetRelayPollIntervalSeconds() int {
