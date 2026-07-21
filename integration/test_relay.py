@@ -11,7 +11,9 @@ import requests
 from syncloudlib.integration.hosts import add_host_alias
 
 import api
-from test import create_user
+from test import create_user, get_domain
+
+RELAY_ADDRESS = '10.0.0.99'
 
 BACKEND_BODY = 'relay-backend-ok'
 BACKEND_PORT = 18443
@@ -132,6 +134,26 @@ def test_relay_bad_token_rejected(domain, device_host):
         assert not got_backend, 'relay served traffic for a domain the token does not own'
     finally:
         process.terminate()
+
+
+def test_relay_update_points_dns_at_relay(domain, artifact_dir):
+    email = 'relay_dns@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    domain_name = 'relaydns.{0}'.format(domain)
+    update_token = api.domain_acquire(domain, domain_name, email, password)
+
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json={
+        'token': update_token,
+        'ipv4_enabled': True,
+        'relay': True,
+        'web_protocol': 'https',
+        'web_local_port': 443,
+    }, verify=False)
+    assert response.status_code == 200, response.text
+
+    data = get_domain(update_token, domain)
+    assert data['ip'] == RELAY_ADDRESS, data
 
 
 def test_relay_monthly_limit_blocks_traffic(domain, device_host, artifact_dir):

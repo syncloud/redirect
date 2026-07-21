@@ -144,6 +144,13 @@ func (config *Config) GetFrpsMetricsUrl() string {
 	return "http://127.0.0.1:7500/metrics"
 }
 
+func (config *Config) GetRelayAddress() string {
+	if value, err := config.parser.Get("relay", "address"); err == nil {
+		return value
+	}
+	return ""
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {
