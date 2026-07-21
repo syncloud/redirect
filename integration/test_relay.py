@@ -95,7 +95,7 @@ def test_relay_valid_token_tunnels_traffic(domain, device_host, artifact_dir):
     add_host_alias(user_domain, device_host, domain)
 
     work_dir = tempfile.mkdtemp()
-    start_backend(work_dir)
+    backend = start_backend(work_dir)
     process, log_path = start_frpc(work_dir, device_host, 'relay.{0}'.format(domain), token, domain_name, 'valid')
     try:
         body = None
@@ -111,6 +111,7 @@ def test_relay_valid_token_tunnels_traffic(domain, device_host, artifact_dir):
         assert body == BACKEND_BODY, open(log_path).read()
     finally:
         process.terminate()
+        backend.shutdown()
 
 
 def test_relay_bad_token_rejected(domain, device_host):
@@ -143,7 +144,7 @@ def test_relay_monthly_limit_blocks_traffic(domain, device_host, artifact_dir):
     add_host_alias(user_domain, device_host, domain)
 
     work_dir = tempfile.mkdtemp()
-    start_backend(work_dir)
+    backend = start_backend(work_dir)
     process, log_path = start_frpc(work_dir, device_host, 'relay.{0}'.format(domain), token, domain_name, 'quota')
     try:
         up = False
@@ -178,3 +179,4 @@ def test_relay_monthly_limit_blocks_traffic(domain, device_host, artifact_dir):
         assert blocked, 'relay kept serving after exceeding the monthly limit\n' + open(log_path).read()
     finally:
         process.terminate()
+        backend.shutdown()
