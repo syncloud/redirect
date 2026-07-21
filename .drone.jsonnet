@@ -134,10 +134,14 @@ local build(arch) = [{
                 },
             },
             commands: [
-                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client",
+                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client curl openssl",
+                "curl -fL --retry 5 -o /tmp/frp.tgz https://github.com/fatedier/frp/releases/download/v0.70.0/frp_0.70.0_linux_amd64.tar.gz",
+                "tar -xzf /tmp/frp.tgz -C /tmp",
+                "cp /tmp/frp_0.70.0_linux_amd64/frpc /usr/local/bin/frpc",
+                "chmod +x /usr/local/bin/frpc",
                 "pip install -r integration/requirements.txt",
                 "cd integration",
-                "py.test -x -vv -s test.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
+                "py.test -x -vv -s test.py test_relay.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
             ],
             when: {
                 event: ["push", "tag"],

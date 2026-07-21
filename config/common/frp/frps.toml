@@ -10,9 +10,6 @@ webServer.password = "__FRPS_ADMIN_PASSWORD__"
 
 enablePrometheus = true
 
-auth.method = "token"
-auth.token = "__FRPS_TOKEN__"
-
 log.to = "console"
 log.level = "info"
 

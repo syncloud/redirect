@@ -98,13 +98,10 @@ fi
 nginx -t
 systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || nginx
 
-FRPS_TOKEN_FILE="$REDIRECT_DIR/frps.token"
 FRPS_ADMIN_FILE="$REDIRECT_DIR/frps.admin"
-[ -f "$FRPS_TOKEN_FILE" ] || openssl rand -hex 32 > "$FRPS_TOKEN_FILE"
 [ -f "$FRPS_ADMIN_FILE" ] || openssl rand -hex 16 > "$FRPS_ADMIN_FILE"
-chmod 600 "$FRPS_TOKEN_FILE" "$FRPS_ADMIN_FILE"
-sed -e "s/__FRPS_TOKEN__/$(cat "$FRPS_TOKEN_FILE")/g" \
-    -e "s/__FRPS_ADMIN_PASSWORD__/$(cat "$FRPS_ADMIN_FILE")/g" \
+chmod 600 "$FRPS_ADMIN_FILE"
+sed -e "s/__FRPS_ADMIN_PASSWORD__/$(cat "$FRPS_ADMIN_FILE")/g" \
     "$STAGE/common/frp/frps.toml" > "$REDIRECT_DIR/frps.toml"
 chmod 600 "$REDIRECT_DIR/frps.toml"
 
@@ -145,7 +142,7 @@ run_container() {
 run_container redirect-api api
 run_container redirect-www www
 
-FRPS_IMAGE=snowdreamtech/frps:latest
+FRPS_IMAGE=snowdreamtech/frps:0.70.0-alpine
 docker pull "$FRPS_IMAGE"
 docker rm -f frps 2>/dev/null || true
 docker run -d \
