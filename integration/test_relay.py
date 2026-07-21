@@ -1,5 +1,6 @@
 import ssl
 import subprocess
+import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -90,8 +91,9 @@ def test_relay_valid_token_tunnels_traffic(domain, device_host, artifact_dir):
     token = api.domain_acquire(domain, domain_name, email, password)
     add_host_alias(user_domain, device_host, domain)
 
-    start_backend(artifact_dir)
-    process, log_path = start_frpc(artifact_dir, device_host, 'relay.{0}'.format(domain), token, domain_name, 'valid')
+    work_dir = tempfile.mkdtemp()
+    start_backend(work_dir)
+    process, log_path = start_frpc(work_dir, device_host, 'relay.{0}'.format(domain), token, domain_name, 'valid')
     try:
         body = None
         for _ in range(30):
@@ -108,13 +110,14 @@ def test_relay_valid_token_tunnels_traffic(domain, device_host, artifact_dir):
         process.terminate()
 
 
-def test_relay_bad_token_rejected(domain, device_host, artifact_dir):
+def test_relay_bad_token_rejected(domain, device_host):
     user_domain = 'relayneg'
     domain_name = '{0}.{1}'.format(user_domain, domain)
     add_host_alias(user_domain, device_host, domain)
 
+    work_dir = tempfile.mkdtemp()
     bad_token = '00000000-0000-0000-0000-000000000000'
-    process, log_path = start_frpc(artifact_dir, device_host, 'relay.{0}'.format(domain), bad_token, domain_name, 'bad')
+    process, log_path = start_frpc(work_dir, device_host, 'relay.{0}'.format(domain), bad_token, domain_name, 'bad')
     try:
         time.sleep(10)
         got_backend = False
