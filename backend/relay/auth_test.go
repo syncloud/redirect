@@ -20,8 +20,16 @@ func (f *fakeDomains) GetDomain(token string) (*model.Domain, error) {
 	return domain, nil
 }
 
+type fakeLimiter struct {
+	over map[string]bool
+}
+
+func (f *fakeLimiter) OverLimit(name string) bool {
+	return f.over[name]
+}
+
 func newServer(byToken map[string]*model.Domain) *AuthServer {
-	return NewAuthServer("127.0.0.1:0", &fakeDomains{byToken: byToken}, "syncloud.it", zap.NewNop())
+	return NewAuthServer("127.0.0.1:0", &fakeDomains{byToken: byToken}, &fakeLimiter{over: map[string]bool{}}, "syncloud.it", zap.NewNop())
 }
 
 func domainNamed(name string) *model.Domain {
@@ -77,5 +85,19 @@ func TestAuthorize_TokenDoesNotOwnRequestedDomain(t *testing.T) {
 	})
 	if !resp.Reject {
 		t.Fatal("expected reject when token owns a different domain")
+	}
+}
+
+func TestEnforce_UnderLimitAllows(t *testing.T) {
+	s := NewAuthServer("127.0.0.1:0", &fakeDomains{}, &fakeLimiter{over: map[string]bool{}}, "syncloud.it", zap.NewNop())
+	if s.Enforce(newUserConnContent{ProxyName: "alice.syncloud.it"}).Reject {
+		t.Fatal("expected allow under limit")
+	}
+}
+
+func TestEnforce_OverLimitRejects(t *testing.T) {
+	s := NewAuthServer("127.0.0.1:0", &fakeDomains{}, &fakeLimiter{over: map[string]bool{"alice.syncloud.it": true}}, "syncloud.it", zap.NewNop())
+	if !s.Enforce(newUserConnContent{ProxyName: "alice.syncloud.it"}).Reject {
+		t.Fatal("expected reject over limit")
 	}
 }

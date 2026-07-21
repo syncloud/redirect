@@ -37,13 +37,15 @@ func main() {
 				userCleaner *user.Cleaner,
 				metricsCollector *metrics.Metrics,
 				relayAuth *relay.AuthServer,
+				relayAccountant *relay.Accountant,
 				config *utils.Config,
 			) error {
-				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector)
+				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant)
 				services := []service.Startable{
 					database,
 					dnsCleaner,
 					userCleaner,
+					relayAccountant,
 					metricsServer,
 					relayAuth,
 					api,

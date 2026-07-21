@@ -123,6 +123,41 @@ func (config *Config) GetRelayPluginAddr() string {
 	return "127.0.0.1:7501"
 }
 
+func (config *Config) GetRelayMonthlyLimitBytes() int64 {
+	if value, err := config.parser.GetInt64("relay", "monthly_limit_bytes"); err == nil {
+		return value
+	}
+	return 0
+}
+
+func (config *Config) GetRelayPollIntervalSeconds() int {
+	if value, err := config.parser.GetInt64("relay", "poll_interval_seconds"); err == nil {
+		return int(value)
+	}
+	return 60
+}
+
+func (config *Config) GetFrpsMetricsUrl() string {
+	if value, err := config.parser.Get("relay", "frps_metrics_url"); err == nil {
+		return value
+	}
+	return "http://127.0.0.1:7500/metrics"
+}
+
+func (config *Config) GetFrpsAdminUser() string {
+	if value, err := config.parser.Get("relay", "frps_admin_user"); err == nil {
+		return value
+	}
+	return "admin"
+}
+
+func (config *Config) GetFrpsAdminPasswordFile() string {
+	if value, err := config.parser.Get("relay", "frps_admin_password_file"); err == nil {
+		return value
+	}
+	return "/var/www/redirect/frps.admin"
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {

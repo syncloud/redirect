@@ -25,6 +25,7 @@ import (
 	"github.com/syncloud/redirect/utils"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
@@ -252,11 +253,31 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(config *utils.Config) *relay.FrpsMetrics {
+		return relay.NewFrpsMetrics(config.GetFrpsMetricsUrl(), config.GetFrpsAdminUser(), config.GetFrpsAdminPasswordFile())
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		frps *relay.FrpsMetrics,
+		database *db.MySql,
+		config *utils.Config,
+	) *relay.Accountant {
+		interval := time.Duration(config.GetRelayPollIntervalSeconds()) * time.Second
+		return relay.NewAccountant(frps, database, config.GetRelayMonthlyLimitBytes(), interval, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		domains *service.Domains,
+		accountant *relay.Accountant,
 		config *utils.Config,
 	) *relay.AuthServer {
-		return relay.NewAuthServer(config.GetRelayPluginAddr(), domains, config.Domain(), logger)
+		return relay.NewAuthServer(config.GetRelayPluginAddr(), domains, accountant, config.Domain(), logger)
 	})
 	if err != nil {
 		return nil, err

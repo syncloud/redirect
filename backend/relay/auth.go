@@ -14,15 +14,20 @@ type Domains interface {
 	GetDomain(token string) (*model.Domain, error)
 }
 
+type Limiter interface {
+	OverLimit(name string) bool
+}
+
 type AuthServer struct {
 	address string
 	domains Domains
+	limiter Limiter
 	suffix  string
 	logger  *zap.Logger
 }
 
-func NewAuthServer(address string, domains Domains, suffix string, logger *zap.Logger) *AuthServer {
-	return &AuthServer{address: address, domains: domains, suffix: suffix, logger: logger}
+func NewAuthServer(address string, domains Domains, limiter Limiter, suffix string, logger *zap.Logger) *AuthServer {
+	return &AuthServer{address: address, domains: domains, limiter: limiter, suffix: suffix, logger: logger}
 }
 
 type pluginRequest struct {
@@ -44,6 +49,12 @@ type newProxyContent struct {
 	Subdomain     string            `json:"subdomain"`
 	CustomDomains []string          `json:"custom_domains"`
 	Metas         map[string]string `json:"metas"`
+}
+
+type newUserConnContent struct {
+	User      pluginUser `json:"user"`
+	ProxyName string     `json:"proxy_name"`
+	ProxyType string     `json:"proxy_type"`
 }
 
 type pluginResponse struct {
@@ -76,16 +87,32 @@ func (s *AuthServer) handle(w http.ResponseWriter, r *http.Request) {
 		s.write(w, deny("invalid plugin request"))
 		return
 	}
-	if req.Op != "NewProxy" {
+	switch req.Op {
+	case "NewProxy":
+		var content newProxyContent
+		if err := json.Unmarshal(req.Content, &content); err != nil {
+			s.write(w, deny("invalid new proxy content"))
+			return
+		}
+		s.write(w, s.Authorize(content))
+	case "NewUserConn":
+		var content newUserConnContent
+		if err := json.Unmarshal(req.Content, &content); err != nil {
+			s.write(w, deny("invalid new user conn content"))
+			return
+		}
+		s.write(w, s.Enforce(content))
+	default:
 		s.write(w, allow())
-		return
 	}
-	var content newProxyContent
-	if err := json.Unmarshal(req.Content, &content); err != nil {
-		s.write(w, deny("invalid new proxy content"))
-		return
+}
+
+func (s *AuthServer) Enforce(content newUserConnContent) pluginResponse {
+	if s.limiter != nil && s.limiter.OverLimit(content.ProxyName) {
+		s.logger.Warn("relay connection blocked, over monthly limit", zap.String("proxy", content.ProxyName))
+		return deny("monthly traffic limit exceeded")
 	}
-	s.write(w, s.Authorize(content))
+	return allow()
 }
 
 func (s *AuthServer) Authorize(content newProxyContent) pluginResponse {
