@@ -116,6 +116,13 @@ func (config *Config) GetWwwMetricsAddr() string {
 	return ":9092"
 }
 
+func (config *Config) GetRelayPluginAddr() string {
+	if value, err := config.parser.Get("relay", "plugin_addr"); err == nil {
+		return value
+	}
+	return "127.0.0.1:7501"
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {

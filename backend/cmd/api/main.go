@@ -9,6 +9,7 @@ import (
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
+	"github.com/syncloud/redirect/relay"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/user"
@@ -35,6 +36,7 @@ func main() {
 				dnsCleaner *dns.Cleaner,
 				userCleaner *user.Cleaner,
 				metricsCollector *metrics.Metrics,
+				relayAuth *relay.AuthServer,
 				config *utils.Config,
 			) error {
 				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector)
@@ -43,6 +45,7 @@ func main() {
 					dnsCleaner,
 					userCleaner,
 					metricsServer,
+					relayAuth,
 					api,
 				}
 				for _, s := range services {

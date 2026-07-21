@@ -15,3 +15,9 @@ auth.token = "__FRPS_TOKEN__"
 
 log.to = "console"
 log.level = "info"
+
+[[httpPlugins]]
+name = "redirect-relay-auth"
+addr = "127.0.0.1:7501"
+path = "/plugin"
+ops = ["NewProxy"]

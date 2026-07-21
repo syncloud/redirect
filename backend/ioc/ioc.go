@@ -16,6 +16,7 @@ import (
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
+	"github.com/syncloud/redirect/relay"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
@@ -246,6 +247,16 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		amazonDns *dns.AmazonDns,
 	) *service.Certbot {
 		return service.NewCertbot(database, amazonDns)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		domains *service.Domains,
+		config *utils.Config,
+	) *relay.AuthServer {
+		return relay.NewAuthServer(config.GetRelayPluginAddr(), domains, config.Domain(), logger)
 	})
 	if err != nil {
 		return nil, err
