@@ -10,6 +10,7 @@ import requests
 from syncloudlib.integration.hosts import add_host_alias
 
 import api
+from test import create_user
 
 BACKEND_BODY = 'relay-backend-ok'
 BACKEND_PORT = 18443
@@ -83,7 +84,10 @@ def fetch(domain_name):
 def test_relay_valid_token_tunnels_traffic(domain, device_host, artifact_dir):
     user_domain = 'relaye2e'
     domain_name = '{0}.{1}'.format(user_domain, domain)
-    token = api.domain_acquire(domain, domain_name, 'relay_e2e@syncloud.test', 'pass123456')
+    email = 'relay_e2e@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    token = api.domain_acquire(domain, domain_name, email, password)
     add_host_alias(user_domain, device_host, domain)
 
     start_backend(artifact_dir)
