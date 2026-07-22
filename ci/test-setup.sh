@@ -42,5 +42,5 @@ docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:2.6.0 -dns
 
 for i in $(seq 1 60); do curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break; sleep 2; done
 docker run --rm --network=host -e AWS_ACCESS_KEY_ID=test -e AWS_SECRET_ACCESS_KEY=test -e AWS_DEFAULT_REGION=us-east-1 \
-    amazon/aws-cli --endpoint-url http://localhost:4566 route53 create-hosted-zone --name syncloud.test --caller-reference ci || true
+    amazon/aws-cli --endpoint-url http://localhost:4566 route53 create-hosted-zone --name syncloud.test --caller-reference ci
 REMOTE_SCRIPT
