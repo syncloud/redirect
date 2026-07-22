@@ -1,9 +1,9 @@
 {
 	email support@syncloud.it
+	acme_ca {$ACME_CA}
 }
 
-# --- redirect ---
-www.syncloud.info {
+www.{$REDIRECT_DOMAIN} {
 	tls {
 		dns route53
 	}
@@ -14,30 +14,28 @@ www.syncloud.info {
 	file_server
 }
 
-syncloud.info {
+{$REDIRECT_DOMAIN} {
 	tls {
 		dns route53
 	}
-	redir https://www.syncloud.info{uri}
+	redir https://www.{$REDIRECT_DOMAIN}{uri}
 }
 
-api.syncloud.info {
+api.{$REDIRECT_DOMAIN} {
 	tls {
 		dns route53
 	}
 	reverse_proxy unix//var/www/redirect/redirect.api.socket
 }
 
-# --- store ---
-uatstore.syncloud.org, api.uatstore.syncloud.org {
+{$STORE_DOMAIN}, {$STORE_API_DOMAIN} {
 	tls {
 		dns route53
 	}
 	reverse_proxy unix//var/www/store/api.socket
 }
 
-# --- shop (opencart, php) ---
-shopuat.syncloud.org {
+{$SHOP_DOMAIN} {
 	tls {
 		dns route53
 	}
@@ -46,8 +44,7 @@ shopuat.syncloud.org {
 	file_server
 }
 
-# --- syncloud.org site ---
-test.syncloud.org {
+{$SITE_DOMAIN} {
 	tls {
 		dns route53
 	}
@@ -56,8 +53,7 @@ test.syncloud.org {
 	file_server
 }
 
-# --- grafana (uat only) ---
-stats.syncloud.info {
+{$GRAFANA_DOMAIN} {
 	tls {
 		dns route53
 	}

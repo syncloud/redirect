@@ -94,9 +94,38 @@ if [ "$SYNCLOUD_DOMAIN" != "syncloud.test" ]; then
     fi
 fi
 
-# --- Caddy config + container ---
+# --- Caddy config + container (one Caddyfile for all envs, domains via env vars) ---
 install -d /etc/caddy
-install -m 0644 "$STAGE/Caddyfile" /etc/caddy/Caddyfile
+install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
+
+ACME_CA="https://acme-v02.api.letsencrypt.org/directory"
+CADDY_EXTRA=()
+case "$SYNCLOUD_DOMAIN" in
+    syncloud.it)
+        STORE_DOMAIN=store.syncloud.org
+        STORE_API_DOMAIN=api.store.syncloud.org
+        SHOP_DOMAIN=shop.syncloud.org
+        SITE_DOMAIN="syncloud.org, www.syncloud.org"
+        GRAFANA_DOMAIN=stats.syncloud.it
+        ;;
+    syncloud.info)
+        STORE_DOMAIN=uatstore.syncloud.org
+        STORE_API_DOMAIN=api.uatstore.syncloud.org
+        SHOP_DOMAIN=shopuat.syncloud.org
+        SITE_DOMAIN=test.syncloud.org
+        GRAFANA_DOMAIN=stats.syncloud.info
+        ;;
+    *)
+        # test / integration: mock Route53 (localstack) + mock ACME (pebble)
+        STORE_DOMAIN=store.$SYNCLOUD_DOMAIN
+        STORE_API_DOMAIN=api.store.$SYNCLOUD_DOMAIN
+        SHOP_DOMAIN=shop.$SYNCLOUD_DOMAIN
+        SITE_DOMAIN=site.$SYNCLOUD_DOMAIN
+        GRAFANA_DOMAIN=stats.$SYNCLOUD_DOMAIN
+        ACME_CA="https://pebble:14000/dir"
+        CADDY_EXTRA+=(-e AWS_ENDPOINT_URL=http://localstack:4566)
+        ;;
+esac
 
 CADDY_IMAGE=syncloud/caddy:latest
 docker pull "$CADDY_IMAGE"
@@ -107,6 +136,14 @@ docker run -d \
     --network=host \
     -e AWS_ACCESS_KEY_ID="$(cfg aws access_key_id)" \
     -e AWS_SECRET_ACCESS_KEY="$(cfg aws secret_access_key)" \
+    -e ACME_CA="$ACME_CA" \
+    -e REDIRECT_DOMAIN="$SYNCLOUD_DOMAIN" \
+    -e STORE_DOMAIN="$STORE_DOMAIN" \
+    -e STORE_API_DOMAIN="$STORE_API_DOMAIN" \
+    -e SHOP_DOMAIN="$SHOP_DOMAIN" \
+    -e SITE_DOMAIN="$SITE_DOMAIN" \
+    -e GRAFANA_DOMAIN="$GRAFANA_DOMAIN" \
+    "${CADDY_EXTRA[@]}" \
     -v /etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro \
     -v /var/www:/var/www:ro \
     -v caddy_data:/data \

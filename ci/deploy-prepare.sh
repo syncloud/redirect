@@ -24,7 +24,6 @@ $SCP bin "${REMOTE}:/tmp/syncloud-redirect/"
 $SCP db "${REMOTE}:/tmp/syncloud-redirect/"
 $SCP config/common "${REMOTE}:/tmp/syncloud-redirect/common"
 $SCP build/www "${REMOTE}:/tmp/syncloud-redirect/web"
-$SCP "config/env/${DEPLOY_ENV}/Caddyfile" "${REMOTE}:/tmp/syncloud-redirect/Caddyfile"
 
 set +x
 PAYMENTS="[paypal]

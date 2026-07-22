@@ -173,7 +173,6 @@ local build(arch) = [{
                 DEPLOY_USER: { from_secret: "uat_deploy_user" },
                 DEPLOY_KEY: { from_secret: "uat_deploy_key" },
                 DEPLOY_URL: { from_secret: "uat_deploy_url" },
-                DEPLOY_ENV: "uat",
                 PAYPAL_URL: "https://api-m.sandbox.paypal.com",
                 PAYPAL_PLAN_MONTHLY_ID: { from_secret: "uat_paypal_plan_monthly_id" },
                 PAYPAL_PLAN_ANNUAL_ID: { from_secret: "uat_paypal_plan_annual_id" },
@@ -199,7 +198,6 @@ local build(arch) = [{
                 DEPLOY_USER: { from_secret: "prod_deploy_user" },
                 DEPLOY_KEY: { from_secret: "prod_deploy_key" },
                 DEPLOY_URL: { from_secret: "prod_deploy_url" },
-                DEPLOY_ENV: "prod",
                 PAYPAL_URL: "https://api-m.paypal.com",
                 PAYPAL_PLAN_MONTHLY_ID: { from_secret: "prod_paypal_plan_monthly_id" },
                 PAYPAL_PLAN_ANNUAL_ID: { from_secret: "prod_paypal_plan_annual_id" },
@@ -267,6 +265,21 @@ local build(arch) = [{
                     path: "/dev"
                 }
             ]
+        },
+        {
+            # mock Route53 (API + DNS) so Caddy runs the real dns route53 flow on test
+            name: "localstack",
+            image: "localstack/localstack:3",
+            environment: {
+                SERVICES: "route53",
+                DNS_ADDRESS: "0.0.0.0",
+            }
+        },
+        {
+            # mock ACME CA; validates DNS-01 by querying localstack's DNS
+            name: "pebble",
+            image: "ghcr.io/letsencrypt/pebble:v2.6.0",
+            command: ["-config", "/test/config/pebble-config.json", "-dnsserver", "localstack:53"],
         }
     ],
     volumes: [
