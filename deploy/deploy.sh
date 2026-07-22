@@ -94,33 +94,12 @@ fi
 install -d /etc/caddy
 install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
 
-ACME_CA="https://acme-v02.api.letsencrypt.org/directory"
+REDIRECT_DOMAIN=$SYNCLOUD_DOMAIN
+AWS_ENDPOINT_URL=
+. "$STAGE/common/caddy/env/$SYNCLOUD_DOMAIN.env"
+
 CADDY_EXTRA=()
-case "$SYNCLOUD_DOMAIN" in
-    syncloud.it)
-        STORE_DOMAIN=store.syncloud.org
-        STORE_API_DOMAIN=api.store.syncloud.org
-        SHOP_DOMAIN=shop.syncloud.org
-        SITE_DOMAIN="syncloud.org, www.syncloud.org"
-        GRAFANA_DOMAIN=stats.syncloud.it
-        ;;
-    syncloud.info)
-        STORE_DOMAIN=uatstore.syncloud.org
-        STORE_API_DOMAIN=api.uatstore.syncloud.org
-        SHOP_DOMAIN=shopuat.syncloud.org
-        SITE_DOMAIN=test.syncloud.org
-        GRAFANA_DOMAIN=stats.syncloud.info
-        ;;
-    *)
-        STORE_DOMAIN=store.$SYNCLOUD_DOMAIN
-        STORE_API_DOMAIN=api.store.$SYNCLOUD_DOMAIN
-        SHOP_DOMAIN=shop.$SYNCLOUD_DOMAIN
-        SITE_DOMAIN=site.$SYNCLOUD_DOMAIN
-        GRAFANA_DOMAIN=stats.$SYNCLOUD_DOMAIN
-        ACME_CA="https://pebble:14000/dir"
-        CADDY_EXTRA+=(-e AWS_ENDPOINT_URL=http://localstack:4566)
-        ;;
-esac
+[ -n "$AWS_ENDPOINT_URL" ] && CADDY_EXTRA+=(-e "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL")
 
 CADDY_IMAGE=syncloud/caddy:latest
 docker pull "$CADDY_IMAGE"
