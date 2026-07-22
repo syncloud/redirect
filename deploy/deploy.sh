@@ -75,6 +75,14 @@ if dpkg -s apache2 >/dev/null 2>&1; then
     rm -rf /etc/apache2
 fi
 
+if dpkg -s nginx >/dev/null 2>&1; then
+    systemctl stop nginx 2>/dev/null || true
+    systemctl disable nginx 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get purge -y 'nginx*' 'libnginx*' 2>/dev/null || true
+    rm -rf /etc/nginx
+fi
+docker rm -f frps 2>/dev/null || true
+
 if crontab -l 2>/dev/null | grep -q certbot; then
     crontab -l 2>/dev/null | grep -v certbot | crontab -
 fi
@@ -93,6 +101,11 @@ fi
 
 install -d /etc/caddy
 install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
+if [ "$SYNCLOUD_DOMAIN" = "syncloud.test" ]; then
+    echo "tls internal" > /etc/caddy/tls.caddy
+else
+    printf 'tls {\n\tdns route53\n}\n' > /etc/caddy/tls.caddy
+fi
 
 REDIRECT_DOMAIN=$SYNCLOUD_DOMAIN
 AWS_ENDPOINT_URL=
@@ -118,7 +131,7 @@ docker run -d \
     -e SITE_DOMAIN="$SITE_DOMAIN" \
     -e GRAFANA_DOMAIN="$GRAFANA_DOMAIN" \
     "${CADDY_EXTRA[@]}" \
-    -v /etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro \
+    -v /etc/caddy:/etc/caddy:ro \
     -v /var/www:/var/www:ro \
     -v caddy_data:/data \
     "$CADDY_IMAGE"

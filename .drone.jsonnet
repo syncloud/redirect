@@ -87,6 +87,21 @@ local build(arch) = [{
             },
         },
         {
+            name: "docker caddy",
+            image: "plugins/docker:20.18",
+            settings: {
+                repo: "syncloud/caddy",
+                dockerfile: "docker/caddy/Dockerfile",
+                context: "docker/caddy",
+                username: { from_secret: "DOCKER_USERNAME" },
+                password: { from_secret: "DOCKER_PASSWORD" },
+                tags: ["latest"],
+            },
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
             name: "deploy test",
             image: "debian:bookworm-slim",
             environment: {
@@ -265,19 +280,6 @@ local build(arch) = [{
                     path: "/dev"
                 }
             ]
-        },
-        {
-            name: "localstack",
-            image: "localstack/localstack:3",
-            environment: {
-                SERVICES: "route53",
-                DNS_ADDRESS: "0.0.0.0",
-            }
-        },
-        {
-            name: "pebble",
-            image: "ghcr.io/letsencrypt/pebble:v2.6.0",
-            command: ["-config", "/test/config/pebble-config.json", "-dnsserver", "localstack:53"],
         }
     ],
     volumes: [
