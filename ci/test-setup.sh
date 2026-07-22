@@ -33,7 +33,9 @@ mkdir -p "$REDIRECT_DIR"
 install -m 0640 "$STAGE/config/config.cfg" "$REDIRECT_DIR/config.cfg"
 install -m 0640 "$STAGE/config/secret.cfg" "$REDIRECT_DIR/secret.cfg"
 
-systemctl start docker
+if ! docker info >/dev/null 2>&1; then
+    ( dockerd --storage-driver=vfs </dev/null >/var/log/dockerd.log 2>&1 & )
+fi
 for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 
 docker rm -f localstack pebble 2>/dev/null || true
