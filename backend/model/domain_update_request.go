@@ -13,4 +13,5 @@ type DomainUpdateRequest struct {
 	WebPort         *int    `json:"web_port,omitempty"`
 	Ipv4Enabled     bool    `json:"ipv4_enabled,omitempty"`
 	Ipv6Enabled     bool    `json:"ipv6_enabled,omitempty"`
+	Relay           bool    `json:"relay,omitempty"`
 }

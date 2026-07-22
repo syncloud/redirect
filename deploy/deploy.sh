@@ -10,10 +10,13 @@ TAG=$1
 REDIRECT_DIR=/var/www/redirect
 STAGE=/tmp/syncloud-redirect
 
-PKGS="docker.io apache2 default-mysql-client python3"
+PKGS="docker.io apache2 nginx libnginx-mod-stream default-mysql-client python3 openssl"
 if ! dpkg -s $PKGS >/dev/null 2>&1; then
+    printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d
+    chmod +x /usr/sbin/policy-rc.d
     apt-get update
     apt-get install -y --no-install-recommends $PKGS
+    rm -f /usr/sbin/policy-rc.d
 fi
 
 if ! docker info >/dev/null 2>&1; then
@@ -70,10 +73,32 @@ install -m 0644 "$STAGE/common/apache/redirect.conf" /etc/apache2/sites-availabl
 if ! grep -q "^export SYNCLOUD_DOMAIN=" /etc/apache2/envvars; then
     echo "export SYNCLOUD_DOMAIN=$SYNCLOUD_DOMAIN" >> /etc/apache2/envvars
 fi
+
+cat > /etc/apache2/ports.conf <<'PORTS'
+Listen 80
+<IfModule ssl_module>
+    Listen 127.0.0.1:8443
+</IfModule>
+<IfModule mod_gnutls.c>
+    Listen 127.0.0.1:8443
+</IfModule>
+PORTS
+
 a2dissite 000-default 2>/dev/null || true
 a2ensite redirect
 a2enmod rewrite ssl proxy proxy_http
 systemctl restart apache2 2>/dev/null || apachectl restart
+
+rm -f /etc/nginx/sites-enabled/default
+install -d /etc/nginx/stream-enabled
+sed "s/__SYNCLOUD_DOMAIN__/$SYNCLOUD_DOMAIN/g" "$STAGE/common/nginx/stream-relay.conf" > /etc/nginx/stream-enabled/relay.conf
+if ! grep -q "stream-enabled" /etc/nginx/nginx.conf; then
+    printf '\nstream {\n    include /etc/nginx/stream-enabled/*.conf;\n}\n' >> /etc/nginx/nginx.conf
+fi
+nginx -t
+systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || nginx
+
+install -m 0644 "$STAGE/common/frp/frps.toml" "$REDIRECT_DIR/frps.toml"
 
 crontab -u redirect "$STAGE/common/cron/crontab"
 
@@ -112,6 +137,16 @@ run_container() {
 run_container redirect-api api
 run_container redirect-www www
 
+FRPS_IMAGE=snowdreamtech/frps:0.70.0-alpine
+docker pull "$FRPS_IMAGE"
+docker rm -f frps 2>/dev/null || true
+docker run -d \
+    --name frps \
+    --restart=unless-stopped \
+    --network=host \
+    -v "$REDIRECT_DIR/frps.toml:/etc/frp/frps.toml:ro" \
+    "$FRPS_IMAGE"
+
 NODE_EXPORTER_IMAGE=prom/node-exporter:v1.8.2
 docker pull "$NODE_EXPORTER_IMAGE"
 docker rm -f node-exporter 2>/dev/null || true
@@ -124,7 +159,7 @@ docker run -d \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
-for name in redirect-api redirect-www node-exporter; do
+for name in redirect-api redirect-www node-exporter frps; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break

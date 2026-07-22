@@ -10,12 +10,17 @@
     }
   ],
   "title": "Redirect v2",
-  "tags": ["redirect"],
+  "tags": [
+    "redirect"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
   "refresh": "30s",
-  "time": { "from": "now-30d", "to": "now" },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
   "templating": {
     "list": [
       {
@@ -23,10 +28,21 @@
         "label": "env",
         "type": "custom",
         "query": "uat,prod",
-        "current": { "text": "uat", "value": "uat" },
+        "current": {
+          "text": "uat",
+          "value": "uat"
+        },
         "options": [
-          { "text": "uat", "value": "uat", "selected": true },
-          { "text": "prod", "value": "prod", "selected": false }
+          {
+            "text": "uat",
+            "value": "uat",
+            "selected": true
+          },
+          {
+            "text": "prod",
+            "value": "prod",
+            "selected": false
+          }
         ]
       }
     ]
@@ -36,8 +52,16 @@
       "type": "timeseries",
       "title": "Users by state ($env)",
       "id": 1,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
         {
           "expr": "redirect_db_users{env=\"$env\"}",
@@ -46,15 +70,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short", "min": 0 }
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Devices online ($env)",
       "id": 2,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
       "targets": [
         {
           "expr": "redirect_db_devices{env=\"$env\"}",
@@ -63,15 +98,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short", "min": 0 }
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Domains total ($env)",
       "id": 3,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
       "targets": [
         {
           "expr": "redirect_db_domains{env=\"$env\"}",
@@ -80,15 +126,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short", "min": 0 }
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Request rate by handler ($env)",
       "id": 4,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
       "targets": [
         {
           "expr": "sum(rate(redirect_requests_total{env=\"$env\"}[5m])) by (handler)",
@@ -97,15 +154,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "reqps", "min": 0 }
+        "defaults": {
+          "unit": "reqps",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "DNS client actions ($env)",
       "id": 5,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
       "targets": [
         {
           "expr": "sum(rate(redirect_dns_client_actions_total{env=\"$env\"}[5m])) by (action)",
@@ -114,15 +182,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "ops", "min": 0 }
+        "defaults": {
+          "unit": "ops",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Cleaner actions ($env)",
       "id": 6,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
       "targets": [
         {
           "expr": "sum(rate(redirect_cleaner_actions_total{env=\"$env\"}[5m])) by (result)",
@@ -131,15 +210,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "ops", "min": 0 }
+        "defaults": {
+          "unit": "ops",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "CPU % by mode ($env)",
       "id": 7,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
       "targets": [
         {
           "expr": "100 * sum(rate(node_cpu_seconds_total{env=\"$env\",mode!=\"idle\"}[5m])) by (mode) / scalar(sum(rate(node_cpu_seconds_total{env=\"$env\"}[5m])))",
@@ -148,15 +238,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "percent", "min": 0 }
+        "defaults": {
+          "unit": "percent",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Memory ($env)",
       "id": 8,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
       "targets": [
         {
           "expr": "node_memory_MemTotal_bytes{env=\"$env\"} - node_memory_MemAvailable_bytes{env=\"$env\"}",
@@ -170,15 +271,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "bytes", "min": 0 }
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Disk I/O ($env)",
       "id": 9,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
       "targets": [
         {
           "expr": "sum(rate(node_disk_read_bytes_total{env=\"$env\"}[5m])) by (device)",
@@ -192,15 +304,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "Bps", "min": 0 }
+        "defaults": {
+          "unit": "Bps",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Network ($env)",
       "id": 10,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
       "targets": [
         {
           "expr": "sum(rate(node_network_receive_bytes_total{env=\"$env\",device!~\"lo|docker.*|veth.*\"}[5m])) by (device)",
@@ -214,15 +337,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "Bps", "min": 0 }
+        "defaults": {
+          "unit": "Bps",
+          "min": 0
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Rogue devices by platform_version, 24h window ($env)",
       "id": 11,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
       "targets": [
         {
           "expr": "label_replace(redirect_rogue_devices{env=\"$env\"}, \"platform_version\", \"unknown\", \"platform_version\", \"\")",
@@ -236,7 +370,10 @@
           "min": 0,
           "custom": {
             "drawStyle": "bars",
-            "stacking": { "mode": "normal", "group": "A" },
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
             "fillOpacity": 100,
             "lineWidth": 0,
             "barAlignment": 0
@@ -248,8 +385,16 @@
       "type": "timeseries",
       "title": "Active devices by platform_version, 1h window ($env)",
       "id": 12,
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
       "targets": [
         {
           "expr": "redirect_active_devices{env=\"$env\"}",
@@ -263,12 +408,44 @@
           "min": 0,
           "custom": {
             "drawStyle": "bars",
-            "stacking": { "mode": "normal", "group": "A" },
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
             "fillOpacity": 100,
             "lineWidth": 0,
             "barAlignment": 0
           }
         }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Relay traffic per user (this month)",
+      "id": 13,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "targets": [
+        {
+          "expr": "redirect_relay_traffic_bytes{env=\"$env\"}",
+          "legendFormat": "{{proxy}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": []
       }
     }
   ]

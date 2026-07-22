@@ -63,3 +63,12 @@ if [ "$node_code" != "200" ]; then
     exit 1
 fi
 echo "node-exporter OK"
+
+frps_running=$($SSH $REMOTE "sudo -n docker ps -q --filter name=frps --filter status=running" || true)
+if [ -z "$frps_running" ]; then
+    echo "frps container is not running"
+    $SSH $REMOTE sudo -n docker ps -a --filter name=frps || true
+    $SSH $REMOTE sudo -n docker logs frps 2>&1 | tail -40 || true
+    exit 1
+fi
+echo "frps OK"
