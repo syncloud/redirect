@@ -87,32 +87,21 @@ if crontab -l 2>/dev/null | grep -q certbot; then
     crontab -l 2>/dev/null | grep -v certbot | crontab -
 fi
 
-if [ "$SYNCLOUD_DOMAIN" != "syncloud.test" ]; then
-    if ! dpkg -s php-fpm >/dev/null 2>&1; then
-        apt-get install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
-    fi
-    POOL=$(ls /etc/php/*/fpm/pool.d/www.conf 2>/dev/null | head -1)
-    if [ -n "$POOL" ]; then
-        sed -i 's#^listen = .*#listen = 127.0.0.1:9000#' "$POOL"
-        systemctl restart "php$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')-fpm" 2>/dev/null \
-            || systemctl restart 'php*-fpm.service' 2>/dev/null || true
-    fi
+if ! dpkg -s php-fpm >/dev/null 2>&1; then
+    apt-get install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
+fi
+POOL=$(ls /etc/php/*/fpm/pool.d/www.conf 2>/dev/null | head -1)
+if [ -n "$POOL" ]; then
+    sed -i 's#^listen = .*#listen = 127.0.0.1:9000#' "$POOL"
+    systemctl restart "php$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')-fpm" 2>/dev/null \
+        || systemctl restart 'php*-fpm.service' 2>/dev/null || true
 fi
 
 install -d /etc/caddy
 install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
-if [ "$SYNCLOUD_DOMAIN" = "syncloud.test" ]; then
-    echo "tls internal" > /etc/caddy/tls.caddy
-else
-    printf 'tls {\n\tdns route53\n}\n' > /etc/caddy/tls.caddy
-fi
 
 REDIRECT_DOMAIN=$SYNCLOUD_DOMAIN
-AWS_ENDPOINT_URL=
 . "$STAGE/common/caddy/env/$SYNCLOUD_DOMAIN.env"
-
-CADDY_EXTRA=()
-[ -n "$AWS_ENDPOINT_URL" ] && CADDY_EXTRA+=(-e "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL")
 
 CADDY_IMAGE=syncloud/caddy:${TAG##*:}
 docker pull "$CADDY_IMAGE"
@@ -123,14 +112,14 @@ docker run -d \
     --network=host \
     -e AWS_ACCESS_KEY_ID="$(cfg aws access_key_id)" \
     -e AWS_SECRET_ACCESS_KEY="$(cfg aws secret_access_key)" \
+    -e AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
     -e ACME_CA="$ACME_CA" \
-    -e REDIRECT_DOMAIN="$SYNCLOUD_DOMAIN" \
+    -e REDIRECT_DOMAIN="$REDIRECT_DOMAIN" \
     -e STORE_DOMAIN="$STORE_DOMAIN" \
     -e STORE_API_DOMAIN="$STORE_API_DOMAIN" \
     -e SHOP_DOMAIN="$SHOP_DOMAIN" \
     -e SITE_DOMAIN="$SITE_DOMAIN" \
     -e GRAFANA_DOMAIN="$GRAFANA_DOMAIN" \
-    "${CADDY_EXTRA[@]}" \
     -v /etc/caddy:/etc/caddy:ro \
     -v /var/www:/var/www:ro \
     -v caddy_data:/data \

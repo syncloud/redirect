@@ -4,7 +4,9 @@
 }
 
 www.{$REDIRECT_DOMAIN} {
-	import /etc/caddy/tls.caddy
+	tls {
+		dns route53
+	}
 	handle_path /api/* {
 		reverse_proxy unix//var/www/redirect/redirect.www.socket
 	}
@@ -16,22 +18,30 @@ www.{$REDIRECT_DOMAIN} {
 }
 
 {$REDIRECT_DOMAIN} {
-	import /etc/caddy/tls.caddy
+	tls {
+		dns route53
+	}
 	redir https://www.{$REDIRECT_DOMAIN}{uri}
 }
 
 api.{$REDIRECT_DOMAIN} {
-	import /etc/caddy/tls.caddy
+	tls {
+		dns route53
+	}
 	reverse_proxy unix//var/www/redirect/redirect.api.socket
 }
 
 {$STORE_DOMAIN}, {$STORE_API_DOMAIN} {
-	import /etc/caddy/tls.caddy
+	tls {
+		dns route53
+	}
 	reverse_proxy unix//var/www/store/api.socket
 }
 
 {$SHOP_DOMAIN} {
-	import /etc/caddy/tls.caddy
+	tls {
+		dns route53
+	}
 	root * /var/www/shop/opencart
 
 	@denied path_regexp \.(tpl|twig|ini|log)$
@@ -58,13 +68,17 @@ api.{$REDIRECT_DOMAIN} {
 }
 
 {$SITE_DOMAIN} {
-	import /etc/caddy/tls.caddy
+	tls {
+		dns route53
+	}
 	root * /var/www/syncloud.org/current
 	try_files {path} /index.html
 	file_server
 }
 
 {$GRAFANA_DOMAIN} {
-	import /etc/caddy/tls.caddy
+	tls {
+		dns route53
+	}
 	reverse_proxy localhost:3000
 }

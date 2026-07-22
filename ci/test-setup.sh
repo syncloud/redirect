@@ -27,16 +27,20 @@ REDIRECT_DIR=/var/www/redirect
 STAGE=/tmp/syncloud-redirect-setup
 
 apt-get update
-apt-get install -y --no-install-recommends openssl
+apt-get install -y --no-install-recommends curl docker.io
 
 mkdir -p "$REDIRECT_DIR"
 install -m 0640 "$STAGE/config/config.cfg" "$REDIRECT_DIR/config.cfg"
 install -m 0640 "$STAGE/config/secret.cfg" "$REDIRECT_DIR/secret.cfg"
 
-mkdir -p "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN"
-openssl req -x509 -newkey rsa:4096 \
-    -keyout "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN/privkey.pem" \
-    -out "/etc/letsencrypt/live/$SYNCLOUD_DOMAIN/fullchain.pem" \
-    -nodes -days 365 \
-    -subj "/CN=$SYNCLOUD_DOMAIN"
+systemctl start docker 2>/dev/null || nohup dockerd --storage-driver=vfs >/var/log/dockerd.log 2>&1 &
+for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
+
+docker rm -f localstack pebble 2>/dev/null || true
+docker run -d --name localstack --network=host -e SERVICES=route53 -e DNS_ADDRESS=0.0.0.0 localstack/localstack:3
+docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:v2.6.0 -dnsserver 127.0.0.1:53
+
+for i in $(seq 1 60); do curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break; sleep 2; done
+docker run --rm --network=host -e AWS_ACCESS_KEY_ID=test -e AWS_SECRET_ACCESS_KEY=test -e AWS_DEFAULT_REGION=us-east-1 \
+    amazon/aws-cli --endpoint-url http://localhost:4566 route53 create-hosted-zone --name syncloud.test --caller-reference ci || true
 REMOTE_SCRIPT
