@@ -38,7 +38,7 @@ for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 
 docker rm -f localstack pebble 2>/dev/null || true
 docker run -d --name localstack --network=host -e SERVICES=route53 -e DNS_ADDRESS=0.0.0.0 localstack/localstack:3
-docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:v2.6.0 -dnsserver 127.0.0.1:53
+docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:2.6.0 -dnsserver 127.0.0.1:53
 
 for i in $(seq 1 60); do curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break; sleep 2; done
 docker run --rm --network=host -e AWS_ACCESS_KEY_ID=test -e AWS_SECRET_ACCESS_KEY=test -e AWS_DEFAULT_REGION=us-east-1 \

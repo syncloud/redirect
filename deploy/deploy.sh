@@ -67,6 +67,7 @@ print(c['$1']['$2'])
 
 SYNCLOUD_DOMAIN=$(cfg redirect domain)
 
+# transitional: drop these apache/nginx removals after the next release, once no box runs them
 if dpkg -s apache2 >/dev/null 2>&1; then
     systemctl stop apache2 2>/dev/null || true
     systemctl disable apache2 2>/dev/null || true
@@ -87,6 +88,7 @@ if crontab -l 2>/dev/null | grep -q certbot; then
     crontab -l 2>/dev/null | grep -v certbot | crontab -
 fi
 
+# php-fpm backs the opencart shop; pending migration of the shop to a redirect page
 if ! dpkg -s php-fpm >/dev/null 2>&1; then
     apt-get install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
 fi
@@ -100,7 +102,6 @@ fi
 install -d /etc/caddy
 install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
 
-REDIRECT_DOMAIN=$SYNCLOUD_DOMAIN
 . "$STAGE/common/caddy/env/$SYNCLOUD_DOMAIN.env"
 
 CADDY_IMAGE=syncloud/caddy:${TAG##*:}
@@ -114,7 +115,7 @@ docker run -d \
     -e AWS_SECRET_ACCESS_KEY="$(cfg aws secret_access_key)" \
     -e AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
     -e ACME_CA="$ACME_CA" \
-    -e REDIRECT_DOMAIN="$REDIRECT_DOMAIN" \
+    -e REDIRECT_DOMAIN="$SYNCLOUD_DOMAIN" \
     -e STORE_DOMAIN="$STORE_DOMAIN" \
     -e STORE_API_DOMAIN="$STORE_API_DOMAIN" \
     -e SHOP_DOMAIN="$SHOP_DOMAIN" \
