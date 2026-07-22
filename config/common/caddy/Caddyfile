@@ -5,11 +5,14 @@
 
 www.{$REDIRECT_DOMAIN} {
 	import /etc/caddy/tls.caddy
-	root * /var/www/redirect/current/www
-	@api path /api/*
-	reverse_proxy @api unix//var/www/redirect/redirect.www.socket
-	try_files {path} /index.html
-	file_server
+	handle_path /api/* {
+		reverse_proxy unix//var/www/redirect/redirect.www.socket
+	}
+	handle {
+		root * /var/www/redirect/current/www
+		try_files {path} /index.html
+		file_server
+	}
 }
 
 {$REDIRECT_DOMAIN} {

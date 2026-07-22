@@ -95,7 +95,7 @@ local build(arch) = [{
                 context: "docker/caddy",
                 username: { from_secret: "DOCKER_USERNAME" },
                 password: { from_secret: "DOCKER_PASSWORD" },
-                tags: ["latest"],
+                tags: [version],
             },
             when: {
                 event: ["push", "tag"],

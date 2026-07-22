@@ -114,7 +114,7 @@ AWS_ENDPOINT_URL=
 CADDY_EXTRA=()
 [ -n "$AWS_ENDPOINT_URL" ] && CADDY_EXTRA+=(-e "AWS_ENDPOINT_URL=$AWS_ENDPOINT_URL")
 
-CADDY_IMAGE=syncloud/caddy:latest
+CADDY_IMAGE=syncloud/caddy:${TAG##*:}
 docker pull "$CADDY_IMAGE"
 docker rm -f caddy 2>/dev/null || true
 docker run -d \
