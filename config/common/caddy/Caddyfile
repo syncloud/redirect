@@ -40,6 +40,26 @@ api.{$REDIRECT_DOMAIN} {
 		dns route53
 	}
 	root * /var/www/shop/opencart
+
+	@denied path_regexp \.(tpl|twig|ini|log)$
+	respond @denied 403
+	@denied_txt {
+		path *.txt
+		not path /robots.txt
+	}
+	respond @denied_txt 403
+	@system {
+		path /system/*
+		not path *.js *.css
+	}
+	respond @system 403
+
+	@seo {
+		not file
+		not path /index.php *.ico *.gif *.jpg *.jpeg *.png *.js *.css
+	}
+	rewrite @seo /index.php?_route_={path}&{query}
+
 	php_fastcgi 127.0.0.1:9000
 	file_server
 }
