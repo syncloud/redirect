@@ -67,7 +67,6 @@ print(c['$1']['$2'])
 
 SYNCLOUD_DOMAIN=$(cfg redirect domain)
 
-# --- migrate off apache: Caddy is the box web server now ---
 if dpkg -s apache2 >/dev/null 2>&1; then
     systemctl stop apache2 2>/dev/null || true
     systemctl disable apache2 2>/dev/null || true
@@ -76,12 +75,10 @@ if dpkg -s apache2 >/dev/null 2>&1; then
     rm -rf /etc/apache2
 fi
 
-# Caddy manages certificates via Route53 DNS-01; drop the per-domain certbot crons
 if crontab -l 2>/dev/null | grep -q certbot; then
     crontab -l 2>/dev/null | grep -v certbot | crontab -
 fi
 
-# php-fpm backs the opencart shop (real envs only; the test env has no shop)
 if [ "$SYNCLOUD_DOMAIN" != "syncloud.test" ]; then
     if ! dpkg -s php-fpm >/dev/null 2>&1; then
         apt-get install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
@@ -94,7 +91,6 @@ if [ "$SYNCLOUD_DOMAIN" != "syncloud.test" ]; then
     fi
 fi
 
-# --- Caddy config + container (one Caddyfile for all envs, domains via env vars) ---
 install -d /etc/caddy
 install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
 
@@ -116,7 +112,6 @@ case "$SYNCLOUD_DOMAIN" in
         GRAFANA_DOMAIN=stats.syncloud.info
         ;;
     *)
-        # test / integration: mock Route53 (localstack) + mock ACME (pebble)
         STORE_DOMAIN=store.$SYNCLOUD_DOMAIN
         STORE_API_DOMAIN=api.store.$SYNCLOUD_DOMAIN
         SHOP_DOMAIN=shop.$SYNCLOUD_DOMAIN

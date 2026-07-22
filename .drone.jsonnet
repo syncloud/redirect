@@ -267,7 +267,6 @@ local build(arch) = [{
             ]
         },
         {
-            # mock Route53 (API + DNS) so Caddy runs the real dns route53 flow on test
             name: "localstack",
             image: "localstack/localstack:3",
             environment: {
@@ -276,7 +275,6 @@ local build(arch) = [{
             }
         },
         {
-            # mock ACME CA; validates DNS-01 by querying localstack's DNS
             name: "pebble",
             image: "ghcr.io/letsencrypt/pebble:v2.6.0",
             command: ["-config", "/test/config/pebble-config.json", "-dnsserver", "localstack:53"],
