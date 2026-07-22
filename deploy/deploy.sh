@@ -10,7 +10,7 @@ TAG=$1
 REDIRECT_DIR=/var/www/redirect
 STAGE=/tmp/syncloud-redirect
 
-PKGS="docker.io apache2 default-mysql-client python3"
+PKGS="docker.io default-mysql-client python3 openssl"
 if ! dpkg -s $PKGS >/dev/null 2>&1; then
     apt-get update
     apt-get install -y --no-install-recommends $PKGS
@@ -66,14 +66,51 @@ print(c['$1']['$2'])
 }
 
 SYNCLOUD_DOMAIN=$(cfg redirect domain)
-install -m 0644 "$STAGE/common/apache/redirect.conf" /etc/apache2/sites-available/redirect.conf
-if ! grep -q "^export SYNCLOUD_DOMAIN=" /etc/apache2/envvars; then
-    echo "export SYNCLOUD_DOMAIN=$SYNCLOUD_DOMAIN" >> /etc/apache2/envvars
+
+# --- migrate off apache: Caddy is the box web server now ---
+if dpkg -s apache2 >/dev/null 2>&1; then
+    systemctl stop apache2 2>/dev/null || true
+    systemctl disable apache2 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get purge -y 'apache2*' 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+    rm -rf /etc/apache2
 fi
-a2dissite 000-default 2>/dev/null || true
-a2ensite redirect
-a2enmod rewrite ssl proxy proxy_http
-systemctl restart apache2 2>/dev/null || apachectl restart
+
+# Caddy manages certificates via Route53 DNS-01; drop the per-domain certbot crons
+if crontab -l 2>/dev/null | grep -q certbot; then
+    crontab -l 2>/dev/null | grep -v certbot | crontab -
+fi
+
+# php-fpm backs the opencart shop (real envs only; the test env has no shop)
+if [ "$SYNCLOUD_DOMAIN" != "syncloud.test" ]; then
+    if ! dpkg -s php-fpm >/dev/null 2>&1; then
+        apt-get install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
+    fi
+    POOL=$(ls /etc/php/*/fpm/pool.d/www.conf 2>/dev/null | head -1)
+    if [ -n "$POOL" ]; then
+        sed -i 's#^listen = .*#listen = 127.0.0.1:9000#' "$POOL"
+        systemctl restart "php$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')-fpm" 2>/dev/null \
+            || systemctl restart 'php*-fpm.service' 2>/dev/null || true
+    fi
+fi
+
+# --- Caddy config + container ---
+install -d /etc/caddy
+install -m 0644 "$STAGE/Caddyfile" /etc/caddy/Caddyfile
+
+CADDY_IMAGE=syncloud/caddy:latest
+docker pull "$CADDY_IMAGE"
+docker rm -f caddy 2>/dev/null || true
+docker run -d \
+    --name caddy \
+    --restart=unless-stopped \
+    --network=host \
+    -e AWS_ACCESS_KEY_ID="$(cfg aws access_key_id)" \
+    -e AWS_SECRET_ACCESS_KEY="$(cfg aws secret_access_key)" \
+    -v /etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro \
+    -v /var/www:/var/www:ro \
+    -v caddy_data:/data \
+    "$CADDY_IMAGE"
 
 crontab -u redirect "$STAGE/common/cron/crontab"
 
@@ -124,7 +161,7 @@ docker run -d \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
-for name in redirect-api redirect-www node-exporter; do
+for name in redirect-api redirect-www node-exporter caddy; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break

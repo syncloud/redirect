@@ -1,0 +1,22 @@
+{
+	email support@syncloud.it
+}
+
+www.syncloud.test {
+	tls internal
+	root * /var/www/redirect/current/www
+	@api path /api/*
+	reverse_proxy @api unix//var/www/redirect/redirect.www.socket
+	try_files {path} /index.html
+	file_server
+}
+
+syncloud.test {
+	tls internal
+	redir https://www.syncloud.test{uri}
+}
+
+api.syncloud.test, *.syncloud.test {
+	tls internal
+	reverse_proxy unix//var/www/redirect/redirect.api.socket
+}

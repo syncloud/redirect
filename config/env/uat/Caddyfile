@@ -1,0 +1,65 @@
+{
+	email support@syncloud.it
+}
+
+# --- redirect ---
+www.syncloud.info {
+	tls {
+		dns route53
+	}
+	root * /var/www/redirect/current/www
+	@api path /api/*
+	reverse_proxy @api unix//var/www/redirect/redirect.www.socket
+	try_files {path} /index.html
+	file_server
+}
+
+syncloud.info {
+	tls {
+		dns route53
+	}
+	redir https://www.syncloud.info{uri}
+}
+
+api.syncloud.info {
+	tls {
+		dns route53
+	}
+	reverse_proxy unix//var/www/redirect/redirect.api.socket
+}
+
+# --- store ---
+uatstore.syncloud.org, api.uatstore.syncloud.org {
+	tls {
+		dns route53
+	}
+	reverse_proxy unix//var/www/store/api.socket
+}
+
+# --- shop (opencart, php) ---
+shopuat.syncloud.org {
+	tls {
+		dns route53
+	}
+	root * /var/www/shop/opencart
+	php_fastcgi 127.0.0.1:9000
+	file_server
+}
+
+# --- syncloud.org site ---
+test.syncloud.org {
+	tls {
+		dns route53
+	}
+	root * /var/www/syncloud.org/current
+	try_files {path} /index.html
+	file_server
+}
+
+# --- grafana (uat only) ---
+stats.syncloud.info {
+	tls {
+		dns route53
+	}
+	reverse_proxy localhost:3000
+}
