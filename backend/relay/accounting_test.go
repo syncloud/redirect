@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
@@ -54,14 +55,10 @@ func TestAccountant_BaselineThenAccumulatesDelta(t *testing.T) {
 	a := newAccountant(0, source, db)
 
 	a.poll() // baseline at 1000, nothing added
-	if db.stored["alice"] != 0 {
-		t.Fatalf("expected 0 after baseline, got %d", db.stored["alice"])
-	}
+	assert.Equal(t, int64(0), db.stored["alice"])
 	a.poll() // +500
 	a.poll() // +1500
-	if db.stored["alice"] != 2000 {
-		t.Fatalf("expected 2000 accumulated, got %d", db.stored["alice"])
-	}
+	assert.Equal(t, int64(2000), db.stored["alice"])
 }
 
 func TestAccountant_CounterResetCountsCurrentValue(t *testing.T) {
@@ -72,9 +69,7 @@ func TestAccountant_CounterResetCountsCurrentValue(t *testing.T) {
 	a := newAccountant(0, source, &fakeRelayDb{})
 	a.poll() // baseline 5000
 	a.poll() // reset -> delta = 200
-	if a.monthly["alice"] != 200 {
-		t.Fatalf("expected 200 after reset, got %d", a.monthly["alice"])
-	}
+	assert.Equal(t, int64(200), a.monthly["alice"])
 }
 
 func TestAccountant_OverLimit(t *testing.T) {
@@ -84,13 +79,9 @@ func TestAccountant_OverLimit(t *testing.T) {
 	}}
 	a := newAccountant(4096, source, &fakeRelayDb{})
 	a.poll() // baseline 0
-	if a.OverLimit("alice") {
-		t.Fatal("should not be over limit at baseline")
-	}
+	assert.False(t, a.OverLimit("alice"))
 	a.poll() // +4096 -> at limit
-	if !a.OverLimit("alice") {
-		t.Fatal("should be over limit after exceeding")
-	}
+	assert.True(t, a.OverLimit("alice"))
 }
 
 func TestParseTraffic(t *testing.T) {
@@ -100,10 +91,6 @@ frp_server_traffic_out{name="alice.syncloud.it",type="https"} 800
 frp_server_traffic_in{name="bob.syncloud.it",type="https"} 50
 something_else{name="alice.syncloud.it"} 999`
 	totals := parseTraffic(strings.NewReader(text))
-	if totals["alice.syncloud.it"] != 2000 {
-		t.Fatalf("expected 2000 for alice, got %d", totals["alice.syncloud.it"])
-	}
-	if totals["bob.syncloud.it"] != 50 {
-		t.Fatalf("expected 50 for bob, got %d", totals["bob.syncloud.it"])
-	}
+	assert.Equal(t, int64(2000), totals["alice.syncloud.it"])
+	assert.Equal(t, int64(50), totals["bob.syncloud.it"])
 }

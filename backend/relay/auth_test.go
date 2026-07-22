@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
@@ -42,9 +43,7 @@ func TestAuthorize_ValidTokenOwnsCustomDomain(t *testing.T) {
 		User:          pluginUser{Metas: map[string]string{"token": "good"}},
 		CustomDomains: []string{"alice.syncloud.it"},
 	})
-	if resp.Reject {
-		t.Fatalf("expected allow, got reject: %s", resp.RejectReason)
-	}
+	assert.False(t, resp.Reject, resp.RejectReason)
 }
 
 func TestAuthorize_ValidTokenOwnsSubdomain(t *testing.T) {
@@ -53,17 +52,13 @@ func TestAuthorize_ValidTokenOwnsSubdomain(t *testing.T) {
 		User:      pluginUser{Metas: map[string]string{"token": "good"}},
 		Subdomain: "alice",
 	})
-	if resp.Reject {
-		t.Fatalf("expected allow, got reject: %s", resp.RejectReason)
-	}
+	assert.False(t, resp.Reject, resp.RejectReason)
 }
 
 func TestAuthorize_MissingToken(t *testing.T) {
 	s := newServer(map[string]*model.Domain{"good": domainNamed("alice.syncloud.it")})
 	resp := s.Authorize(newProxyContent{CustomDomains: []string{"alice.syncloud.it"}})
-	if !resp.Reject {
-		t.Fatal("expected reject for missing token")
-	}
+	assert.True(t, resp.Reject)
 }
 
 func TestAuthorize_UnknownToken(t *testing.T) {
@@ -72,9 +67,7 @@ func TestAuthorize_UnknownToken(t *testing.T) {
 		User:          pluginUser{Metas: map[string]string{"token": "bad"}},
 		CustomDomains: []string{"alice.syncloud.it"},
 	})
-	if !resp.Reject {
-		t.Fatal("expected reject for unknown token")
-	}
+	assert.True(t, resp.Reject)
 }
 
 func TestAuthorize_TokenDoesNotOwnRequestedDomain(t *testing.T) {
@@ -83,21 +76,15 @@ func TestAuthorize_TokenDoesNotOwnRequestedDomain(t *testing.T) {
 		User:          pluginUser{Metas: map[string]string{"token": "good"}},
 		CustomDomains: []string{"bob.syncloud.it"},
 	})
-	if !resp.Reject {
-		t.Fatal("expected reject when token owns a different domain")
-	}
+	assert.True(t, resp.Reject)
 }
 
 func TestEnforce_UnderLimitAllows(t *testing.T) {
 	s := NewAuthServer("127.0.0.1:0", &fakeDomains{}, &fakeLimiter{over: map[string]bool{}}, "syncloud.it", zap.NewNop())
-	if s.Enforce(newUserConnContent{ProxyName: "alice.syncloud.it"}).Reject {
-		t.Fatal("expected allow under limit")
-	}
+	assert.False(t, s.Enforce(newUserConnContent{ProxyName: "alice.syncloud.it"}).Reject)
 }
 
 func TestEnforce_OverLimitRejects(t *testing.T) {
 	s := NewAuthServer("127.0.0.1:0", &fakeDomains{}, &fakeLimiter{over: map[string]bool{"alice.syncloud.it": true}}, "syncloud.it", zap.NewNop())
-	if !s.Enforce(newUserConnContent{ProxyName: "alice.syncloud.it"}).Reject {
-		t.Fatal("expected reject over limit")
-	}
+	assert.True(t, s.Enforce(newUserConnContent{ProxyName: "alice.syncloud.it"}).Reject)
 }
