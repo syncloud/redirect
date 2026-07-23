@@ -65,8 +65,9 @@ api.{$REDIRECT_DOMAIN} {
 	@seo {
 		not file
 		not path /index.php *.ico *.gif *.jpg *.jpeg *.png *.js *.css
+		path_regexp seo ^/(.+)$
 	}
-	rewrite @seo /index.php?_route_={path}&{query}
+	rewrite @seo /index.php?_route_={re.seo.1}&{query}
 
 	php_fastcgi 127.0.0.1:9000
 	file_server
