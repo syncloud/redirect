@@ -44,7 +44,11 @@ if [ "$code" != "200" ]; then
     exit 1
 fi
 
-web_code=$(curl -k -s -o /dev/null -w "%{http_code}" "${WWW_URL}/")
+for i in $(seq 1 60); do
+    web_code=$(curl -k -s -o /dev/null -w "%{http_code}" "${WWW_URL}/" || echo 000)
+    if [ "$web_code" = "200" ]; then break; fi
+    sleep 2
+done
 if [ "$web_code" != "200" ]; then
     echo "web UI did not respond at ${WWW_URL}/: http_code=$web_code"
     exit 1
