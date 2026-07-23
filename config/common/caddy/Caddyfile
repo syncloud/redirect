@@ -6,6 +6,7 @@
 www.{$REDIRECT_DOMAIN} {
 	tls {
 		dns route53
+		resolvers {$DNS_RESOLVER}
 	}
 	handle_path /api/* {
 		reverse_proxy unix//var/www/redirect/redirect.www.socket
@@ -20,6 +21,7 @@ www.{$REDIRECT_DOMAIN} {
 {$REDIRECT_DOMAIN} {
 	tls {
 		dns route53
+		resolvers {$DNS_RESOLVER}
 	}
 	redir https://www.{$REDIRECT_DOMAIN}{uri}
 }
@@ -27,6 +29,7 @@ www.{$REDIRECT_DOMAIN} {
 api.{$REDIRECT_DOMAIN} {
 	tls {
 		dns route53
+		resolvers {$DNS_RESOLVER}
 	}
 	reverse_proxy unix//var/www/redirect/redirect.api.socket
 }
@@ -34,6 +37,7 @@ api.{$REDIRECT_DOMAIN} {
 {$STORE_DOMAIN}, {$STORE_API_DOMAIN} {
 	tls {
 		dns route53
+		resolvers {$DNS_RESOLVER}
 	}
 	reverse_proxy unix//var/www/store/api.socket
 }
@@ -41,6 +45,7 @@ api.{$REDIRECT_DOMAIN} {
 {$SHOP_DOMAIN} {
 	tls {
 		dns route53
+		resolvers {$DNS_RESOLVER}
 	}
 	root * /var/www/shop/opencart
 
@@ -70,6 +75,7 @@ api.{$REDIRECT_DOMAIN} {
 {$SITE_DOMAIN} {
 	tls {
 		dns route53
+		resolvers {$DNS_RESOLVER}
 	}
 	root * /var/www/syncloud.org/current
 	try_files {path} /index.html
@@ -79,6 +85,7 @@ api.{$REDIRECT_DOMAIN} {
 {$GRAFANA_DOMAIN} {
 	tls {
 		dns route53
+		resolvers {$DNS_RESOLVER}
 	}
 	reverse_proxy localhost:3000
 }

@@ -115,6 +115,7 @@ docker run -d \
     -e AWS_SECRET_ACCESS_KEY="$(cfg aws secret_access_key)" \
     -e AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
     -e ACME_CA="$ACME_CA" \
+    -e DNS_RESOLVER="$DNS_RESOLVER" \
     -e REDIRECT_DOMAIN="$SYNCLOUD_DOMAIN" \
     -e STORE_DOMAIN="$STORE_DOMAIN" \
     -e STORE_API_DOMAIN="$STORE_API_DOMAIN" \
