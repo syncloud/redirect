@@ -140,7 +140,7 @@ if ! $MYSQL -e "use $DB_NAME" 2>/dev/null; then
     $MYSQL "$DB_NAME" < "$STAGE/db/init.sql"
 fi
 DB_CURRENT_VERSION=$($MYSQL -N -B "$DB_NAME" -e "select version from db_version order by timestamp desc limit 1" 2>/dev/null || true)
-if [ "$DB_CURRENT_VERSION" != "$DB_TARGET_VERSION" ]; then
+if [ -n "$DB_TARGET_VERSION" ] && [ "$((10#${DB_CURRENT_VERSION:-0}))" -lt "$((10#$DB_TARGET_VERSION))" ]; then
     $MYSQL "$DB_NAME" < "$STAGE/db/update.sql"
 fi
 
