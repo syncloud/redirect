@@ -38,11 +38,31 @@ if ! docker info >/dev/null 2>&1; then
 fi
 for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 
-docker rm -f localstack pebble 2>/dev/null || true
-docker run -d --name localstack --network=host -e SERVICES=route53 -e DNS_ADDRESS=127.0.0.1 localstack/localstack:3
+docker rm -f localstack pebble challtestsrv 2>/dev/null || true
+
+docker run -d --name challtestsrv --network=host \
+    ghcr.io/letsencrypt/pebble-challtestsrv:2.6.0 -dns01 :53 -management :8055
+sleep 3
+docker run -d --name localstack --network=host -e SERVICES=route53 localstack/localstack:3
 docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:2.6.0 -dnsserver 127.0.0.1:53
 
 for i in $(seq 1 60); do curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break; sleep 2; done
 docker run --rm --network=host -e AWS_ACCESS_KEY_ID=test -e AWS_SECRET_ACCESS_KEY=test -e AWS_DEFAULT_REGION=us-east-1 \
     amazon/aws-cli --endpoint-url http://localhost:4566 route53 create-hosted-zone --name test --caller-reference ci
+
+docker exec -d localstack sh -c 'while true; do
+  ZID=$(awslocal route53 list-hosted-zones --query "HostedZones[0].Id" --output text 2>/dev/null | sed "s#/hostedzone/##")
+  [ -n "$ZID" ] && awslocal route53 list-resource-record-sets --hosted-zone-id "$ZID" --output json 2>/dev/null | python3 -c "
+import json,sys,urllib.request
+try: rs=json.load(sys.stdin).get(\"ResourceRecordSets\",[])
+except Exception: rs=[]
+for r in rs:
+    if r.get(\"Type\")!=\"TXT\": continue
+    for v in r.get(\"ResourceRecords\",[]):
+        d=json.dumps({\"host\":r[\"Name\"],\"value\":v[\"Value\"].strip(chr(34))}).encode()
+        try: urllib.request.urlopen(\"http://localhost:8055/set-txt\", d, timeout=2)
+        except Exception: pass
+"
+  sleep 2
+done'
 REMOTE_SCRIPT
