@@ -37,7 +37,8 @@ if [ "$code" != "200" ]; then
     $SSH $REMOTE sudo -n docker ps -a 2>&1 || true
     $SSH $REMOTE sudo -n docker logs caddy 2>&1 | tail -80 || true
     $SSH $REMOTE sudo -n docker logs pebble 2>&1 | tail -40 || true
-    $SSH $REMOTE sudo -n docker logs challtestsrv 2>&1 | tail -20 || true
+    $SSH $REMOTE sudo -n docker logs coredns 2>&1 | tail -20 || true
+    $SSH $REMOTE sudo -n cat /tmp/simdns/test.zone 2>&1 || true
     $SSH $REMOTE sudo -n docker logs redirect-api 2>&1 | tail -20 || true
     $SSH $REMOTE sudo -n docker logs redirect-www 2>&1 | tail -20 || true
     exit 1
