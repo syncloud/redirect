@@ -10,7 +10,7 @@ TAG=$1
 REDIRECT_DIR=/var/www/redirect
 STAGE=/tmp/syncloud-redirect
 
-PKGS="docker.io apache2 default-mysql-client python3"
+PKGS="docker.io default-mysql-client python3 openssl"
 if ! dpkg -s $PKGS >/dev/null 2>&1; then
     apt-get update
     apt-get install -y --no-install-recommends $PKGS
@@ -66,14 +66,66 @@ print(c['$1']['$2'])
 }
 
 SYNCLOUD_DOMAIN=$(cfg redirect domain)
-install -m 0644 "$STAGE/common/apache/redirect.conf" /etc/apache2/sites-available/redirect.conf
-if ! grep -q "^export SYNCLOUD_DOMAIN=" /etc/apache2/envvars; then
-    echo "export SYNCLOUD_DOMAIN=$SYNCLOUD_DOMAIN" >> /etc/apache2/envvars
+
+# transitional: drop these apache/nginx removals after the next release, once no box runs them
+if dpkg -s apache2 >/dev/null 2>&1; then
+    systemctl stop apache2 2>/dev/null || true
+    systemctl disable apache2 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get purge -y 'apache2*' 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+    rm -rf /etc/apache2
 fi
-a2dissite 000-default 2>/dev/null || true
-a2ensite redirect
-a2enmod rewrite ssl proxy proxy_http
-systemctl restart apache2 2>/dev/null || apachectl restart
+
+if dpkg -s nginx >/dev/null 2>&1; then
+    systemctl stop nginx 2>/dev/null || true
+    systemctl disable nginx 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get purge -y 'nginx*' 'libnginx*' 2>/dev/null || true
+    rm -rf /etc/nginx
+fi
+docker rm -f frps 2>/dev/null || true
+
+if crontab -l 2>/dev/null | grep -q certbot; then
+    crontab -l 2>/dev/null | grep -v certbot | crontab -
+fi
+
+# php-fpm backs the opencart shop; pending migration of the shop to a redirect page
+if ! dpkg -s php-fpm >/dev/null 2>&1; then
+    apt-get install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
+fi
+POOL=$(ls /etc/php/*/fpm/pool.d/www.conf 2>/dev/null | head -1)
+if [ -n "$POOL" ]; then
+    sed -i 's#^listen = .*#listen = 127.0.0.1:9000#' "$POOL"
+    systemctl restart "php$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')-fpm" 2>/dev/null \
+        || systemctl restart 'php*-fpm.service' 2>/dev/null || true
+fi
+
+install -d /etc/caddy
+install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
+
+. "$STAGE/common/caddy/env/$SYNCLOUD_DOMAIN.env"
+
+CADDY_IMAGE=syncloud/caddy:${TAG##*:}
+docker pull "$CADDY_IMAGE"
+docker rm -f caddy 2>/dev/null || true
+docker run -d \
+    --name caddy \
+    --restart=unless-stopped \
+    --network=host \
+    -e AWS_ACCESS_KEY_ID="$(cfg aws access_key_id)" \
+    -e AWS_SECRET_ACCESS_KEY="$(cfg aws secret_access_key)" \
+    -e AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
+    -e ACME_CA="$ACME_CA" \
+    -e DNS_RESOLVER="$DNS_RESOLVER" \
+    -e REDIRECT_DOMAIN="$SYNCLOUD_DOMAIN" \
+    -e STORE_DOMAIN="$STORE_DOMAIN" \
+    -e STORE_API_DOMAIN="$STORE_API_DOMAIN" \
+    -e SHOP_DOMAIN="$SHOP_DOMAIN" \
+    -e SITE_DOMAIN="$SITE_DOMAIN" \
+    -e GRAFANA_DOMAIN="$GRAFANA_DOMAIN" \
+    -v /etc/caddy:/etc/caddy:ro \
+    -v /var/www:/var/www:ro \
+    -v caddy_data:/data \
+    "$CADDY_IMAGE"
 
 crontab -u redirect "$STAGE/common/cron/crontab"
 
@@ -88,7 +140,7 @@ if ! $MYSQL -e "use $DB_NAME" 2>/dev/null; then
     $MYSQL "$DB_NAME" < "$STAGE/db/init.sql"
 fi
 DB_CURRENT_VERSION=$($MYSQL -N -B "$DB_NAME" -e "select version from db_version order by timestamp desc limit 1" 2>/dev/null || true)
-if [ "$DB_CURRENT_VERSION" != "$DB_TARGET_VERSION" ]; then
+if [ -n "$DB_TARGET_VERSION" ] && [ "$((10#${DB_CURRENT_VERSION:-0}))" -lt "$((10#$DB_TARGET_VERSION))" ]; then
     $MYSQL "$DB_NAME" < "$STAGE/db/update.sql"
 fi
 
@@ -124,7 +176,7 @@ docker run -d \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
-for name in redirect-api redirect-www node-exporter; do
+for name in redirect-api redirect-www node-exporter caddy; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break

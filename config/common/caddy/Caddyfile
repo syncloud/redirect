@@ -1,0 +1,92 @@
+{
+	email support@syncloud.it
+	acme_ca {$ACME_CA}
+}
+
+www.{$REDIRECT_DOMAIN} {
+	tls {
+		dns route53
+		resolvers {$DNS_RESOLVER}
+	}
+	handle_path /api/* {
+		reverse_proxy unix//var/www/redirect/redirect.www.socket
+	}
+	handle {
+		root * /var/www/redirect/current/www
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+{$REDIRECT_DOMAIN} {
+	tls {
+		dns route53
+		resolvers {$DNS_RESOLVER}
+	}
+	redir https://www.{$REDIRECT_DOMAIN}{uri}
+}
+
+api.{$REDIRECT_DOMAIN} {
+	tls {
+		dns route53
+		resolvers {$DNS_RESOLVER}
+	}
+	reverse_proxy unix//var/www/redirect/redirect.api.socket
+}
+
+{$STORE_DOMAIN}, {$STORE_API_DOMAIN} {
+	tls {
+		dns route53
+		resolvers {$DNS_RESOLVER}
+	}
+	reverse_proxy unix//var/www/store/api.socket
+}
+
+{$SHOP_DOMAIN} {
+	tls {
+		dns route53
+		resolvers {$DNS_RESOLVER}
+	}
+	root * /var/www/shop/opencart
+
+	@denied path_regexp \.(tpl|twig|ini|log)$
+	respond @denied 403
+	@denied_txt {
+		path *.txt
+		not path /robots.txt
+	}
+	respond @denied_txt 403
+	@system {
+		path /system/*
+		not path *.js *.css
+	}
+	respond @system 403
+
+	@seo {
+		not file
+		not path /index.php *.ico *.gif *.jpg *.jpeg *.png *.js *.css
+		path_regexp seo ^/(.+)$
+	}
+	rewrite @seo /index.php?_route_={re.seo.1}&{query}
+
+	php_fastcgi 127.0.0.1:9000
+	file_server
+}
+
+{$SITE_DOMAIN} {
+	tls {
+		dns route53
+		resolvers {$DNS_RESOLVER}
+	}
+	root * /var/www/syncloud.org/current
+	try_files {path} /index.html
+	file_server
+}
+
+{$GRAFANA_DOMAIN} {
+	tls {
+		dns route53
+		resolvers {$DNS_RESOLVER}
+	}
+	reverse_proxy localhost:3000
+}

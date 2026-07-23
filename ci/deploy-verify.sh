@@ -35,12 +35,20 @@ done
 if [ "$code" != "200" ]; then
     echo "redirect did not come up: last http_code=$code"
     $SSH $REMOTE sudo -n docker ps -a 2>&1 || true
-    $SSH $REMOTE sudo -n docker logs redirect-api 2>&1 | tail -40 || true
-    $SSH $REMOTE sudo -n docker logs redirect-www 2>&1 | tail -40 || true
+    $SSH $REMOTE sudo -n docker logs caddy 2>&1 | tail -80 || true
+    $SSH $REMOTE sudo -n docker logs pebble 2>&1 | tail -40 || true
+    $SSH $REMOTE sudo -n docker logs coredns 2>&1 | tail -20 || true
+    $SSH $REMOTE sudo -n cat /tmp/simdns/test.zone 2>&1 || true
+    $SSH $REMOTE sudo -n docker logs redirect-api 2>&1 | tail -20 || true
+    $SSH $REMOTE sudo -n docker logs redirect-www 2>&1 | tail -20 || true
     exit 1
 fi
 
-web_code=$(curl -k -s -o /dev/null -w "%{http_code}" "${WWW_URL}/")
+for i in $(seq 1 60); do
+    web_code=$(curl -k -s -o /dev/null -w "%{http_code}" "${WWW_URL}/" || echo 000)
+    if [ "$web_code" = "200" ]; then break; fi
+    sleep 2
+done
 if [ "$web_code" != "200" ]; then
     echo "web UI did not respond at ${WWW_URL}/: http_code=$web_code"
     exit 1

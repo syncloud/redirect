@@ -87,6 +87,21 @@ local build(arch) = [{
             },
         },
         {
+            name: "docker caddy",
+            image: "plugins/docker:20.18",
+            settings: {
+                repo: "syncloud/caddy",
+                dockerfile: "docker/caddy/Dockerfile",
+                context: "docker/caddy",
+                username: { from_secret: "DOCKER_USERNAME" },
+                password: { from_secret: "DOCKER_PASSWORD" },
+                tags: [version],
+            },
+            when: {
+                event: ["push", "tag"],
+            },
+        },
+        {
             name: "deploy test",
             image: "debian:bookworm-slim",
             environment: {
