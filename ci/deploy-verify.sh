@@ -35,8 +35,10 @@ done
 if [ "$code" != "200" ]; then
     echo "redirect did not come up: last http_code=$code"
     $SSH $REMOTE sudo -n docker ps -a 2>&1 || true
-    $SSH $REMOTE sudo -n docker logs redirect-api 2>&1 | tail -40 || true
-    $SSH $REMOTE sudo -n docker logs redirect-www 2>&1 | tail -40 || true
+    $SSH $REMOTE sudo -n docker logs caddy 2>&1 | tail -80 || true
+    $SSH $REMOTE sudo -n docker logs pebble 2>&1 | tail -40 || true
+    $SSH $REMOTE sudo -n docker logs redirect-api 2>&1 | tail -20 || true
+    $SSH $REMOTE sudo -n docker logs redirect-www 2>&1 | tail -20 || true
     exit 1
 fi
 
