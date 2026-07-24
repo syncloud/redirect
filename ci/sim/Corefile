@@ -1,0 +1,6 @@
+test.:53 {
+    file /zones/test.zone {
+        reload 1s
+    }
+    errors
+}
