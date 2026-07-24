@@ -67,19 +67,6 @@ print(c['$1']['$2'])
 
 SYNCLOUD_DOMAIN=$(cfg redirect domain)
 
-# transitional: drop this apache removal after prod is migrated to caddy
-if dpkg -s apache2 >/dev/null 2>&1; then
-    systemctl stop apache2 2>/dev/null || true
-    systemctl disable apache2 2>/dev/null || true
-    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 purge -y 'apache2*' 2>/dev/null || true
-    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 autoremove -y 2>/dev/null || true
-    rm -rf /etc/apache2
-fi
-
-if crontab -l 2>/dev/null | grep -q certbot; then
-    crontab -l 2>/dev/null | grep -v certbot | crontab -
-fi
-
 # php-fpm backs the opencart shop; pending migration of the shop to a redirect page
 if ! dpkg -s php-fpm >/dev/null 2>&1; then
     apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
