@@ -1,4 +1,0 @@
-{$STORE_DOMAIN}, {$STORE_API_DOMAIN} {
-	import syncloud_tls
-	reverse_proxy unix//var/www/store/api.socket
-}
