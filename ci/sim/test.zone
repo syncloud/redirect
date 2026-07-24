@@ -1,5 +1,0 @@
-$ORIGIN test.
-$TTL 60
-@ IN SOA ns.test. admin.test. 1 7200 3600 1209600 60
-@ IN NS ns.test.
-ns IN A 127.0.0.1

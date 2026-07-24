@@ -39,18 +39,12 @@ if ! docker info >/dev/null 2>&1; then
 fi
 for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 
-docker rm -f localstack pebble coredns 2>/dev/null || true
+docker rm -f pebble 2>/dev/null || true
+pkill -f /usr/local/bin/dnssim 2>/dev/null || true
 
-install -d /tmp/simdns
-cp "$STAGE/sim/Corefile" "$STAGE/sim/test.zone" "$STAGE/sim/poller.sh" /tmp/simdns/
+install -m 0755 "$STAGE/sim/dnssim" /usr/local/bin/dnssim
+( /usr/local/bin/dnssim </dev/null >/var/log/dnssim.log 2>&1 & )
+for i in $(seq 1 30); do curl -sf http://localhost:4566/health >/dev/null 2>&1 && break; sleep 1; done
 
-docker run -d --name coredns --network=host -v /tmp/simdns:/zones coredns/coredns:1.11.1 -conf /zones/Corefile
-docker run -d --name localstack --network=host -v /tmp/simdns:/zones -e SERVICES=route53 localstack/localstack:3
 docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:2.6.0 -dnsserver 127.0.0.1:53
-
-for i in $(seq 1 60); do curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break; sleep 2; done
-docker run --rm --network=host -e AWS_ACCESS_KEY_ID=test -e AWS_SECRET_ACCESS_KEY=test -e AWS_DEFAULT_REGION=us-east-1 \
-    amazon/aws-cli --endpoint-url http://localhost:4566 route53 create-hosted-zone --name test --caller-reference ci
-
-docker exec -d localstack sh /zones/poller.sh
 REMOTE_SCRIPT

@@ -18,3 +18,6 @@ export CGO_ENABLED=0
 go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/api" ./cmd/api
 go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/www" ./cmd/www
 go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/cli" ./cmd/cli
+
+mkdir -p "${DIR}/../ci/sim"
+go build -ldflags "${LDFLAGS}" -o "${DIR}/../ci/sim/dnssim" ./cmd/dnssim

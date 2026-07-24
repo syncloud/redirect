@@ -13,3 +13,4 @@ build
 /api
 .replies
 .claude
+ci/sim/dnssim
