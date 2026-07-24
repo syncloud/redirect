@@ -3,11 +3,15 @@
 	acme_ca {$ACME_CA}
 }
 
-www.{$REDIRECT_DOMAIN} {
+(syncloud_tls) {
 	tls {
 		dns route53
 		resolvers {$DNS_RESOLVER}
 	}
+}
+
+www.{$REDIRECT_DOMAIN} {
+	import syncloud_tls
 	handle_path /api/* {
 		reverse_proxy unix//var/www/redirect/redirect.www.socket
 	}
@@ -19,34 +23,17 @@ www.{$REDIRECT_DOMAIN} {
 }
 
 {$REDIRECT_DOMAIN} {
-	tls {
-		dns route53
-		resolvers {$DNS_RESOLVER}
-	}
+	import syncloud_tls
 	redir https://www.{$REDIRECT_DOMAIN}{uri}
 }
 
 api.{$REDIRECT_DOMAIN} {
-	tls {
-		dns route53
-		resolvers {$DNS_RESOLVER}
-	}
+	import syncloud_tls
 	reverse_proxy unix//var/www/redirect/redirect.api.socket
 }
 
-{$STORE_DOMAIN}, {$STORE_API_DOMAIN} {
-	tls {
-		dns route53
-		resolvers {$DNS_RESOLVER}
-	}
-	reverse_proxy unix//var/www/store/api.socket
-}
-
 {$SHOP_DOMAIN} {
-	tls {
-		dns route53
-		resolvers {$DNS_RESOLVER}
-	}
+	import syncloud_tls
 	root * /var/www/shop/opencart
 
 	@denied path_regexp \.(tpl|twig|ini|log)$
@@ -73,20 +60,9 @@ api.{$REDIRECT_DOMAIN} {
 	file_server
 }
 
-{$SITE_DOMAIN} {
-	tls {
-		dns route53
-		resolvers {$DNS_RESOLVER}
-	}
-	root * /var/www/syncloud.org/current
-	try_files {path} /index.html
-	file_server
-}
-
 {$GRAFANA_DOMAIN} {
-	tls {
-		dns route53
-		resolvers {$DNS_RESOLVER}
-	}
+	import syncloud_tls
 	reverse_proxy localhost:3000
 }
+
+import /etc/caddy/conf.d/*.caddy
