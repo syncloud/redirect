@@ -187,4 +187,4 @@ for name in redirect-api redirect-www node-exporter caddy; do
     fi
 done
 
-docker image prune -f
+docker image prune -af
