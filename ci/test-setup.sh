@@ -40,11 +40,12 @@ fi
 for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 
 docker rm -f pebble 2>/dev/null || true
-pkill -f /usr/local/bin/dnssim 2>/dev/null || true
+pkill -f /usr/local/bin/dns-faker 2>/dev/null || true
 
-install -m 0755 "$STAGE/sim/dnssim" /usr/local/bin/dnssim
-( /usr/local/bin/dnssim </dev/null >/var/log/dnssim.log 2>&1 & )
+install -m 0755 "$STAGE/sim/dns-faker" /usr/local/bin/dns-faker
+( /usr/local/bin/dns-faker </dev/null >/var/log/dns-faker.log 2>&1 & )
 for i in $(seq 1 30); do curl -sf http://localhost:4566/health >/dev/null 2>&1 && break; sleep 1; done
 
 docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:2.6.0 -dnsserver 127.0.0.1:53
+docker cp pebble:/test/certs/pebble.minica.pem "$REDIRECT_DIR/pebble.crt"
 REMOTE_SCRIPT
