@@ -118,6 +118,7 @@ docker run -d \
     -e SHOP_DOMAIN="$SHOP_DOMAIN" \
     -e SITE_DOMAIN="$SITE_DOMAIN" \
     -e GRAFANA_DOMAIN="$GRAFANA_DOMAIN" \
+    -e RELAY_SITE_SNI="$RELAY_SITE_SNI" \
     -v /etc/caddy:/etc/caddy:ro \
     -v /var/www:/var/www:ro \
     -v caddy_data:/data \
@@ -160,6 +161,17 @@ run_container() {
 run_container redirect-api api
 run_container redirect-www www
 
+install -m 0644 -o "$REDIRECT_UID" -g "$REDIRECT_GID" "$STAGE/common/frp/frps.toml" "$REDIRECT_DIR/frps.toml"
+FRPS_IMAGE=snowdreamtech/frps:0.61.1
+docker pull "$FRPS_IMAGE"
+docker rm -f frps 2>/dev/null || true
+docker run -d \
+    --name frps \
+    --restart=unless-stopped \
+    --network=host \
+    -v "$REDIRECT_DIR/frps.toml:/etc/frp/frps.toml:ro" \
+    "$FRPS_IMAGE"
+
 NODE_EXPORTER_IMAGE=prom/node-exporter:v1.8.2
 docker pull "$NODE_EXPORTER_IMAGE"
 docker rm -f node-exporter 2>/dev/null || true
@@ -172,7 +184,7 @@ docker run -d \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
-for name in redirect-api redirect-www node-exporter caddy; do
+for name in redirect-api redirect-www node-exporter caddy frps; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break
