@@ -22,7 +22,7 @@ local build(arch) = [{
             image: "node:" + node,
             commands: [
                 "mkdir build",
-                "cd www",
+                "cd web",
                 "bash ../ci/npm.sh install",
                 "npm run test",
                 "npm run lint",
