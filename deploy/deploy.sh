@@ -67,7 +67,7 @@ print(c['$1']['$2'])
 
 SYNCLOUD_DOMAIN=$(cfg redirect domain)
 
-# transitional: drop these apache/nginx removals after the next release, once no box runs them
+# transitional: drop this apache removal after prod is migrated to caddy
 if dpkg -s apache2 >/dev/null 2>&1; then
     systemctl stop apache2 2>/dev/null || true
     systemctl disable apache2 2>/dev/null || true
@@ -75,14 +75,6 @@ if dpkg -s apache2 >/dev/null 2>&1; then
     DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
     rm -rf /etc/apache2
 fi
-
-if dpkg -s nginx >/dev/null 2>&1; then
-    systemctl stop nginx 2>/dev/null || true
-    systemctl disable nginx 2>/dev/null || true
-    DEBIAN_FRONTEND=noninteractive apt-get purge -y 'nginx*' 'libnginx*' 2>/dev/null || true
-    rm -rf /etc/nginx
-fi
-docker rm -f frps 2>/dev/null || true
 
 if crontab -l 2>/dev/null | grep -q certbot; then
     crontab -l 2>/dev/null | grep -v certbot | crontab -
