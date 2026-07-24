@@ -12,8 +12,8 @@ STAGE=/tmp/syncloud-redirect
 
 PKGS="docker.io default-mysql-client python3 openssl"
 if ! dpkg -s $PKGS >/dev/null 2>&1; then
-    apt-get update
-    apt-get install -y --no-install-recommends $PKGS
+    apt-get -o DPkg::Lock::Timeout=300 update
+    apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends $PKGS
 fi
 
 if ! docker info >/dev/null 2>&1; then
@@ -71,8 +71,8 @@ SYNCLOUD_DOMAIN=$(cfg redirect domain)
 if dpkg -s apache2 >/dev/null 2>&1; then
     systemctl stop apache2 2>/dev/null || true
     systemctl disable apache2 2>/dev/null || true
-    DEBIAN_FRONTEND=noninteractive apt-get purge -y 'apache2*' 2>/dev/null || true
-    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 purge -y 'apache2*' 2>/dev/null || true
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 autoremove -y 2>/dev/null || true
     rm -rf /etc/apache2
 fi
 
@@ -82,7 +82,7 @@ fi
 
 # php-fpm backs the opencart shop; pending migration of the shop to a redirect page
 if ! dpkg -s php-fpm >/dev/null 2>&1; then
-    apt-get install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
+    apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
 fi
 POOL=$(ls /etc/php/*/fpm/pool.d/www.conf 2>/dev/null | head -1)
 if [ -n "$POOL" ]; then
