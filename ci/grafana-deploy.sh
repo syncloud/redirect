@@ -15,7 +15,7 @@ PASS=$(awk -F= '/^[[:space:]]*admin_password[[:space:]]*=/{gsub(/^[[:space:]]+|[
 DS_UID=$(curl -s -u "${USER}:${PASS}" http://127.0.0.1:3000/api/datasources \
   | python3 -c "import json,sys; print(next(d['uid'] for d in json.load(sys.stdin) if d['type']=='prometheus'))")
 
-python3 - "${DS_UID}" <<'EOF' | curl -fsS -u "${USER}:${PASS}" -X POST -H 'Content-Type: application/json' --data @- http://127.0.0.1:3000/api/dashboards/db
+BODY=$(python3 - "${DS_UID}" <<'EOF'
 import json, sys
 ds_uid = sys.argv[1]
 with open('/tmp/redirect-v2-dashboard.json') as f:
@@ -26,5 +26,13 @@ d.pop('__inputs', None)
 d.pop('id', None)
 print(json.dumps({'dashboard': d, 'overwrite': True, 'folderId': 0, 'message': 'CI auto-deploy'}))
 EOF
+)
+ok=0
+for i in 1 2 3 4 5; do
+    if curl -fsS -u "${USER}:${PASS}" -X POST -H 'Content-Type: application/json' --data "$BODY" http://127.0.0.1:3000/api/dashboards/db; then ok=1; break; fi
+    echo "grafana dashboard upload failed (attempt $i), retrying..." >&2
+    sleep 3
+done
+[ "$ok" = 1 ] || { echo "grafana dashboard upload failed after retries" >&2; exit 1; }
 echo
 REMOTE_SCRIPT
