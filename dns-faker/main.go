@@ -117,15 +117,18 @@ type API struct {
 
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
+	log.Printf("route53 %s %s", r.Method, path)
 	switch {
-	case strings.Contains(path, "hostedzonesbyname"):
-		a.listZonesByName(w)
-	case strings.HasSuffix(path, "/rrset/") && r.Method == http.MethodPost:
-		a.change(w, r)
-	case strings.Contains(path, "/rrset") && r.Method == http.MethodGet:
-		a.listRecords(w)
 	case strings.Contains(path, "/change/"):
 		a.getChange(w, r)
+	case strings.Contains(path, "hostedzonesbyname"):
+		a.listZonesByName(w)
+	case strings.Contains(path, "/rrset"):
+		if r.Method == http.MethodPost {
+			a.change(w, r)
+		} else {
+			a.listRecords(w)
+		}
 	case strings.Contains(path, "hostedzone"):
 		a.listZones(w)
 	case path == "/" || strings.Contains(path, "health"):
@@ -221,7 +224,7 @@ func main() {
 	}
 
 	apiAddr := env("DNSSIM_API", ":4566")
-	log.Printf("dnssim: route53 api on %s, dns on %s", apiAddr, dnsAddr)
+	log.Printf("dns-faker: route53 api on %s, dns on %s", apiAddr, dnsAddr)
 	if err := http.ListenAndServe(apiAddr, &API{store: store}); err != nil {
 		log.Fatal(err)
 	}
