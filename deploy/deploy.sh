@@ -91,8 +91,11 @@ if [ -n "$POOL" ]; then
         || systemctl restart 'php*-fpm.service' 2>/dev/null || true
 fi
 
-install -d /etc/caddy
+install -d /etc/caddy /etc/caddy/conf.d
 install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
+for f in "$STAGE"/common/caddy/conf.d/*.caddy; do
+    [ -e "$f" ] && install -m 0644 "$f" /etc/caddy/conf.d/
+done
 
 . "$STAGE/common/caddy/env/$SYNCLOUD_DOMAIN.env"
 
