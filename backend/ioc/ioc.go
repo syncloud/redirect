@@ -16,6 +16,7 @@ import (
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
+	"github.com/syncloud/redirect/relay"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
@@ -24,6 +25,7 @@ import (
 	"github.com/syncloud/redirect/utils"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
@@ -206,7 +208,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *service.Domains {
-		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector)
+		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector, config.GetRelayAddress())
 	})
 	if err != nil {
 		return nil, err
@@ -246,6 +248,36 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		amazonDns *dns.AmazonDns,
 	) *service.Certbot {
 		return service.NewCertbot(database, amazonDns)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *relay.FrpsMetrics {
+		return relay.NewFrpsMetrics(config.GetFrpsMetricsUrl())
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		frps *relay.FrpsMetrics,
+		database *db.MySql,
+		config *utils.Config,
+	) *relay.Accountant {
+		interval := time.Duration(config.GetRelayPollIntervalSeconds()) * time.Second
+		return relay.NewAccountant(frps, database, config.GetRelayMonthlyLimitBytes(), interval, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		domains *service.Domains,
+		accountant *relay.Accountant,
+		config *utils.Config,
+	) *relay.AuthServer {
+		return relay.NewAuthServer(config.GetRelayPluginAddr(), domains, accountant, config.Domain(), logger)
 	})
 	if err != nil {
 		return nil, err

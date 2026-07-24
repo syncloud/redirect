@@ -654,6 +654,36 @@ func (m *MySql) GetDomainCount() (int64, error) {
 	return m.GetCount(`select count(*) from domain`)
 }
 
+func (m *MySql) AddRelayTraffic(name string, yearMonth string, bytes int64) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO relay_traffic (name, year_month, bytes) VALUES (?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE bytes = bytes + VALUES(bytes)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, yearMonth, bytes)
+	return err
+}
+
+func (m *MySql) GetRelayTrafficMonth(yearMonth string) (map[string]int64, error) {
+	rows, err := m.db.Query("SELECT name, bytes FROM relay_traffic WHERE year_month = ?", yearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := map[string]int64{}
+	for rows.Next() {
+		var name string
+		var bytes int64
+		if err := rows.Scan(&name, &bytes); err != nil {
+			return nil, err
+		}
+		result[name] = bytes
+	}
+	return result, rows.Err()
+}
+
 func (m *MySql) GetActiveDevicesByPlatformVersion(window time.Duration) (map[string]int64, error) {
 	rows, err := m.db.Query(`
 select coalesce(platform_version, ''), count(*)

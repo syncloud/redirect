@@ -22,6 +22,7 @@ type Domains struct {
 	domain           string
 	freeHostedZoneId string
 	detector         change.Detector
+	relayAddress     string
 }
 
 type DomainsDb interface {
@@ -56,6 +57,7 @@ func NewDomains(
 	domain string,
 	freeHostedZoneId string,
 	detector change.Detector,
+	relayAddress string,
 ) *Domains {
 	return &Domains{
 		amazonDns:        dnsImpl,
@@ -64,7 +66,8 @@ func NewDomains(
 		metrics:          metrics,
 		domain:           domain,
 		freeHostedZoneId: freeHostedZoneId,
-		detector:         detector}
+		detector:         detector,
+		relayAddress:     relayAddress}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
@@ -325,6 +328,12 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	if request.Ipv4Enabled {
 		ipv4 = ip
 		localIpv4 = request.LocalIp
+	}
+	if request.Relay && d.relayAddress != "" {
+		relay := d.relayAddress
+		ipv4 = &relay
+		localIpv4 = nil
+		mapLocalAddress = false
 	}
 
 	var ipv6 *string

@@ -116,6 +116,41 @@ func (config *Config) GetWwwMetricsAddr() string {
 	return ":9092"
 }
 
+func (config *Config) GetRelayPluginAddr() string {
+	if value, err := config.parser.Get("relay", "plugin_addr"); err == nil {
+		return value
+	}
+	return "127.0.0.1:7501"
+}
+
+func (config *Config) GetRelayMonthlyLimitBytes() int64 {
+	if value, err := config.parser.GetInt64("relay", "monthly_limit_bytes"); err == nil {
+		return value
+	}
+	return 10 * 1024 * 1024 * 1024
+}
+
+func (config *Config) GetRelayPollIntervalSeconds() int {
+	if value, err := config.parser.GetInt64("relay", "poll_interval_seconds"); err == nil {
+		return int(value)
+	}
+	return 60
+}
+
+func (config *Config) GetFrpsMetricsUrl() string {
+	if value, err := config.parser.Get("relay", "frps_metrics_url"); err == nil {
+		return value
+	}
+	return "http://127.0.0.1:7500/metrics"
+}
+
+func (config *Config) GetRelayAddress() string {
+	if value, err := config.parser.Get("relay", "address"); err == nil {
+		return value
+	}
+	return ""
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {
