@@ -54,6 +54,15 @@ func TestFreeDomainLong(t *testing.T) {
 	assert.Equal(t, 1, len(validator.errors))
 }
 
+func TestFreeDomainReserved(t *testing.T) {
+	for _, name := range []string{"relay", "store", "stats", "admin", "RELAY"} {
+		domain := name + ".syncloud.it"
+		validator := New()
+		validator.Domain(&domain, "", "syncloud.it")
+		assert.Equal(t, 1, len(validator.errors), "expected %s to be reserved", name)
+	}
+}
+
 func TestFreeDomainEmpty(t *testing.T) {
 	domain := ".syncloud.it"
 	validator := New()
