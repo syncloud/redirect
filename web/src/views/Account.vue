@@ -24,41 +24,60 @@
               </div>
             </template>
 
-            <div v-if="userLoaded && subscriptionId === undefined">
-              Subscription is required after 30 days of a free trial period.<br>
-              Additionally you can use your personal domain on active subscription (like example.com)<br><br>
+            <div v-if="userLoaded && subscriptionId !== undefined">
+              Your subscription includes:
+              <ul>
+                <li>Automatic IP DNS updates</li>
+                <li>Automatic mail DNS records</li>
+                <li>Email support for your device</li>
+              </ul>
             </div>
-            <div>
-              We provide the following features for your device:
-            </div>
-            <ul>
-              <li>Automatic IP DNS updates</li>
-              <li>Automatic mail DNS records</li>
-              <li>Email support for your device</li>
-            </ul>
 
             <div v-show="userLoaded && subscriptionId === undefined">
-              <div>
-                For personal domain you need to:
-              </div>
-              <ul>
-                <li>Have you own a domain (like example.com)</li>
-                <li>Be able to change Nameservers for your domain</li>
-                <li>Allow Syncloud to manage DNS records for that domain name by setting
-                  Syncloud Name Servers
-                </li>
-              </ul>
-              <div v-show="maxEnabled" class="pay-section-label">Plan</div>
-              <el-radio-group v-if="userLoaded" v-show="maxEnabled" v-model="tier" size="large">
-                <el-radio-button label="pro" data-testid="plan-pro">Pro · 10 GB</el-radio-button>
-                <el-radio-button label="max" data-testid="plan-max">Max · 100 GB</el-radio-button>
-              </el-radio-group>
-
               <div class="pay-section-label">Billing</div>
               <el-radio-group v-if="userLoaded" v-model="period" size="large">
-                <el-radio-button label="month" data-testid="billing-month">{{ monthlyLabel }}</el-radio-button>
-                <el-radio-button label="year" data-testid="billing-year">{{ annualLabel }}</el-radio-button>
+                <el-radio-button label="month" data-testid="billing-month">Monthly</el-radio-button>
+                <el-radio-button label="year" data-testid="billing-year">Annual</el-radio-button>
               </el-radio-group>
+
+              <div class="pay-section-label">Plan</div>
+              <div class="plan-grid">
+                <div
+                  class="plan-card"
+                  :class="{ selected: tier === 'pro' }"
+                  data-testid="plan-pro"
+                  @click="tier = 'pro'"
+                >
+                  <div class="plan-head">
+                    <span class="plan-name">Pro</span>
+                    <span class="plan-price">{{ proPrice }}</span>
+                  </div>
+                  <ul class="plan-features">
+                    <li>10 GB relay traffic / month</li>
+                    <li>Personal domain (example.com)</li>
+                    <li>Automatic IP &amp; mail DNS</li>
+                    <li>Email support</li>
+                  </ul>
+                </div>
+                <div
+                  v-if="maxEnabled"
+                  class="plan-card"
+                  :class="{ selected: tier === 'max' }"
+                  data-testid="plan-max"
+                  @click="tier = 'max'"
+                >
+                  <div class="plan-head">
+                    <span class="plan-name">Max</span>
+                    <span class="plan-price">{{ maxPrice }}</span>
+                  </div>
+                  <ul class="plan-features">
+                    <li>100 GB relay traffic / month</li>
+                    <li>Personal domain (example.com)</li>
+                    <li>Automatic IP &amp; mail DNS</li>
+                    <li>Email support</li>
+                  </ul>
+                </div>
+              </div>
 
               <div class="pay-section-label">Pay with</div>
               <div class="pay-methods">
@@ -287,11 +306,11 @@ export default {
     maxEnabled: function () {
       return this.stripeMaxEnabled || this.paypalMaxEnabled
     },
-    monthlyLabel: function () {
-      return this.tier === 'max' ? 'Monthly · £15' : 'Monthly · £5'
+    proPrice: function () {
+      return this.period === 'year' ? '£60 / year' : '£5 / month'
     },
-    annualLabel: function () {
-      return this.tier === 'max' ? 'Annual · £180' : 'Annual · £60'
+    maxPrice: function () {
+      return this.period === 'year' ? '£180 / year' : '£15 / month'
     }
   },
   methods: {
@@ -459,6 +478,48 @@ export default {
   font-weight: 600;
   color: var(--el-text-color-secondary);
   margin: 20px 0 8px 0;
+}
+.plan-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.plan-card {
+  flex: 1 1 200px;
+  border: 2px solid var(--el-border-color);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.plan-card:hover {
+  border-color: var(--el-color-primary-light-5);
+}
+.plan-card.selected {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary);
+}
+.plan-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.plan-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+.plan-price {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--el-color-primary);
+}
+.plan-features {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+  line-height: 1.7;
 }
 .pay-methods {
   display: flex;
