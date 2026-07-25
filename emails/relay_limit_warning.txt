@@ -1,0 +1,8 @@
+Subject: You are approaching your Syncloud relay limit
+Hello,
+
+You have used {used} of your {limit} monthly relay traffic. When you reach the limit your relay access will be paused until next month.
+
+For more relay traffic, upgrade to the Max plan at https://www.{domain}/account
+
+Thank you for choosing Syncloud

@@ -274,14 +274,22 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *relay.LimitWarner {
+		return relay.NewLimitWarner(database, mail)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		frps *relay.FrpsMetrics,
 		database *db.MySql,
 		tiers *relay.Tiers,
+		warner *relay.LimitWarner,
 		config *utils.Config,
 	) *relay.Accountant {
 		interval := time.Duration(config.GetRelayPollIntervalSeconds()) * time.Second
-		return relay.NewAccountant(frps, database, tiers, interval, logger)
+		return relay.NewAccountant(frps, database, tiers, warner, interval, logger)
 	})
 	if err != nil {
 		return nil, err

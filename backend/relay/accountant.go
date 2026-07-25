@@ -21,10 +21,21 @@ type Directory interface {
 	OwnerLimit(name string) (userId int64, limitBytes int64, ok bool)
 }
 
+type Warner interface {
+	Warn(userId int64, usedBytes int64, limitBytes int64) error
+}
+
+type warning struct {
+	userId int64
+	used   int64
+	limit  int64
+}
+
 type Accountant struct {
 	source    TrafficSource
 	db        RelayDb
 	directory Directory
+	warner    Warner
 	interval  time.Duration
 	logger    *zap.Logger
 
@@ -33,21 +44,24 @@ type Accountant struct {
 	lastRaw map[string]int64
 	monthly map[string]int64
 	over    map[string]bool
+	warned  map[int64]bool
 
 	trafficDesc *prometheus.Desc
 	overDesc    *prometheus.Desc
 }
 
-func NewAccountant(source TrafficSource, db RelayDb, directory Directory, interval time.Duration, logger *zap.Logger) *Accountant {
+func NewAccountant(source TrafficSource, db RelayDb, directory Directory, warner Warner, interval time.Duration, logger *zap.Logger) *Accountant {
 	return &Accountant{
 		source:      source,
 		db:          db,
 		directory:   directory,
+		warner:      warner,
 		interval:    interval,
 		logger:      logger,
 		lastRaw:     map[string]int64{},
 		monthly:     map[string]int64{},
 		over:        map[string]bool{},
+		warned:      map[int64]bool{},
 		trafficDesc: prometheus.NewDesc("redirect_relay_traffic_bytes", "Relay traffic this month, by proxy.", []string{"proxy"}, nil),
 		overDesc:    prometheus.NewDesc("redirect_relay_over_limit", "1 if the proxy is over its monthly traffic limit.", []string{"proxy"}, nil),
 	}
@@ -88,12 +102,12 @@ func (a *Accountant) poll() {
 	current := month()
 
 	a.mu.Lock()
-	defer a.mu.Unlock()
 
 	if current != a.month {
 		a.month = current
 		a.monthly = map[string]int64{}
 		a.over = map[string]bool{}
+		a.warned = map[int64]bool{}
 	}
 
 	for name, cur := range raw {
@@ -114,10 +128,17 @@ func (a *Accountant) poll() {
 			a.logger.Warn("relay traffic persist failed", zap.String("proxy", name), zap.Error(err))
 		}
 	}
-	a.recomputeOver()
+	warnings := a.recomputeOver()
+	a.mu.Unlock()
+
+	for _, w := range warnings {
+		if err := a.warner.Warn(w.userId, w.used, w.limit); err != nil {
+			a.logger.Warn("relay limit warning failed", zap.Int64("user", w.userId), zap.Error(err))
+		}
+	}
 }
 
-func (a *Accountant) recomputeOver() {
+func (a *Accountant) recomputeOver() []warning {
 	perUser := map[int64]int64{}
 	limitOf := map[int64]int64{}
 	ownerOf := map[string]int64{}
@@ -137,6 +158,16 @@ func (a *Accountant) recomputeOver() {
 		}
 	}
 	a.over = over
+
+	var warnings []warning
+	for userId, used := range perUser {
+		limit := limitOf[userId]
+		if limit > 0 && used*100 >= limit*80 && !a.warned[userId] {
+			a.warned[userId] = true
+			warnings = append(warnings, warning{userId: userId, used: used, limit: limit})
+		}
+	}
+	return warnings
 }
 
 func (a *Accountant) OverLimit(name string) bool {

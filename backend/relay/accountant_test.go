@@ -60,8 +60,21 @@ func oneUser(limit int64, names ...string) *fakeDirectory {
 	return d
 }
 
+type noopWarner struct{}
+
+func (noopWarner) Warn(_ int64, _ int64, _ int64) error { return nil }
+
+type recordingWarner struct {
+	warned []int64
+}
+
+func (w *recordingWarner) Warn(userId int64, _ int64, _ int64) error {
+	w.warned = append(w.warned, userId)
+	return nil
+}
+
 func newAccountant(directory Directory, source TrafficSource, db RelayDb) *Accountant {
-	a := NewAccountant(source, db, directory, time.Minute, zap.NewNop())
+	a := NewAccountant(source, db, directory, noopWarner{}, time.Minute, zap.NewNop())
 	a.month = month()
 	return a
 }
@@ -121,6 +134,27 @@ func TestAccountant_LimitIsPerUserNotPerDevice(t *testing.T) {
 	assert.True(t, a.OverLimit("alice"))
 	assert.True(t, a.OverLimit("bob"))
 	assert.False(t, a.OverLimit("carol"))
+}
+
+func TestAccountant_WarnsOnceAt80Percent(t *testing.T) {
+	directory := &fakeDirectory{
+		owners: map[string]int64{"alice": 1},
+		limits: map[int64]int64{1: 1000},
+	}
+	source := &fakeSource{values: []map[string]int64{
+		{"alice": 0},
+		{"alice": 850},
+		{"alice": 950},
+	}}
+	a := newAccountant(directory, source, &fakeRelayDb{})
+	warner := &recordingWarner{}
+	a.warner = warner
+
+	a.poll()
+	assert.Empty(t, warner.warned)
+	a.poll()
+	a.poll()
+	assert.Equal(t, []int64{1}, warner.warned)
 }
 
 func TestParseTraffic(t *testing.T) {
