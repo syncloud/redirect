@@ -33,7 +33,7 @@ type WwwUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 	UserSetPassword(request *model.UserPasswordSetRequest) error
 	Save(user *model.User) error
-	Subscribe(user *model.User, subscriptionId string, subscriptionType int) error
+	Subscribe(user *model.User, subscriptionId string, subscriptionType int, plan string) error
 	Unsubscribe(user *model.User) error
 	Activate(token string) error
 	Delete(userId int64) error
@@ -49,25 +49,36 @@ type WwwMail interface {
 
 type WwwStripe interface {
 	CreateCheckout(plan string) (string, error)
-	GetCheckoutSubscription(sessionId string) (string, error)
+	GetCheckoutSubscription(sessionId string) (string, string, error)
+	MaxEnabled() bool
+}
+
+type WwwRelay interface {
+	UsedBytes(userId int64) (int64, error)
+	LimitBytes(userId int64) int64
+}
+
+type WwwPayPal interface {
+	PlanId(subscriptionId string) (string, error)
+	Tier(planId string) string
+	Plans() model.PlanResponse
 }
 
 type Www struct {
-	domains             WwwDomains
-	nsChecker           WwwNsChecker
-	users               WwwUsers
-	actions             WwwActions
-	mail                WwwMail
-	stripe              WwwStripe
-	metrics             *metrics.Metrics
-	domain              string
-	payPalPlanMonthlyId string
-	payPalPlanAnnualId  string
-	payPalClientId      string
-	store               *sessions.CookieStore
-	count404            int64
-	socket              string
-	logger              *zap.Logger
+	domains   WwwDomains
+	nsChecker WwwNsChecker
+	users     WwwUsers
+	actions   WwwActions
+	mail      WwwMail
+	stripe    WwwStripe
+	relay     WwwRelay
+	paypal    WwwPayPal
+	metrics   *metrics.Metrics
+	domain    string
+	store     *sessions.CookieStore
+	count404  int64
+	socket    string
+	logger    *zap.Logger
 }
 
 func NewWww(
@@ -77,30 +88,28 @@ func NewWww(
 	actions WwwActions,
 	mail WwwMail,
 	stripe WwwStripe,
+	relay WwwRelay,
+	paypal WwwPayPal,
 	metrics *metrics.Metrics,
 	domain string,
-	payPalPlanMonthlyId string,
-	payPalPlanAnnualId string,
-	payPalClientId string,
 	authSecretSey []byte,
 	socket string,
 	logger *zap.Logger,
 ) *Www {
 	return &Www{
-		domains:             domains,
-		nsChecker:           nsChecker,
-		users:               users,
-		actions:             actions,
-		mail:                mail,
-		stripe:              stripe,
-		metrics:             metrics,
-		domain:              domain,
-		payPalPlanMonthlyId: payPalPlanMonthlyId,
-		payPalPlanAnnualId:  payPalPlanAnnualId,
-		payPalClientId:      payPalClientId,
-		store:               sessions.NewCookieStore(authSecretSey),
-		socket:              socket,
-		logger:              logger,
+		domains:   domains,
+		nsChecker: nsChecker,
+		users:     users,
+		actions:   actions,
+		mail:      mail,
+		stripe:    stripe,
+		relay:     relay,
+		paypal:    paypal,
+		metrics:   metrics,
+		domain:    domain,
+		store:     sessions.NewCookieStore(authSecretSey),
+		socket:    socket,
+		logger:    logger,
 	}
 }
 
@@ -119,6 +128,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUserDelete))).Methods("DELETE")
 	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", w.Secured(HandleUser(w.WebDomains))).Methods("GET")
+	r.HandleFunc("/relay/usage", w.Secured(HandleUser(w.WebRelayUsage))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Subscription))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Unsubscribe))).Methods("DELETE")
 	r.HandleFunc("/plan/subscribe/paypal", w.Secured(HandleUser(w.SubscribePayPal))).Methods("POST")
@@ -280,6 +290,18 @@ func (w *Www) WebDomains(_ http.ResponseWriter, _ *http.Request, user model.User
 	return domains, nil
 }
 
+func (w *Www) WebRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	used, err := w.relay.UsedBytes(user.Id)
+	if err != nil {
+		w.logger.Error("unable to get relay usage for a user", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return map[string]int64{
+		"used_bytes":  used,
+		"limit_bytes": w.relay.LimitBytes(user.Id),
+	}, nil
+}
+
 func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
 	w.metrics.Request("domain_check_nameservers")
 	domainName := req.URL.Query().Get("domain")
@@ -296,11 +318,9 @@ func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request
 
 func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (interface{}, error) {
 	w.metrics.Request("subscription")
-	return model.PlanResponse{
-		PlanMonthlyId: w.payPalPlanMonthlyId,
-		PlanAnnualId:  w.payPalPlanAnnualId,
-		ClientId:      w.payPalClientId,
-	}, nil
+	plans := w.paypal.Plans()
+	plans.StripeMaxEnabled = w.stripe.MaxEnabled()
+	return plans, nil
 }
 
 func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
@@ -316,12 +336,32 @@ func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.Use
 
 func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
 	w.metrics.Request("subscribe_paypal")
-	return w.subscribe(req, model.SubscriptionTypePayPal)
+	user, err := w.getSessionUser(req)
+	if err != nil {
+		return nil, err
+	}
+	request := model.SubscribeRequest{}
+	err = json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		w.logger.Error("unable to parse", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	planId, err := w.paypal.PlanId(request.SubscriptionId)
+	if err != nil {
+		w.logger.Error("unable to confirm paypal subscription", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	err = w.users.Subscribe(user, request.SubscriptionId, model.SubscriptionTypePayPal, w.paypal.Tier(planId))
+	if err != nil {
+		w.logger.Error("unable to subscribe a user", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return "OK", nil
 }
 
 func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
 	w.metrics.Request("subscribe_crypto")
-	return w.subscribe(req, model.SubscriptionTypeCrypto)
+	return w.subscribe(req, model.SubscriptionTypeCrypto, model.PlanPro)
 }
 
 func (w *Www) StripeCheckout(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
@@ -352,12 +392,12 @@ func (w *Www) SubscribeStripe(_ http.ResponseWriter, req *http.Request, _ model.
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	subscriptionId, err := w.stripe.GetCheckoutSubscription(request.SubscriptionId)
+	subscriptionId, plan, err := w.stripe.GetCheckoutSubscription(request.SubscriptionId)
 	if err != nil {
 		w.logger.Error("unable to confirm stripe checkout", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	err = w.users.Subscribe(user, subscriptionId, model.SubscriptionTypeStripe)
+	err = w.users.Subscribe(user, subscriptionId, model.SubscriptionTypeStripe, plan)
 	if err != nil {
 		w.logger.Error("unable to subscribe a user", zap.Error(err))
 		return nil, errors.New("invalid request")
@@ -365,7 +405,7 @@ func (w *Www) SubscribeStripe(_ http.ResponseWriter, req *http.Request, _ model.
 	return "OK", nil
 }
 
-func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, error) {
+func (w *Www) subscribe(req *http.Request, subscriptionType int, plan string) (interface{}, error) {
 	user, err := w.getSessionUser(req)
 	if err != nil {
 		return nil, err
@@ -377,7 +417,7 @@ func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, e
 		return nil, errors.New("invalid request")
 	}
 
-	err = w.users.Subscribe(user, request.SubscriptionId, subscriptionType)
+	err = w.users.Subscribe(user, request.SubscriptionId, subscriptionType, plan)
 	if err != nil {
 		w.logger.Error("unable to subscribe a user", zap.Error(err))
 		return nil, errors.New("invalid request")

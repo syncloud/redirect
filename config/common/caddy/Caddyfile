@@ -1,6 +1,22 @@
 {
 	email support@syncloud.it
 	acme_ca {$ACME_CA}
+	https_port 8443
+	layer4 {
+		:443 {
+			@sites tls sni {$RELAY_SITE_SNI}
+			route @sites {
+				proxy 127.0.0.1:8443
+			}
+			@relay tls sni relay.{$REDIRECT_DOMAIN}
+			route @relay {
+				proxy 127.0.0.1:7000
+			}
+			route {
+				proxy 127.0.0.1:4443
+			}
+		}
+	}
 }
 
 (syncloud_tls) {

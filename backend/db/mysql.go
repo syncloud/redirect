@@ -92,6 +92,7 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 			"timestamp, "+
 			"subscription_id, "+
 			"subscription_type, "+
+			"plan, "+
 			"registered_at, "+
 			"status_at, "+
 			"status "+
@@ -100,7 +101,7 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 
 	user := &model.User{}
 	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
-		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId, &user.SubscriptionType, &user.RegisteredAt,
+		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId, &user.SubscriptionType, &user.Plan, &user.RegisteredAt,
 		&user.StatusAt, &user.Status)
 
 	if err != nil {
@@ -157,6 +158,7 @@ func (m *MySql) UpdateUser(user *model.User) error {
 			"timestamp = ?, " +
 			"subscription_id = ?, " +
 			"subscription_type = ?, " +
+			"plan = ?, " +
 			"status = ?, " +
 			"status_at = ? " +
 			"WHERE id = ?")
@@ -175,6 +177,7 @@ func (m *MySql) UpdateUser(user *model.User) error {
 		&now,
 		user.SubscriptionId,
 		user.SubscriptionType,
+		user.Plan,
 		user.Status,
 		user.StatusAt,
 		user.Id,
@@ -652,6 +655,48 @@ where exists (
 
 func (m *MySql) GetDomainCount() (int64, error) {
 	return m.GetCount(`select count(*) from domain`)
+}
+
+func (m *MySql) AddRelayTraffic(name string, yearMonth string, bytes int64) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO relay_traffic (name, year_month, bytes) VALUES (?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE bytes = bytes + VALUES(bytes)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, yearMonth, bytes)
+	return err
+}
+
+func (m *MySql) GetRelayUsageForUser(userId int64, yearMonth string) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT COALESCE(SUM(rt.bytes), 0) FROM relay_traffic rt "+
+			"JOIN domain d ON rt.name = d.name "+
+			"WHERE d.user_id = ? AND rt.year_month = ?", userId, yearMonth)
+	var bytes int64
+	if err := row.Scan(&bytes); err != nil {
+		return 0, err
+	}
+	return bytes, nil
+}
+
+func (m *MySql) GetRelayTrafficMonth(yearMonth string) (map[string]int64, error) {
+	rows, err := m.db.Query("SELECT name, bytes FROM relay_traffic WHERE year_month = ?", yearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := map[string]int64{}
+	for rows.Next() {
+		var name string
+		var bytes int64
+		if err := rows.Scan(&name, &bytes); err != nil {
+			return nil, err
+		}
+		result[name] = bytes
+	}
+	return result, rows.Err()
 }
 
 func (m *MySql) GetActiveDevicesByPlatformVersion(window time.Duration) (map[string]int64, error) {

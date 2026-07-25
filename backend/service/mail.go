@@ -22,6 +22,7 @@ type Mail struct {
 	accountLockSoonPath         string
 	accountLockedPath           string
 	accountRemovedPath          string
+	relayLimitWarningPath       string
 	from                        string
 	deviceErrorTo               string
 	mainDomain                  string
@@ -49,6 +50,7 @@ func NewMail(smtp *smtp.Smtp,
 		accountLockSoonPath:         mailPath + "/account_lock_soon.txt",
 		accountLockedPath:           mailPath + "/account_locked.txt",
 		accountRemovedPath:          mailPath + "/account_removed.txt",
+		relayLimitWarningPath:       mailPath + "/relay_limit_warning.txt",
 		from:                        from,
 		deviceErrorTo:               deviceErrorTo,
 		mainDomain:                  mainDomain,
@@ -78,6 +80,18 @@ func (m *Mail) SendPlanSubscribed(to string) error {
 	return m.SendNotification(m.planSubscribeTemplatePath, map[string]string{
 		"domain": m.mainDomain,
 	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendRelayLimitWarning(to string, usedBytes int64, limitBytes int64) error {
+	return m.SendNotification(m.relayLimitWarningPath, map[string]string{
+		"domain": m.mainDomain,
+		"used":   relayGigabytes(usedBytes),
+		"limit":  relayGigabytes(limitBytes),
+	}, to)
+}
+
+func relayGigabytes(bytes int64) string {
+	return fmt.Sprintf("%.1f GB", float64(bytes)/(1024*1024*1024))
 }
 
 func (m *Mail) SendPlanUnSubscribed(to string) error {
