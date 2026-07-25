@@ -1,13 +1,18 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import { mock } from './stub/api'
 import './jQuery'
 import 'bootstrap'
-if (import.meta.env.DEV) {
-  mock()
+
+async function start () {
+  if (import.meta.env.VITE_STUB) {
+    const { mock } = await import('./stub/api')
+    mock()
+  }
+
+  createApp(App)
+    .use(router)
+    .mount('#app')
 }
 
-createApp(App)
-  .use(router)
-  .mount('#app')
+start()
