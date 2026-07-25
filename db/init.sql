@@ -18,6 +18,7 @@ CREATE TABLE `user` (
   `premium_status_id` integer NOT NULL DEFAULT 1,
   `subscription_id` varchar(100) NULL,
   `subscription_type` integer NULL,
+  `plan` varchar(16) NULL,
   `registered_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `status` integer DEFAULT 0,
   `status_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -66,9 +67,16 @@ CREATE TABLE `action` (
 insert into action_type (id, name) values (1, 'activate');
 insert into action_type (id, name) values (2, 'password');
 
+create table relay_traffic (
+  `name` varchar(255) not null,
+  `year_month` char(7) not null,
+  `bytes` bigint not null default 0,
+  primary key (`name`, `year_month`)
+);
+
 create table db_version (
   `version` varchar(10) not null,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('015');
+insert into db_version (version) values ('017');
