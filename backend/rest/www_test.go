@@ -119,6 +119,13 @@ func (w WwwRelayStub) LimitBytes(_ int64) int64 {
 	return 0
 }
 
+type WwwPayPalStub struct {
+}
+
+func (w WwwPayPalStub) PlanId(_ string) (string, error) {
+	return "", nil
+}
+
 func TestLogin_CreateSession(t *testing.T) {
 
 	www := NewWww(
@@ -129,10 +136,13 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",
+		"paypal_plan_max_monthly_id",
+		"paypal_plan_max_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
@@ -170,10 +180,13 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",
+		"paypal_plan_max_monthly_id",
+		"paypal_plan_max_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
@@ -226,10 +239,13 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",
+		"paypal_plan_max_monthly_id",
+		"paypal_plan_max_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
@@ -268,10 +284,13 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
 		"paypal_plan_annual_id",
+		"paypal_plan_max_monthly_id",
+		"paypal_plan_max_annual_id",
 		"paypal_client_id",
 		[]byte("secret_key"),
 		"",

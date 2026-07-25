@@ -48,8 +48,8 @@
                   Syncloud Name Servers
                 </li>
               </ul>
-              <div v-show="stripeMaxEnabled" class="pay-section-label">Plan</div>
-              <el-radio-group v-if="userLoaded" v-show="stripeMaxEnabled" v-model="tier" size="large">
+              <div v-show="maxEnabled" class="pay-section-label">Plan</div>
+              <el-radio-group v-if="userLoaded" v-show="maxEnabled" v-model="tier" size="large">
                 <el-radio-button label="pro" data-testid="plan-pro">Pro · 10 GB</el-radio-button>
                 <el-radio-button label="max" data-testid="plan-max">Max · 100 GB</el-radio-button>
               </el-radio-group>
@@ -68,11 +68,12 @@
                   class="pay-button"
                   id="stripe_subscribe_btn"
                   data-testid="stripe-subscribe"
+                  v-show="tier === 'pro' || stripeMaxEnabled"
                   :icon="CreditCard"
                   @click="stripeCheckout"
                 >Card</el-button>
 
-                <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro'"></div>
+                <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
 
                 <div class="pay-crypto" v-show="tier === 'pro'">
                   <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
@@ -257,6 +258,9 @@ export default {
       period: 'month',
       tier: 'pro',
       stripeMaxEnabled: false,
+      paypalMaxEnabled: false,
+      planMaxMonthlyId: String,
+      planMaxAnnualId: String,
       cryptoOpen: false,
       cryptoTransactionId: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
@@ -280,6 +284,9 @@ export default {
     }
   },
   computed: {
+    maxEnabled: function () {
+      return this.stripeMaxEnabled || this.paypalMaxEnabled
+    },
     monthlyLabel: function () {
       return this.tier === 'max' ? 'Monthly · £15' : 'Monthly · £5'
     },
@@ -308,8 +315,11 @@ export default {
         .then(response => {
           this.planAnnualId = response.data.data.plan_annual_id
           this.planMonthlyId = response.data.data.plan_monthly_id
+          this.planMaxAnnualId = response.data.data.plan_max_annual_id
+          this.planMaxMonthlyId = response.data.data.plan_max_monthly_id
           this.clientId = response.data.data.client_id
           this.stripeMaxEnabled = response.data.data.stripe_max_enabled
+          this.paypalMaxEnabled = response.data.data.paypal_max_enabled
           if (!subscriptionId && !this.paypalLoaded) {
             this.enablePayPal(this.clientId)
           }
@@ -359,9 +369,13 @@ export default {
           paypal
             .Buttons({
               createSubscription: (data, actions) => {
-                return actions.subscription.create({
-                  plan_id: this.period === 'year' ? this.planAnnualId : this.planMonthlyId
-                })
+                let planId
+                if (this.tier === 'max') {
+                  planId = this.period === 'year' ? this.planMaxAnnualId : this.planMaxMonthlyId
+                } else {
+                  planId = this.period === 'year' ? this.planAnnualId : this.planMonthlyId
+                }
+                return actions.subscription.create({ plan_id: planId })
               },
               onApprove: (data, actions) => {
                 axios.post('/api/plan/subscribe/paypal', { subscription_id: data.subscriptionID })

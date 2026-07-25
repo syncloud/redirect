@@ -19,8 +19,11 @@ let state = {
     data: {
       plan_annual_id: 'P-3AV82824GF026134TMU772XQ', // paypal sandbox plan id (Annual)
       plan_monthly_id: 'P-88T8436193034834XMDZRP4A', // paypal sandbox plan id (Monthly)
+      plan_max_annual_id: 'P-939294240R421883FNJSH54A', // paypal sandbox plan id (Max Annual)
+      plan_max_monthly_id: 'P-1MN84195617128020NJSH3JI', // paypal sandbox plan id (Max Monthly)
       client_id: 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN', // paypal sandbox client id
-      stripe_max_enabled: true
+      stripe_max_enabled: false,
+      paypal_max_enabled: true
     }
   },
   domains: {
