@@ -173,6 +173,15 @@ export default {
     margin-bottom: 20px;
   }
 
+  .navbar-static-top > .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .navbar > .container .navbar-brand {
+    margin-left: 0 !important;
+  }
+
   .navbar-collapse {
     border-top: 1px solid #eef3f9;
     box-shadow: 0 12px 24px -10px rgba(22, 50, 92, 0.16);
@@ -200,12 +209,12 @@ export default {
     margin: 0 !important;
     height: auto !important;
     line-height: 1.4 !important;
-    padding: 15px 22px !important;
+    padding: 15px 4px !important;
     border-radius: 0;
   }
 
   .navbar-nav.navbar-right > li {
-    padding: 14px 22px;
+    padding: 14px 4px;
   }
 
   .navbar-nav > li > span {
