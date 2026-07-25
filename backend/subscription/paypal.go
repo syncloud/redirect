@@ -3,16 +3,22 @@ package subscription
 import (
 	"context"
 	"github.com/plutov/paypal/v4"
+	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 	"os"
 )
 
 type PayPal struct {
-	client *paypal.Client
-	logger *zap.Logger
+	client           *paypal.Client
+	clientId         string
+	planMonthlyId    string
+	planAnnualId     string
+	planMaxMonthlyId string
+	planMaxAnnualId  string
+	logger           *zap.Logger
 }
 
-func New(clientID, secretID, url string, logger *zap.Logger) (*PayPal, error) {
+func New(clientID, secretID, url, planMonthlyId, planAnnualId, planMaxMonthlyId, planMaxAnnualId string, logger *zap.Logger) (*PayPal, error) {
 	c, err := paypal.NewClient(clientID, secretID, url)
 	if err != nil {
 		return nil, err
@@ -20,9 +26,36 @@ func New(clientID, secretID, url string, logger *zap.Logger) (*PayPal, error) {
 	c.SetLog(os.Stdout)
 
 	return &PayPal{
-		client: c,
-		logger: logger,
+		client:           c,
+		clientId:         clientID,
+		planMonthlyId:    planMonthlyId,
+		planAnnualId:     planAnnualId,
+		planMaxMonthlyId: planMaxMonthlyId,
+		planMaxAnnualId:  planMaxAnnualId,
+		logger:           logger,
 	}, nil
+}
+
+func (p *PayPal) MaxEnabled() bool {
+	return p.planMaxMonthlyId != "" && p.planMaxAnnualId != ""
+}
+
+func (p *PayPal) Tier(planId string) string {
+	if planId != "" && (planId == p.planMaxMonthlyId || planId == p.planMaxAnnualId) {
+		return model.PlanMax
+	}
+	return model.PlanPro
+}
+
+func (p *PayPal) Plans() model.PlanResponse {
+	return model.PlanResponse{
+		PlanMonthlyId:    p.planMonthlyId,
+		PlanAnnualId:     p.planAnnualId,
+		PlanMaxMonthlyId: p.planMaxMonthlyId,
+		PlanMaxAnnualId:  p.planMaxAnnualId,
+		ClientId:         p.clientId,
+		PayPalMaxEnabled: p.MaxEnabled(),
+	}
 }
 
 func (p *PayPal) Unsubscribe(id string) error {

@@ -141,6 +141,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.PayPalClientId(),
 			config.PayPalSecretId(),
 			config.PayPalUrl(),
+			config.PayPalPlanMonthlyId(),
+			config.PayPalPlanAnnualId(),
+			config.PayPalPlanMaxMonthlyId(),
+			config.PayPalPlanMaxAnnualId(),
 			logger,
 		)
 	})
@@ -361,11 +365,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			paypal,
 			metrics,
 			config.Domain(),
-			config.PayPalPlanMonthlyId(),
-			config.PayPalPlanAnnualId(),
-			config.PayPalPlanMaxMonthlyId(),
-			config.PayPalPlanMaxAnnualId(),
-			config.PayPalClientId(),
 			secretKey,
 			config.GetWwwSocket(),
 			logger,
