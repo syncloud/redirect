@@ -291,7 +291,7 @@ export default {
       return this.tier === 'max' ? 'Monthly · £15' : 'Monthly · £5'
     },
     annualLabel: function () {
-      return this.tier === 'max' ? 'Annual · £150' : 'Annual · £60'
+      return this.tier === 'max' ? 'Annual · £180' : 'Annual · £60'
     }
   },
   methods: {
