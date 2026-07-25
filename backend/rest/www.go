@@ -52,6 +52,11 @@ type WwwStripe interface {
 	GetCheckoutSubscription(sessionId string) (string, error)
 }
 
+type WwwRelay interface {
+	UsedBytes(userId int64) (int64, error)
+	LimitBytes(userId int64) int64
+}
+
 type Www struct {
 	domains             WwwDomains
 	nsChecker           WwwNsChecker
@@ -59,6 +64,7 @@ type Www struct {
 	actions             WwwActions
 	mail                WwwMail
 	stripe              WwwStripe
+	relay               WwwRelay
 	metrics             *metrics.Metrics
 	domain              string
 	payPalPlanMonthlyId string
@@ -77,6 +83,7 @@ func NewWww(
 	actions WwwActions,
 	mail WwwMail,
 	stripe WwwStripe,
+	relay WwwRelay,
 	metrics *metrics.Metrics,
 	domain string,
 	payPalPlanMonthlyId string,
@@ -93,6 +100,7 @@ func NewWww(
 		actions:             actions,
 		mail:                mail,
 		stripe:              stripe,
+		relay:               relay,
 		metrics:             metrics,
 		domain:              domain,
 		payPalPlanMonthlyId: payPalPlanMonthlyId,
@@ -119,6 +127,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUserDelete))).Methods("DELETE")
 	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", w.Secured(HandleUser(w.WebDomains))).Methods("GET")
+	r.HandleFunc("/relay/usage", w.Secured(HandleUser(w.WebRelayUsage))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Subscription))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Unsubscribe))).Methods("DELETE")
 	r.HandleFunc("/plan/subscribe/paypal", w.Secured(HandleUser(w.SubscribePayPal))).Methods("POST")
@@ -278,6 +287,18 @@ func (w *Www) WebDomains(_ http.ResponseWriter, _ *http.Request, user model.User
 	}
 
 	return domains, nil
+}
+
+func (w *Www) WebRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	used, err := w.relay.UsedBytes(user.Id)
+	if err != nil {
+		w.logger.Error("unable to get relay usage for a user", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return map[string]int64{
+		"used_bytes":  used,
+		"limit_bytes": w.relay.LimitBytes(user.Id),
+	}, nil
 }
 
 func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {

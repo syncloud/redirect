@@ -104,6 +104,17 @@ func (w WwwStripeStub) GetCheckoutSubscription(_ string) (string, error) {
 	panic("implement me")
 }
 
+type WwwRelayStub struct {
+}
+
+func (w WwwRelayStub) UsedBytes(_ int64) (int64, error) {
+	return 0, nil
+}
+
+func (w WwwRelayStub) LimitBytes(_ int64) int64 {
+	return 0
+}
+
 func TestLogin_CreateSession(t *testing.T) {
 
 	www := NewWww(
@@ -113,6 +124,7 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
@@ -153,6 +165,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
@@ -208,6 +221,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",
@@ -249,6 +263,7 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
 		metrics.New(),
 		"example.com",
 		"paypal_plan_monthly_id",

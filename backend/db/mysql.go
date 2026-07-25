@@ -666,6 +666,18 @@ func (m *MySql) AddRelayTraffic(name string, yearMonth string, bytes int64) erro
 	return err
 }
 
+func (m *MySql) GetRelayUsageForUser(userId int64, yearMonth string) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT COALESCE(SUM(rt.bytes), 0) FROM relay_traffic rt "+
+			"JOIN domain d ON rt.name = d.name "+
+			"WHERE d.user_id = ? AND rt.year_month = ?", userId, yearMonth)
+	var bytes int64
+	if err := row.Scan(&bytes); err != nil {
+		return 0, err
+	}
+	return bytes, nil
+}
+
 func (m *MySql) GetRelayTrafficMonth(yearMonth string) (map[string]int64, error) {
 	rows, err := m.db.Query("SELECT name, bytes FROM relay_traffic WHERE year_month = ?", yearMonth)
 	if err != nil {

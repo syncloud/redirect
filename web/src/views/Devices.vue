@@ -3,6 +3,19 @@
     <div id="has_domains" v-bind:class="{ invisible:  !hasDomains}">
       <h2>Devices</h2>
       <br/>
+      <div v-if="relayEnabled" data-testid="relay-usage" style="margin-bottom: 20px">
+        <div style="margin-bottom: 5px">
+          <strong>Relay usage:</strong> <span data-testid="relay-usage-text">{{ relayText }}</span>
+          <router-link v-if="relayPercent >= 80" to="/account" data-testid="relay-upgrade" style="margin-left: 10px">Approaching your limit — upgrade to Max</router-link>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" :class="relayBarClass" role="progressbar"
+               :style="{ width: Math.min(relayPercent, 100) + '%' }"
+               data-testid="relay-usage-bar">
+            {{ relayPercent }}%
+          </div>
+        </div>
+      </div>
       <div v-for="(domains, group_index) in domainGroups" :key="group_index">
         <div class="row">
           <div v-for="(domain, index) in domains" :key="index">
@@ -186,6 +199,10 @@ function convert (domain) {
   return domain
 }
 
+function gb (bytes) {
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+}
+
 export default {
   name: 'Devices',
   components: {
@@ -199,13 +216,49 @@ export default {
       hasDomains: Boolean,
       domainGroups: Array,
       domainToDelete: '',
-      deleteConfirmationVisible: false
+      deleteConfirmationVisible: false,
+      relayUsed: 0,
+      relayLimit: 0
     }
   },
   mounted () {
     this.reload()
+    this.loadRelayUsage()
+  },
+  computed: {
+    relayEnabled () {
+      return this.relayLimit > 0
+    },
+    relayPercent () {
+      if (this.relayLimit <= 0) {
+        return 0
+      }
+      return Math.round((this.relayUsed / this.relayLimit) * 100)
+    },
+    relayBarClass () {
+      if (this.relayPercent >= 100) {
+        return 'progress-bar-danger'
+      }
+      if (this.relayPercent >= 80) {
+        return 'progress-bar-warning'
+      }
+      return 'progress-bar-success'
+    },
+    relayText () {
+      return gb(this.relayUsed) + ' of ' + gb(this.relayLimit) + ' this month'
+    }
   },
   methods: {
+    loadRelayUsage: function () {
+      axios.get('/api/relay/usage')
+        .then(response => {
+          this.relayUsed = response.data.data.used_bytes
+          this.relayLimit = response.data.data.limit_bytes
+        })
+        .catch(_ => {
+          this.relayLimit = 0
+        })
+    },
     timestamp: function (ds, today) {
       return niceTimestamp(ds, today)
     },

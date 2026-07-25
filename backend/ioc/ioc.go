@@ -260,13 +260,27 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *relay.Tiers {
+		return relay.NewTiers(database, config.GetRelayFreeLimitBytes(), config.GetRelayProLimitBytes(), config.GetRelayMaxLimitBytes(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, tiers *relay.Tiers) *relay.Usage {
+		return relay.NewUsage(database, tiers)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		frps *relay.FrpsMetrics,
 		database *db.MySql,
+		tiers *relay.Tiers,
 		config *utils.Config,
 	) *relay.Accountant {
 		interval := time.Duration(config.GetRelayPollIntervalSeconds()) * time.Second
-		tiers := relay.NewTiers(database, config.GetRelayFreeLimitBytes(), config.GetRelayProLimitBytes(), config.GetRelayMaxLimitBytes(), logger)
 		return relay.NewAccountant(frps, database, tiers, interval, logger)
 	})
 	if err != nil {
@@ -316,6 +330,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		actions *service.Actions,
 		stripe *subscription.Stripe,
+		usage *relay.Usage,
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
@@ -331,6 +346,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			actions,
 			mail,
 			stripe,
+			usage,
 			metrics,
 			config.Domain(),
 			config.PayPalPlanMonthlyId(),

@@ -27,10 +27,10 @@ func (t *Tiers) OwnerLimit(name string) (int64, int64, bool) {
 	if err != nil || domain == nil {
 		return 0, 0, false
 	}
-	return domain.UserId, t.limitFor(domain.UserId), true
+	return domain.UserId, t.UserLimit(domain.UserId), true
 }
 
-func (t *Tiers) limitFor(userId int64) int64 {
+func (t *Tiers) UserLimit(userId int64) int64 {
 	user, err := t.store.GetUser(userId)
 	if err != nil || user == nil || !user.IsSubscribed() {
 		return t.free
