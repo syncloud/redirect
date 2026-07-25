@@ -5,36 +5,47 @@ import (
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	stripesub "github.com/stripe/stripe-go/v81/subscription"
+	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
 
 const (
-	StripePlanMonthly = "monthly"
-	StripePlanAnnual  = "annual"
+	StripePlanMonthly    = "monthly"
+	StripePlanAnnual     = "annual"
+	StripePlanMaxMonthly = "max_monthly"
+	StripePlanMaxAnnual  = "max_annual"
 )
 
 type Stripe struct {
-	secretKey      string
-	priceMonthlyId string
-	priceAnnualId  string
-	successUrl     string
-	cancelUrl      string
-	logger         *zap.Logger
+	secretKey         string
+	priceMonthlyId    string
+	priceAnnualId     string
+	priceMaxMonthlyId string
+	priceMaxAnnualId  string
+	successUrl        string
+	cancelUrl         string
+	logger            *zap.Logger
 }
 
-func NewStripe(secretKey, priceMonthlyId, priceAnnualId, successUrl, cancelUrl string, logger *zap.Logger) *Stripe {
+func NewStripe(secretKey, priceMonthlyId, priceAnnualId, priceMaxMonthlyId, priceMaxAnnualId, successUrl, cancelUrl string, logger *zap.Logger) *Stripe {
 	return &Stripe{
-		secretKey:      secretKey,
-		priceMonthlyId: priceMonthlyId,
-		priceAnnualId:  priceAnnualId,
-		successUrl:     successUrl,
-		cancelUrl:      cancelUrl,
-		logger:         logger,
+		secretKey:         secretKey,
+		priceMonthlyId:    priceMonthlyId,
+		priceAnnualId:     priceAnnualId,
+		priceMaxMonthlyId: priceMaxMonthlyId,
+		priceMaxAnnualId:  priceMaxAnnualId,
+		successUrl:        successUrl,
+		cancelUrl:         cancelUrl,
+		logger:            logger,
 	}
 }
 
 func (s *Stripe) Enabled() bool {
 	return s.secretKey != "" && s.priceMonthlyId != "" && s.priceAnnualId != ""
+}
+
+func (s *Stripe) MaxEnabled() bool {
+	return s.Enabled() && s.priceMaxMonthlyId != "" && s.priceMaxAnnualId != ""
 }
 
 func (s *Stripe) priceId(plan string) (string, error) {
@@ -43,9 +54,20 @@ func (s *Stripe) priceId(plan string) (string, error) {
 		return s.priceAnnualId, nil
 	case StripePlanMonthly:
 		return s.priceMonthlyId, nil
+	case StripePlanMaxAnnual:
+		return s.priceMaxAnnualId, nil
+	case StripePlanMaxMonthly:
+		return s.priceMaxMonthlyId, nil
 	default:
 		return "", fmt.Errorf("unknown stripe plan: %s", plan)
 	}
+}
+
+func (s *Stripe) tierForPrice(priceId string) string {
+	if priceId != "" && (priceId == s.priceMaxMonthlyId || priceId == s.priceMaxAnnualId) {
+		return model.PlanMax
+	}
+	return model.PlanPro
 }
 
 func (s *Stripe) CreateCheckout(plan string) (string, error) {
@@ -55,6 +77,9 @@ func (s *Stripe) CreateCheckout(plan string) (string, error) {
 	priceId, err := s.priceId(plan)
 	if err != nil {
 		return "", err
+	}
+	if priceId == "" {
+		return "", fmt.Errorf("stripe plan not available: %s", plan)
 	}
 	stripe.Key = s.secretKey
 	params := &stripe.CheckoutSessionParams{
@@ -76,23 +101,29 @@ func (s *Stripe) CreateCheckout(plan string) (string, error) {
 	return checkoutSession.URL, nil
 }
 
-func (s *Stripe) GetCheckoutSubscription(sessionId string) (string, error) {
+func (s *Stripe) GetCheckoutSubscription(sessionId string) (string, string, error) {
 	if !s.Enabled() {
-		return "", fmt.Errorf("stripe is not configured")
+		return "", "", fmt.Errorf("stripe is not configured")
 	}
 	stripe.Key = s.secretKey
-	checkoutSession, err := session.Get(sessionId, nil)
+	params := &stripe.CheckoutSessionParams{}
+	params.AddExpand("line_items")
+	checkoutSession, err := session.Get(sessionId, params)
 	if err != nil {
 		s.logger.Error("unable to get stripe checkout session", zap.Error(err))
-		return "", err
+		return "", "", err
 	}
 	if checkoutSession.PaymentStatus == stripe.CheckoutSessionPaymentStatusUnpaid {
-		return "", fmt.Errorf("stripe checkout is not paid")
+		return "", "", fmt.Errorf("stripe checkout is not paid")
 	}
 	if checkoutSession.Subscription == nil {
-		return "", fmt.Errorf("stripe checkout has no subscription")
+		return "", "", fmt.Errorf("stripe checkout has no subscription")
 	}
-	return checkoutSession.Subscription.ID, nil
+	plan := model.PlanPro
+	if checkoutSession.LineItems != nil && len(checkoutSession.LineItems.Data) > 0 && checkoutSession.LineItems.Data[0].Price != nil {
+		plan = s.tierForPrice(checkoutSession.LineItems.Data[0].Price.ID)
+	}
+	return checkoutSession.Subscription.ID, plan, nil
 }
 
 func (s *Stripe) Unsubscribe(id string) error {

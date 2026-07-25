@@ -13,7 +13,7 @@ ${DIR}/recreatedb
 IP=$(getent hosts www.syncloud.test | awk '{print $1}')
 echo "$IP syncloud.test api.syncloud.test auth.syncloud.test" >> /etc/hosts
 
-cd ${DIR}/../www
+cd ${DIR}/../web
 bash ${DIR}/npm.sh ci
 EXIT_CODE=0
 npx playwright test --project=${PROJECT} || EXIT_CODE=$?
@@ -21,11 +21,11 @@ npx playwright test --project=${PROJECT} || EXIT_CODE=$?
 cd ${DIR}/..
 OUT=artifact/${PROJECT}
 mkdir -p ${OUT}
-for dir in www/test-results/*/; do
+for dir in web/test-results/*/; do
     name=$(basename ${dir})
     [[ -f ${dir}video.webm ]] && cp ${dir}video.webm ${OUT}/${name}.webm
     [[ -f ${dir}failure-full-page.png ]] && cp ${dir}failure-full-page.png ${OUT}/${name}.png
 done
-cp -r www/test-results/logs ${OUT}/logs
+cp -r web/test-results/logs ${OUT}/logs
 
 exit $EXIT_CODE

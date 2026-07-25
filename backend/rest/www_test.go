@@ -63,7 +63,7 @@ func (w WwwUsersStub) Save(_ *model.User) error {
 	panic("implement me")
 }
 
-func (w WwwUsersStub) Subscribe(_ *model.User, _ string, _ int) error {
+func (w WwwUsersStub) Subscribe(_ *model.User, _ string, _ int, _ string) error {
 	panic("implement me")
 }
 
@@ -100,8 +100,38 @@ func (w WwwStripeStub) CreateCheckout(_ string) (string, error) {
 	panic("implement me")
 }
 
-func (w WwwStripeStub) GetCheckoutSubscription(_ string) (string, error) {
+func (w WwwStripeStub) GetCheckoutSubscription(_ string) (string, string, error) {
 	panic("implement me")
+}
+
+func (w WwwStripeStub) MaxEnabled() bool {
+	return false
+}
+
+type WwwRelayStub struct {
+}
+
+func (w WwwRelayStub) UsedBytes(_ int64) (int64, error) {
+	return 0, nil
+}
+
+func (w WwwRelayStub) LimitBytes(_ int64) int64 {
+	return 0
+}
+
+type WwwPayPalStub struct {
+}
+
+func (w WwwPayPalStub) PlanId(_ string) (string, error) {
+	return "", nil
+}
+
+func (w WwwPayPalStub) Tier(_ string) string {
+	return model.PlanPro
+}
+
+func (w WwwPayPalStub) Plans() model.PlanResponse {
+	return model.PlanResponse{}
 }
 
 func TestLogin_CreateSession(t *testing.T) {
@@ -113,11 +143,10 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
-		"paypal_plan_monthly_id",
-		"paypal_plan_annual_id",
-		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
 		log.Default(),
@@ -153,11 +182,10 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
-		"paypal_plan_monthly_id",
-		"paypal_plan_annual_id",
-		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
 		log.Default(),
@@ -208,11 +236,10 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
-		"paypal_plan_monthly_id",
-		"paypal_plan_annual_id",
-		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
 		log.Default(),
@@ -249,11 +276,10 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwRelayStub{},
+		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
-		"paypal_plan_monthly_id",
-		"paypal_plan_annual_id",
-		"paypal_client_id",
 		[]byte("secret_key"),
 		"",
 		log.Default(),

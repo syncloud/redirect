@@ -16,6 +16,7 @@ import (
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
+	"github.com/syncloud/redirect/relay"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/smtp"
@@ -24,6 +25,7 @@ import (
 	"github.com/syncloud/redirect/utils"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
@@ -139,6 +141,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.PayPalClientId(),
 			config.PayPalSecretId(),
 			config.PayPalUrl(),
+			config.PayPalPlanMonthlyId(),
+			config.PayPalPlanAnnualId(),
+			config.PayPalPlanMaxMonthlyId(),
+			config.PayPalPlanMaxAnnualId(),
 			logger,
 		)
 	})
@@ -153,6 +159,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.StripeSecretKey(),
 			config.StripePriceMonthlyId(),
 			config.StripePriceAnnualId(),
+			config.StripePriceMaxMonthlyId(),
+			config.StripePriceMaxAnnualId(),
 			fmt.Sprintf("https://www.%s/account?stripe_session_id={CHECKOUT_SESSION_ID}", config.Domain()),
 			fmt.Sprintf("https://www.%s/account", config.Domain()),
 			logger,
@@ -206,7 +214,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *service.Domains {
-		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector)
+		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector, config.GetRelayAddress())
 	})
 	if err != nil {
 		return nil, err
@@ -251,6 +259,59 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(config *utils.Config) *relay.FrpsMetrics {
+		return relay.NewFrpsMetrics(config.GetFrpsMetricsUrl())
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *relay.Tiers {
+		return relay.NewTiers(database, config.GetRelayFreeLimitBytes(), config.GetRelayProLimitBytes(), config.GetRelayMaxLimitBytes(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, tiers *relay.Tiers) *relay.Usage {
+		return relay.NewUsage(database, tiers)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *relay.LimitWarner {
+		return relay.NewLimitWarner(database, mail)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		frps *relay.FrpsMetrics,
+		database *db.MySql,
+		tiers *relay.Tiers,
+		warner *relay.LimitWarner,
+		config *utils.Config,
+	) *relay.Accountant {
+		interval := time.Duration(config.GetRelayPollIntervalSeconds()) * time.Second
+		return relay.NewAccountant(frps, database, tiers, warner, interval, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		domains *service.Domains,
+		accountant *relay.Accountant,
+		config *utils.Config,
+	) *relay.AuthServer {
+		return relay.NewAuthServer(config.GetRelayPluginAddr(), domains, accountant, config.Domain(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		domains *service.Domains,
 		users *service.Users,
@@ -283,6 +344,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		mail *service.Mail,
 		actions *service.Actions,
 		stripe *subscription.Stripe,
+		paypal *subscription.PayPal,
+		usage *relay.Usage,
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
@@ -298,11 +361,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			actions,
 			mail,
 			stripe,
+			usage,
+			paypal,
 			metrics,
 			config.Domain(),
-			config.PayPalPlanMonthlyId(),
-			config.PayPalPlanAnnualId(),
-			config.PayPalClientId(),
 			secretKey,
 			config.GetWwwSocket(),
 			logger,

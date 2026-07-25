@@ -192,11 +192,11 @@ func (u *Users) Unsubscribe(user *model.User) error {
 	return u.usersMail.SendPlanUnSubscribed(user.Email)
 }
 
-func (u *Users) Subscribe(user *model.User, subscriptionId string, subscriptionType int) error {
+func (u *Users) Subscribe(user *model.User, subscriptionId string, subscriptionType int, plan string) error {
 	if user.IsSubscribed() {
 		return fmt.Errorf("you have an existing subscrition, please contact support")
 	}
-	user.Subscribe(subscriptionId, subscriptionType)
+	user.Subscribe(subscriptionId, subscriptionType, plan)
 	err := u.db.UpdateUser(user)
 	if err != nil {
 		return err

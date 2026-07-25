@@ -116,6 +116,53 @@ func (config *Config) GetWwwMetricsAddr() string {
 	return ":9092"
 }
 
+func (config *Config) GetRelayPluginAddr() string {
+	if value, err := config.parser.Get("relay", "plugin_addr"); err == nil {
+		return value
+	}
+	return "127.0.0.1:7501"
+}
+
+func (config *Config) relayLimitBytes(key string, gib int64) int64 {
+	if value, err := config.parser.GetInt64("relay", key); err == nil {
+		return value
+	}
+	return gib * 1024 * 1024 * 1024
+}
+
+func (config *Config) GetRelayFreeLimitBytes() int64 {
+	return config.relayLimitBytes("free_limit_bytes", 1)
+}
+
+func (config *Config) GetRelayProLimitBytes() int64 {
+	return config.relayLimitBytes("pro_limit_bytes", 10)
+}
+
+func (config *Config) GetRelayMaxLimitBytes() int64 {
+	return config.relayLimitBytes("max_limit_bytes", 100)
+}
+
+func (config *Config) GetRelayPollIntervalSeconds() int {
+	if value, err := config.parser.GetInt64("relay", "poll_interval_seconds"); err == nil {
+		return int(value)
+	}
+	return 60
+}
+
+func (config *Config) GetFrpsMetricsUrl() string {
+	if value, err := config.parser.Get("relay", "frps_metrics_url"); err == nil {
+		return value
+	}
+	return "http://127.0.0.1:7500/metrics"
+}
+
+func (config *Config) GetRelayAddress() string {
+	if value, err := config.parser.Get("relay", "address"); err == nil {
+		return value
+	}
+	return ""
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {
@@ -243,6 +290,16 @@ func (config *Config) PayPalPlanAnnualId() string {
 	return result
 }
 
+func (config *Config) PayPalPlanMaxMonthlyId() string {
+	result, _ := config.parser.Get("paypal", "plan_max_monthly_id")
+	return result
+}
+
+func (config *Config) PayPalPlanMaxAnnualId() string {
+	result, _ := config.parser.Get("paypal", "plan_max_annual_id")
+	return result
+}
+
 func (config *Config) PayPalUrl() string {
 	result, err := config.parser.Get("paypal", "url")
 	if err != nil {
@@ -288,6 +345,16 @@ func (config *Config) StripePriceAnnualId() string {
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
+	return result
+}
+
+func (config *Config) StripePriceMaxMonthlyId() string {
+	result, _ := config.parser.Get("stripe", "price_max_monthly_id")
+	return result
+}
+
+func (config *Config) StripePriceMaxAnnualId() string {
+	result, _ := config.parser.Get("stripe", "price_max_annual_id")
 	return result
 }
 

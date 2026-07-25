@@ -1,0 +1,18 @@
+bindAddr = "127.0.0.1"
+bindPort = 7000
+proxyBindAddr = "127.0.0.1"
+vhostHTTPSPort = 4443
+
+webServer.addr = "127.0.0.1"
+webServer.port = 7500
+
+enablePrometheus = true
+
+log.to = "console"
+log.level = "info"
+
+[[httpPlugins]]
+name = "redirect-relay-auth"
+addr = "127.0.0.1:7501"
+path = "/plugin"
+ops = ["NewProxy", "NewUserConn"]
