@@ -1,7 +1,10 @@
-create table relay_traffic (
+create table if not exists relay_traffic (
   `name` varchar(255) not null,
   `year_month` char(7) not null,
   `bytes` bigint not null default 0,
   primary key (`name`, `year_month`)
 );
 insert into db_version (version) values ('016');
+
+alter table user add column plan varchar(16) null;
+insert into db_version (version) values ('017');

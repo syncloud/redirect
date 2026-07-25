@@ -35,5 +35,8 @@ func (t *Tiers) UserLimit(userId int64) int64 {
 	if err != nil || user == nil || !user.IsSubscribed() {
 		return t.free
 	}
+	if user.Plan != nil && *user.Plan == model.PlanMax {
+		return t.max
+	}
 	return t.pro
 }

@@ -290,6 +290,16 @@ func (config *Config) PayPalPlanAnnualId() string {
 	return result
 }
 
+func (config *Config) PayPalPlanMaxMonthlyId() string {
+	result, _ := config.parser.Get("paypal", "plan_max_monthly_id")
+	return result
+}
+
+func (config *Config) PayPalPlanMaxAnnualId() string {
+	result, _ := config.parser.Get("paypal", "plan_max_annual_id")
+	return result
+}
+
 func (config *Config) PayPalUrl() string {
 	result, err := config.parser.Get("paypal", "url")
 	if err != nil {
@@ -335,6 +345,16 @@ func (config *Config) StripePriceAnnualId() string {
 	if err != nil {
 		log.Fatalln("Cannot read config: ", err)
 	}
+	return result
+}
+
+func (config *Config) StripePriceMaxMonthlyId() string {
+	result, _ := config.parser.Get("stripe", "price_max_monthly_id")
+	return result
+}
+
+func (config *Config) StripePriceMaxAnnualId() string {
+	result, _ := config.parser.Get("stripe", "price_max_annual_id")
 	return result
 }
 

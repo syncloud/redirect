@@ -155,6 +155,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.StripeSecretKey(),
 			config.StripePriceMonthlyId(),
 			config.StripePriceAnnualId(),
+			config.StripePriceMaxMonthlyId(),
+			config.StripePriceMaxAnnualId(),
 			fmt.Sprintf("https://www.%s/account?stripe_session_id={CHECKOUT_SESSION_ID}", config.Domain()),
 			fmt.Sprintf("https://www.%s/account", config.Domain()),
 			logger,

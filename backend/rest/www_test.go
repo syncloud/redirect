@@ -63,7 +63,7 @@ func (w WwwUsersStub) Save(_ *model.User) error {
 	panic("implement me")
 }
 
-func (w WwwUsersStub) Subscribe(_ *model.User, _ string, _ int) error {
+func (w WwwUsersStub) Subscribe(_ *model.User, _ string, _ int, _ string) error {
 	panic("implement me")
 }
 
@@ -100,8 +100,12 @@ func (w WwwStripeStub) CreateCheckout(_ string) (string, error) {
 	panic("implement me")
 }
 
-func (w WwwStripeStub) GetCheckoutSubscription(_ string) (string, error) {
+func (w WwwStripeStub) GetCheckoutSubscription(_ string) (string, string, error) {
 	panic("implement me")
+}
+
+func (w WwwStripeStub) MaxEnabled() bool {
+	return false
 }
 
 type WwwRelayStub struct {

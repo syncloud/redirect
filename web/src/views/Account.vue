@@ -48,10 +48,16 @@
                   Syncloud Name Servers
                 </li>
               </ul>
+              <div v-show="stripeMaxEnabled" class="pay-section-label">Plan</div>
+              <el-radio-group v-if="userLoaded" v-show="stripeMaxEnabled" v-model="tier" size="large">
+                <el-radio-button label="pro" data-testid="plan-pro">Pro · 10 GB</el-radio-button>
+                <el-radio-button label="max" data-testid="plan-max">Max · 100 GB</el-radio-button>
+              </el-radio-group>
+
               <div class="pay-section-label">Billing</div>
               <el-radio-group v-if="userLoaded" v-model="period" size="large">
-                <el-radio-button label="month">Monthly · £5</el-radio-button>
-                <el-radio-button label="year">Annual · £60</el-radio-button>
+                <el-radio-button label="month" data-testid="billing-month">{{ monthlyLabel }}</el-radio-button>
+                <el-radio-button label="year" data-testid="billing-year">{{ annualLabel }}</el-radio-button>
               </el-radio-group>
 
               <div class="pay-section-label">Pay with</div>
@@ -66,9 +72,9 @@
                   @click="stripeCheckout"
                 >Card</el-button>
 
-                <div id="paypal-buttons" class="pay-paypal"></div>
+                <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro'"></div>
 
-                <div class="pay-crypto">
+                <div class="pay-crypto" v-show="tier === 'pro'">
                   <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
                     Or pay with crypto (0.05 ETH / year)
                   </el-button>
@@ -249,6 +255,8 @@ export default {
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
       period: 'month',
+      tier: 'pro',
+      stripeMaxEnabled: false,
       cryptoOpen: false,
       cryptoTransactionId: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
@@ -269,6 +277,14 @@ export default {
       this.confirmStripe(sessionId)
     } else {
       this.reload()
+    }
+  },
+  computed: {
+    monthlyLabel: function () {
+      return this.tier === 'max' ? 'Monthly · £15' : 'Monthly · £5'
+    },
+    annualLabel: function () {
+      return this.tier === 'max' ? 'Annual · £150' : 'Annual · £60'
     }
   },
   methods: {
@@ -293,6 +309,7 @@ export default {
           this.planAnnualId = response.data.data.plan_annual_id
           this.planMonthlyId = response.data.data.plan_monthly_id
           this.clientId = response.data.data.client_id
+          this.stripeMaxEnabled = response.data.data.stripe_max_enabled
           if (!subscriptionId && !this.paypalLoaded) {
             this.enablePayPal(this.clientId)
           }
@@ -310,7 +327,13 @@ export default {
         .catch(this.onError)
     },
     stripeCheckout: function () {
-      const plan = this.period === 'year' ? 'annual' : 'monthly'
+      const annual = this.period === 'year'
+      let plan
+      if (this.tier === 'max') {
+        plan = annual ? 'max_annual' : 'max_monthly'
+      } else {
+        plan = annual ? 'annual' : 'monthly'
+      }
       axios.post('/api/plan/subscribe/stripe/checkout', { plan: plan })
         .then(response => {
           window.location.href = response.data.data.url

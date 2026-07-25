@@ -33,7 +33,7 @@ type WwwUsers interface {
 	Authenticate(email *string, password *string) (*model.User, error)
 	UserSetPassword(request *model.UserPasswordSetRequest) error
 	Save(user *model.User) error
-	Subscribe(user *model.User, subscriptionId string, subscriptionType int) error
+	Subscribe(user *model.User, subscriptionId string, subscriptionType int, plan string) error
 	Unsubscribe(user *model.User) error
 	Activate(token string) error
 	Delete(userId int64) error
@@ -49,7 +49,8 @@ type WwwMail interface {
 
 type WwwStripe interface {
 	CreateCheckout(plan string) (string, error)
-	GetCheckoutSubscription(sessionId string) (string, error)
+	GetCheckoutSubscription(sessionId string) (string, string, error)
+	MaxEnabled() bool
 }
 
 type WwwRelay interface {
@@ -318,9 +319,10 @@ func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request
 func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (interface{}, error) {
 	w.metrics.Request("subscription")
 	return model.PlanResponse{
-		PlanMonthlyId: w.payPalPlanMonthlyId,
-		PlanAnnualId:  w.payPalPlanAnnualId,
-		ClientId:      w.payPalClientId,
+		PlanMonthlyId:    w.payPalPlanMonthlyId,
+		PlanAnnualId:     w.payPalPlanAnnualId,
+		ClientId:         w.payPalClientId,
+		StripeMaxEnabled: w.stripe.MaxEnabled(),
 	}, nil
 }
 
@@ -337,12 +339,12 @@ func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.Use
 
 func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
 	w.metrics.Request("subscribe_paypal")
-	return w.subscribe(req, model.SubscriptionTypePayPal)
+	return w.subscribe(req, model.SubscriptionTypePayPal, model.PlanPro)
 }
 
 func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
 	w.metrics.Request("subscribe_crypto")
-	return w.subscribe(req, model.SubscriptionTypeCrypto)
+	return w.subscribe(req, model.SubscriptionTypeCrypto, model.PlanPro)
 }
 
 func (w *Www) StripeCheckout(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {
@@ -373,12 +375,12 @@ func (w *Www) SubscribeStripe(_ http.ResponseWriter, req *http.Request, _ model.
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	subscriptionId, err := w.stripe.GetCheckoutSubscription(request.SubscriptionId)
+	subscriptionId, plan, err := w.stripe.GetCheckoutSubscription(request.SubscriptionId)
 	if err != nil {
 		w.logger.Error("unable to confirm stripe checkout", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	err = w.users.Subscribe(user, subscriptionId, model.SubscriptionTypeStripe)
+	err = w.users.Subscribe(user, subscriptionId, model.SubscriptionTypeStripe, plan)
 	if err != nil {
 		w.logger.Error("unable to subscribe a user", zap.Error(err))
 		return nil, errors.New("invalid request")
@@ -386,7 +388,7 @@ func (w *Www) SubscribeStripe(_ http.ResponseWriter, req *http.Request, _ model.
 	return "OK", nil
 }
 
-func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, error) {
+func (w *Www) subscribe(req *http.Request, subscriptionType int, plan string) (interface{}, error) {
 	user, err := w.getSessionUser(req)
 	if err != nil {
 		return nil, err
@@ -398,7 +400,7 @@ func (w *Www) subscribe(req *http.Request, subscriptionType int) (interface{}, e
 		return nil, errors.New("invalid request")
 	}
 
-	err = w.users.Subscribe(user, request.SubscriptionId, subscriptionType)
+	err = w.users.Subscribe(user, request.SubscriptionId, subscriptionType, plan)
 	if err != nil {
 		w.logger.Error("unable to subscribe a user", zap.Error(err))
 		return nil, errors.New("invalid request")
