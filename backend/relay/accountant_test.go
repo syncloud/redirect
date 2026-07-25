@@ -39,8 +39,29 @@ func (f *fakeRelayDb) GetRelayTrafficMonth(yearMonth string) (map[string]int64, 
 	return map[string]int64{}, nil
 }
 
-func newAccountant(limit int64, source TrafficSource, db RelayDb) *Accountant {
-	a := NewAccountant(source, db, limit, time.Minute, zap.NewNop())
+type fakeDirectory struct {
+	owners map[string]int64
+	limits map[int64]int64
+}
+
+func (d *fakeDirectory) OwnerLimit(name string) (int64, int64, bool) {
+	userId, ok := d.owners[name]
+	if !ok {
+		return 0, 0, false
+	}
+	return userId, d.limits[userId], true
+}
+
+func oneUser(limit int64, names ...string) *fakeDirectory {
+	d := &fakeDirectory{owners: map[string]int64{}, limits: map[int64]int64{1: limit}}
+	for _, name := range names {
+		d.owners[name] = 1
+	}
+	return d
+}
+
+func newAccountant(directory Directory, source TrafficSource, db RelayDb) *Accountant {
+	a := NewAccountant(source, db, directory, time.Minute, zap.NewNop())
 	a.month = month()
 	return a
 }
@@ -52,7 +73,7 @@ func TestAccountant_BaselineThenAccumulatesDelta(t *testing.T) {
 		{"alice": 3000},
 	}}
 	db := &fakeRelayDb{}
-	a := newAccountant(0, source, db)
+	a := newAccountant(oneUser(0, "alice"), source, db)
 
 	a.poll() // baseline at 1000, nothing added
 	assert.Equal(t, int64(0), db.stored["alice"])
@@ -66,7 +87,7 @@ func TestAccountant_CounterResetCountsCurrentValue(t *testing.T) {
 		{"alice": 5000},
 		{"alice": 200}, // frps restarted, counter reset
 	}}
-	a := newAccountant(0, source, &fakeRelayDb{})
+	a := newAccountant(oneUser(0, "alice"), source, &fakeRelayDb{})
 	a.poll() // baseline 5000
 	a.poll() // reset -> delta = 200
 	assert.Equal(t, int64(200), a.monthly["alice"])
@@ -77,11 +98,29 @@ func TestAccountant_OverLimit(t *testing.T) {
 		{"alice": 0},
 		{"alice": 4096},
 	}}
-	a := newAccountant(4096, source, &fakeRelayDb{})
+	a := newAccountant(oneUser(4096, "alice"), source, &fakeRelayDb{})
 	a.poll() // baseline 0
 	assert.False(t, a.OverLimit("alice"))
 	a.poll() // +4096 -> at limit
 	assert.True(t, a.OverLimit("alice"))
+}
+
+func TestAccountant_LimitIsPerUserNotPerDevice(t *testing.T) {
+	directory := &fakeDirectory{
+		owners: map[string]int64{"alice": 1, "bob": 1, "carol": 2},
+		limits: map[int64]int64{1: 4096, 2: 4096},
+	}
+	source := &fakeSource{values: []map[string]int64{
+		{"alice": 0, "bob": 0, "carol": 0},
+		{"alice": 3000, "bob": 2000, "carol": 1000},
+	}}
+	a := newAccountant(directory, source, &fakeRelayDb{})
+	a.poll()
+	a.poll()
+
+	assert.True(t, a.OverLimit("alice"))
+	assert.True(t, a.OverLimit("bob"))
+	assert.False(t, a.OverLimit("carol"))
 }
 
 func TestParseTraffic(t *testing.T) {

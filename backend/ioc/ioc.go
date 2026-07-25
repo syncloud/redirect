@@ -266,7 +266,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		config *utils.Config,
 	) *relay.Accountant {
 		interval := time.Duration(config.GetRelayPollIntervalSeconds()) * time.Second
-		return relay.NewAccountant(frps, database, config.GetRelayMonthlyLimitBytes(), interval, logger)
+		tiers := relay.NewTiers(database, config.GetRelayFreeLimitBytes(), config.GetRelayProLimitBytes(), config.GetRelayMaxLimitBytes(), logger)
+		return relay.NewAccountant(frps, database, tiers, interval, logger)
 	})
 	if err != nil {
 		return nil, err

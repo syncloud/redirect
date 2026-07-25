@@ -123,11 +123,23 @@ func (config *Config) GetRelayPluginAddr() string {
 	return "127.0.0.1:7501"
 }
 
-func (config *Config) GetRelayMonthlyLimitBytes() int64 {
-	if value, err := config.parser.GetInt64("relay", "monthly_limit_bytes"); err == nil {
+func (config *Config) relayLimitBytes(key string, gib int64) int64 {
+	if value, err := config.parser.GetInt64("relay", key); err == nil {
 		return value
 	}
-	return 10 * 1024 * 1024 * 1024
+	return gib * 1024 * 1024 * 1024
+}
+
+func (config *Config) GetRelayFreeLimitBytes() int64 {
+	return config.relayLimitBytes("free_limit_bytes", 1)
+}
+
+func (config *Config) GetRelayProLimitBytes() int64 {
+	return config.relayLimitBytes("pro_limit_bytes", 10)
+}
+
+func (config *Config) GetRelayMaxLimitBytes() int64 {
+	return config.relayLimitBytes("max_limit_bytes", 100)
 }
 
 func (config *Config) GetRelayPollIntervalSeconds() int {

@@ -17,12 +17,16 @@ type RelayDb interface {
 	GetRelayTrafficMonth(yearMonth string) (map[string]int64, error)
 }
 
+type Directory interface {
+	OwnerLimit(name string) (userId int64, limitBytes int64, ok bool)
+}
+
 type Accountant struct {
-	source   TrafficSource
-	db       RelayDb
-	limit    int64
-	interval time.Duration
-	logger   *zap.Logger
+	source    TrafficSource
+	db        RelayDb
+	directory Directory
+	interval  time.Duration
+	logger    *zap.Logger
 
 	mu      sync.Mutex
 	month   string
@@ -34,11 +38,11 @@ type Accountant struct {
 	overDesc    *prometheus.Desc
 }
 
-func NewAccountant(source TrafficSource, db RelayDb, limit int64, interval time.Duration, logger *zap.Logger) *Accountant {
+func NewAccountant(source TrafficSource, db RelayDb, directory Directory, interval time.Duration, logger *zap.Logger) *Accountant {
 	return &Accountant{
 		source:      source,
 		db:          db,
-		limit:       limit,
+		directory:   directory,
 		interval:    interval,
 		logger:      logger,
 		lastRaw:     map[string]int64{},
@@ -114,15 +118,25 @@ func (a *Accountant) poll() {
 }
 
 func (a *Accountant) recomputeOver() {
-	a.over = map[string]bool{}
-	if a.limit <= 0 {
-		return
-	}
+	perUser := map[int64]int64{}
+	limitOf := map[int64]int64{}
+	ownerOf := map[string]int64{}
 	for name, bytes := range a.monthly {
-		if bytes >= a.limit {
-			a.over[name] = true
+		userId, limit, ok := a.directory.OwnerLimit(name)
+		if !ok {
+			continue
+		}
+		ownerOf[name] = userId
+		limitOf[userId] = limit
+		perUser[userId] += bytes
+	}
+	over := map[string]bool{}
+	for name, userId := range ownerOf {
+		if limit := limitOf[userId]; limit > 0 && perUser[userId] >= limit {
+			over[name] = true
 		}
 	}
+	a.over = over
 }
 
 func (a *Accountant) OverLimit(name string) bool {
