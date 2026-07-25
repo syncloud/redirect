@@ -9,6 +9,23 @@ import (
 	"strings"
 )
 
+var reservedSubDomains = map[string]bool{
+	"relay": true,
+	"www":   true,
+	"api":   true,
+	"store": true,
+	"stats": true,
+	"shop":  true,
+	"mail":  true,
+	"mx":    true,
+	"smtp":  true,
+	"imap":  true,
+	"ns":    true,
+	"ns1":   true,
+	"ns2":   true,
+	"admin": true,
+}
+
 type FieldValidator struct {
 	errors       []string
 	fieldsErrors map[string][]string
@@ -52,6 +69,9 @@ func (v *FieldValidator) Domain(domain *string, field string, mainDomain string)
 				subDomain := parts[0]
 				if strings.Contains(subDomain, "_") {
 					v.addFieldError(field, "Cannot contain underscores '_'")
+				}
+				if reservedSubDomains[strings.ToLower(subDomain)] {
+					v.addFieldError(field, "Reserved name")
 				}
 				var valid = regexp.MustCompile(`^[\w-]+$`)
 				if !valid.MatchString(subDomain) {
