@@ -25,6 +25,8 @@ $SCP db "${REMOTE}:/tmp/syncloud-redirect/"
 $SCP config/common "${REMOTE}:/tmp/syncloud-redirect/common"
 $SCP build/www "${REMOTE}:/tmp/syncloud-redirect/web"
 
+$SCP "config/env/${DEPLOY_ENV:?DEPLOY_ENV is required}/config.cfg" "${REMOTE}:/tmp/syncloud-redirect/config.cfg"
+
 set +x
 PAYMENTS="[paypal]
 plan_monthly_id = ${PAYPAL_PLAN_MONTHLY_ID:?PAYPAL_PLAN_MONTHLY_ID is required}
