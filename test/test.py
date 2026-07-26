@@ -1071,3 +1071,51 @@ def test_relay_monthly_limit_blocks_traffic(domain, device_host, artifact_dir, f
     finally:
         process.terminate()
         backend.shutdown()
+
+
+def test_relay_usage_persisted_and_served(domain, device_host, artifact_dir, frpc):
+    user_domain = 'relayusage'
+    domain_name = '{0}.{1}'.format(user_domain, domain)
+    email = 'relay_usage@syncloud.test'
+    password = 'pass123456'
+    smtp.clear()
+    create_user(domain, email, password, artifact_dir)
+    token = api.domain_acquire(domain, domain_name, email, password)
+    add_host_alias(user_domain, device_host, domain)
+
+    work_dir = tempfile.mkdtemp()
+    backend = relay_start_backend(work_dir)
+    process, log_path = relay_start_frpc(frpc, work_dir, device_host, 'relay.{0}'.format(domain), token, domain_name, 'usage')
+    try:
+        up = False
+        for _ in range(30):
+            try:
+                if relay_fetch(domain_name).status_code == 200:
+                    up = True
+                    break
+            except Exception:
+                pass
+            time.sleep(2)
+        assert up, open(log_path).read()
+
+        session = requests.Session()
+        login = session.post('https://www.{0}/api/user/login'.format(domain),
+                             json={'email': email, 'password': password}, verify=False)
+        assert login.status_code == 200, login.text
+
+        used = 0
+        for _ in range(20):
+            try:
+                requests.get('https://{0}/big'.format(domain_name), verify=False, timeout=5)
+            except Exception:
+                pass
+            usage = session.get('https://www.{0}/api/relay/usage'.format(domain), verify=False)
+            assert usage.status_code == 200, usage.text
+            used = usage.json()['data']['used_bytes']
+            if used > 0:
+                break
+            time.sleep(1)
+        assert used > 0, 'relay usage was not persisted to and served from the db (used_bytes=0)\n' + open(log_path).read()
+    finally:
+        process.terminate()
+        backend.shutdown()
