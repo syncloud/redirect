@@ -669,6 +669,53 @@ func (m *MySql) AddRelayTraffic(name string, yearMonth string, bytes int64) erro
 	return err
 }
 
+func (m *MySql) AddMailRelayMessages(name string, yearMonth string, messages int64) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO mail_relay_usage (name, `year_month`, messages) VALUES (?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE messages = messages + VALUES(messages)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, yearMonth, messages)
+	return err
+}
+
+func (m *MySql) GetMailRelayMessages(name string, yearMonth string) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT COALESCE(messages, 0) FROM mail_relay_usage WHERE name = ? AND `year_month` = ?",
+		name, yearMonth)
+	var messages int64
+	if err := row.Scan(&messages); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return messages, nil
+}
+
+func (m *MySql) BlockMailRelay(name string, reason string) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO mail_relay_blocked (name, reason) VALUES (?, ?) " +
+			"ON DUPLICATE KEY UPDATE reason = VALUES(reason)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, reason)
+	return err
+}
+
+func (m *MySql) IsMailRelayBlocked(name string) (bool, error) {
+	row := m.db.QueryRow("SELECT COUNT(*) FROM mail_relay_blocked WHERE name = ?", name)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (m *MySql) GetRelayUsageForUser(userId int64, yearMonth string) (int64, error) {
 	row := m.db.QueryRow(
 		"SELECT COALESCE(SUM(rt.bytes), 0) FROM relay_traffic rt "+

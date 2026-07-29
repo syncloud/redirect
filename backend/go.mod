@@ -3,6 +3,8 @@ module github.com/syncloud/redirect
 require (
 	github.com/aws/aws-sdk-go v1.40.45
 	github.com/bigkevmcd/go-configparser v0.0.0-20200217161103-d137835d2579
+	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
+	github.com/emersion/go-smtp v0.24.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golobby/container/v3 v3.3.2
 	github.com/google/uuid v1.6.0
