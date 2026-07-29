@@ -17,12 +17,14 @@ type SesSender struct {
 	logger        *zap.Logger
 }
 
-func NewSesSender(region string, configuration string, logger *zap.Logger) (*SesSender, error) {
-	awsSession, err := session.NewSession(&aws.Config{Region: aws.String(region)})
-	if err != nil {
-		return nil, err
+// NewSesSender takes the session the rest of the service already uses, so it
+// picks up the configured credentials rather than searching an empty chain.
+func NewSesSender(awsSession *session.Session, region string, configuration string, logger *zap.Logger) *SesSender {
+	return &SesSender{
+		ses:           ses.New(awsSession, aws.NewConfig().WithRegion(region)),
+		configuration: configuration,
+		logger:        logger,
 	}
-	return &SesSender{ses: ses.New(awsSession), configuration: configuration, logger: logger}, nil
 }
 
 // Send hands the message to SES as is, so the device keeps its own From header
