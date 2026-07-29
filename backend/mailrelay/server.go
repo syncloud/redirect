@@ -2,6 +2,7 @@ package mailrelay
 
 import (
 	"crypto/tls"
+	"errors"
 	"io"
 	"time"
 
@@ -38,7 +39,12 @@ func NewServer(address string, domain string, relay *Relay, sender Sender, tlsCo
 
 func (s *Server) Start() error {
 	s.logger.Info("mail relay listening", zap.String("address", s.server.Addr))
-	return s.server.ListenAndServe()
+	go func() {
+		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, smtp.ErrServerClosed) {
+			s.logger.Error("mail relay stopped", zap.Error(err))
+		}
+	}()
+	return nil
 }
 
 func (s *Server) Close() error {

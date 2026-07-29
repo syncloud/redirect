@@ -163,6 +163,67 @@ func (config *Config) GetRelayAddress() string {
 	return ""
 }
 
+func (config *Config) GetMailRelayAddress() string {
+	if value, err := config.parser.Get("mail_relay", "address"); err == nil {
+		return value
+	}
+	return ":587"
+}
+
+func (config *Config) GetMailRelayCertFile() string {
+	if value, err := config.parser.Get("mail_relay", "cert_file"); err == nil {
+		return value
+	}
+	return ""
+}
+
+func (config *Config) GetMailRelayKeyFile() string {
+	if value, err := config.parser.Get("mail_relay", "key_file"); err == nil {
+		return value
+	}
+	return ""
+}
+
+func (config *Config) GetMailRelaySesRegion() string {
+	if value, err := config.parser.Get("mail_relay", "ses_region"); err == nil {
+		return value
+	}
+	return "us-east-1"
+}
+
+func (config *Config) GetMailRelaySesConfigurationSet() string {
+	if value, err := config.parser.Get("mail_relay", "ses_configuration_set"); err == nil {
+		return value
+	}
+	return ""
+}
+
+func (config *Config) GetMailRelayMaxMessageBytes() int64 {
+	if value, err := config.parser.GetInt64("mail_relay", "max_message_bytes"); err == nil {
+		return value
+	}
+	return 25 * 1024 * 1024
+}
+
+func (config *Config) mailRelayLimitMessages(key string, messages int64) int64 {
+	if value, err := config.parser.GetInt64("mail_relay", key); err == nil {
+		return value
+	}
+	return messages
+}
+
+func (config *Config) GetMailRelayFreeLimitMessages() int64 {
+	return config.mailRelayLimitMessages("free_limit_messages", 50)
+}
+
+func (config *Config) GetMailRelayProLimitMessages() int64 {
+	return config.mailRelayLimitMessages("pro_limit_messages", 2000)
+}
+
+func (config *Config) GetMailRelayMaxLimitMessages() int64 {
+	return config.mailRelayLimitMessages("max_limit_messages", 10000)
+}
+
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {

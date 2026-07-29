@@ -29,8 +29,8 @@ var (
 	ErrUnknownToken = fmt.Errorf("unknown login or password")
 	ErrNotOwned     = fmt.Errorf("unknown login or password")
 	ErrBlocked      = fmt.Errorf("sending is blocked after spam complaints, contact support")
-	ErrNotAllowed   = fmt.Errorf("mail relay requires an active subscription")
-	ErrOverLimit    = fmt.Errorf("monthly mail relay limit exceeded")
+	ErrNotAllowed   = fmt.Errorf("mail relay is not available on this plan")
+	ErrOverLimit    = fmt.Errorf("monthly mail relay limit exceeded, upgrade for more")
 )
 
 type Relay struct {

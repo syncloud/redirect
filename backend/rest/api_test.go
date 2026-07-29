@@ -119,7 +119,7 @@ func TestLogin_SpecialSymbol(t *testing.T) {
 	users := &ApiUsersStub{}
 	api := NewApi(
 		&ApiDomainsStub{}, users, &ApiMailStub{},
-		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), "example.com", "", log.Default())
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), &ApiComplaintsStub{}, "example.com", "", log.Default())
 	email := "test@example.com"
 	password := "password;&\" "
 	user := &model.UserAuthenticateRequest{Email: &email, Password: &password}
@@ -147,7 +147,7 @@ func TestDomainUpdate_Ipv4Enabled(t *testing.T) {
 	domains := &ApiDomainsStub{}
 	api := NewApi(
 		domains, &ApiUsersStub{}, &ApiMailStub{},
-		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), "example.com", "", log.Default())
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), &ApiComplaintsStub{}, "example.com", "", log.Default())
 	request := `
 { "port": 1, "token": "123", "ip": "1.1.1", "ipv6": "aaa.bbb.111" }
 `
@@ -171,7 +171,7 @@ func TestDomainUpdate_Ipv4Disabled(t *testing.T) {
 	domains := &ApiDomainsStub{}
 	api := NewApi(
 		domains, &ApiUsersStub{}, &ApiMailStub{},
-		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), "example.com", "", log.Default())
+		&ApiPortProbeStub{}, &ApiCertbotStub{}, metrics.New(), &ApiComplaintsStub{}, "example.com", "", log.Default())
 	request := `
 { "ipv4_enabled": false}
 `
@@ -188,4 +188,10 @@ func TestDomainUpdate_Ipv4Disabled(t *testing.T) {
 	}
 	assert.False(t, domains.domainUpdateRequest.Ipv4Enabled)
 
+}
+
+type ApiComplaintsStub struct{}
+
+func (a *ApiComplaintsStub) Handle(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }

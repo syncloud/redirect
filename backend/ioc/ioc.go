@@ -14,6 +14,7 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/mailrelay"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/relay"
@@ -312,6 +313,65 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *mailrelay.Tiers {
+		return mailrelay.NewTiers(database,
+			config.GetMailRelayFreeLimitMessages(),
+			config.GetMailRelayProLimitMessages(),
+			config.GetMailRelayMaxLimitMessages(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql) *mailrelay.DbStore {
+		return mailrelay.NewDbStore(database)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		domains *service.Domains,
+		tiers *mailrelay.Tiers,
+		store *mailrelay.DbStore,
+	) *mailrelay.Relay {
+		return mailrelay.New(domains, tiers, store, store, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(store *mailrelay.DbStore) *mailrelay.Complaints {
+		return mailrelay.NewComplaints(store, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) (mailrelay.Sender, error) {
+		return mailrelay.NewSesSender(
+			config.GetMailRelaySesRegion(), config.GetMailRelaySesConfigurationSet(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		relayService *mailrelay.Relay,
+		sender mailrelay.Sender,
+		config *utils.Config,
+	) (*mailrelay.Server, error) {
+		tlsConfig, err := mailrelay.LoadTls(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+		if err != nil {
+			return nil, err
+		}
+		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
+			relayService, sender, tlsConfig, config.GetMailRelayMaxMessageBytes(), logger), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		domains *service.Domains,
 		users *service.Users,
@@ -319,6 +379,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		prober *probe.Service,
 		certbot *service.Certbot,
 		metrics *metrics.Metrics,
+		complaints *mailrelay.Complaints,
 		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
@@ -328,6 +389,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			prober,
 			certbot,
 			metrics,
+			complaints,
 			config.Domain(),
 			config.GetApiSocket(),
 			logger,

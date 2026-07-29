@@ -9,23 +9,24 @@ type UserStore interface {
 	GetUser(id int64) (*model.User, error)
 }
 
-// Tiers maps a subscription to a monthly message allowance. The relay is a paid
-// feature, so an unsubscribed user gets nothing rather than a small free tier.
+// Tiers maps a subscription to a monthly message allowance. The free tier is
+// small on purpose: enough to try the relay out, not enough to run on.
 type Tiers struct {
 	store  UserStore
+	free   int64
 	pro    int64
 	max    int64
 	logger *zap.Logger
 }
 
-func NewTiers(store UserStore, pro int64, max int64, logger *zap.Logger) *Tiers {
-	return &Tiers{store: store, pro: pro, max: max, logger: logger}
+func NewTiers(store UserStore, free int64, pro int64, max int64, logger *zap.Logger) *Tiers {
+	return &Tiers{store: store, free: free, pro: pro, max: max, logger: logger}
 }
 
 func (t *Tiers) MessageLimit(userId int64) int64 {
 	user, err := t.store.GetUser(userId)
 	if err != nil || user == nil || !user.IsSubscribed() {
-		return 0
+		return t.free
 	}
 	if user.Plan != nil && *user.Plan == model.PlanMax {
 		return t.max
