@@ -4,6 +4,7 @@ import (
 	"github.com/bigkevmcd/go-configparser"
 	"log"
 	"os"
+	"strconv"
 )
 
 type Config struct {
@@ -222,6 +223,49 @@ func (config *Config) GetMailRelayProLimitMessages() int64 {
 
 func (config *Config) GetMailRelayMaxLimitMessages() int64 {
 	return config.mailRelayLimitMessages("max_limit_messages", 10000)
+}
+
+func (config *Config) GetMailRelayLimitPerMinute() int64 {
+	return config.mailRelayLimitMessages("limit_per_minute", 10)
+}
+
+func (config *Config) GetMailRelayLimitPerHour() int64 {
+	return config.mailRelayLimitMessages("limit_per_hour", 100)
+}
+
+func (config *Config) GetMailRelayLimitPerDay() int64 {
+	return config.mailRelayLimitMessages("limit_per_day", 500)
+}
+
+func (config *Config) GetMailRelayMaxRecipients() int {
+	return int(config.mailRelayLimitMessages("max_recipients", 50))
+}
+
+func (config *Config) GetMailRelayBounceRatio() float64 {
+	if value, err := config.parser.Get("mail_relay", "bounce_ratio"); err == nil {
+		if parsed, err := strconv.ParseFloat(value, 64); err == nil {
+			return parsed
+		}
+	}
+	return 0.05
+}
+
+func (config *Config) GetMailRelayBounceMinimum() int64 {
+	return config.mailRelayLimitMessages("bounce_minimum", 20)
+}
+
+func (config *Config) GetMailRelayRspamdUrl() string {
+	if value, err := config.parser.Get("mail_relay", "rspamd_url"); err == nil {
+		return value
+	}
+	return ""
+}
+
+func (config *Config) GetMailRelayRspamdRejectOnError() bool {
+	if value, err := config.parser.Get("mail_relay", "rspamd_reject_on_error"); err == nil {
+		return value == "true"
+	}
+	return true
 }
 
 func (config *Config) AwsAccessKeyId() string {

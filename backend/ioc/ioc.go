@@ -341,8 +341,32 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(store *mailrelay.DbStore) *mailrelay.Complaints {
-		return mailrelay.NewComplaints(store, logger)
+	err = c.Singleton(func(store *mailrelay.DbStore, config *utils.Config) *mailrelay.Feedback {
+		return mailrelay.NewFeedback(store, store,
+			config.GetMailRelayBounceRatio(), config.GetMailRelayBounceMinimum(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *mailrelay.Limiter {
+		return mailrelay.NewLimiter(mailrelay.Limits{
+			Minute:     config.GetMailRelayLimitPerMinute(),
+			Hour:       config.GetMailRelayLimitPerHour(),
+			Day:        config.GetMailRelayLimitPerDay(),
+			Recipients: config.GetMailRelayMaxRecipients(),
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) mailrelay.Scanner {
+		url := config.GetMailRelayRspamdUrl()
+		if url == "" {
+			return &mailrelay.NoScanner{}
+		}
+		return mailrelay.NewRspamd(url, 10*time.Second, config.GetMailRelayRspamdRejectOnError(), logger)
 	})
 	if err != nil {
 		return nil, err
@@ -359,6 +383,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		relayService *mailrelay.Relay,
 		sender mailrelay.Sender,
+		scanner mailrelay.Scanner,
+		limiter *mailrelay.Limiter,
 		config *utils.Config,
 	) (*mailrelay.Server, error) {
 		tlsConfig, err := mailrelay.LoadTls(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
@@ -366,7 +392,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			return nil, err
 		}
 		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
-			relayService, sender, tlsConfig, config.GetMailRelayMaxMessageBytes(), logger), nil
+			relayService, sender, scanner, limiter, tlsConfig,
+			config.GetMailRelayMaxMessageBytes(), logger), nil
 	})
 	if err != nil {
 		return nil, err
@@ -379,7 +406,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		prober *probe.Service,
 		certbot *service.Certbot,
 		metrics *metrics.Metrics,
-		complaints *mailrelay.Complaints,
+		feedback *mailrelay.Feedback,
 		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
@@ -389,7 +416,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			prober,
 			certbot,
 			metrics,
-			complaints,
+			feedback,
 			config.Domain(),
 			config.GetApiSocket(),
 			logger,

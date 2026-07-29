@@ -107,7 +107,7 @@ func (a *Api) Start() error {
 	r.HandleFunc("/user", Handle(a.User)).Methods("POST")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/user/log_v2", Handle(a.UserLogV2)).Methods("POST")
-	r.HandleFunc("/mail/complaint", a.MailComplaint).Methods("POST")
+	r.HandleFunc("/mail/feedback", a.MailFeedback).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
 	r.HandleFunc("/probe/port_v3", Handle(a.PortProbeV3)).Methods("POST")
 	r.NotFoundHandler = http.HandlerFunc(a.notFoundHandler)
@@ -540,6 +540,6 @@ func (a *Api) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func (a *Api) MailComplaint(w http.ResponseWriter, r *http.Request) {
+func (a *Api) MailFeedback(w http.ResponseWriter, r *http.Request) {
 	a.complaints.Handle(w, r)
 }

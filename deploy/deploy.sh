@@ -174,6 +174,20 @@ docker run -d \
     -v "$REDIRECT_DIR/frps.toml:/etc/frp/frps.toml:ro" \
     "$FRPS_IMAGE"
 
+RSPAMD_IMAGE=rspamd/rspamd:3.11
+docker pull "$RSPAMD_IMAGE"
+docker rm -f rspamd 2>/dev/null || true
+rm -rf "$REDIRECT_DIR/rspamd"
+mkdir -p "$REDIRECT_DIR/rspamd"
+cp -r "$STAGE/common/rspamd/local.d" "$REDIRECT_DIR/rspamd/"
+chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/rspamd"
+docker run -d \
+    --name rspamd \
+    --restart=unless-stopped \
+    --network=host \
+    -v "$REDIRECT_DIR/rspamd/local.d:/etc/rspamd/local.d:ro" \
+    "$RSPAMD_IMAGE"
+
 NODE_EXPORTER_IMAGE=prom/node-exporter:v1.8.2
 docker pull "$NODE_EXPORTER_IMAGE"
 docker rm -f node-exporter 2>/dev/null || true
@@ -186,7 +200,7 @@ docker run -d \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
-for name in redirect-api redirect-www node-exporter caddy frps; do
+for name in redirect-api redirect-www node-exporter caddy frps rspamd; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break

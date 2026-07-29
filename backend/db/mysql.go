@@ -695,6 +695,32 @@ func (m *MySql) GetMailRelayMessages(name string, yearMonth string) (int64, erro
 	return messages, nil
 }
 
+func (m *MySql) AddMailRelayBounces(name string, yearMonth string, bounces int64) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO mail_relay_usage (name, `year_month`, bounces) VALUES (?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE bounces = bounces + VALUES(bounces)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, yearMonth, bounces)
+	return err
+}
+
+func (m *MySql) GetMailRelayBounces(name string, yearMonth string) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT COALESCE(bounces, 0) FROM mail_relay_usage WHERE name = ? AND `year_month` = ?",
+		name, yearMonth)
+	var bounces int64
+	if err := row.Scan(&bounces); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return bounces, nil
+}
+
 func (m *MySql) BlockMailRelay(name string, reason string) error {
 	stmt, err := m.db.Prepare(
 		"INSERT INTO mail_relay_blocked (name, reason) VALUES (?, ?) " +

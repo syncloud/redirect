@@ -106,14 +106,31 @@ func TestSent_CountsRecipients(t *testing.T) {
 	assert.Equal(t, int64(3), usage.sent)
 }
 
-func complaint(t *testing.T, body string) *fakeBlocker {
+type fakeBounces struct {
+	sent    int64
+	bounced int64
+}
+
+func (f *fakeBounces) Sent(_ string) (int64, error)    { return f.sent, nil }
+func (f *fakeBounces) Bounced(_ string) (int64, error) { return f.bounced, nil }
+func (f *fakeBounces) Bounce(_ string, count int64) error {
+	f.bounced += count
+	return nil
+}
+
+func feedback(t *testing.T, body string, bounces *fakeBounces) *fakeBlocker {
 	t.Helper()
 	blocker := &fakeBlocker{}
 	recorder := httptest.NewRecorder()
-	NewComplaints(blocker, zap.NewNop()).Handle(
-		recorder, httptest.NewRequest(http.MethodPost, "/mail/complaint", strings.NewReader(body)))
+	NewFeedback(blocker, bounces, 0.05, 20, zap.NewNop()).Handle(
+		recorder, httptest.NewRequest(http.MethodPost, "/mail/feedback", strings.NewReader(body)))
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	return blocker
+}
+
+func complaint(t *testing.T, body string) *fakeBlocker {
+	t.Helper()
+	return feedback(t, body, &fakeBounces{})
 }
 
 func TestComplaint_BlocksSenderDomain(t *testing.T) {
@@ -123,5 +140,30 @@ func TestComplaint_BlocksSenderDomain(t *testing.T) {
 
 func TestComplaint_IgnoresDelivery(t *testing.T) {
 	blocker := complaint(t, `{"Type":"Notification","Message":"{\"notificationType\":\"Delivery\",\"mail\":{\"source\":\"user@device.syncloud.it\"}}"}`)
+	assert.Empty(t, blocker.blocked)
+}
+
+func bounceEvent(kind string) string {
+	return `{"Type":"Notification","Message":"{\"notificationType\":\"Bounce\",\"bounce\":{\"bounceType\":\"` + kind +
+		`\",\"bouncedRecipients\":[{\"emailAddress\":\"a@b.com\"}]},\"mail\":{\"source\":\"user@device.syncloud.it\"}}"}`
+}
+
+func TestBounce_BlocksWhenRatioTooHigh(t *testing.T) {
+	blocker := feedback(t, bounceEvent("Permanent"), &fakeBounces{sent: 100, bounced: 9})
+	assert.Equal(t, []string{"device.syncloud.it"}, blocker.blocked)
+}
+
+func TestBounce_AllowsOccasionalBadAddress(t *testing.T) {
+	blocker := feedback(t, bounceEvent("Permanent"), &fakeBounces{sent: 100, bounced: 1})
+	assert.Empty(t, blocker.blocked)
+}
+
+func TestBounce_IgnoresSmallSample(t *testing.T) {
+	blocker := feedback(t, bounceEvent("Permanent"), &fakeBounces{sent: 2, bounced: 1})
+	assert.Empty(t, blocker.blocked)
+}
+
+func TestBounce_IgnoresTransient(t *testing.T) {
+	blocker := feedback(t, bounceEvent("Transient"), &fakeBounces{sent: 100, bounced: 90})
 	assert.Empty(t, blocker.blocked)
 }

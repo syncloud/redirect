@@ -5,6 +5,7 @@ create table mail_relay_usage (
   `name` varchar(255) not null,
   `year_month` char(7) not null,
   `messages` bigint not null default 0,
+  `bounces` bigint not null default 0,
   primary key (`name`, `year_month`)
 );
 

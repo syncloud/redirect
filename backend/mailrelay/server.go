@@ -19,11 +19,11 @@ type Server struct {
 	logger *zap.Logger
 }
 
-func NewServer(address string, domain string, relay *Relay, sender Sender, tlsConfig *tls.Config,
-	maxMessageBytes int64, logger *zap.Logger) *Server {
+func NewServer(address string, domain string, relay *Relay, sender Sender, scanner Scanner,
+	limiter *Limiter, tlsConfig *tls.Config, maxMessageBytes int64, logger *zap.Logger) *Server {
 	s := &Server{relay: relay, sender: sender, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(_ *smtp.Conn) (smtp.Session, error) {
-		return &Session{relay: relay, sender: sender, logger: logger}, nil
+		return &Session{relay: relay, sender: sender, scanner: scanner, limiter: limiter, logger: logger}, nil
 	}))
 	server.Addr = address
 	server.Domain = domain
@@ -54,6 +54,8 @@ func (s *Server) Close() error {
 type Session struct {
 	relay      *Relay
 	sender     Sender
+	scanner    Scanner
+	limiter    *Limiter
 	logger     *zap.Logger
 	domain     *model.Domain
 	from       string
@@ -103,8 +105,19 @@ func (s *Session) Data(r io.Reader) error {
 	if s.domain == nil {
 		return smtp.ErrAuthRequired
 	}
+	if err := s.limiter.AllowRecipients(len(s.recipients)); err != nil {
+		return err
+	}
+	if err := s.limiter.Allow(s.domain.Name, int64(len(s.recipients))); err != nil {
+		s.logger.Info("mail relay rate limited",
+			zap.String("domain", s.domain.Name), zap.Error(err))
+		return err
+	}
 	message, err := io.ReadAll(r)
 	if err != nil {
+		return err
+	}
+	if err := s.scanner.Scan(s.from, s.recipients, s.domain.Name, message); err != nil {
 		return err
 	}
 	if err := s.sender.Send(s.from, s.recipients, message); err != nil {
