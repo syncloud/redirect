@@ -189,7 +189,7 @@ func (config *Config) GetMailRelaySesRegion() string {
 	if value, err := config.parser.Get("mail_relay", "ses_region"); err == nil {
 		return value
 	}
-	return "us-east-1"
+	return "us-west-2"
 }
 
 func (config *Config) GetMailRelaySesConfigurationSet() string {
