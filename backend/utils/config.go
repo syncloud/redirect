@@ -254,6 +254,10 @@ func (config *Config) GetMailRelayBounceMinimum() int64 {
 	return config.mailRelayLimitMessages("bounce_minimum", 20)
 }
 
+func (config *Config) GetMailRelayReputationIntervalSeconds() int64 {
+	return config.mailRelayLimitMessages("reputation_interval_seconds", 300)
+}
+
 func (config *Config) GetMailRelayRspamdUrl() string {
 	if value, err := config.parser.Get("mail_relay", "rspamd_url"); err == nil {
 		return value

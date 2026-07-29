@@ -40,9 +40,10 @@ func main() {
 				relayAuth *relay.AuthServer,
 				relayAccountant *relay.Accountant,
 				mailRelay *mailrelay.Server,
+				reputation *mailrelay.Reputation,
 				config *utils.Config,
 			) error {
-				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant)
+				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant, reputation)
 				services := []service.Startable{
 					database,
 					dnsCleaner,
@@ -50,6 +51,7 @@ func main() {
 					relayAccountant,
 					metricsServer,
 					relayAuth,
+					reputation,
 					mailRelay,
 					api,
 				}
