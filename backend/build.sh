@@ -18,3 +18,4 @@ export CGO_ENABLED=0
 go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/api" ./cmd/api
 go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/www" ./cmd/www
 go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/cli" ./cmd/cli
+go build -ldflags "${LDFLAGS}" -o "${BUILD_DIR}/migrate" ./cmd/migrate

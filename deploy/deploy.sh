@@ -132,15 +132,9 @@ DB_HOST=$(cfg mysql host)
 DB_USER=$(cfg mysql user)
 DB_PASS=$(cfg mysql passwd)
 DB_NAME=$(cfg mysql db)
-DB_TARGET_VERSION=$(awk -F"'" '/insert into db_version/ {v=$2} END{print v}' "$STAGE/db/update.sql")
 MYSQL="mysql --host=$DB_HOST --user=$DB_USER --password=$DB_PASS"
 if ! $MYSQL -e "use $DB_NAME" 2>/dev/null; then
     $MYSQL -e "create database $DB_NAME"
-    $MYSQL "$DB_NAME" < "$STAGE/db/init.sql"
-fi
-DB_CURRENT_VERSION=$($MYSQL -N -B "$DB_NAME" -e "select version from db_version order by timestamp desc limit 1" 2>/dev/null || true)
-if [ -n "$DB_TARGET_VERSION" ] && [ "$((10#${DB_CURRENT_VERSION:-0}))" -lt "$((10#$DB_TARGET_VERSION))" ]; then
-    $MYSQL "$DB_NAME" < "$STAGE/db/update.sql"
 fi
 
 rm -f "$REDIRECT_DIR/redirect.api.socket" "$REDIRECT_DIR/redirect.www.socket"
@@ -159,6 +153,12 @@ run_container() {
         -v "$REDIRECT_DIR:$REDIRECT_DIR" \
         "$TAG" "/usr/local/bin/$bin" --mail-dir /app/emails
 }
+
+docker run --rm \
+    --network=host \
+    --user "$REDIRECT_UID:$REDIRECT_GID" \
+    -v "$REDIRECT_DIR:$REDIRECT_DIR" \
+    "$TAG" /usr/local/bin/migrate up
 
 run_container redirect-api api
 run_container redirect-www www
