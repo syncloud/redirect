@@ -1,11 +1,13 @@
 package mailrelay
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/emersion/go-smtp"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -43,4 +45,18 @@ func TestRspamd_FailsClosedWhenUnavailable(t *testing.T) {
 
 func TestRspamd_FailsOpenWhenConfigured(t *testing.T) {
 	assert.NoError(t, scan(t, http.StatusInternalServerError, "", false))
+}
+
+func TestScanRejectionIsPermanent(t *testing.T) {
+	err := permanent(ErrRejectedAsSpam, smtp.EnhancedCode{5, 7, 1})
+	var smtpErr *smtp.SMTPError
+	assert.True(t, errors.As(err, &smtpErr))
+	assert.Equal(t, 550, smtpErr.Code)
+}
+
+func TestInfrastructureFailureIsTemporary(t *testing.T) {
+	err := tryAgain(errors.New("ses is throttling"), smtp.EnhancedCode{4, 4, 0})
+	var smtpErr *smtp.SMTPError
+	assert.True(t, errors.As(err, &smtpErr))
+	assert.Equal(t, 451, smtpErr.Code)
 }

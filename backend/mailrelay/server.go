@@ -54,6 +54,14 @@ func (s *Server) Close() error {
 	return s.server.Close()
 }
 
+func tryAgain(err error, code smtp.EnhancedCode) error {
+	return &smtp.SMTPError{Code: 451, EnhancedCode: code, Message: err.Error()}
+}
+
+func permanent(err error, code smtp.EnhancedCode) error {
+	return &smtp.SMTPError{Code: 550, EnhancedCode: code, Message: err.Error()}
+}
+
 type Session struct {
 	relay      *Relay
 	sender     Sender
@@ -109,23 +117,26 @@ func (s *Session) Data(r io.Reader) error {
 		return smtp.ErrAuthRequired
 	}
 	if err := s.limiter.AllowRecipients(len(s.recipients)); err != nil {
-		return err
+		return permanent(err, smtp.EnhancedCode{5, 5, 3})
 	}
 	if err := s.limiter.Allow(s.domain.Name, int64(len(s.recipients))); err != nil {
 		s.logger.Info("mail relay rate limited",
 			zap.String("domain", s.domain.Name), zap.Error(err))
-		return err
+		return tryAgain(err, smtp.EnhancedCode{4, 7, 1})
 	}
 	message, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
 	if err := s.scanner.Scan(s.from, s.recipients, s.domain.Name, message); err != nil {
-		return err
+		if errors.Is(err, ErrRejectedAsSpam) {
+			return permanent(err, smtp.EnhancedCode{5, 7, 1})
+		}
+		return tryAgain(err, smtp.EnhancedCode{4, 7, 0})
 	}
 	if err := s.sender.Send(s.from, s.recipients, message); err != nil {
 		s.logger.Error("mail relay send failed", zap.String("domain", s.domain.Name), zap.Error(err))
-		return err
+		return tryAgain(err, smtp.EnhancedCode{4, 4, 0})
 	}
 	s.logger.Info("mail relay sent",
 		zap.String("domain", s.domain.Name), zap.Int("recipients", len(s.recipients)))
