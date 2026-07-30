@@ -45,6 +45,8 @@ CREATE TABLE `domain` (
   `last_update` DATETIME NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `name` varchar(100) NOT NULL UNIQUE,
+  `relay` tinyint(1) not null default 0,
+  `mail_relay` tinyint(1) not null default 0,
   `hosted_zone_id` varchar(100) NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user(id)
 );
@@ -94,4 +96,4 @@ create table db_version (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('018');
+insert into db_version (version) values ('019');

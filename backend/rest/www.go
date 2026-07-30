@@ -56,11 +56,13 @@ type WwwStripe interface {
 type WwwRelay interface {
 	UsedBytes(userId int64) (int64, error)
 	LimitBytes(userId int64) int64
+	Enabled(userId int64) (bool, error)
 }
 
 type WwwMailRelay interface {
 	UsedMessages(userId int64) (int64, error)
 	LimitMessages(userId int64) int64
+	Enabled(userId int64) (bool, error)
 }
 
 type WwwPayPal interface {
@@ -305,7 +307,12 @@ func (w *Www) WebRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.U
 		w.logger.Error("unable to get relay usage for a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	return map[string]int64{
+	enabled, err := w.relay.Enabled(user.Id)
+	if err != nil {
+		return nil, errors.New("invalid request")
+	}
+	return map[string]interface{}{
+		"enabled":     enabled,
 		"used_bytes":  used,
 		"limit_bytes": w.relay.LimitBytes(user.Id),
 	}, nil
@@ -317,7 +324,12 @@ func (w *Www) WebMailRelayUsage(_ http.ResponseWriter, _ *http.Request, user mod
 		w.logger.Error("unable to get mail relay usage for a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	return map[string]int64{
+	enabled, err := w.mailRelay.Enabled(user.Id)
+	if err != nil {
+		return nil, errors.New("invalid request")
+	}
+	return map[string]interface{}{
+		"enabled":        enabled,
 		"used_messages":  used,
 		"limit_messages": w.mailRelay.LimitMessages(user.Id),
 	}, nil

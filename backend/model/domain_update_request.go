@@ -14,4 +14,5 @@ type DomainUpdateRequest struct {
 	Ipv4Enabled     bool    `json:"ipv4_enabled,omitempty"`
 	Ipv6Enabled     bool    `json:"ipv6_enabled,omitempty"`
 	Relay           bool    `json:"relay,omitempty"`
+	MailRelay       bool    `json:"mail_relay,omitempty"`
 }

@@ -249,6 +249,8 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 			"web_protocol, "+
 			"web_port, "+
 			"web_local_port, "+
+			"relay, "+
+			"mail_relay, "+
 			"last_update, "+
 			"lower(name), "+
 			"hosted_zone_id "+
@@ -273,6 +275,8 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 		&domain.WebProtocol,
 		&domain.WebPort,
 		&domain.WebLocalPort,
+		&domain.Relay,
+		&domain.MailRelay,
 		&domain.LastUpdate,
 		&domain.Name,
 		&domain.HostedZoneId,
@@ -414,6 +418,8 @@ func (m *MySql) UpdateDomain(domain *model.Domain) error {
 			"web_protocol = ?, " +
 			"web_port = ?, " +
 			"web_local_port = ?, " +
+			"relay = ?, " +
+			"mail_relay = ?, " +
 			"last_update = ? " +
 			"WHERE id = ?")
 	if err != nil {
@@ -437,6 +443,8 @@ func (m *MySql) UpdateDomain(domain *model.Domain) error {
 		domain.WebProtocol,
 		domain.WebPort,
 		domain.WebLocalPort,
+		domain.Relay,
+		domain.MailRelay,
 		domain.LastUpdate,
 		domain.Id,
 	)
@@ -719,6 +727,24 @@ func (m *MySql) GetMailRelayBounces(name string, yearMonth string) (int64, error
 		return 0, err
 	}
 	return bounces, nil
+}
+
+func (m *MySql) IsMailRelayEnabledForUser(userId int64) (bool, error) {
+	row := m.db.QueryRow("SELECT COUNT(*) FROM domain WHERE user_id = ? AND mail_relay = 1", userId)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (m *MySql) IsRelayEnabledForUser(userId int64) (bool, error) {
+	row := m.db.QueryRow("SELECT COUNT(*) FROM domain WHERE user_id = ? AND relay = 1", userId)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (m *MySql) GetMailRelayUsageForUser(userId int64, yearMonth string) (int64, error) {

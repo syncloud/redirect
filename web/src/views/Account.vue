@@ -191,28 +191,38 @@
 
             <div class="usage-row" data-testid="usage-traffic">
               <div class="usage-head">
-                <span class="usage-name">Relay traffic</span>
+                <span class="usage-name">Device access</span>
                 <span class="usage-value" data-testid="usage-traffic-text">{{ trafficText }}</span>
               </div>
               <el-progress
+                v-if="trafficEnabled"
                 :percentage="Math.min(trafficPercent, 100)"
                 :status="usageStatus(trafficPercent)"
                 :stroke-width="14"
                 data-testid="usage-traffic-bar"
               />
+              <div v-else class="usage-off" data-testid="usage-traffic-off">
+                Your device is reached directly, with no traffic limit. Turn the relay on if your
+                connection has no public address.
+              </div>
             </div>
 
             <div class="usage-row" data-testid="usage-email">
               <div class="usage-head">
-                <span class="usage-name">Email sent</span>
+                <span class="usage-name">Email sending</span>
                 <span class="usage-value" data-testid="usage-email-text">{{ emailText }}</span>
               </div>
               <el-progress
+                v-if="emailEnabled"
                 :percentage="Math.min(emailPercent, 100)"
                 :status="usageStatus(emailPercent)"
                 :stroke-width="14"
                 data-testid="usage-email-bar"
               />
+              <div v-else class="usage-off" data-testid="usage-email-off">
+                Your device sends email directly, with no limit. Turn the relay on if providers
+                reject mail from your address.
+              </div>
             </div>
 
             <div class="usage-note" v-if="usageNearLimit" data-testid="usage-upgrade">
@@ -305,8 +315,10 @@ export default {
     return {
       trafficUsed: 0,
       trafficLimit: 0,
+      trafficEnabled: false,
       emailUsed: 0,
       emailLimit: 0,
+      emailEnabled: false,
       notificationEnabled: Boolean,
       premiumStatusId: Number,
       subscriptionId: String,
@@ -364,16 +376,21 @@ export default {
       return this.emailLimit > 0 ? Math.round((this.emailUsed / this.emailLimit) * 100) : 0
     },
     trafficText: function () {
+      if (!this.trafficEnabled) {
+        return 'Relay off'
+      }
       const gb = v => (v / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
-      return this.trafficLimit > 0 ? gb(this.trafficUsed) + ' of ' + gb(this.trafficLimit) : 'not available'
+      return gb(this.trafficUsed) + ' of ' + gb(this.trafficLimit)
     },
     emailText: function () {
-      return this.emailLimit > 0
-        ? this.emailUsed + ' of ' + this.emailLimit + ' emails'
-        : 'not available'
+      if (!this.emailEnabled) {
+        return 'Relay off'
+      }
+      return this.emailUsed + ' of ' + this.emailLimit + ' emails'
     },
     usageNearLimit: function () {
-      return this.trafficPercent >= 80 || this.emailPercent >= 80
+      return (this.trafficEnabled && this.trafficPercent >= 80) ||
+        (this.emailEnabled && this.emailPercent >= 80)
     }
   },
   methods: {
@@ -388,14 +405,16 @@ export default {
         .then(response => {
           this.trafficUsed = response.data.data.used_bytes
           this.trafficLimit = response.data.data.limit_bytes
+          this.trafficEnabled = response.data.data.enabled === true
         })
-        .catch(_ => { this.trafficLimit = 0 })
+        .catch(_ => { this.trafficEnabled = false })
       axios.get('/api/mail/usage')
         .then(response => {
           this.emailUsed = response.data.data.used_messages
           this.emailLimit = response.data.data.limit_messages
+          this.emailEnabled = response.data.data.enabled === true
         })
-        .catch(_ => { this.emailLimit = 0 })
+        .catch(_ => { this.emailEnabled = false })
     },
     copy: function () {
       navigator.clipboard.writeText(this.wallet)
@@ -667,6 +686,11 @@ export default {
 .usage-value {
   color: var(--el-text-color-secondary);
   font-variant-numeric: tabular-nums;
+}
+.usage-off {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  line-height: 1.5;
 }
 .usage-note {
   margin-top: 14px;
