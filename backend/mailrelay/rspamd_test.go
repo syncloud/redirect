@@ -44,7 +44,3 @@ func TestRspamd_FailsClosedWhenUnavailable(t *testing.T) {
 func TestRspamd_FailsOpenWhenConfigured(t *testing.T) {
 	assert.NoError(t, scan(t, http.StatusInternalServerError, "", false))
 }
-
-func TestNoScanner_Allows(t *testing.T) {
-	assert.NoError(t, (&NoScanner{}).Scan("a@b.com", []string{"c@d.com"}, "b.com", []byte("m")))
-}

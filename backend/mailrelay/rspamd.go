@@ -16,10 +16,6 @@ type Scanner interface {
 	Scan(from string, recipients []string, domain string, message []byte) error
 }
 
-type NoScanner struct{}
-
-func (n *NoScanner) Scan(_ string, _ []string, _ string, _ []byte) error { return nil }
-
 type rspamdResult struct {
 	Action string  `json:"action"`
 	Score  float64 `json:"score"`
