@@ -185,6 +185,46 @@
           <el-card class="account-card" shadow="never">
             <template #header>
               <div class="card-header">
+                <span>Usage this month</span>
+              </div>
+            </template>
+
+            <div class="usage-row" data-testid="usage-traffic">
+              <div class="usage-head">
+                <span class="usage-name">Relay traffic</span>
+                <span class="usage-value" data-testid="usage-traffic-text">{{ trafficText }}</span>
+              </div>
+              <el-progress
+                :percentage="Math.min(trafficPercent, 100)"
+                :status="usageStatus(trafficPercent)"
+                :stroke-width="14"
+                data-testid="usage-traffic-bar"
+              />
+            </div>
+
+            <div class="usage-row" data-testid="usage-email">
+              <div class="usage-head">
+                <span class="usage-name">Email sent</span>
+                <span class="usage-value" data-testid="usage-email-text">{{ emailText }}</span>
+              </div>
+              <el-progress
+                :percentage="Math.min(emailPercent, 100)"
+                :status="usageStatus(emailPercent)"
+                :stroke-width="14"
+                data-testid="usage-email-bar"
+              />
+            </div>
+
+            <div class="usage-note" v-if="usageNearLimit" data-testid="usage-upgrade">
+              You are approaching a limit. Upgrade for more.
+            </div>
+          </el-card>
+        </el-col>
+
+        <el-col :xs="24" :md="12">
+          <el-card class="account-card" shadow="never">
+            <template #header>
+              <div class="card-header">
                 <span>Email notifications</span>
               </div>
             </template>
@@ -263,6 +303,10 @@ export default {
   },
   data () {
     return {
+      trafficUsed: 0,
+      trafficLimit: 0,
+      emailUsed: 0,
+      emailLimit: 0,
       notificationEnabled: Boolean,
       premiumStatusId: Number,
       subscriptionId: String,
@@ -301,6 +345,7 @@ export default {
     } else {
       this.reload()
     }
+    this.loadUsage()
   },
   computed: {
     maxEnabled: function () {
@@ -311,9 +356,47 @@ export default {
     },
     maxPrice: function () {
       return this.period === 'year' ? '£180 / year' : '£15 / month'
+    },
+    trafficPercent: function () {
+      return this.trafficLimit > 0 ? Math.round((this.trafficUsed / this.trafficLimit) * 100) : 0
+    },
+    emailPercent: function () {
+      return this.emailLimit > 0 ? Math.round((this.emailUsed / this.emailLimit) * 100) : 0
+    },
+    trafficText: function () {
+      const gb = v => (v / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+      return this.trafficLimit > 0 ? gb(this.trafficUsed) + ' of ' + gb(this.trafficLimit) : 'not available'
+    },
+    emailText: function () {
+      return this.emailLimit > 0
+        ? this.emailUsed + ' of ' + this.emailLimit + ' emails'
+        : 'not available'
+    },
+    usageNearLimit: function () {
+      return this.trafficPercent >= 80 || this.emailPercent >= 80
     }
   },
   methods: {
+    usageStatus: function (percent) {
+      if (percent >= 100) {
+        return 'exception'
+      }
+      return percent >= 80 ? 'warning' : 'success'
+    },
+    loadUsage: function () {
+      axios.get('/api/relay/usage')
+        .then(response => {
+          this.trafficUsed = response.data.data.used_bytes
+          this.trafficLimit = response.data.data.limit_bytes
+        })
+        .catch(_ => { this.trafficLimit = 0 })
+      axios.get('/api/mail/usage')
+        .then(response => {
+          this.emailUsed = response.data.data.used_messages
+          this.emailLimit = response.data.data.limit_messages
+        })
+        .catch(_ => { this.emailLimit = 0 })
+    },
     copy: function () {
       navigator.clipboard.writeText(this.wallet)
       this.copied = true
@@ -564,5 +647,29 @@ export default {
     border: 2px dashed var(--el-border-color);
     font-size: 10px;
   }
+}
+
+.usage-row {
+  margin-bottom: 18px;
+}
+.usage-row:last-of-type {
+  margin-bottom: 0;
+}
+.usage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.usage-name {
+  font-weight: 600;
+}
+.usage-value {
+  color: var(--el-text-color-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.usage-note {
+  margin-top: 14px;
+  color: var(--el-color-warning);
 }
 </style>

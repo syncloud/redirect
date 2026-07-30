@@ -323,6 +323,20 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(database *db.MySql, tiers *mailrelay.Tiers) *mailrelay.AccountUsage {
+		return mailrelay.NewAccountUsage(database, tiers)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *mailrelay.LimitWarner {
+		return mailrelay.NewLimitWarner(database, mail)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(database *db.MySql) *mailrelay.DbStore {
 		return mailrelay.NewDbStore(database)
 	})
@@ -334,8 +348,9 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		domains *service.Domains,
 		tiers *mailrelay.Tiers,
 		store *mailrelay.DbStore,
+		warner *mailrelay.LimitWarner,
 	) *mailrelay.Relay {
-		return mailrelay.New(domains, tiers, store, store, logger)
+		return mailrelay.New(domains, tiers, store, store, warner, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -443,6 +458,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		stripe *subscription.Stripe,
 		paypal *subscription.PayPal,
 		usage *relay.Usage,
+		mailUsage *mailrelay.AccountUsage,
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
@@ -459,6 +475,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mail,
 			stripe,
 			usage,
+			mailUsage,
 			paypal,
 			metrics,
 			config.Domain(),

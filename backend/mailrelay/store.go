@@ -4,6 +4,7 @@ import "time"
 
 type Store interface {
 	GetMailRelayMessages(name string, yearMonth string) (int64, error)
+	GetMailRelayUsageForUser(userId int64, yearMonth string) (int64, error)
 	AddMailRelayMessages(name string, yearMonth string, messages int64) error
 	GetMailRelayBounces(name string, yearMonth string) (int64, error)
 	AddMailRelayBounces(name string, yearMonth string, bounces int64) error
@@ -27,6 +28,10 @@ func (d *DbStore) yearMonth() string {
 
 func (d *DbStore) Sent(domain string) (int64, error) {
 	return d.store.GetMailRelayMessages(domain, d.yearMonth())
+}
+
+func (d *DbStore) SentByUser(userId int64) (int64, error) {
+	return d.store.GetMailRelayUsageForUser(userId, d.yearMonth())
 }
 
 func (d *DbStore) Increment(domain string, count int64) error {

@@ -3,6 +3,8 @@ package mailrelay
 import (
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
@@ -18,11 +20,16 @@ type Plans interface {
 
 type Usage interface {
 	Sent(domain string) (int64, error)
+	SentByUser(userId int64) (int64, error)
 	Increment(domain string, count int64) error
 }
 
 type Blocklist interface {
 	Blocked(domain string) (bool, error)
+}
+
+type Warner interface {
+	Warn(userId int64, used int64, limit int64) error
 }
 
 var (
@@ -38,11 +45,19 @@ type Relay struct {
 	plans     Plans
 	usage     Usage
 	blocklist Blocklist
+	warner    Warner
 	logger    *zap.Logger
+
+	mutex  sync.Mutex
+	month  string
+	warned map[int64]bool
 }
 
-func New(domains Domains, plans Plans, usage Usage, blocklist Blocklist, logger *zap.Logger) *Relay {
-	return &Relay{domains: domains, plans: plans, usage: usage, blocklist: blocklist, logger: logger}
+func New(domains Domains, plans Plans, usage Usage, blocklist Blocklist, warner Warner, logger *zap.Logger) *Relay {
+	return &Relay{
+		domains: domains, plans: plans, usage: usage, blocklist: blocklist,
+		warner: warner, logger: logger, warned: map[int64]bool{},
+	}
 }
 
 // Authorize checks the credentials a device presents over SMTP AUTH. The login
@@ -67,7 +82,9 @@ func (r *Relay) Authorize(login string, password string) (*model.Domain, error) 
 	if limit <= 0 {
 		return nil, ErrNotAllowed
 	}
-	sent, err := r.usage.Sent(domain.Name)
+	// the allowance belongs to the account, so count what all of its devices
+	// have sent rather than just this one
+	sent, err := r.usage.SentByUser(domain.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -88,5 +105,46 @@ func (r *Relay) Allowed(domain *model.Domain, from string) bool {
 }
 
 func (r *Relay) Sent(domain *model.Domain, recipients int) error {
-	return r.usage.Increment(domain.Name, int64(recipients))
+	if err := r.usage.Increment(domain.Name, int64(recipients)); err != nil {
+		return err
+	}
+	return r.warn(domain)
+}
+
+// warn tells a user once a month that they are close to their allowance, so
+// sending does not simply stop on them without notice.
+func (r *Relay) warn(domain *model.Domain) error {
+	if r.warner == nil {
+		return nil
+	}
+	limit := r.plans.MessageLimit(domain.UserId)
+	if limit <= 0 {
+		return nil
+	}
+	sent, err := r.usage.SentByUser(domain.UserId)
+	if err != nil {
+		return err
+	}
+	if sent*100 < limit*80 {
+		return nil
+	}
+	if !r.shouldWarn(domain.UserId) {
+		return nil
+	}
+	return r.warner.Warn(domain.UserId, sent, limit)
+}
+
+func (r *Relay) shouldWarn(userId int64) bool {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	current := time.Now().UTC().Format("2006-01")
+	if current != r.month {
+		r.month = current
+		r.warned = map[int64]bool{}
+	}
+	if r.warned[userId] {
+		return false
+	}
+	r.warned[userId] = true
+	return true
 }

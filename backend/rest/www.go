@@ -58,6 +58,11 @@ type WwwRelay interface {
 	LimitBytes(userId int64) int64
 }
 
+type WwwMailRelay interface {
+	UsedMessages(userId int64) (int64, error)
+	LimitMessages(userId int64) int64
+}
+
 type WwwPayPal interface {
 	PlanId(subscriptionId string) (string, error)
 	Tier(planId string) string
@@ -72,6 +77,7 @@ type Www struct {
 	mail      WwwMail
 	stripe    WwwStripe
 	relay     WwwRelay
+	mailRelay WwwMailRelay
 	paypal    WwwPayPal
 	metrics   *metrics.Metrics
 	domain    string
@@ -89,6 +95,7 @@ func NewWww(
 	mail WwwMail,
 	stripe WwwStripe,
 	relay WwwRelay,
+	mailRelay WwwMailRelay,
 	paypal WwwPayPal,
 	metrics *metrics.Metrics,
 	domain string,
@@ -104,6 +111,7 @@ func NewWww(
 		mail:      mail,
 		stripe:    stripe,
 		relay:     relay,
+		mailRelay: mailRelay,
 		paypal:    paypal,
 		metrics:   metrics,
 		domain:    domain,
@@ -129,6 +137,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", w.Secured(HandleUser(w.WebDomains))).Methods("GET")
 	r.HandleFunc("/relay/usage", w.Secured(HandleUser(w.WebRelayUsage))).Methods("GET")
+	r.HandleFunc("/mail/usage", w.Secured(HandleUser(w.WebMailRelayUsage))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Subscription))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Unsubscribe))).Methods("DELETE")
 	r.HandleFunc("/plan/subscribe/paypal", w.Secured(HandleUser(w.SubscribePayPal))).Methods("POST")
@@ -299,6 +308,18 @@ func (w *Www) WebRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.U
 	return map[string]int64{
 		"used_bytes":  used,
 		"limit_bytes": w.relay.LimitBytes(user.Id),
+	}, nil
+}
+
+func (w *Www) WebMailRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	used, err := w.mailRelay.UsedMessages(user.Id)
+	if err != nil {
+		w.logger.Error("unable to get mail relay usage for a user", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return map[string]int64{
+		"used_messages":  used,
+		"limit_messages": w.mailRelay.LimitMessages(user.Id),
 	}, nil
 }
 

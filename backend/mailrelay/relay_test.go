@@ -26,9 +26,17 @@ func (f *fakePlans) MessageLimit(_ int64) int64 { return f.limit }
 
 type fakeUsage struct{ sent int64 }
 
-func (f *fakeUsage) Sent(_ string) (int64, error) { return f.sent, nil }
+func (f *fakeUsage) Sent(_ string) (int64, error)      { return f.sent, nil }
+func (f *fakeUsage) SentByUser(_ int64) (int64, error) { return f.sent, nil }
 func (f *fakeUsage) Increment(_ string, count int64) error {
 	f.sent += count
+	return nil
+}
+
+type fakeWarner struct{ warned []int64 }
+
+func (f *fakeWarner) Warn(userId int64, _ int64, _ int64) error {
+	f.warned = append(f.warned, userId)
 	return nil
 }
 
@@ -51,6 +59,7 @@ func relayWith(limit int64, sent int64, blocked bool) (*Relay, *fakeUsage) {
 		&fakePlans{limit: limit},
 		usage,
 		&fakeBlocklist{blocked: blocked},
+		&fakeWarner{},
 		zap.NewNop()), usage
 }
 
@@ -166,4 +175,36 @@ func TestBounce_IgnoresSmallSample(t *testing.T) {
 func TestBounce_IgnoresTransient(t *testing.T) {
 	blocker := feedback(t, bounceEvent("Transient"), &fakeBounces{sent: 100, bounced: 90})
 	assert.Empty(t, blocker.blocked)
+}
+
+func relayWithWarner(limit int64, sent int64) (*Relay, *fakeWarner) {
+	token := "the-token"
+	warner := &fakeWarner{}
+	return New(
+		&fakeDomains{domain: &model.Domain{Name: "device.syncloud.it", UserId: 7, UpdateToken: &token}},
+		&fakePlans{limit: limit},
+		&fakeUsage{sent: sent},
+		&fakeBlocklist{},
+		warner,
+		zap.NewNop()), warner
+}
+
+func TestSent_WarnsNearTheLimit(t *testing.T) {
+	relay, warner := relayWithWarner(100, 79)
+	assert.NoError(t, relay.Sent(&model.Domain{Name: "device.syncloud.it", UserId: 7}, 1))
+	assert.Equal(t, []int64{7}, warner.warned)
+}
+
+func TestSent_DoesNotWarnWellUnderTheLimit(t *testing.T) {
+	relay, warner := relayWithWarner(100, 10)
+	assert.NoError(t, relay.Sent(&model.Domain{Name: "device.syncloud.it", UserId: 7}, 1))
+	assert.Empty(t, warner.warned)
+}
+
+func TestSent_WarnsOnlyOnce(t *testing.T) {
+	relay, warner := relayWithWarner(100, 90)
+	domain := &model.Domain{Name: "device.syncloud.it", UserId: 7}
+	assert.NoError(t, relay.Sent(domain, 1))
+	assert.NoError(t, relay.Sent(domain, 1))
+	assert.Equal(t, []int64{7}, warner.warned)
 }
