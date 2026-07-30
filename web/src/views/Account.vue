@@ -185,56 +185,6 @@
           <el-card class="account-card" shadow="never">
             <template #header>
               <div class="card-header">
-                <span>Usage this month</span>
-              </div>
-            </template>
-
-            <div class="usage-row" data-testid="usage-traffic">
-              <div class="usage-head">
-                <span class="usage-name">Device access</span>
-                <span class="usage-value" data-testid="usage-traffic-text">{{ trafficText }}</span>
-              </div>
-              <el-progress
-                v-if="trafficEnabled"
-                :percentage="Math.min(trafficPercent, 100)"
-                :status="usageStatus(trafficPercent)"
-                :stroke-width="14"
-                data-testid="usage-traffic-bar"
-              />
-              <div v-else class="usage-off" data-testid="usage-traffic-off">
-                Your device is reached directly, with no traffic limit. Turn the relay on if your
-                connection has no public address.
-              </div>
-            </div>
-
-            <div class="usage-row" data-testid="usage-email">
-              <div class="usage-head">
-                <span class="usage-name">Email sending</span>
-                <span class="usage-value" data-testid="usage-email-text">{{ emailText }}</span>
-              </div>
-              <el-progress
-                v-if="emailEnabled"
-                :percentage="Math.min(emailPercent, 100)"
-                :status="usageStatus(emailPercent)"
-                :stroke-width="14"
-                data-testid="usage-email-bar"
-              />
-              <div v-else class="usage-off" data-testid="usage-email-off">
-                Your device sends email directly, with no limit. Turn the relay on if providers
-                reject mail from your address.
-              </div>
-            </div>
-
-            <div class="usage-note" v-if="usageNearLimit" data-testid="usage-upgrade">
-              You are approaching a limit. Upgrade for more.
-            </div>
-          </el-card>
-        </el-col>
-
-        <el-col :xs="24" :md="12">
-          <el-card class="account-card" shadow="never">
-            <template #header>
-              <div class="card-header">
                 <span>Email notifications</span>
               </div>
             </template>
@@ -313,12 +263,6 @@ export default {
   },
   data () {
     return {
-      trafficUsed: 0,
-      trafficLimit: 0,
-      trafficEnabled: false,
-      emailUsed: 0,
-      emailLimit: 0,
-      emailEnabled: false,
       notificationEnabled: Boolean,
       premiumStatusId: Number,
       subscriptionId: String,
@@ -357,7 +301,6 @@ export default {
     } else {
       this.reload()
     }
-    this.loadUsage()
   },
   computed: {
     maxEnabled: function () {
@@ -368,54 +311,9 @@ export default {
     },
     maxPrice: function () {
       return this.period === 'year' ? '£180 / year' : '£15 / month'
-    },
-    trafficPercent: function () {
-      return this.trafficLimit > 0 ? Math.round((this.trafficUsed / this.trafficLimit) * 100) : 0
-    },
-    emailPercent: function () {
-      return this.emailLimit > 0 ? Math.round((this.emailUsed / this.emailLimit) * 100) : 0
-    },
-    trafficText: function () {
-      if (!this.trafficEnabled) {
-        return 'Relay off'
-      }
-      const gb = v => (v / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
-      return gb(this.trafficUsed) + ' of ' + gb(this.trafficLimit)
-    },
-    emailText: function () {
-      if (!this.emailEnabled) {
-        return 'Relay off'
-      }
-      return this.emailUsed + ' of ' + this.emailLimit + ' emails'
-    },
-    usageNearLimit: function () {
-      return (this.trafficEnabled && this.trafficPercent >= 80) ||
-        (this.emailEnabled && this.emailPercent >= 80)
     }
   },
   methods: {
-    usageStatus: function (percent) {
-      if (percent >= 100) {
-        return 'exception'
-      }
-      return percent >= 80 ? 'warning' : 'success'
-    },
-    loadUsage: function () {
-      axios.get('/api/relay/usage')
-        .then(response => {
-          this.trafficUsed = response.data.data.used_bytes
-          this.trafficLimit = response.data.data.limit_bytes
-          this.trafficEnabled = response.data.data.enabled === true
-        })
-        .catch(_ => { this.trafficEnabled = false })
-      axios.get('/api/mail/usage')
-        .then(response => {
-          this.emailUsed = response.data.data.used_messages
-          this.emailLimit = response.data.data.limit_messages
-          this.emailEnabled = response.data.data.enabled === true
-        })
-        .catch(_ => { this.emailEnabled = false })
-    },
     copy: function () {
       navigator.clipboard.writeText(this.wallet)
       this.copied = true
@@ -668,32 +566,4 @@ export default {
   }
 }
 
-.usage-row {
-  margin-bottom: 18px;
-}
-.usage-row:last-of-type {
-  margin-bottom: 0;
-}
-.usage-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
-}
-.usage-name {
-  font-weight: 600;
-}
-.usage-value {
-  color: var(--el-text-color-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.usage-off {
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.usage-note {
-  margin-top: 14px;
-  color: var(--el-color-warning);
-}
 </style>
