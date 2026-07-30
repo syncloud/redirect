@@ -53,8 +53,6 @@ rm -rf "$REDIRECT_DIR/current/bin"
 cp -r "$STAGE/bin" "$REDIRECT_DIR/current/bin"
 chmod -R +x "$REDIRECT_DIR/current/bin"
 
-rm -rf "$REDIRECT_DIR/current/db"
-cp -r "$STAGE/db" "$REDIRECT_DIR/current/db"
 
 chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
 

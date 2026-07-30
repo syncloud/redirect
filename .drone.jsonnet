@@ -50,7 +50,6 @@ local build(arch) = [{
             commands: [
                 "cp -r bin build",
                 "cp -r config build",
-                "cp -r db build",
                 "cp -r emails build",
                 "mkdir artifact",
                 "tar czf artifact/redirect-${DRONE_BUILD_NUMBER}.tar.gz -C build ."
