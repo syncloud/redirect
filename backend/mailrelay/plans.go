@@ -9,8 +9,6 @@ type UserStore interface {
 	GetUser(id int64) (*model.User, error)
 }
 
-// Tiers maps a subscription to a monthly message allowance. The free tier is
-// small on purpose: enough to try the relay out, not enough to run on.
 type Tiers struct {
 	store  UserStore
 	free   int64

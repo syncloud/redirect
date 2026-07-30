@@ -311,10 +311,10 @@ func (w *Www) WebRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.U
 	if err != nil {
 		return nil, errors.New("invalid request")
 	}
-	return map[string]interface{}{
-		"enabled":     enabled,
-		"used_bytes":  used,
-		"limit_bytes": w.relay.LimitBytes(user.Id),
+	return &model.RelayUsageResponse{
+		Enabled:    enabled,
+		UsedBytes:  used,
+		LimitBytes: w.relay.LimitBytes(user.Id),
 	}, nil
 }
 
@@ -328,10 +328,10 @@ func (w *Www) WebMailRelayUsage(_ http.ResponseWriter, _ *http.Request, user mod
 	if err != nil {
 		return nil, errors.New("invalid request")
 	}
-	return map[string]interface{}{
-		"enabled":        enabled,
-		"used_messages":  used,
-		"limit_messages": w.mailRelay.LimitMessages(user.Id),
+	return &model.MailRelayUsageResponse{
+		Enabled:       enabled,
+		UsedMessages:  used,
+		LimitMessages: w.mailRelay.LimitMessages(user.Id),
 	}, nil
 }
 

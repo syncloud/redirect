@@ -40,8 +40,6 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.server.TLSConfig = tlsConfig
-	// credentials travel in plain text under AUTH PLAIN, so without a
-	// certificate of our own this listener must stay on loopback behind caddy
 	s.server.AllowInsecureAuth = tlsConfig == nil
 	s.logger.Info("mail relay listening", zap.String("address", s.server.Addr))
 	go func() {

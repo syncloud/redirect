@@ -387,8 +387,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(config *utils.Config) (mailrelay.Scanner, error) {
 		url := config.GetMailRelayRspamdUrl()
 		if url == "" {
-			// refusing to start beats quietly relaying unscanned mail, which is
-			// what an unnoticed typo in this key would otherwise cause
 			return nil, fmt.Errorf("mail_relay rspamd_url is not configured")
 		}
 		return mailrelay.NewRspamd(url, 10*time.Second, config.GetMailRelayRspamdRejectOnError(), logger), nil

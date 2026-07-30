@@ -20,10 +20,6 @@ type Limits struct {
 	Recipients int
 }
 
-// Limiter caps how fast a single device can send. The monthly allowance alone
-// would let a compromised device burn a whole month of quota in minutes, long
-// before anyone notices the complaints, so short windows are what actually
-// protect the shared sending reputation.
 type Limiter struct {
 	limits   Limits
 	mutex    sync.Mutex

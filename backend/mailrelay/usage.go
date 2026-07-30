@@ -7,8 +7,6 @@ type UsageStore interface {
 	IsMailRelayEnabledForUser(userId int64) (bool, error)
 }
 
-// AccountUsage reports what a whole account has sent this month, across all of its
-// devices, since the allowance is per plan rather than per device.
 type AccountUsage struct {
 	store UsageStore
 	tiers *Tiers

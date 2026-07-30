@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/smtp"
 	"go.uber.org/zap"
 	"log"
@@ -93,11 +94,8 @@ func (m *Mail) SendRelayLimitWarning(to string, usedBytes int64, limitBytes int6
 }
 
 func (m *Mail) SendMailRelayLimitWarning(to string, used int64, limit int64) error {
-	return m.SendNotification(m.mailRelayLimitWarningPath, map[string]string{
-		"domain": m.mainDomain,
-		"used":   fmt.Sprintf("%d", used),
-		"limit":  fmt.Sprintf("%d", limit),
-	}, to)
+	warning := model.MailRelayLimitWarning{Domain: m.mainDomain, Used: used, Limit: limit}
+	return m.SendNotification(m.mailRelayLimitWarningPath, warning.Subs(), to)
 }
 
 func relayGigabytes(bytes int64) string {

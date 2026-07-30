@@ -168,7 +168,7 @@ func (config *Config) GetMailRelayAddress() string {
 	if value, err := config.parser.Get("mail_relay", "address"); err == nil {
 		return value
 	}
-	return "127.0.0.1:2587"
+	return "127.0.0.1:2465"
 }
 
 func (config *Config) GetMailRelayCertFile() string {

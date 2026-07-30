@@ -6,7 +6,7 @@
 		:465 {
 			route {
 				tls
-				proxy 127.0.0.1:2587
+				proxy 127.0.0.1:2465
 			}
 		}
 		:443 {
@@ -54,8 +54,6 @@ api.{$REDIRECT_DOMAIN} {
 	reverse_proxy unix//var/www/redirect/redirect.api.socket
 }
 
-# exists only so caddy obtains and renews the certificate it terminates
-# for the mail relay on :465
 mail-relay.{$REDIRECT_DOMAIN} {
 	import syncloud_tls
 	respond 404

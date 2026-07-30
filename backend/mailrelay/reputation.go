@@ -20,9 +20,6 @@ type MetricSource interface {
 	Rate(metric string) (float64, error)
 }
 
-// Reputation publishes the two SES rates that decide whether our account keeps
-// sending. AWS pauses sending at a 10% bounce rate and reviews an account at a
-// 0.1% complaint rate, so these need to be visible long before they are hit.
 type Reputation struct {
 	source   MetricSource
 	interval time.Duration

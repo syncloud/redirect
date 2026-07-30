@@ -60,9 +60,6 @@ func New(domains Domains, plans Plans, usage Usage, blocklist Blocklist, warner 
 	}
 }
 
-// Authorize checks the credentials a device presents over SMTP AUTH. The login
-// is the device domain and the password is its domain update token, the same
-// pair the frp traffic relay authenticates with, so nothing extra is issued.
 func (r *Relay) Authorize(login string, password string) (*model.Domain, error) {
 	domain, err := r.domains.GetDomain(password)
 	if err != nil || domain == nil {
@@ -82,8 +79,6 @@ func (r *Relay) Authorize(login string, password string) (*model.Domain, error) 
 	if limit <= 0 {
 		return nil, ErrNotAllowed
 	}
-	// the allowance belongs to the account, so count what all of its devices
-	// have sent rather than just this one
 	sent, err := r.usage.SentByUser(domain.UserId)
 	if err != nil {
 		return nil, err
@@ -94,8 +89,6 @@ func (r *Relay) Authorize(login string, password string) (*model.Domain, error) 
 	return domain, nil
 }
 
-// Allowed reports whether the sender address belongs to the authenticated
-// domain, so a device can only send as its own users.
 func (r *Relay) Allowed(domain *model.Domain, from string) bool {
 	at := strings.LastIndex(from, "@")
 	if at < 0 {
@@ -111,8 +104,6 @@ func (r *Relay) Sent(domain *model.Domain, recipients int) error {
 	return r.warn(domain)
 }
 
-// warn tells a user once a month that they are close to their allowance, so
-// sending does not simply stop on them without notice.
 func (r *Relay) warn(domain *model.Domain) error {
 	if r.warner == nil {
 		return nil

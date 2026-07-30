@@ -21,8 +21,6 @@ type rspamdResult struct {
 	Score  float64 `json:"score"`
 }
 
-// Rspamd scans outbound mail before it reaches SES, so a compromised device is
-// stopped here rather than by AWS pausing the whole account.
 type Rspamd struct {
 	url    string
 	client *http.Client
@@ -30,8 +28,6 @@ type Rspamd struct {
 	logger *zap.Logger
 }
 
-// NewRspamd fails closed when rejectOnError is set, so a scanner outage stops
-// mail rather than silently letting unscanned mail through to SES.
 func NewRspamd(url string, timeout time.Duration, rejectOnError bool, logger *zap.Logger) *Rspamd {
 	var failed error
 	if rejectOnError {

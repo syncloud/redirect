@@ -17,8 +17,6 @@ type SesSender struct {
 	logger        *zap.Logger
 }
 
-// NewSesSender takes the session the rest of the service already uses, so it
-// picks up the configured credentials rather than searching an empty chain.
 func NewSesSender(awsSession *session.Session, region string, configuration string, logger *zap.Logger) *SesSender {
 	return &SesSender{
 		ses:           ses.New(awsSession, aws.NewConfig().WithRegion(region)),
@@ -27,8 +25,6 @@ func NewSesSender(awsSession *session.Session, region string, configuration stri
 	}
 }
 
-// Send hands the message to SES as is, so the device keeps its own From header
-// and DKIM signature and recipients see mail from the user's own domain.
 func (s *SesSender) Send(from string, recipients []string, message []byte) error {
 	input := &ses.SendRawEmailInput{
 		Source:       aws.String(from),

@@ -2,10 +2,6 @@ package mailrelay
 
 import "crypto/tls"
 
-// Certificate is the key pair the relay presents to clients. Leaving it
-// unconfigured is the normal deployment: caddy terminates tls on the public
-// port and forwards to the relay over loopback, so there is nothing for the
-// relay itself to present.
 type Certificate struct {
 	certFile string
 	keyFile  string

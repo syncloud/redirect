@@ -18,7 +18,6 @@ type Bounces interface {
 	Bounce(domain string, count int64) error
 }
 
-// snsNotification is the envelope SNS wraps SES event publishing in.
 type snsNotification struct {
 	Type    string `json:"Type"`
 	Message string `json:"Message"`
@@ -38,10 +37,6 @@ type sesEvent struct {
 	} `json:"mail"`
 }
 
-// Feedback reacts to what SES tells us about our sending. A complaint blocks the
-// device at once, because the complaint rate that pauses an SES account is only
-// 0.1%. Bounces are judged as a ratio, since the odd bad address is normal but a
-// device working through a scraped list is not.
 type Feedback struct {
 	blocker       Blocker
 	bounces       Bounces

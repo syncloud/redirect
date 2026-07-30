@@ -12,7 +12,6 @@ type Store interface {
 	BlockMailRelay(name string, reason string) error
 }
 
-// DbStore counts usage per calendar month, so an allowance resets on the first.
 type DbStore struct {
 	store Store
 	now   func() time.Time
