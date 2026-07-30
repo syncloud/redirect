@@ -1,7 +1,6 @@
 package mailrelay
 
 import (
-	"crypto/tls"
 	"errors"
 	"io"
 	"time"
@@ -13,15 +12,16 @@ import (
 )
 
 type Server struct {
-	relay  *Relay
-	sender Sender
-	server *smtp.Server
-	logger *zap.Logger
+	relay       *Relay
+	sender      Sender
+	certificate *Certificate
+	server      *smtp.Server
+	logger      *zap.Logger
 }
 
 func NewServer(address string, domain string, relay *Relay, sender Sender, scanner Scanner,
-	limiter *Limiter, tlsConfig *tls.Config, maxMessageBytes int64, logger *zap.Logger) *Server {
-	s := &Server{relay: relay, sender: sender, logger: logger}
+	limiter *Limiter, certificate *Certificate, maxMessageBytes int64, logger *zap.Logger) *Server {
+	s := &Server{relay: relay, sender: sender, certificate: certificate, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(_ *smtp.Conn) (smtp.Session, error) {
 		return &Session{relay: relay, sender: sender, scanner: scanner, limiter: limiter, logger: logger}, nil
 	}))
@@ -30,14 +30,19 @@ func NewServer(address string, domain string, relay *Relay, sender Sender, scann
 	server.ReadTimeout = time.Minute
 	server.WriteTimeout = time.Minute
 	server.MaxMessageBytes = maxMessageBytes
-	server.TLSConfig = tlsConfig
-	// credentials travel in plain text under AUTH PLAIN, so require STARTTLS
-	server.AllowInsecureAuth = tlsConfig == nil
 	s.server = server
 	return s
 }
 
 func (s *Server) Start() error {
+	tlsConfig, err := s.certificate.Load()
+	if err != nil {
+		return err
+	}
+	s.server.TLSConfig = tlsConfig
+	// credentials travel in plain text under AUTH PLAIN, so without a
+	// certificate of our own this listener must stay on loopback behind caddy
+	s.server.AllowInsecureAuth = tlsConfig == nil
 	s.logger.Info("mail relay listening", zap.String("address", s.server.Addr))
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, smtp.ErrServerClosed) {

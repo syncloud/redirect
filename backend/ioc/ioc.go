@@ -405,20 +405,24 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(config *utils.Config) *mailrelay.Certificate {
+		return mailrelay.NewCertificate(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		relayService *mailrelay.Relay,
 		sender mailrelay.Sender,
 		scanner mailrelay.Scanner,
 		limiter *mailrelay.Limiter,
+		certificate *mailrelay.Certificate,
 		config *utils.Config,
-	) (*mailrelay.Server, error) {
-		tlsConfig, err := mailrelay.LoadTls(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
-		if err != nil {
-			return nil, err
-		}
+	) *mailrelay.Server {
 		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
-			relayService, sender, scanner, limiter, tlsConfig,
-			config.GetMailRelayMaxMessageBytes(), logger), nil
+			relayService, sender, scanner, limiter, certificate,
+			config.GetMailRelayMaxMessageBytes(), logger)
 	})
 	if err != nil {
 		return nil, err

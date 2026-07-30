@@ -2,15 +2,26 @@ package mailrelay
 
 import "crypto/tls"
 
-// LoadTls returns nil when no certificate is configured, which leaves the relay
-// listening without STARTTLS for local testing only.
-func LoadTls(certFile string, keyFile string) (*tls.Config, error) {
-	if certFile == "" || keyFile == "" {
+// Certificate is the key pair the relay presents to clients. Leaving it
+// unconfigured is the normal deployment: caddy terminates tls on the public
+// port and forwards to the relay over loopback, so there is nothing for the
+// relay itself to present.
+type Certificate struct {
+	certFile string
+	keyFile  string
+}
+
+func NewCertificate(certFile string, keyFile string) *Certificate {
+	return &Certificate{certFile: certFile, keyFile: keyFile}
+}
+
+func (c *Certificate) Load() (*tls.Config, error) {
+	if c.certFile == "" || c.keyFile == "" {
 		return nil, nil
 	}
-	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
+	pair, err := tls.LoadX509KeyPair(c.certFile, c.keyFile)
 	if err != nil {
 		return nil, err
 	}
-	return &tls.Config{Certificates: []tls.Certificate{certificate}}, nil
+	return &tls.Config{Certificates: []tls.Certificate{pair}}, nil
 }
