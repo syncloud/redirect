@@ -14,3 +14,5 @@ build
 .replies
 .claude
 ci/sim/dns-faker
+ci/sim/ses-faker
+ses-faker/ses-faker

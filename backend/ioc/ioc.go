@@ -396,8 +396,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) mailrelay.Sender {
-		return mailrelay.NewSesSender(awsSession,
-			config.GetMailRelaySesRegion(), config.GetMailRelaySesConfigurationSet(), logger)
+		return mailrelay.NewSesSender(awsSession, config.GetMailRelaySesRegion(),
+			config.GetMailRelaySesEndpoint(), config.GetMailRelaySesConfigurationSet(), logger)
 	})
 	if err != nil {
 		return nil, err

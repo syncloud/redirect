@@ -17,9 +17,14 @@ type SesSender struct {
 	logger        *zap.Logger
 }
 
-func NewSesSender(awsSession *session.Session, region string, configuration string, logger *zap.Logger) *SesSender {
+func NewSesSender(awsSession *session.Session, region string, endpoint string, configuration string,
+	logger *zap.Logger) *SesSender {
+	config := aws.NewConfig().WithRegion(region)
+	if endpoint != "" {
+		config = config.WithEndpoint(endpoint)
+	}
 	return &SesSender{
-		ses:           ses.New(awsSession, aws.NewConfig().WithRegion(region)),
+		ses:           ses.New(awsSession, config),
 		configuration: configuration,
 		logger:        logger,
 	}

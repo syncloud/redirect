@@ -110,6 +110,14 @@ local build(arch) = [{
             ],
         },
         {
+            name: "build ses-faker",
+            image: "golang:" + go,
+            commands: [
+                "cd ses-faker",
+                "CGO_ENABLED=0 go build -o ../ci/sim/ses-faker .",
+            ],
+        },
+        {
             name: "deploy test",
             image: "debian:bookworm-slim",
             environment: {
