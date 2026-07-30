@@ -45,8 +45,6 @@ CREATE TABLE `domain` (
   `last_update` DATETIME NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `name` varchar(100) NOT NULL UNIQUE,
-  `relay` tinyint(1) not null default 0,
-  `mail_relay` tinyint(1) not null default 0,
   `hosted_zone_id` varchar(100) NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user(id)
 );
@@ -76,24 +74,9 @@ create table relay_traffic (
   primary key (`name`, `year_month`)
 );
 
-create table mail_relay_usage (
-  `name` varchar(255) not null,
-  `year_month` char(7) not null,
-  `messages` bigint not null default 0,
-  `bounces` bigint not null default 0,
-  primary key (`name`, `year_month`)
-);
-
-create table mail_relay_blocked (
-  `name` varchar(255) not null,
-  `reason` varchar(255) not null,
-  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  primary key (`name`)
-);
-
 create table db_version (
   `version` varchar(10) not null,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-insert into db_version (version) values ('019');
+insert into db_version (version) values ('017');
