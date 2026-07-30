@@ -11,7 +11,10 @@ import (
 	"github.com/syncloud/redirect/utils"
 )
 
-func migrator(configFile string, secretFile string) *db.Migrator {
+func migrator(configFile string, secretFile string, dsn string) *db.Migrator {
+	if dsn != "" {
+		return db.NewMigratorDsn(dsn, log.Default())
+	}
 	config := utils.NewConfig()
 	config.Load(configFile, secretFile)
 	return db.NewMigrator(config, log.Default())
@@ -20,16 +23,18 @@ func migrator(configFile string, secretFile string) *db.Migrator {
 func main() {
 	var configFile string
 	var secretFile string
+	var dsn string
 
 	root := &cobra.Command{Use: "migrate", SilenceUsage: true}
 	root.PersistentFlags().StringVar(&configFile, "config-file", ioc.ConfigFile, "config file")
 	root.PersistentFlags().StringVar(&secretFile, "secret-file", ioc.SecretFile, "secret file")
+	root.PersistentFlags().StringVar(&dsn, "dsn", "", "connect with this dsn instead of the config file")
 
 	root.AddCommand(&cobra.Command{
 		Use:   "up",
 		Short: "apply pending migrations",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return migrator(configFile, secretFile).Start()
+			return migrator(configFile, secretFile, dsn).Start()
 		},
 	})
 
@@ -37,7 +42,7 @@ func main() {
 		Use:   "version",
 		Short: "print the applied version",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			version, dirty, err := migrator(configFile, secretFile).Version()
+			version, dirty, err := migrator(configFile, secretFile, dsn).Version()
 			if err != nil {
 				return err
 			}
@@ -55,7 +60,7 @@ func main() {
 			if _, err := fmt.Sscanf(args[0], "%d", &version); err != nil {
 				return err
 			}
-			return migrator(configFile, secretFile).Force(version)
+			return migrator(configFile, secretFile, dsn).Force(version)
 		},
 	})
 

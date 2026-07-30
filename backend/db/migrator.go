@@ -18,12 +18,17 @@ type MigratorConfig interface {
 }
 
 type Migrator struct {
-	config MigratorConfig
+	dsn    string
 	logger *zap.Logger
 }
 
 func NewMigrator(config MigratorConfig, logger *zap.Logger) *Migrator {
-	return &Migrator{config: config, logger: logger}
+	return NewMigratorDsn(fmt.Sprintf("mysql://%s:%s@tcp(%s:3306)/%s",
+		config.GetMySqlLogin(), config.GetMySqlPassword(), config.GetMySqlHost(), config.GetMySqlDB()), logger)
+}
+
+func NewMigratorDsn(dsn string, logger *zap.Logger) *Migrator {
+	return &Migrator{dsn: dsn + "?multiStatements=true", logger: logger}
 }
 
 func (m *Migrator) Start() error {
@@ -63,6 +68,5 @@ func (m *Migrator) migrator() (*migrate.Migrate, error) {
 	if err != nil {
 		return nil, err
 	}
-	return migrate.NewWithSourceInstance("iofs", source, fmt.Sprintf("mysql://%s:%s@tcp(%s:3306)/%s",
-		m.config.GetMySqlLogin(), m.config.GetMySqlPassword(), m.config.GetMySqlHost(), m.config.GetMySqlDB()))
+	return migrate.NewWithSourceInstance("iofs", source, m.dsn)
 }

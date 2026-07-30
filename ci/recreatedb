@@ -1,16 +1,7 @@
 #!/bin/bash -e
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-MYSQL="mysql --host=mysql --user=root --password=root"
 
-$MYSQL -e "drop DATABASE if exists redirect"
-$MYSQL -e "CREATE DATABASE redirect"
+mysql --host=mysql --user=root --password=root -e "drop DATABASE if exists redirect"
+mysql --host=mysql --user=root --password=root -e "CREATE DATABASE redirect"
 
-VERSION=0
-for migration in ${DIR}/../backend/db/migrations/*.up.sql; do
-  $MYSQL redirect < "$migration"
-  VERSION=$(basename "$migration" | cut -d_ -f1 | sed 's/^0*//')
-done
-
-$MYSQL redirect -e "
-CREATE TABLE schema_migrations (version bigint NOT NULL PRIMARY KEY, dirty boolean NOT NULL);
-INSERT INTO schema_migrations (version, dirty) VALUES (${VERSION}, false);"
+${DIR}/../build/bin/migrate up --dsn "mysql://root:root@tcp(mysql:3306)/redirect"
