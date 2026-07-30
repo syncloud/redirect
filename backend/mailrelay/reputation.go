@@ -4,9 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
@@ -82,40 +79,4 @@ func (r *Reputation) Collect(ch chan<- prometheus.Metric) {
 	defer r.mutex.Unlock()
 	ch <- prometheus.MustNewConstMetric(r.bounceDesc, prometheus.GaugeValue, r.bounce)
 	ch <- prometheus.MustNewConstMetric(r.complaintDesc, prometheus.GaugeValue, r.complaint)
-}
-
-type CloudWatch struct {
-	client *cloudwatch.CloudWatch
-	window time.Duration
-	now    func() time.Time
-}
-
-func NewCloudWatch(awsSession *session.Session, region string, window time.Duration) *CloudWatch {
-	return &CloudWatch{
-		client: cloudwatch.New(awsSession, aws.NewConfig().WithRegion(region)),
-		window: window,
-		now:    time.Now,
-	}
-}
-
-func (c *CloudWatch) Rate(metric string) (float64, error) {
-	end := c.now().UTC()
-	output, err := c.client.GetMetricStatistics(&cloudwatch.GetMetricStatisticsInput{
-		Namespace:  aws.String("AWS/SES"),
-		MetricName: aws.String(metric),
-		StartTime:  aws.Time(end.Add(-c.window)),
-		EndTime:    aws.Time(end),
-		Period:     aws.Int64(int64(c.window.Seconds())),
-		Statistics: aws.StringSlice([]string{cloudwatch.StatisticMaximum}),
-	})
-	if err != nil {
-		return 0, err
-	}
-	rate := 0.0
-	for _, point := range output.Datapoints {
-		if point.Maximum != nil && *point.Maximum > rate {
-			rate = *point.Maximum
-		}
-	}
-	return rate, nil
 }

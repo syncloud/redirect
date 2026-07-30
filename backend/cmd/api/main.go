@@ -39,6 +39,7 @@ func main() {
 				metricsCollector *metrics.Metrics,
 				relayAuth *relay.AuthServer,
 				relayAccountant *relay.Accountant,
+				scanner *mailrelay.Rspamd,
 				mailRelay *mailrelay.Server,
 				reputation *mailrelay.Reputation,
 				config *utils.Config,
@@ -52,6 +53,7 @@ func main() {
 					metricsServer,
 					relayAuth,
 					reputation,
+					scanner,
 					mailRelay,
 					api,
 				}

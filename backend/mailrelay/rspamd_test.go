@@ -24,11 +24,24 @@ func rspamdReturning(t *testing.T, status int, body string) (*httptest.Server, *
 	return server, received
 }
 
+type fakeRspamdConfig struct {
+	url           string
+	rejectOnError bool
+}
+
+func (f *fakeRspamdConfig) GetMailRelayRspamdUrl() string         { return f.url }
+func (f *fakeRspamdConfig) GetMailRelayRspamdRejectOnError() bool { return f.rejectOnError }
+
 func scan(t *testing.T, status int, body string, rejectOnError bool) error {
 	t.Helper()
 	server, _ := rspamdReturning(t, status, body)
-	scanner := NewRspamd(server.URL, time.Second, rejectOnError, zap.NewNop())
+	scanner := NewRspamd(&fakeRspamdConfig{url: server.URL, rejectOnError: rejectOnError}, time.Second, zap.NewNop())
+	assert.NoError(t, scanner.Start())
 	return scanner.Scan("user@device.syncloud.it", []string{"to@example.com"}, "device.syncloud.it", []byte("message"))
+}
+
+func TestRspamd_RefusesToStartWithoutUrl(t *testing.T) {
+	assert.Error(t, NewRspamd(&fakeRspamdConfig{}, time.Second, zap.NewNop()).Start())
 }
 
 func TestRspamd_AllowsClean(t *testing.T) {

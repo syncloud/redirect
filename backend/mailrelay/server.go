@@ -2,26 +2,23 @@ package mailrelay
 
 import (
 	"errors"
-	"io"
 	"net"
 	"time"
 
-	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
-	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
 
 type Server struct {
 	relay       *Relay
 	sender      Sender
-	certificate *Certificate
+	certificate *CertificateLoader
 	server      *smtp.Server
 	logger      *zap.Logger
 }
 
 func NewServer(address string, domain string, relay *Relay, sender Sender, scanner Scanner,
-	limiter *Limiter, connections *Connections, inFlight *InFlight, certificate *Certificate,
+	limiter *Limiter, connections *Connections, inFlight *InFlight, certificate *CertificateLoader,
 	maxMessageBytes int64, logger *zap.Logger) *Server {
 	s := &Server{relay: relay, sender: sender, certificate: certificate, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
@@ -81,103 +78,4 @@ func peerOf(c *smtp.Conn) string {
 		return c.Conn().RemoteAddr().String()
 	}
 	return host
-}
-
-type Session struct {
-	relay       *Relay
-	sender      Sender
-	scanner     Scanner
-	limiter     *Limiter
-	connections *Connections
-	inFlight    *InFlight
-	peer        string
-	logger      *zap.Logger
-	domain      *model.Domain
-	from        string
-	recipients  []string
-}
-
-func (s *Session) AuthMechanisms() []string {
-	return []string{sasl.Plain}
-}
-
-func (s *Session) Auth(_ string) (sasl.Server, error) {
-	return sasl.NewPlainServer(func(_, login, password string) error {
-		domain, err := s.relay.Authorize(login, password)
-		if err != nil {
-			s.logger.Info("mail relay auth rejected", zap.String("login", login), zap.Error(err))
-			return err
-		}
-		s.domain = domain
-		return nil
-	}), nil
-}
-
-func (s *Session) Mail(from string, _ *smtp.MailOptions) error {
-	if s.domain == nil {
-		return smtp.ErrAuthRequired
-	}
-	if !s.relay.Allowed(s.domain, from) {
-		return &smtp.SMTPError{
-			Code:         550,
-			EnhancedCode: smtp.EnhancedCode{5, 7, 1},
-			Message:      "sender does not belong to this device domain",
-		}
-	}
-	s.from = from
-	return nil
-}
-
-func (s *Session) Rcpt(to string, _ *smtp.RcptOptions) error {
-	if s.domain == nil {
-		return smtp.ErrAuthRequired
-	}
-	s.recipients = append(s.recipients, to)
-	return nil
-}
-
-func (s *Session) Data(r io.Reader) error {
-	if s.domain == nil {
-		return smtp.ErrAuthRequired
-	}
-	if err := s.limiter.AllowRecipients(len(s.recipients)); err != nil {
-		return permanent(err, smtp.EnhancedCode{5, 5, 3})
-	}
-	if err := s.limiter.Allow(s.domain.Name, int64(len(s.recipients))); err != nil {
-		s.logger.Info("mail relay rate limited",
-			zap.String("domain", s.domain.Name), zap.Error(err))
-		return tryAgain(err, smtp.EnhancedCode{4, 7, 1})
-	}
-	message, err := io.ReadAll(r)
-	if err != nil {
-		return err
-	}
-	if err := s.scanner.Scan(s.from, s.recipients, s.domain.Name, message); err != nil {
-		if errors.Is(err, ErrRejectedAsSpam) {
-			return permanent(err, smtp.EnhancedCode{5, 7, 1})
-		}
-		return tryAgain(err, smtp.EnhancedCode{4, 7, 0})
-	}
-	if !s.inFlight.Acquire() {
-		s.logger.Info("mail relay at capacity", zap.String("domain", s.domain.Name))
-		return tryAgain(ErrBusy, smtp.EnhancedCode{4, 3, 2})
-	}
-	defer s.inFlight.Release()
-	if err := s.sender.Send(s.from, s.recipients, message); err != nil {
-		s.logger.Error("mail relay send failed", zap.String("domain", s.domain.Name), zap.Error(err))
-		return tryAgain(err, smtp.EnhancedCode{4, 4, 0})
-	}
-	s.logger.Info("mail relay sent",
-		zap.String("domain", s.domain.Name), zap.Int("recipients", len(s.recipients)))
-	return s.relay.Sent(s.domain, len(s.recipients))
-}
-
-func (s *Session) Reset() {
-	s.from = ""
-	s.recipients = nil
-}
-
-func (s *Session) Logout() error {
-	s.connections.Release(s.peer)
-	return nil
 }

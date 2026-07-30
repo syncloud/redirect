@@ -2,16 +2,16 @@ package mailrelay
 
 import "crypto/tls"
 
-type Certificate struct {
+type CertificateLoader struct {
 	certFile string
 	keyFile  string
 }
 
-func NewCertificate(certFile string, keyFile string) *Certificate {
-	return &Certificate{certFile: certFile, keyFile: keyFile}
+func NewCertificateLoader(certFile string, keyFile string) *CertificateLoader {
+	return &CertificateLoader{certFile: certFile, keyFile: keyFile}
 }
 
-func (c *Certificate) Load() (*tls.Config, error) {
+func (c *CertificateLoader) Load() (*tls.Config, error) {
 	if c.certFile == "" || c.keyFile == "" {
 		return nil, nil
 	}

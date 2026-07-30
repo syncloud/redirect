@@ -18,25 +18,6 @@ type Bounces interface {
 	Bounce(domain string, count int64) error
 }
 
-type snsNotification struct {
-	Type    string `json:"Type"`
-	Message string `json:"Message"`
-}
-
-type sesEvent struct {
-	NotificationType string `json:"notificationType"`
-	EventType        string `json:"eventType"`
-	Bounce           *struct {
-		BounceType        string `json:"bounceType"`
-		BouncedRecipients []struct {
-			EmailAddress string `json:"emailAddress"`
-		} `json:"bouncedRecipients"`
-	} `json:"bounce"`
-	Mail struct {
-		Source string `json:"source"`
-	} `json:"mail"`
-}
-
 type Feedback struct {
 	blocker       Blocker
 	bounces       Bounces

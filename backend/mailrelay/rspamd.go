@@ -16,29 +16,36 @@ type Scanner interface {
 	Scan(from string, recipients []string, domain string, message []byte) error
 }
 
-type rspamdResult struct {
-	Action string  `json:"action"`
-	Score  float64 `json:"score"`
+type RspamdConfig interface {
+	GetMailRelayRspamdUrl() string
+	GetMailRelayRspamdRejectOnError() bool
 }
 
 type Rspamd struct {
+	config RspamdConfig
 	url    string
 	client *http.Client
 	failed error
 	logger *zap.Logger
 }
 
-func NewRspamd(url string, timeout time.Duration, rejectOnError bool, logger *zap.Logger) *Rspamd {
-	var failed error
-	if rejectOnError {
-		failed = fmt.Errorf("spam filter unavailable")
-	}
+func NewRspamd(config RspamdConfig, timeout time.Duration, logger *zap.Logger) *Rspamd {
 	return &Rspamd{
-		url:    url,
+		config: config,
 		client: &http.Client{Timeout: timeout},
-		failed: failed,
 		logger: logger,
 	}
+}
+
+func (r *Rspamd) Start() error {
+	r.url = r.config.GetMailRelayRspamdUrl()
+	if r.url == "" {
+		return fmt.Errorf("mail relay spam filter url is not configured")
+	}
+	if r.config.GetMailRelayRspamdRejectOnError() {
+		r.failed = fmt.Errorf("spam filter unavailable")
+	}
+	return nil
 }
 
 func (r *Rspamd) Scan(from string, recipients []string, domain string, message []byte) error {

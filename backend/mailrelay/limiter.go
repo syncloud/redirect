@@ -13,29 +13,11 @@ var (
 	ErrTooManyRecipient = fmt.Errorf("too many recipients for one message")
 )
 
-type Limits struct {
-	Minute     int64
-	Hour       int64
-	Day        int64
-	Recipients int
-}
-
 type Limiter struct {
 	limits   Limits
 	mutex    sync.Mutex
 	counters map[string]*counters
 	now      func() time.Time
-}
-
-type window struct {
-	start time.Time
-	count int64
-}
-
-type counters struct {
-	minute window
-	hour   window
-	day    window
 }
 
 func NewLimiter(limits Limits) *Limiter {

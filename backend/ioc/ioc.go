@@ -384,12 +384,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) (mailrelay.Scanner, error) {
-		url := config.GetMailRelayRspamdUrl()
-		if url == "" {
-			return nil, fmt.Errorf("mail_relay rspamd_url is not configured")
-		}
-		return mailrelay.NewRspamd(url, 10*time.Second, config.GetMailRelayRspamdRejectOnError(), logger), nil
+	err = c.Singleton(func(config *utils.Config) *mailrelay.Rspamd {
+		return mailrelay.NewRspamd(config, 10*time.Second, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -417,8 +413,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.Certificate {
-		return mailrelay.NewCertificate(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+	err = c.Singleton(func(config *utils.Config) *mailrelay.CertificateLoader {
+		return mailrelay.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
 	})
 	if err != nil {
 		return nil, err
@@ -427,11 +423,11 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		relayService *mailrelay.Relay,
 		sender mailrelay.Sender,
-		scanner mailrelay.Scanner,
+		scanner *mailrelay.Rspamd,
 		limiter *mailrelay.Limiter,
 		connections *mailrelay.Connections,
 		inFlight *mailrelay.InFlight,
-		certificate *mailrelay.Certificate,
+		certificate *mailrelay.CertificateLoader,
 		config *utils.Config,
 	) *mailrelay.Server {
 		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),

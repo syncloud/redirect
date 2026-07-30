@@ -53,7 +53,7 @@ func startRelay(t *testing.T, limits Limits, sender *fakeSender, scanner *fakeSc
 	address := listener.Addr().String()
 
 	server := NewServer(address, "syncloud.it", relay, sender, scanner,
-		NewLimiter(limits), connections, inFlight, NewCertificate("", ""), 1024*1024, zap.NewNop())
+		NewLimiter(limits), connections, inFlight, NewCertificateLoader("", ""), 1024*1024, zap.NewNop())
 	assert.NoError(t, listener.Close())
 	assert.NoError(t, server.Start())
 	t.Cleanup(func() { _ = server.Close() })
