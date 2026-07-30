@@ -241,6 +241,14 @@ func (config *Config) GetMailRelayMaxRecipients() int {
 	return int(config.mailRelayLimitMessages("max_recipients", 50))
 }
 
+func (config *Config) GetMailRelayMaxConnectionsPerPeer() int {
+	return int(config.mailRelayLimitMessages("max_connections_per_peer", 100))
+}
+
+func (config *Config) GetMailRelayMaxConcurrentSends() int {
+	return int(config.mailRelayLimitMessages("max_concurrent_sends", 20))
+}
+
 func (config *Config) GetMailRelayBounceRatio() float64 {
 	if value, err := config.parser.Get("mail_relay", "bounce_ratio"); err == nil {
 		if parsed, err := strconv.ParseFloat(value, 64); err == nil {

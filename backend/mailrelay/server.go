@@ -3,6 +3,7 @@ package mailrelay
 import (
 	"errors"
 	"io"
+	"net"
 	"time"
 
 	"github.com/emersion/go-sasl"
@@ -20,10 +21,19 @@ type Server struct {
 }
 
 func NewServer(address string, domain string, relay *Relay, sender Sender, scanner Scanner,
-	limiter *Limiter, certificate *Certificate, maxMessageBytes int64, logger *zap.Logger) *Server {
+	limiter *Limiter, connections *Connections, inFlight *InFlight, certificate *Certificate,
+	maxMessageBytes int64, logger *zap.Logger) *Server {
 	s := &Server{relay: relay, sender: sender, certificate: certificate, logger: logger}
-	server := smtp.NewServer(smtp.BackendFunc(func(_ *smtp.Conn) (smtp.Session, error) {
-		return &Session{relay: relay, sender: sender, scanner: scanner, limiter: limiter, logger: logger}, nil
+	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
+		peer := peerOf(c)
+		if !connections.Acquire(peer) {
+			logger.Info("mail relay refused a connection", zap.String("peer", peer))
+			return nil, ErrTooManyConnections
+		}
+		return &Session{
+			relay: relay, sender: sender, scanner: scanner, limiter: limiter,
+			connections: connections, inFlight: inFlight, peer: peer, logger: logger,
+		}, nil
 	}))
 	server.Addr = address
 	server.Domain = domain
@@ -62,15 +72,29 @@ func permanent(err error, code smtp.EnhancedCode) error {
 	return &smtp.SMTPError{Code: 550, EnhancedCode: code, Message: err.Error()}
 }
 
+func peerOf(c *smtp.Conn) string {
+	if c == nil || c.Conn() == nil {
+		return ""
+	}
+	host, _, err := net.SplitHostPort(c.Conn().RemoteAddr().String())
+	if err != nil {
+		return c.Conn().RemoteAddr().String()
+	}
+	return host
+}
+
 type Session struct {
-	relay      *Relay
-	sender     Sender
-	scanner    Scanner
-	limiter    *Limiter
-	logger     *zap.Logger
-	domain     *model.Domain
-	from       string
-	recipients []string
+	relay       *Relay
+	sender      Sender
+	scanner     Scanner
+	limiter     *Limiter
+	connections *Connections
+	inFlight    *InFlight
+	peer        string
+	logger      *zap.Logger
+	domain      *model.Domain
+	from        string
+	recipients  []string
 }
 
 func (s *Session) AuthMechanisms() []string {
@@ -134,6 +158,11 @@ func (s *Session) Data(r io.Reader) error {
 		}
 		return tryAgain(err, smtp.EnhancedCode{4, 7, 0})
 	}
+	if !s.inFlight.Acquire() {
+		s.logger.Info("mail relay at capacity", zap.String("domain", s.domain.Name))
+		return tryAgain(ErrBusy, smtp.EnhancedCode{4, 3, 2})
+	}
+	defer s.inFlight.Release()
 	if err := s.sender.Send(s.from, s.recipients, message); err != nil {
 		s.logger.Error("mail relay send failed", zap.String("domain", s.domain.Name), zap.Error(err))
 		return tryAgain(err, smtp.EnhancedCode{4, 4, 0})
@@ -149,5 +178,6 @@ func (s *Session) Reset() {
 }
 
 func (s *Session) Logout() error {
+	s.connections.Release(s.peer)
 	return nil
 }

@@ -403,6 +403,20 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(config *utils.Config) *mailrelay.Connections {
+		return mailrelay.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *mailrelay.InFlight {
+		return mailrelay.NewInFlight(config.GetMailRelayMaxConcurrentSends())
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(config *utils.Config) *mailrelay.Certificate {
 		return mailrelay.NewCertificate(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
 	})
@@ -415,11 +429,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		sender mailrelay.Sender,
 		scanner mailrelay.Scanner,
 		limiter *mailrelay.Limiter,
+		connections *mailrelay.Connections,
+		inFlight *mailrelay.InFlight,
 		certificate *mailrelay.Certificate,
 		config *utils.Config,
 	) *mailrelay.Server {
 		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
-			relayService, sender, scanner, limiter, certificate,
+			relayService, sender, scanner, limiter, connections, inFlight, certificate,
 			config.GetMailRelayMaxMessageBytes(), logger)
 	})
 	if err != nil {
