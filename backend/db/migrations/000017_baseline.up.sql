@@ -73,7 +73,3 @@ create table relay_traffic (
   `bytes` bigint not null default 0,
   primary key (`name`, `year_month`)
 );
-
-  `version` varchar(10) not null,
-  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);

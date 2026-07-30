@@ -202,7 +202,7 @@ for name in redirect-api redirect-www node-exporter caddy frps rspamd; do
     if ! docker ps -q --filter name="$name" --filter status=running | grep -q .; then
         echo "container $name is not running:"
         docker ps -a --filter name="$name"
-        docker logs "$name" 2>&1 | tail -40
+        docker logs "$name" 2>&1 | head -60; docker logs "$name" 2>&1 | tail -40
         exit 1
     fi
 done
