@@ -154,12 +154,6 @@ run_container() {
         "$TAG" "/usr/local/bin/$bin" --mail-dir /app/emails
 }
 
-docker run --rm \
-    --network=host \
-    --user "$REDIRECT_UID:$REDIRECT_GID" \
-    -v "$REDIRECT_DIR:$REDIRECT_DIR" \
-    "$TAG" /usr/local/bin/migrate up
-
 run_container redirect-api api
 run_container redirect-www www
 

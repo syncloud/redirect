@@ -57,6 +57,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(config *utils.Config) *db.Migrator {
+		return db.NewMigrator(config, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(config *utils.Config) *session.Session {
 		return session.Must(session.NewSession(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(

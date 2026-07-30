@@ -33,6 +33,7 @@ func main() {
 			}
 			return c.Call(func(
 				api *rest.Api,
+				migrator *db.Migrator,
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
 				userCleaner *user.Cleaner,
@@ -46,6 +47,7 @@ func main() {
 			) error {
 				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant, reputation)
 				services := []service.Startable{
+					migrator,
 					database,
 					dnsCleaner,
 					userCleaner,
