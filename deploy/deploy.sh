@@ -49,6 +49,11 @@ mkdir -p "$REDIRECT_DIR/current"
 rm -rf "$REDIRECT_DIR/current/www"
 cp -r "$STAGE/web" "$REDIRECT_DIR/current/www"
 
+rm -rf "$REDIRECT_DIR/current/bin"
+cp -r "$STAGE/bin" "$REDIRECT_DIR/current/bin"
+chmod -R +x "$REDIRECT_DIR/current/bin"
+
+
 chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
 
 cfg() {
