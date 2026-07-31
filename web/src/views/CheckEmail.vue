@@ -1,6 +1,6 @@
 <template>
   <div class="container" style="text-align: center">
-    <h2 style="padding-bottom: 20px">Complete</h2>
+    <h2 style="padding-bottom: 20px" data-testid="check-email-complete">Complete</h2>
     <span>
       Check your mailbox
     </span>

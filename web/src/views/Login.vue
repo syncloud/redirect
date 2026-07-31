@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-  <form class="form-horizontal" @submit="login">
+  <form class="form-horizontal" data-testid="login-form" @submit="login">
     <h2>Log in</h2>
     <br/>
 
@@ -15,7 +15,7 @@
           <label class="control-label" for="email">Email</label>
         </div>
         <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
+          <input id="email" data-testid="login-email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
           <span id="help-email" class="help-block">{{ emailError }}</span>
         </div>
       </div>
@@ -25,15 +25,15 @@
           <label class="control-label" for="password">Password</label>
         </div>
         <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
+          <input id="password" data-testid="login-password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
           <span id="help-password" class="help-block">{{ passwordError }}</span>
         </div>
       </div>
 
       <div class="form-group">
         <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <router-link to="/forgot" id="forgot" class="pull-left" style="padding-top: 10px;">Forgot your password?</router-link>
-          <button id="submit" class="btn btn-primary pull-right" >Log in</button>
+          <router-link to="/forgot" id="forgot" data-testid="login-forgot" class="pull-left" style="padding-top: 10px;">Forgot your password?</router-link>
+          <button id="submit" data-testid="login-submit" class="btn btn-primary pull-right" >Log in</button>
         </div>
       </div>
 

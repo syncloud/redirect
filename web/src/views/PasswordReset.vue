@@ -1,6 +1,6 @@
 <template>
 
-  <form class="form-horizontal">
+  <form class="form-horizontal" data-testid="reset-form">
     <h2>Reset password</h2>
     <br/>
     <fieldset>
@@ -16,13 +16,13 @@
           <label class="control-label" for="password">New password</label>
         </div>
         <div class="col-8 col-md-8 col-sm-8 col-lg-8">
-          <input id="password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
+          <input id="password" data-testid="reset-password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
         </div>
       </div>
 
       <div class="form-group" v-if="error === ''">
         <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <button id="reset" class="btn btn-primary pull-right" @click="reset">Reset</button>
+          <button id="reset" data-testid="reset-submit" class="btn btn-primary pull-right" @click="reset">Reset</button>
         </div>
       </div>
 

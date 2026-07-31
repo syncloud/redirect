@@ -36,17 +36,26 @@ type relayUnderTest struct {
 	scanner *fakeScanner
 }
 
-func startRelay(t *testing.T, limits Limits, sender *fakeSender, scanner *fakeScanner,
-	connections *Connections, inFlight *InFlight) *relayUnderTest {
-	t.Helper()
+func defaultRelay() *Relay {
 	token := "the-token"
-	relay := New(
+	return New(
 		&fakeDomains{domain: &model.Domain{Name: "device.syncloud.it", UserId: 7, UpdateToken: &token}},
 		&fakePlans{limit: 100},
 		&fakeUsage{},
 		&fakeBlocklist{},
 		&fakeWarner{},
 		zap.NewNop())
+}
+
+func startRelay(t *testing.T, limits Limits, sender *fakeSender, scanner *fakeScanner,
+	connections *Connections, inFlight *InFlight) *relayUnderTest {
+	t.Helper()
+	return startRelayWith(t, defaultRelay(), limits, sender, scanner, connections, inFlight)
+}
+
+func startRelayWith(t *testing.T, relay *Relay, limits Limits, sender *fakeSender, scanner *fakeScanner,
+	connections *Connections, inFlight *InFlight) *relayUnderTest {
+	t.Helper()
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	assert.NoError(t, err)
@@ -125,13 +134,43 @@ func TestRelayServer_DeliversAuthenticatedMail(t *testing.T) {
 	assert.Equal(t, 1, sender.sent)
 }
 
-func TestRelayServer_RejectsWrongPassword(t *testing.T) {
-	r := relayFor(t, &fakeSender{}, &fakeScanner{})
+func authWith(t *testing.T, r *relayUnderTest, login string, password string) error {
+	t.Helper()
 	client, err := dial(t, r)
 	assert.NoError(t, err)
 	defer client.Close()
-	err = client.Auth(smtp.PlainAuth("", "device.syncloud.it", "wrong", "127.0.0.1"))
-	assert.Error(t, err)
+	return client.Auth(smtp.PlainAuth("", login, password, "127.0.0.1"))
+}
+
+func serverFor(t *testing.T, relay *Relay) *relayUnderTest {
+	t.Helper()
+	return startRelayWith(t, relay, defaultLimits(), &fakeSender{}, &fakeScanner{},
+		NewConnections(0), NewInFlight(0))
+}
+
+func TestRelayServer_RejectsWrongPassword(t *testing.T) {
+	r := relayFor(t, &fakeSender{}, &fakeScanner{})
+	assertCode(t, authWith(t, r, "device.syncloud.it", "wrong"), "535")
+}
+
+func TestRelayServer_RejectsForeignLogin(t *testing.T) {
+	r := relayFor(t, &fakeSender{}, &fakeScanner{})
+	assertCode(t, authWith(t, r, "someone-else.syncloud.it", "the-token"), "535")
+}
+
+func TestRelayServer_BlockedIsPermanent(t *testing.T) {
+	relay, _ := relayWith(100, 0, true)
+	assertCode(t, authWith(t, serverFor(t, relay), "device.syncloud.it", "the-token"), "535")
+}
+
+func TestRelayServer_PlanWithoutRelayIsPermanent(t *testing.T) {
+	relay, _ := relayWith(0, 0, false)
+	assertCode(t, authWith(t, serverFor(t, relay), "device.syncloud.it", "the-token"), "535")
+}
+
+func TestRelayServer_OverMonthlyLimitIsTemporary(t *testing.T) {
+	relay, _ := relayWith(10, 10, false)
+	assertCode(t, authWith(t, serverFor(t, relay), "device.syncloud.it", "the-token"), "454")
 }
 
 func TestRelayServer_RejectsForeignSender(t *testing.T) {
