@@ -1,7 +1,7 @@
 <template>
   <div class="container">
 
-  <form class="form-horizontal" id="form-forgot" @submit="reset">
+  <form class="form-horizontal" id="form-forgot" data-testid="forgot-form" @submit="reset">
     <h2>Forgot your password?</h2>
     <br/>
     <fieldset>
@@ -15,13 +15,13 @@
           <label class="control-label" for="email">Email</label>
         </div>
         <div class="col-12 col-md-12 col-sm-12 col-lg-12">
-          <input id="email" name="email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
+          <input id="email" name="email" data-testid="forgot-email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
         </div>
       </div>
 
       <div class="form-group">
         <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <button id="send" class="btn btn-primary pull-right">Submit</button>
+          <button id="send" data-testid="forgot-send" class="btn btn-primary pull-right">Submit</button>
         </div>
       </div>
 

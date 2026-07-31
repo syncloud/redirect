@@ -33,11 +33,23 @@ func (s *Session) Auth(_ string) (sasl.Server, error) {
 		domain, err := s.relay.Authorize(login, password)
 		if err != nil {
 			s.logger.Info("mail relay auth rejected", zap.String("login", login), zap.Error(err))
-			return err
+			return authError(err)
 		}
 		s.domain = domain
 		return nil
 	}), nil
+}
+
+func authError(err error) error {
+	switch {
+	case errors.Is(err, ErrUnknownToken), errors.Is(err, ErrNotOwned),
+		errors.Is(err, ErrBlocked), errors.Is(err, ErrNotAllowed):
+		return authRejected(err)
+	case errors.Is(err, ErrOverLimit):
+		return authTryAgain(err)
+	default:
+		return authTryAgain(errors.New("temporary authentication failure"))
+	}
 }
 
 func (s *Session) Mail(from string, _ *smtp.MailOptions) error {
