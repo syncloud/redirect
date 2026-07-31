@@ -55,7 +55,7 @@ func TestFreeDomainLong(t *testing.T) {
 }
 
 func TestFreeDomainReserved(t *testing.T) {
-	for _, name := range []string{"relay", "store", "stats", "admin", "RELAY"} {
+	for _, name := range []string{"relay", "mail-relay", "store", "stats", "admin", "RELAY", "Mail-Relay"} {
 		domain := name + ".syncloud.it"
 		validator := New()
 		validator.Domain(&domain, "", "syncloud.it")
