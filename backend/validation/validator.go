@@ -10,20 +10,21 @@ import (
 )
 
 var reservedSubDomains = map[string]bool{
-	"relay": true,
-	"www":   true,
-	"api":   true,
-	"store": true,
-	"stats": true,
-	"shop":  true,
-	"mail":  true,
-	"mx":    true,
-	"smtp":  true,
-	"imap":  true,
-	"ns":    true,
-	"ns1":   true,
-	"ns2":   true,
-	"admin": true,
+	"relay":      true,
+	"mail-relay": true,
+	"www":        true,
+	"api":        true,
+	"store":      true,
+	"stats":      true,
+	"shop":       true,
+	"mail":       true,
+	"mx":         true,
+	"smtp":       true,
+	"imap":       true,
+	"ns":         true,
+	"ns1":        true,
+	"ns2":        true,
+	"admin":      true,
 }
 
 type FieldValidator struct {
