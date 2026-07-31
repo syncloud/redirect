@@ -119,6 +119,10 @@ func (w WwwRelayStub) LimitBytes(_ int64) int64 {
 	return 0
 }
 
+func (w WwwRelayStub) Enabled(_ int64) (bool, error) {
+	return false, nil
+}
+
 type WwwPayPalStub struct {
 }
 
@@ -144,6 +148,7 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
@@ -183,6 +188,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
@@ -237,6 +243,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
@@ -277,6 +284,7 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwRelayStub{},
+		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
 		metrics.New(),
 		"example.com",
@@ -305,3 +313,9 @@ func TestLogout_ClearSession(t *testing.T) {
 	assert.Contains(t, rr.Header().Get("Set-Cookie"), "session=;")
 
 }
+
+type WwwMailRelayStub struct{}
+
+func (s *WwwMailRelayStub) UsedMessages(_ int64) (int64, error) { return 0, nil }
+func (s *WwwMailRelayStub) LimitMessages(_ int64) int64         { return 0 }
+func (s *WwwMailRelayStub) Enabled(_ int64) (bool, error)       { return false, nil }

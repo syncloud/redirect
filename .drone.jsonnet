@@ -50,7 +50,6 @@ local build(arch) = [{
             commands: [
                 "cp -r bin build",
                 "cp -r config build",
-                "cp -r db build",
                 "cp -r emails build",
                 "mkdir artifact",
                 "tar czf artifact/redirect-${DRONE_BUILD_NUMBER}.tar.gz -C build ."
@@ -107,6 +106,14 @@ local build(arch) = [{
             commands: [
                 "cd dns-faker",
                 "CGO_ENABLED=0 go build -o ../ci/sim/dns-faker .",
+            ],
+        },
+        {
+            name: "build ses-faker",
+            image: "golang:" + go,
+            commands: [
+                "cd ses-faker",
+                "CGO_ENABLED=0 go build -o ../ci/sim/ses-faker .",
             ],
         },
         {

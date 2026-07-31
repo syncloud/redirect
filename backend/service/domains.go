@@ -354,6 +354,8 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	domain.WebProtocol = webProtocol
 	domain.WebLocalPort = webLocalPort
 	domain.WebPort = webPort
+	domain.Relay = request.Relay
+	domain.MailRelay = request.MailRelay
 
 	if changed {
 		err := d.amazonDns.UpdateDomainRecords(domain)

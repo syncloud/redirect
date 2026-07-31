@@ -47,17 +47,22 @@ type ApiCertbot interface {
 	CleanUp(token, fqdn string) error
 }
 
+type ApiComplaints interface {
+	Handle(w http.ResponseWriter, r *http.Request)
+}
+
 type Api struct {
-	domains  ApiDomains
-	users    ApiUsers
-	mail     ApiMail
-	probe    ApiPortProbe
-	certbot  ApiCertbot
-	metrics  *metrics.Metrics
-	domain   string
-	count404 int64
-	socket   string
-	logger   *zap.Logger
+	domains    ApiDomains
+	users      ApiUsers
+	mail       ApiMail
+	probe      ApiPortProbe
+	certbot    ApiCertbot
+	metrics    *metrics.Metrics
+	complaints ApiComplaints
+	domain     string
+	count404   int64
+	socket     string
+	logger     *zap.Logger
 }
 
 func NewApi(
@@ -67,20 +72,22 @@ func NewApi(
 	probe ApiPortProbe,
 	certbot ApiCertbot,
 	metrics *metrics.Metrics,
+	complaints ApiComplaints,
 	domain string,
 	socket string,
 	logger *zap.Logger,
 ) *Api {
 	return &Api{
-		domains: service,
-		users:   users,
-		mail:    mail,
-		probe:   probe,
-		certbot: certbot,
-		metrics: metrics,
-		domain:  domain,
-		socket:  socket,
-		logger:  logger,
+		domains:    service,
+		users:      users,
+		mail:       mail,
+		probe:      probe,
+		complaints: complaints,
+		certbot:    certbot,
+		metrics:    metrics,
+		domain:     domain,
+		socket:     socket,
+		logger:     logger,
 	}
 }
 
@@ -100,6 +107,7 @@ func (a *Api) Start() error {
 	r.HandleFunc("/user", Handle(a.User)).Methods("POST")
 	r.HandleFunc("/user/log", Handle(a.UserLog)).Methods("POST")
 	r.HandleFunc("/user/log_v2", Handle(a.UserLogV2)).Methods("POST")
+	r.HandleFunc("/mail/feedback", a.MailFeedback).Methods("POST")
 	r.HandleFunc("/probe/port_v2", a.PortProbeV2).Methods("GET")
 	r.HandleFunc("/probe/port_v3", Handle(a.PortProbeV3)).Methods("POST")
 	r.NotFoundHandler = http.HandlerFunc(a.notFoundHandler)
@@ -530,4 +538,8 @@ func (a *Api) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("404 counter: %v\n", a.count404)
 	}
 	http.NotFound(w, r)
+}
+
+func (a *Api) MailFeedback(w http.ResponseWriter, r *http.Request) {
+	a.complaints.Handle(w, r)
 }

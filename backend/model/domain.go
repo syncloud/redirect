@@ -26,6 +26,8 @@ type (
 		WebProtocol          *string    `json:"web_protocol,omitempty"`
 		WebPort              *int       `json:"web_port,omitempty"`
 		WebLocalPort         *int       `json:"web_local_port,omitempty"`
+		Relay                bool       `json:"-"`
+		MailRelay            bool       `json:"-"`
 		UserId               int64      `json:"-"`
 		HostedZoneId         string     `json:"-"`
 		Name                 string     `json:"name,omitempty"`

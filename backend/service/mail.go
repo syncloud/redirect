@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/smtp"
 	"go.uber.org/zap"
 	"log"
@@ -23,6 +24,7 @@ type Mail struct {
 	accountLockedPath           string
 	accountRemovedPath          string
 	relayLimitWarningPath       string
+	mailRelayLimitWarningPath   string
 	from                        string
 	deviceErrorTo               string
 	mainDomain                  string
@@ -51,6 +53,7 @@ func NewMail(smtp *smtp.Smtp,
 		accountLockedPath:           mailPath + "/account_locked.txt",
 		accountRemovedPath:          mailPath + "/account_removed.txt",
 		relayLimitWarningPath:       mailPath + "/relay_limit_warning.txt",
+		mailRelayLimitWarningPath:   mailPath + "/mail_relay_limit_warning.txt",
 		from:                        from,
 		deviceErrorTo:               deviceErrorTo,
 		mainDomain:                  mainDomain,
@@ -88,6 +91,11 @@ func (m *Mail) SendRelayLimitWarning(to string, usedBytes int64, limitBytes int6
 		"used":   relayGigabytes(usedBytes),
 		"limit":  relayGigabytes(limitBytes),
 	}, to)
+}
+
+func (m *Mail) SendMailRelayLimitWarning(to string, used int64, limit int64) error {
+	warning := model.MailRelayLimitWarning{Domain: m.mainDomain, Used: used, Limit: limit}
+	return m.SendNotification(m.mailRelayLimitWarningPath, warning.Subs(), to)
 }
 
 func relayGigabytes(bytes int64) string {

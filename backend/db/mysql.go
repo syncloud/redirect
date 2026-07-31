@@ -249,6 +249,8 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 			"web_protocol, "+
 			"web_port, "+
 			"web_local_port, "+
+			"relay, "+
+			"mail_relay, "+
 			"last_update, "+
 			"lower(name), "+
 			"hosted_zone_id "+
@@ -273,6 +275,8 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 		&domain.WebProtocol,
 		&domain.WebPort,
 		&domain.WebLocalPort,
+		&domain.Relay,
+		&domain.MailRelay,
 		&domain.LastUpdate,
 		&domain.Name,
 		&domain.HostedZoneId,
@@ -414,6 +418,8 @@ func (m *MySql) UpdateDomain(domain *model.Domain) error {
 			"web_protocol = ?, " +
 			"web_port = ?, " +
 			"web_local_port = ?, " +
+			"relay = ?, " +
+			"mail_relay = ?, " +
 			"last_update = ? " +
 			"WHERE id = ?")
 	if err != nil {
@@ -437,6 +443,8 @@ func (m *MySql) UpdateDomain(domain *model.Domain) error {
 		domain.WebProtocol,
 		domain.WebPort,
 		domain.WebLocalPort,
+		domain.Relay,
+		domain.MailRelay,
 		domain.LastUpdate,
 		domain.Id,
 	)
@@ -667,6 +675,109 @@ func (m *MySql) AddRelayTraffic(name string, yearMonth string, bytes int64) erro
 	defer stmt.Close()
 	_, err = stmt.Exec(name, yearMonth, bytes)
 	return err
+}
+
+func (m *MySql) AddMailRelayMessages(name string, yearMonth string, messages int64) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO mail_relay_usage (name, `year_month`, messages) VALUES (?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE messages = messages + VALUES(messages)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, yearMonth, messages)
+	return err
+}
+
+func (m *MySql) GetMailRelayMessages(name string, yearMonth string) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT COALESCE(messages, 0) FROM mail_relay_usage WHERE name = ? AND `year_month` = ?",
+		name, yearMonth)
+	var messages int64
+	if err := row.Scan(&messages); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return messages, nil
+}
+
+func (m *MySql) AddMailRelayBounces(name string, yearMonth string, bounces int64) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO mail_relay_usage (name, `year_month`, bounces) VALUES (?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE bounces = bounces + VALUES(bounces)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, yearMonth, bounces)
+	return err
+}
+
+func (m *MySql) GetMailRelayBounces(name string, yearMonth string) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT COALESCE(bounces, 0) FROM mail_relay_usage WHERE name = ? AND `year_month` = ?",
+		name, yearMonth)
+	var bounces int64
+	if err := row.Scan(&bounces); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return bounces, nil
+}
+
+func (m *MySql) IsMailRelayEnabledForUser(userId int64) (bool, error) {
+	row := m.db.QueryRow("SELECT COUNT(*) FROM domain WHERE user_id = ? AND mail_relay = 1", userId)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (m *MySql) IsRelayEnabledForUser(userId int64) (bool, error) {
+	row := m.db.QueryRow("SELECT COUNT(*) FROM domain WHERE user_id = ? AND relay = 1", userId)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (m *MySql) GetMailRelayUsageForUser(userId int64, yearMonth string) (int64, error) {
+	row := m.db.QueryRow(
+		"SELECT COALESCE(SUM(u.messages), 0) FROM mail_relay_usage u "+
+			"JOIN domain d ON u.name = d.name "+
+			"WHERE d.user_id = ? AND u.`year_month` = ?", userId, yearMonth)
+	var messages int64
+	if err := row.Scan(&messages); err != nil {
+		return 0, err
+	}
+	return messages, nil
+}
+
+func (m *MySql) BlockMailRelay(name string, reason string) error {
+	stmt, err := m.db.Prepare(
+		"INSERT INTO mail_relay_blocked (name, reason) VALUES (?, ?) " +
+			"ON DUPLICATE KEY UPDATE reason = VALUES(reason)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(name, reason)
+	return err
+}
+
+func (m *MySql) IsMailRelayBlocked(name string) (bool, error) {
+	row := m.db.QueryRow("SELECT COUNT(*) FROM mail_relay_blocked WHERE name = ?", name)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (m *MySql) GetRelayUsageForUser(userId int64, yearMonth string) (int64, error) {

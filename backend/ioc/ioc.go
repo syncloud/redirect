@@ -14,6 +14,7 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/mailrelay"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/relay"
@@ -51,6 +52,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.GetMySqlPassword(),
 			logger,
 		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *db.Migrator {
+		return db.NewMigrator(config, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -312,6 +320,131 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *mailrelay.Tiers {
+		return mailrelay.NewTiers(database,
+			config.GetMailRelayFreeLimitMessages(),
+			config.GetMailRelayProLimitMessages(),
+			config.GetMailRelayMaxLimitMessages(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, tiers *mailrelay.Tiers) *mailrelay.AccountUsage {
+		return mailrelay.NewAccountUsage(database, tiers)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *mailrelay.LimitWarner {
+		return mailrelay.NewLimitWarner(database, mail)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql) *mailrelay.DbStore {
+		return mailrelay.NewDbStore(database)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		domains *service.Domains,
+		tiers *mailrelay.Tiers,
+		store *mailrelay.DbStore,
+		warner *mailrelay.LimitWarner,
+	) *mailrelay.Relay {
+		return mailrelay.New(domains, tiers, store, store, warner, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(store *mailrelay.DbStore, config *utils.Config) *mailrelay.Feedback {
+		return mailrelay.NewFeedback(store, store,
+			config.GetMailRelayBounceRatio(), config.GetMailRelayBounceMinimum(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) *mailrelay.Reputation {
+		source := mailrelay.NewCloudWatch(awsSession, config.GetMailRelaySesRegion(), time.Hour)
+		return mailrelay.NewReputation(source, time.Duration(config.GetMailRelayReputationIntervalSeconds())*time.Second, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *mailrelay.Limiter {
+		return mailrelay.NewLimiter(mailrelay.Limits{
+			Minute:     config.GetMailRelayLimitPerMinute(),
+			Hour:       config.GetMailRelayLimitPerHour(),
+			Day:        config.GetMailRelayLimitPerDay(),
+			Recipients: config.GetMailRelayMaxRecipients(),
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *mailrelay.Rspamd {
+		return mailrelay.NewRspamd(config, 10*time.Second, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) mailrelay.Sender {
+		return mailrelay.NewSesSender(awsSession, config.GetMailRelaySesRegion(),
+			config.GetMailRelaySesEndpoint(), config.GetMailRelaySesConfigurationSet(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *mailrelay.Connections {
+		return mailrelay.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *mailrelay.InFlight {
+		return mailrelay.NewInFlight(config.GetMailRelayMaxConcurrentSends())
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) *mailrelay.CertificateLoader {
+		return mailrelay.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
+		relayService *mailrelay.Relay,
+		sender mailrelay.Sender,
+		scanner *mailrelay.Rspamd,
+		limiter *mailrelay.Limiter,
+		connections *mailrelay.Connections,
+		inFlight *mailrelay.InFlight,
+		certificate *mailrelay.CertificateLoader,
+		config *utils.Config,
+	) *mailrelay.Server {
+		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
+			relayService, sender, scanner, limiter, connections, inFlight, certificate,
+			config.GetMailRelayMaxMessageBytes(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		domains *service.Domains,
 		users *service.Users,
@@ -319,6 +452,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		prober *probe.Service,
 		certbot *service.Certbot,
 		metrics *metrics.Metrics,
+		feedback *mailrelay.Feedback,
 		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
@@ -328,6 +462,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			prober,
 			certbot,
 			metrics,
+			feedback,
 			config.Domain(),
 			config.GetApiSocket(),
 			logger,
@@ -346,6 +481,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		stripe *subscription.Stripe,
 		paypal *subscription.PayPal,
 		usage *relay.Usage,
+		mailUsage *mailrelay.AccountUsage,
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
@@ -362,6 +498,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mail,
 			stripe,
 			usage,
+			mailUsage,
 			paypal,
 			metrics,
 			config.Domain(),

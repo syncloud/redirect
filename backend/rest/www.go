@@ -56,6 +56,13 @@ type WwwStripe interface {
 type WwwRelay interface {
 	UsedBytes(userId int64) (int64, error)
 	LimitBytes(userId int64) int64
+	Enabled(userId int64) (bool, error)
+}
+
+type WwwMailRelay interface {
+	UsedMessages(userId int64) (int64, error)
+	LimitMessages(userId int64) int64
+	Enabled(userId int64) (bool, error)
 }
 
 type WwwPayPal interface {
@@ -72,6 +79,7 @@ type Www struct {
 	mail      WwwMail
 	stripe    WwwStripe
 	relay     WwwRelay
+	mailRelay WwwMailRelay
 	paypal    WwwPayPal
 	metrics   *metrics.Metrics
 	domain    string
@@ -89,6 +97,7 @@ func NewWww(
 	mail WwwMail,
 	stripe WwwStripe,
 	relay WwwRelay,
+	mailRelay WwwMailRelay,
 	paypal WwwPayPal,
 	metrics *metrics.Metrics,
 	domain string,
@@ -104,6 +113,7 @@ func NewWww(
 		mail:      mail,
 		stripe:    stripe,
 		relay:     relay,
+		mailRelay: mailRelay,
 		paypal:    paypal,
 		metrics:   metrics,
 		domain:    domain,
@@ -129,6 +139,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/user", w.Secured(HandleUser(w.WebUser))).Methods("GET")
 	r.HandleFunc("/domains", w.Secured(HandleUser(w.WebDomains))).Methods("GET")
 	r.HandleFunc("/relay/usage", w.Secured(HandleUser(w.WebRelayUsage))).Methods("GET")
+	r.HandleFunc("/mail/usage", w.Secured(HandleUser(w.WebMailRelayUsage))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Subscription))).Methods("GET")
 	r.HandleFunc("/plan", w.Secured(HandleUser(w.Unsubscribe))).Methods("DELETE")
 	r.HandleFunc("/plan/subscribe/paypal", w.Secured(HandleUser(w.SubscribePayPal))).Methods("POST")
@@ -296,9 +307,31 @@ func (w *Www) WebRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.U
 		w.logger.Error("unable to get relay usage for a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	return map[string]int64{
-		"used_bytes":  used,
-		"limit_bytes": w.relay.LimitBytes(user.Id),
+	enabled, err := w.relay.Enabled(user.Id)
+	if err != nil {
+		return nil, errors.New("invalid request")
+	}
+	return &model.RelayUsageResponse{
+		Enabled:    enabled,
+		UsedBytes:  used,
+		LimitBytes: w.relay.LimitBytes(user.Id),
+	}, nil
+}
+
+func (w *Www) WebMailRelayUsage(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	used, err := w.mailRelay.UsedMessages(user.Id)
+	if err != nil {
+		w.logger.Error("unable to get mail relay usage for a user", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	enabled, err := w.mailRelay.Enabled(user.Id)
+	if err != nil {
+		return nil, errors.New("invalid request")
+	}
+	return &model.MailRelayUsageResponse{
+		Enabled:       enabled,
+		UsedMessages:  used,
+		LimitMessages: w.mailRelay.LimitMessages(user.Id),
 	}, nil
 }
 
