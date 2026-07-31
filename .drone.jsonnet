@@ -48,7 +48,6 @@ local build(arch) = [{
             name: "package",
             image: "syncloud/build-deps-" + arch,
             commands: [
-                "cp -r bin build",
                 "cp -r config build",
                 "cp -r emails build",
                 "mkdir artifact",
