@@ -69,6 +69,14 @@ func permanent(err error, code smtp.EnhancedCode) error {
 	return &smtp.SMTPError{Code: 550, EnhancedCode: code, Message: err.Error()}
 }
 
+func authRejected(err error) error {
+	return &smtp.SMTPError{Code: 535, EnhancedCode: smtp.EnhancedCode{5, 7, 8}, Message: err.Error()}
+}
+
+func authTryAgain(err error) error {
+	return &smtp.SMTPError{Code: 454, EnhancedCode: smtp.EnhancedCode{4, 7, 0}, Message: err.Error()}
+}
+
 func peerOf(c *smtp.Conn) string {
 	if c == nil || c.Conn() == nil {
 		return ""
