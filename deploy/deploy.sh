@@ -53,8 +53,6 @@ rm -rf "$REDIRECT_DIR/current/bin"
 cp -r "$STAGE/bin" "$REDIRECT_DIR/current/bin"
 chmod -R +x "$REDIRECT_DIR/current/bin"
 
-rm -rf "$REDIRECT_DIR/current/db"
-cp -r "$STAGE/db" "$REDIRECT_DIR/current/db"
 
 chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/current"
 
@@ -132,15 +130,9 @@ DB_HOST=$(cfg mysql host)
 DB_USER=$(cfg mysql user)
 DB_PASS=$(cfg mysql passwd)
 DB_NAME=$(cfg mysql db)
-DB_TARGET_VERSION=$(awk -F"'" '/insert into db_version/ {v=$2} END{print v}' "$STAGE/db/update.sql")
 MYSQL="mysql --host=$DB_HOST --user=$DB_USER --password=$DB_PASS"
 if ! $MYSQL -e "use $DB_NAME" 2>/dev/null; then
     $MYSQL -e "create database $DB_NAME"
-    $MYSQL "$DB_NAME" < "$STAGE/db/init.sql"
-fi
-DB_CURRENT_VERSION=$($MYSQL -N -B "$DB_NAME" -e "select version from db_version order by timestamp desc limit 1" 2>/dev/null || true)
-if [ -n "$DB_TARGET_VERSION" ] && [ "$((10#${DB_CURRENT_VERSION:-0}))" -lt "$((10#$DB_TARGET_VERSION))" ]; then
-    $MYSQL "$DB_NAME" < "$STAGE/db/update.sql"
 fi
 
 rm -f "$REDIRECT_DIR/redirect.api.socket" "$REDIRECT_DIR/redirect.www.socket"
@@ -174,6 +166,20 @@ docker run -d \
     -v "$REDIRECT_DIR/frps.toml:/etc/frp/frps.toml:ro" \
     "$FRPS_IMAGE"
 
+RSPAMD_IMAGE=rspamd/rspamd:3.11
+docker pull "$RSPAMD_IMAGE"
+docker rm -f rspamd 2>/dev/null || true
+rm -rf "$REDIRECT_DIR/rspamd"
+mkdir -p "$REDIRECT_DIR/rspamd"
+cp -r "$STAGE/common/rspamd/local.d" "$REDIRECT_DIR/rspamd/"
+chown -R "$REDIRECT_UID:$REDIRECT_GID" "$REDIRECT_DIR/rspamd"
+docker run -d \
+    --name rspamd \
+    --restart=unless-stopped \
+    --network=host \
+    -v "$REDIRECT_DIR/rspamd/local.d:/etc/rspamd/local.d:ro" \
+    "$RSPAMD_IMAGE"
+
 NODE_EXPORTER_IMAGE=prom/node-exporter:v1.8.2
 docker pull "$NODE_EXPORTER_IMAGE"
 docker rm -f node-exporter 2>/dev/null || true
@@ -186,7 +192,7 @@ docker run -d \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
-for name in redirect-api redirect-www node-exporter caddy frps; do
+for name in redirect-api redirect-www node-exporter caddy frps rspamd; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break
@@ -196,7 +202,7 @@ for name in redirect-api redirect-www node-exporter caddy frps; do
     if ! docker ps -q --filter name="$name" --filter status=running | grep -q .; then
         echo "container $name is not running:"
         docker ps -a --filter name="$name"
-        docker logs "$name" 2>&1 | tail -40
+        docker logs "$name" 2>&1 | head -60; docker logs "$name" 2>&1 | tail -40
         exit 1
     fi
 done

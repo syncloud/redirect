@@ -3,18 +3,46 @@
     <div id="has_domains" v-bind:class="{ invisible:  !hasDomains}">
       <h2>Devices</h2>
       <br/>
-      <div v-if="relayEnabled" data-testid="relay-usage" style="margin-bottom: 20px">
-        <div style="margin-bottom: 5px">
-          <strong>Relay usage:</strong> <span data-testid="relay-usage-text">{{ relayText }}</span>
-          <router-link v-if="relayPercent >= 80" to="/account" data-testid="relay-upgrade" style="margin-left: 10px">Approaching your limit — upgrade to Max</router-link>
-        </div>
-        <div class="progress">
-          <div class="progress-bar" :class="relayBarClass" role="progressbar"
-               :style="{ width: Math.min(relayPercent, 100) + '%' }"
-               data-testid="relay-usage-bar">
-            {{ relayPercent }}%
+      <div class="usage-panel" data-testid="relay-usage">
+        <div class="usage-row" data-testid="usage-traffic">
+          <div class="usage-head">
+            <span class="usage-name">Device access</span>
+            <span class="usage-value" data-testid="relay-usage-text">{{ relayText }}</span>
+          </div>
+          <div v-if="relayEnabled" class="progress">
+            <div class="progress-bar" :class="relayBarClass" role="progressbar"
+                 :style="{ width: Math.min(relayPercent, 100) + '%' }"
+                 data-testid="relay-usage-bar">
+              {{ relayPercent }}%
+            </div>
+          </div>
+          <div v-else class="usage-off" data-testid="usage-traffic-off">
+            Your device is reached directly, with no traffic limit. Turn the relay on if your
+            connection has no public address.
           </div>
         </div>
+
+        <div class="usage-row" data-testid="usage-email">
+          <div class="usage-head">
+            <span class="usage-name">Email sending</span>
+            <span class="usage-value" data-testid="usage-email-text">{{ emailText }}</span>
+          </div>
+          <div v-if="emailEnabled" class="progress">
+            <div class="progress-bar" :class="emailBarClass" role="progressbar"
+                 :style="{ width: Math.min(emailPercent, 100) + '%' }"
+                 data-testid="usage-email-bar">
+              {{ emailPercent }}%
+            </div>
+          </div>
+          <div v-else class="usage-off" data-testid="usage-email-off">
+            Your device sends email directly, with no limit. Turn the relay on if providers
+            reject mail from your address.
+          </div>
+        </div>
+
+        <router-link v-if="nearLimit" to="/account" data-testid="relay-upgrade" class="usage-upgrade">
+          Approaching your limit — upgrade for more
+        </router-link>
       </div>
       <div v-for="(domains, group_index) in domainGroups" :key="group_index">
         <div class="row">
@@ -218,7 +246,11 @@ export default {
       domainToDelete: '',
       deleteConfirmationVisible: false,
       relayUsed: 0,
-      relayLimit: 0
+      relayLimit: 0,
+      relayOn: false,
+      emailUsed: 0,
+      emailLimit: 0,
+      emailOn: false
     }
   },
   mounted () {
@@ -227,7 +259,35 @@ export default {
   },
   computed: {
     relayEnabled () {
-      return this.relayLimit > 0
+      return this.relayOn && this.relayLimit > 0
+    },
+    emailEnabled () {
+      return this.emailOn && this.emailLimit > 0
+    },
+    emailPercent () {
+      if (this.emailLimit <= 0) {
+        return 0
+      }
+      return Math.round((this.emailUsed / this.emailLimit) * 100)
+    },
+    emailBarClass () {
+      if (this.emailPercent >= 100) {
+        return 'progress-bar-danger'
+      }
+      if (this.emailPercent >= 80) {
+        return 'progress-bar-warning'
+      }
+      return 'progress-bar-success'
+    },
+    emailText () {
+      if (!this.emailEnabled) {
+        return 'Relay off'
+      }
+      return this.emailUsed + ' of ' + this.emailLimit + ' emails this month'
+    },
+    nearLimit () {
+      return (this.relayEnabled && this.relayPercent >= 80) ||
+        (this.emailEnabled && this.emailPercent >= 80)
     },
     relayPercent () {
       if (this.relayLimit <= 0) {
@@ -245,6 +305,9 @@ export default {
       return 'progress-bar-success'
     },
     relayText () {
+      if (!this.relayEnabled) {
+        return 'Relay off'
+      }
       return gb(this.relayUsed) + ' of ' + gb(this.relayLimit) + ' this month'
     }
   },
@@ -254,9 +317,19 @@ export default {
         .then(response => {
           this.relayUsed = response.data.data.used_bytes
           this.relayLimit = response.data.data.limit_bytes
+          this.relayOn = response.data.data.enabled === true
         })
         .catch(_ => {
-          this.relayLimit = 0
+          this.relayOn = false
+        })
+      axios.get('/api/mail/usage')
+        .then(response => {
+          this.emailUsed = response.data.data.used_messages
+          this.emailLimit = response.data.data.limit_messages
+          this.emailOn = response.data.data.enabled === true
+        })
+        .catch(_ => {
+          this.emailOn = false
         })
     },
     timestamp: function (ds, today) {
@@ -349,5 +422,34 @@ export default {
 
 .invisible {
   display: none;
+}
+
+.usage-panel {
+  margin-bottom: 20px;
+}
+.usage-row {
+  margin-bottom: 14px;
+}
+.usage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+.usage-name {
+  font-weight: 600;
+}
+.usage-value {
+  color: #666;
+  font-variant-numeric: tabular-nums;
+}
+.usage-off {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.usage-upgrade {
+  display: inline-block;
+  margin-top: 4px;
 }
 </style>

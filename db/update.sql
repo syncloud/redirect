@@ -1,2 +1,0 @@
--- Schema through version 017 is created by init.sql, so there are no pending
--- migrations. Add future deltas below, bumping the version at the end.

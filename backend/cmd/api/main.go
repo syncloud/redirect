@@ -8,6 +8,7 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/mailrelay"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/relay"
 	"github.com/syncloud/redirect/rest"
@@ -32,22 +33,30 @@ func main() {
 			}
 			return c.Call(func(
 				api *rest.Api,
+				migrator *db.Migrator,
 				database *db.MySql,
 				dnsCleaner *dns.Cleaner,
 				userCleaner *user.Cleaner,
 				metricsCollector *metrics.Metrics,
 				relayAuth *relay.AuthServer,
 				relayAccountant *relay.Accountant,
+				scanner *mailrelay.Rspamd,
+				mailRelay *mailrelay.Server,
+				reputation *mailrelay.Reputation,
 				config *utils.Config,
 			) error {
-				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant)
+				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant, reputation)
 				services := []service.Startable{
+					migrator,
 					database,
 					dnsCleaner,
 					userCleaner,
 					relayAccountant,
 					metricsServer,
 					relayAuth,
+					reputation,
+					scanner,
+					mailRelay,
 					api,
 				}
 				for _, s := range services {

@@ -3,6 +3,12 @@
 	acme_ca {$ACME_CA}
 	https_port 8443
 	layer4 {
+		:465 {
+			route {
+				tls
+				proxy 127.0.0.1:2465
+			}
+		}
 		:443 {
 			@sites tls sni {$RELAY_SITE_SNI}
 			route @sites {
@@ -46,6 +52,11 @@ www.{$REDIRECT_DOMAIN} {
 api.{$REDIRECT_DOMAIN} {
 	import syncloud_tls
 	reverse_proxy unix//var/www/redirect/redirect.api.socket
+}
+
+mail-relay.{$REDIRECT_DOMAIN} {
+	import syncloud_tls
+	respond 404
 }
 
 {$SHOP_DOMAIN} {

@@ -1,0 +1,8 @@
+Subject: You are approaching your Syncloud email relay limit
+Hello,
+
+You have sent {used} of your {limit} monthly emails through the Syncloud mail relay. When you reach the limit, sending will pause until next month and your device will keep the mail queued.
+
+For more emails, upgrade your plan at https://www.{domain}/account
+
+Thank you for choosing Syncloud

@@ -126,7 +126,10 @@ export function mock () {
         return new Response(200, {}, state.domains)
       })
       this.get('/api/relay/usage', function (_schema, request) {
-        return new Response(200, {}, { data: { used_bytes: 7408818586, limit_bytes: 10737418240 } })
+        return new Response(200, {}, { data: { enabled: true, used_bytes: 7408818586, limit_bytes: 10737418240 } })
+      })
+      this.get('/api/mail/usage', function (_schema, request) {
+        return new Response(200, {}, { data: { enabled: true, used_messages: 41, limit_messages: 50 } })
       })
       this.get('/api/domain/check_nameservers', function (_schema, request) {
         const name = request.queryParams.domain
