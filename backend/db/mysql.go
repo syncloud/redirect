@@ -759,6 +759,25 @@ func (m *MySql) GetMailRelayUsageForUser(userId int64, yearMonth string) (int64,
 	return messages, nil
 }
 
+func (m *MySql) GetMailRelayUsageAll(yearMonth string) ([]model.MailRelayDomainUsage, error) {
+	rows, err := m.db.Query(
+		"SELECT name, COALESCE(messages, 0), COALESCE(bounces, 0) FROM mail_relay_usage WHERE `year_month` = ?",
+		yearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var usage []model.MailRelayDomainUsage
+	for rows.Next() {
+		var entry model.MailRelayDomainUsage
+		if err := rows.Scan(&entry.Name, &entry.Messages, &entry.Bounces); err != nil {
+			return nil, err
+		}
+		usage = append(usage, entry)
+	}
+	return usage, rows.Err()
+}
+
 func (m *MySql) BlockMailRelay(name string, reason string) error {
 	stmt, err := m.db.Prepare(
 		"INSERT INTO mail_relay_blocked (name, reason) VALUES (?, ?) " +

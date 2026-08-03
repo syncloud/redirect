@@ -43,9 +43,10 @@ func main() {
 				scanner *mailrelay.Rspamd,
 				mailRelay *mailrelay.Server,
 				reputation *mailrelay.Reputation,
+				usageMetrics *mailrelay.UsageMetrics,
 				config *utils.Config,
 			) error {
-				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant, reputation)
+				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant, reputation, usageMetrics)
 				services := []service.Startable{
 					migrator,
 					database,
