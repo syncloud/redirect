@@ -12,19 +12,23 @@ type UsageMetricsStore interface {
 	GetMailRelayUsageAll(yearMonth string) ([]model.MailRelayDomainUsage, error)
 }
 
+type Clock interface {
+	Now() time.Time
+}
+
 type UsageMetrics struct {
 	store  UsageMetricsStore
-	now    func() time.Time
+	clock  Clock
 	logger *zap.Logger
 
 	messagesDesc *prometheus.Desc
 	bouncesDesc  *prometheus.Desc
 }
 
-func NewUsageMetrics(store UsageMetricsStore, logger *zap.Logger) *UsageMetrics {
+func NewUsageMetrics(store UsageMetricsStore, clock Clock, logger *zap.Logger) *UsageMetrics {
 	return &UsageMetrics{
 		store:  store,
-		now:    time.Now,
+		clock:  clock,
 		logger: logger,
 		messagesDesc: prometheus.NewDesc(
 			"redirect_mail_relay_messages", "Mail relay messages this month, by domain.", []string{"domain"}, nil),
@@ -39,7 +43,7 @@ func (m *UsageMetrics) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (m *UsageMetrics) Collect(ch chan<- prometheus.Metric) {
-	usage, err := m.store.GetMailRelayUsageAll(m.now().UTC().Format("2006-01"))
+	usage, err := m.store.GetMailRelayUsageAll(m.clock.Now().UTC().Format("2006-01"))
 	if err != nil {
 		m.logger.Warn("cannot read mail relay usage", zap.Error(err))
 		return

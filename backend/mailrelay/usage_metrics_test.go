@@ -22,10 +22,16 @@ func (f *fakeUsageMetricsStore) GetMailRelayUsageAll(yearMonth string) ([]model.
 	return f.usage, f.err
 }
 
+type fakeClock struct {
+	now time.Time
+}
+
+func (f *fakeClock) Now() time.Time {
+	return f.now
+}
+
 func usageMetricsFor(store UsageMetricsStore) *UsageMetrics {
-	metrics := NewUsageMetrics(store, zap.NewNop())
-	metrics.now = func() time.Time { return time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC) }
-	return metrics
+	return NewUsageMetrics(store, &fakeClock{now: time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)}, zap.NewNop())
 }
 
 func samples(t *testing.T, metrics *UsageMetrics) map[string]float64 {

@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/golobby/container/v3"
 	"github.com/syncloud/redirect/change"
+	"github.com/syncloud/redirect/clock"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
@@ -371,8 +372,15 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql) *mailrelay.UsageMetrics {
-		return mailrelay.NewUsageMetrics(database, logger)
+	err = c.Singleton(func() *clock.SystemClock {
+		return clock.New()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, systemClock *clock.SystemClock) *mailrelay.UsageMetrics {
+		return mailrelay.NewUsageMetrics(database, systemClock, logger)
 	})
 	if err != nil {
 		return nil, err
