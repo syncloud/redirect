@@ -371,6 +371,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(database *db.MySql) *mailrelay.UsageMetrics {
+		return mailrelay.NewUsageMetrics(database, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) *mailrelay.Reputation {
 		source := mailrelay.NewCloudWatch(awsSession, config.GetMailRelaySesRegion(), time.Hour)
 		return mailrelay.NewReputation(source, time.Duration(config.GetMailRelayReputationIntervalSeconds())*time.Second, logger)
