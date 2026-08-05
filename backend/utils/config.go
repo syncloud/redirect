@@ -548,3 +548,11 @@ func (config *Config) GetMailInboundMaxConnectionsPerPeer() int {
 func (config *Config) GetMailInboundMaxConcurrent() int {
 	return config.mailInboundPort("max_concurrent", 200)
 }
+
+func (config *Config) GetMailInboundProxyProtocol() bool {
+	value, err := config.parser.GetBool("mail_inbound", "proxy_protocol")
+	if err != nil {
+		return false
+	}
+	return value
+}

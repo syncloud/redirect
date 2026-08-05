@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/emersion/go-smtp"
+	"github.com/pires/go-proxyproto"
 	"github.com/syncloud/redirect/mailnet"
 	"go.uber.org/zap"
 )
@@ -13,14 +14,15 @@ import (
 const dialTimeout = 30 * time.Second
 
 type Server struct {
-	server *smtp.Server
-	logger *zap.Logger
+	server        *smtp.Server
+	proxyProtocol bool
+	logger        *zap.Logger
 }
 
 func NewServer(address string, hostname string, router *Router, connections *mailnet.Connections,
 	inFlight *mailnet.InFlight, certificate *mailnet.CertificateLoader, maxMessageBytes int64,
-	logger *zap.Logger) *Server {
-	s := &Server{logger: logger}
+	proxyProtocol bool, logger *zap.Logger) *Server {
+	s := &Server{proxyProtocol: proxyProtocol, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
 		if !connections.Acquire(peer) {
@@ -53,13 +55,32 @@ func (s *Server) certificate(server *smtp.Server, certificate *mailnet.Certifica
 }
 
 func (s *Server) Start() error {
-	s.logger.Info("inbound mail listening", zap.String("address", s.server.Addr))
+	listener, err := net.Listen("tcp", s.server.Addr)
+	if err != nil {
+		return err
+	}
+	if s.proxyProtocol {
+		listener = &proxyproto.Listener{Listener: listener, Policy: fromLoopbackOnly}
+	}
+	s.logger.Info("inbound mail listening",
+		zap.String("address", s.server.Addr), zap.Bool("proxy protocol", s.proxyProtocol))
 	go func() {
-		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, smtp.ErrServerClosed) {
+		if err := s.server.Serve(listener); err != nil && !errors.Is(err, smtp.ErrServerClosed) {
 			s.logger.Error("inbound mail stopped", zap.Error(err))
 		}
 	}()
 	return nil
+}
+
+func fromLoopbackOnly(upstream net.Addr) (proxyproto.Policy, error) {
+	host, _, err := net.SplitHostPort(upstream.String())
+	if err != nil {
+		return proxyproto.REJECT, err
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return proxyproto.REQUIRE, nil
+	}
+	return proxyproto.REJECT, nil
 }
 
 func (s *Server) Close() error {

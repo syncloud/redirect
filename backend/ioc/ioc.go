@@ -479,6 +479,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mailnet.NewInFlight(config.GetMailInboundMaxConcurrent()),
 			mailnet.NewCertificateLoader(config.GetMailInboundCertFile(), config.GetMailInboundKeyFile()),
 			config.GetMailInboundMaxMessageBytes(),
+			config.GetMailInboundProxyProtocol(),
 			logger)
 	})
 	if err != nil {

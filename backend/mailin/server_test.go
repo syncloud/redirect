@@ -10,6 +10,7 @@ import (
 	"time"
 
 	gosmtp "github.com/emersion/go-smtp"
+	"github.com/pires/go-proxyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/mailnet"
 	"github.com/syncloud/redirect/model"
@@ -95,6 +96,11 @@ func (f *fakeStore) GetDomainByName(name string) (*model.Domain, error) {
 }
 
 func relayed(t *testing.T, domains map[string]*model.Domain) string {
+	return relayedWith(t, domains, mailnet.NewConnections(0), false)
+}
+
+func relayedWith(t *testing.T, domains map[string]*model.Domain,
+	connections *mailnet.Connections, proxyProtocol bool) string {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	assert.NoError(t, err)
@@ -102,8 +108,8 @@ func relayed(t *testing.T, domains map[string]*model.Domain) string {
 	assert.NoError(t, listener.Close())
 
 	router := NewRouter(&fakeStore{domains: domains}, "127.0.0.1")
-	server := NewServer(address, "mx.syncloud.it", router, mailnet.NewConnections(0),
-		mailnet.NewInFlight(0), mailnet.NewCertificateLoader("", ""), 1024*1024, zap.NewNop())
+	server := NewServer(address, "mx.syncloud.it", router, connections,
+		mailnet.NewInFlight(0), mailnet.NewCertificateLoader("", ""), 1024*1024, proxyProtocol, zap.NewNop())
 	assert.NoError(t, server.Start())
 	t.Cleanup(func() { _ = server.Close() })
 	return address
@@ -262,4 +268,62 @@ func TestInbound_ManyRecipientsOnOneDevice(t *testing.T) {
 	assert.NoError(t, err)
 	recipients, _ := device.got()
 	assert.Equal(t, []string{"one@alice.syncloud.it", "two@alice.syncloud.it"}, recipients)
+}
+
+func proxyDial(t *testing.T, address string, client string) *smtp.Client {
+	t.Helper()
+	connection, err := net.Dial("tcp", address)
+	assert.NoError(t, err)
+	header := &proxyproto.Header{
+		Version:           2,
+		Command:           proxyproto.PROXY,
+		TransportProtocol: proxyproto.TCPv4,
+		SourceAddr:        &net.TCPAddr{IP: net.ParseIP(client), Port: 40000},
+		DestinationAddr:   &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 10025},
+	}
+	_, err = header.WriteTo(connection)
+	assert.NoError(t, err)
+	smtpClient, err := smtp.NewClient(connection, "mx.syncloud.it")
+	assert.NoError(t, err)
+	return smtpClient
+}
+
+func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
+	device := startDevice(t, &fakeDevice{})
+	address := relayedWith(t, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)},
+		mailnet.NewConnections(1), true)
+
+	first := proxyDial(t, address, "203.0.113.7")
+	defer first.Close()
+	second := proxyDial(t, address, "198.51.100.9")
+	defer second.Close()
+
+	assert.NoError(t, first.Mail("sender@example.com"))
+	assert.NoError(t, second.Mail("sender@example.com"))
+}
+
+func TestInbound_ProxyProtocolLimitsOneSender(t *testing.T) {
+	device := startDevice(t, &fakeDevice{})
+	address := relayedWith(t, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)},
+		mailnet.NewConnections(1), true)
+
+	first := proxyDial(t, address, "203.0.113.7")
+	defer first.Close()
+	second := proxyDial(t, address, "203.0.113.7")
+	defer second.Close()
+
+	assert.NoError(t, first.Mail("sender@example.com"))
+	assert.Error(t, second.Mail("sender@example.com"))
+}
+
+func TestInbound_ProxyProtocolPolicy(t *testing.T) {
+	loopback, err := fromLoopbackOnly(&net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, proxyproto.REQUIRE, loopback)
+
+	remote, err := fromLoopbackOnly(&net.TCPAddr{IP: net.ParseIP("203.0.113.7"), Port: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, proxyproto.REJECT, remote)
 }
