@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/mailnet"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
@@ -48,13 +49,13 @@ func defaultRelay() *Relay {
 }
 
 func startRelay(t *testing.T, limits Limits, sender *fakeSender, scanner *fakeScanner,
-	connections *Connections, inFlight *InFlight) *relayUnderTest {
+	connections *mailnet.Connections, inFlight *mailnet.InFlight) *relayUnderTest {
 	t.Helper()
 	return startRelayWith(t, defaultRelay(), limits, sender, scanner, connections, inFlight)
 }
 
 func startRelayWith(t *testing.T, relay *Relay, limits Limits, sender *fakeSender, scanner *fakeScanner,
-	connections *Connections, inFlight *InFlight) *relayUnderTest {
+	connections *mailnet.Connections, inFlight *mailnet.InFlight) *relayUnderTest {
 	t.Helper()
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -62,7 +63,7 @@ func startRelayWith(t *testing.T, relay *Relay, limits Limits, sender *fakeSende
 	address := listener.Addr().String()
 
 	server := NewServer(address, "syncloud.it", relay, sender, scanner,
-		NewLimiter(limits), connections, inFlight, NewCertificateLoader("", ""), 1024*1024, zap.NewNop())
+		NewLimiter(limits), connections, inFlight, mailnet.NewCertificateLoader("", ""), 1024*1024, zap.NewNop())
 	assert.NoError(t, listener.Close())
 	assert.NoError(t, server.Start())
 	t.Cleanup(func() { _ = server.Close() })
@@ -117,7 +118,7 @@ func defaultLimits() Limits {
 }
 
 func relayFor(t *testing.T, sender *fakeSender, scanner *fakeScanner) *relayUnderTest {
-	return startRelay(t, defaultLimits(), sender, scanner, NewConnections(0), NewInFlight(0))
+	return startRelay(t, defaultLimits(), sender, scanner, mailnet.NewConnections(0), mailnet.NewInFlight(0))
 }
 
 func assertCode(t *testing.T, err error, code string) {
@@ -145,7 +146,7 @@ func authWith(t *testing.T, r *relayUnderTest, login string, password string) er
 func serverFor(t *testing.T, relay *Relay) *relayUnderTest {
 	t.Helper()
 	return startRelayWith(t, relay, defaultLimits(), &fakeSender{}, &fakeScanner{},
-		NewConnections(0), NewInFlight(0))
+		mailnet.NewConnections(0), mailnet.NewInFlight(0))
 }
 
 func TestRelayServer_RejectsWrongPassword(t *testing.T) {
@@ -200,7 +201,7 @@ func TestRelayServer_ScannerOutageIsTemporary(t *testing.T) {
 func TestRelayServer_RateLimitIsTemporary(t *testing.T) {
 	limits := defaultLimits()
 	limits.Minute = 1
-	r := startRelay(t, limits, &fakeSender{}, &fakeScanner{}, NewConnections(0), NewInFlight(0))
+	r := startRelay(t, limits, &fakeSender{}, &fakeScanner{}, mailnet.NewConnections(0), mailnet.NewInFlight(0))
 	assert.NoError(t, send(t, r, "someone@example.com"))
 	assertCode(t, send(t, r, "someone@example.com"), "451")
 }
@@ -211,14 +212,14 @@ func TestRelayServer_TooManyRecipientsIsPermanent(t *testing.T) {
 }
 
 func TestRelayServer_AtCapacityIsTemporary(t *testing.T) {
-	inFlight := NewInFlight(1)
+	inFlight := mailnet.NewInFlight(1)
 	assert.True(t, inFlight.Acquire())
-	r := startRelay(t, defaultLimits(), &fakeSender{}, &fakeScanner{}, NewConnections(0), inFlight)
+	r := startRelay(t, defaultLimits(), &fakeSender{}, &fakeScanner{}, mailnet.NewConnections(0), inFlight)
 	assertCode(t, send(t, r, "someone@example.com"), "451")
 }
 
 func TestRelayServer_ConnectionCap(t *testing.T) {
-	r := startRelay(t, defaultLimits(), &fakeSender{}, &fakeScanner{}, NewConnections(1), NewInFlight(0))
+	r := startRelay(t, defaultLimits(), &fakeSender{}, &fakeScanner{}, mailnet.NewConnections(1), mailnet.NewInFlight(0))
 
 	first, err := dial(t, r)
 	assert.NoError(t, err)

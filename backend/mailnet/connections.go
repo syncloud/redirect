@@ -1,4 +1,4 @@
-package mailrelay
+package mailnet
 
 import (
 	"fmt"

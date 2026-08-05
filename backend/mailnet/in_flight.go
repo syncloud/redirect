@@ -1,4 +1,4 @@
-package mailrelay
+package mailnet
 
 type InFlight struct {
 	slots chan struct{}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
+	"github.com/syncloud/redirect/mailnet"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
@@ -15,8 +16,8 @@ type Session struct {
 	sender      Sender
 	scanner     Scanner
 	limiter     *Limiter
-	connections *Connections
-	inFlight    *InFlight
+	connections *mailnet.Connections
+	inFlight    *mailnet.InFlight
 	peer        string
 	logger      *zap.Logger
 	domain      *model.Domain
@@ -99,7 +100,7 @@ func (s *Session) Data(r io.Reader) error {
 	}
 	if !s.inFlight.Acquire() {
 		s.logger.Info("mail relay at capacity", zap.String("domain", s.domain.Name))
-		return tryAgain(ErrBusy, smtp.EnhancedCode{4, 3, 2})
+		return tryAgain(mailnet.ErrBusy, smtp.EnhancedCode{4, 3, 2})
 	}
 	defer s.inFlight.Release()
 	if err := s.sender.Send(s.from, s.recipients, message); err != nil {

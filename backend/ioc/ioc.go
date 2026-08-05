@@ -15,6 +15,7 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/mailnet"
 	"github.com/syncloud/redirect/mailrelay"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
@@ -422,22 +423,22 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.Connections {
-		return mailrelay.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
+	err = c.Singleton(func(config *utils.Config) *mailnet.Connections {
+		return mailnet.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.InFlight {
-		return mailrelay.NewInFlight(config.GetMailRelayMaxConcurrentSends())
+	err = c.Singleton(func(config *utils.Config) *mailnet.InFlight {
+		return mailnet.NewInFlight(config.GetMailRelayMaxConcurrentSends())
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.CertificateLoader {
-		return mailrelay.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+	err = c.Singleton(func(config *utils.Config) *mailnet.CertificateLoader {
+		return mailnet.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
 	})
 	if err != nil {
 		return nil, err
@@ -448,9 +449,9 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		sender mailrelay.Sender,
 		scanner *mailrelay.Rspamd,
 		limiter *mailrelay.Limiter,
-		connections *mailrelay.Connections,
-		inFlight *mailrelay.InFlight,
-		certificate *mailrelay.CertificateLoader,
+		connections *mailnet.Connections,
+		inFlight *mailnet.InFlight,
+		certificate *mailnet.CertificateLoader,
 		config *utils.Config,
 	) *mailrelay.Server {
 		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),

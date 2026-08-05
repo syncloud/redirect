@@ -6,26 +6,27 @@ import (
 	"time"
 
 	"github.com/emersion/go-smtp"
+	"github.com/syncloud/redirect/mailnet"
 	"go.uber.org/zap"
 )
 
 type Server struct {
 	relay       *Relay
 	sender      Sender
-	certificate *CertificateLoader
+	certificate *mailnet.CertificateLoader
 	server      *smtp.Server
 	logger      *zap.Logger
 }
 
 func NewServer(address string, domain string, relay *Relay, sender Sender, scanner Scanner,
-	limiter *Limiter, connections *Connections, inFlight *InFlight, certificate *CertificateLoader,
+	limiter *Limiter, connections *mailnet.Connections, inFlight *mailnet.InFlight, certificate *mailnet.CertificateLoader,
 	maxMessageBytes int64, logger *zap.Logger) *Server {
 	s := &Server{relay: relay, sender: sender, certificate: certificate, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
 		if !connections.Acquire(peer) {
 			logger.Info("mail relay refused a connection", zap.String("peer", peer))
-			return nil, ErrTooManyConnections
+			return nil, mailnet.ErrTooManyConnections
 		}
 		return &Session{
 			relay: relay, sender: sender, scanner: scanner, limiter: limiter,
