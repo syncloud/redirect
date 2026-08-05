@@ -58,6 +58,7 @@ def test_user_create_special_symbols_in_password(domain):
 
 
 def create_user(domain, email, password, artifact_dir):
+    smtp.clear()
     response = requests.post('https://www.{0}/api/user/create'.format(domain),
                              json={'email': email, 'password': password}, verify=False)
     assert response.status_code == 200, response.text
