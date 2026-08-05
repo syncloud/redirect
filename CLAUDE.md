@@ -138,6 +138,16 @@ Those directories are populated from:
 - `integration/` — Python integration tests (API)
 - `.drone.jsonnet` — Drone pipelines
 
+## Database
+
+Schema is golang-migrate, with migrations embedded into the binaries from
+`backend/db/migrations` (`//go:embed` in `backend/db/migrations.go`). The api
+applies pending migrations on startup; `backend/cmd/migrate` is the manual CLI
+(`up`, `version`, `force`).
+
+Add a migration as `0000NN_name.up.sql` + `0000NN_name.down.sql`, numbered from
+the highest existing prefix.
+
 ## Frontend test split
 
 - `www/tests/unit/` — Jest unit/component tests
