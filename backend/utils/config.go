@@ -489,3 +489,18 @@ func (config *Config) UserCleanerEnabled() bool {
 	}
 	return result
 }
+
+func (config *Config) mailInboundPort(key string, port int) int {
+	if value, err := config.parser.GetInt64("mail_inbound", key); err == nil {
+		return int(value)
+	}
+	return port
+}
+
+func (config *Config) GetMailInboundPortFrom() int {
+	return config.mailInboundPort("port_from", 20000)
+}
+
+func (config *Config) GetMailInboundPortTo() int {
+	return config.mailInboundPort("port_to", 29999)
+}

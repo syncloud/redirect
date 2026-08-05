@@ -223,7 +223,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *service.Domains {
-		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector, config.GetRelayAddress())
+		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector,
+			config.GetRelayAddress(), config.GetMailInboundPortFrom(), config.GetMailInboundPortTo())
 	})
 	if err != nil {
 		return nil, err

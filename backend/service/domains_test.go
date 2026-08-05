@@ -71,11 +71,20 @@ type DomainsDbStub struct {
 	deleted      bool
 	hostedZoneId string
 	userStatus   int64
+	smtpPort     *int
+	allocations  int
+}
+
+func (db *DomainsDbStub) AllocateSmtpPort(_ uint64, from int, _ int) (*int, error) {
+	db.allocations++
+	port := from
+	return &port, nil
 }
 
 func (db *DomainsDbStub) GetDomainByToken(_ string) (*model.Domain, error) {
 	if db.found {
-		return &model.Domain{Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId}, nil
+		return &model.Domain{
+			Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId, SmtpPort: db.smtpPort}, nil
 	}
 	return nil, nil
 }
@@ -155,7 +164,7 @@ func TestAcquireFreeDomain_ExistingMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -174,7 +183,7 @@ func TestAcquireFreeDomain_ExistingNotMine(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	userDomain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -194,7 +203,7 @@ func TestAcquireFreeDomain_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -214,7 +223,7 @@ func TestAcquirePremiumDomain_FreeUser_NotAvailable(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -233,7 +242,7 @@ func TestAcquirePremiumDomain_PremiumUser_Available(t *testing.T) {
 	dnsStub := &DnsStub{}
 	subscriptionId := "1"
 	users := &DomainsUsersStub{authenticated: true, userId: 1, subscriptionId: &subscriptionId}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -253,7 +262,7 @@ func TestFreeAvailability_SameUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -269,7 +278,7 @@ func TestFreeAvailability_OtherUser(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 2}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "test.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -285,7 +294,7 @@ func TestFreeAvailability_Available(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "test123.syncloud.it"
 	password := "password"
 	email := "test@example.com"
@@ -301,7 +310,7 @@ func TestPremiumAvailability_FreeUser_NotAvailable(t *testing.T) {
 	db := &DomainsDbStub{found: false}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -318,7 +327,7 @@ func TestPremiumAvailability_PremiumUser_NotAvailable(t *testing.T) {
 	dnsStub := &DnsStub{}
 	subscriptionId := "1"
 	users := &DomainsUsersStub{authenticated: true, userId: 1, subscriptionId: &subscriptionId}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "", &DetectorStub{}, "", 20000, 29999)
 	domain := "example.com"
 	password := "password"
 	email := "test@example.com"
@@ -334,7 +343,7 @@ func TestDeleteDomain_Free_DeleteRecords(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", &DetectorStub{}, "", 20000, 29999)
 	err := domains.DeleteDomain(1, "test.syncloud.it")
 
 	assert.Nil(t, err)
@@ -349,7 +358,7 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{}, "", 20000, 29999)
 	err := domains.DeleteDomain(1, "test.com")
 
 	assert.Nil(t, err)
@@ -364,7 +373,7 @@ func TestDeleteDomain_Premium_DeleteRecordsAndHostedZone_IgnoreNoSuchHostedZoneE
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{error: awserr.New(route53.ErrCodeNoSuchHostedZone, "not found", nil)}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{}, "")
+	domains := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{}, "", 20000, 29999)
 	err := domains.DeleteDomain(1, "test.com")
 
 	assert.Nil(t, err)
@@ -379,7 +388,7 @@ func TestGetDomains_Free_NoNameServers(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", &DetectorStub{}, "")
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", &DetectorStub{}, "", 20000, 29999)
 	domains, err := domainService.GetDomains(&model.User{Id: 1})
 
 	assert.Nil(t, err)
@@ -390,7 +399,7 @@ func TestGetDomains_Premium_NameServers(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
-	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{}, "")
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", &DetectorStub{}, "", 20000, 29999)
 	domains, err := domainService.GetDomains(&model.User{Id: 1})
 
 	assert.Nil(t, err)
@@ -407,7 +416,7 @@ func TestDomains_Update_Ipv6_Changed(t *testing.T) {
 	webLocalPort := 443
 	webProtocol := "https"
 	detector := &DetectorStub{changed: true}
-	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", detector, "")
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", detector, "", 20000, 29999)
 	domain, err := domainService.Update(model.DomainUpdateRequest{
 		MapLocalAddress: false,
 		WebLocalPort:    &webLocalPort,
@@ -434,7 +443,7 @@ func TestDomains_Update_LockedUser_Error(t *testing.T) {
 	webLocalPort := 443
 	webProtocol := "https"
 	detector := &DetectorStub{changed: true}
-	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", detector, "")
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "2", detector, "", 20000, 29999)
 	_, err := domainService.Update(model.DomainUpdateRequest{
 		MapLocalAddress: false,
 		WebLocalPort:    &webLocalPort,
@@ -446,4 +455,53 @@ func TestDomains_Update_LockedUser_Error(t *testing.T) {
 	}, &requestIp)
 
 	assert.Error(t, err)
+}
+
+func updateWithMailRelay(db *DomainsDbStub, mailRelay bool) (*model.Domain, error) {
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	token := "123"
+	requestIp := "10.0.0.1"
+	webLocalPort := 443
+	webProtocol := "https"
+	detector := &DetectorStub{changed: true}
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", detector, "", 20000, 29999)
+	return domainService.Update(model.DomainUpdateRequest{
+		WebLocalPort: &webLocalPort,
+		WebProtocol:  &webProtocol,
+		Token:        &token,
+		Ipv4Enabled:  true,
+		MailRelay:    mailRelay,
+	}, &requestIp)
+}
+
+func TestDomains_Update_MailRelay_AllocatesSmtpPort(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+
+	domain, err := updateWithMailRelay(db, true)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 1, db.allocations)
+	assert.Equal(t, 20000, *domain.SmtpPort)
+}
+
+func TestDomains_Update_MailRelay_KeepsAllocatedSmtpPort(t *testing.T) {
+	existing := 20005
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1", smtpPort: &existing}
+
+	domain, err := updateWithMailRelay(db, true)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 0, db.allocations)
+	assert.Equal(t, 20005, *domain.SmtpPort)
+}
+
+func TestDomains_Update_NoMailRelay_NoSmtpPort(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+
+	domain, err := updateWithMailRelay(db, false)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 0, db.allocations)
+	assert.Nil(t, domain.SmtpPort)
 }

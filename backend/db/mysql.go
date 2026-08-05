@@ -10,7 +10,12 @@ import (
 	"strings"
 	"time"
 )
-import _ "github.com/go-sql-driver/mysql"
+import "github.com/go-sql-driver/mysql"
+
+const (
+	smtpPortAttempts  = 10
+	duplicateKeyError = 1062
+)
 
 type MySql struct {
 	host     string
@@ -249,6 +254,7 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 			"web_protocol, "+
 			"web_port, "+
 			"web_local_port, "+
+			"smtp_port, "+
 			"relay, "+
 			"mail_relay, "+
 			"last_update, "+
@@ -275,6 +281,7 @@ func (m *MySql) getDomainByField(field string, value string) (*model.Domain, err
 		&domain.WebProtocol,
 		&domain.WebPort,
 		&domain.WebLocalPort,
+		&domain.SmtpPort,
 		&domain.Relay,
 		&domain.MailRelay,
 		&domain.LastUpdate,
@@ -418,6 +425,7 @@ func (m *MySql) UpdateDomain(domain *model.Domain) error {
 			"web_protocol = ?, " +
 			"web_port = ?, " +
 			"web_local_port = ?, " +
+			"smtp_port = ?, " +
 			"relay = ?, " +
 			"mail_relay = ?, " +
 			"last_update = ? " +
@@ -443,6 +451,7 @@ func (m *MySql) UpdateDomain(domain *model.Domain) error {
 		domain.WebProtocol,
 		domain.WebPort,
 		domain.WebLocalPort,
+		domain.SmtpPort,
 		domain.Relay,
 		domain.MailRelay,
 		domain.LastUpdate,
@@ -453,6 +462,69 @@ func (m *MySql) UpdateDomain(domain *model.Domain) error {
 		return err
 	}
 	return nil
+}
+
+func (m *MySql) AllocateSmtpPort(domainId uint64, from int, to int) (*int, error) {
+	for attempt := 0; attempt < smtpPortAttempts; attempt++ {
+		port, err := m.freeSmtpPort(from, to)
+		if err != nil {
+			return nil, err
+		}
+		if port == nil {
+			return nil, fmt.Errorf("no free smtp port in range %d-%d", from, to)
+		}
+		result, err := m.db.Exec(
+			"UPDATE domain SET smtp_port = ? WHERE id = ? AND smtp_port IS NULL", *port, domainId)
+		if err != nil {
+			if isDuplicateKey(err) {
+				continue
+			}
+			log.Println("sql error: ", err)
+			return nil, err
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return nil, err
+		}
+		if affected == 0 {
+			return m.SmtpPort(domainId)
+		}
+		return port, nil
+	}
+	return nil, fmt.Errorf("unable to allocate an smtp port after %d attempts", smtpPortAttempts)
+}
+
+func (m *MySql) SmtpPort(domainId uint64) (*int, error) {
+	row := m.db.QueryRow("SELECT smtp_port FROM domain WHERE id = ?", domainId)
+	var port *int
+	if err := row.Scan(&port); err != nil {
+		return nil, err
+	}
+	return port, nil
+}
+
+func (m *MySql) freeSmtpPort(from int, to int) (*int, error) {
+	row := m.db.QueryRow(
+		"SELECT MIN(c.candidate) FROM ("+
+			"SELECT ? AS candidate "+
+			"UNION "+
+			"SELECT smtp_port + 1 FROM domain WHERE smtp_port IS NOT NULL"+
+			") c "+
+			"LEFT JOIN domain d ON d.smtp_port = c.candidate "+
+			"WHERE d.id IS NULL AND c.candidate BETWEEN ? AND ?", from, from, to)
+	var port *int
+	if err := row.Scan(&port); err != nil {
+		return nil, err
+	}
+	return port, nil
+}
+
+func isDuplicateKey(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		return mysqlErr.Number == duplicateKeyError
+	}
+	return false
 }
 
 func (m *MySql) InsertDomain(domain *model.Domain) error {
