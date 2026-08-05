@@ -3,7 +3,7 @@
 	acme_ca {$ACME_CA}
 	https_port 8443
 	layer4 {
-		{$MAIL_INBOUND_LISTEN} {
+		:25 {
 			route {
 				proxy {
 					proxy_protocol v2
