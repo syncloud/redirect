@@ -874,7 +874,7 @@ func (m *MySql) IsMailRelayBlocked(name string) (bool, error) {
 func (m *MySql) GetRelayUsageForUser(userId int64, yearMonth string) (int64, error) {
 	row := m.db.QueryRow(
 		"SELECT COALESCE(SUM(rt.bytes), 0) FROM relay_traffic rt "+
-			"JOIN domain d ON rt.name = d.name "+
+			"JOIN domain d ON rt.name = d.name OR rt.name = CONCAT(d.name, '-smtp') "+
 			"WHERE d.user_id = ? AND rt.`year_month` = ?", userId, yearMonth)
 	var bytes int64
 	if err := row.Scan(&bytes); err != nil {
