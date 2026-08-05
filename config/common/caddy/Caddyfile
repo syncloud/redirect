@@ -3,14 +3,6 @@
 	acme_ca {$ACME_CA}
 	https_port 8443
 	layer4 {
-		:25 {
-			route {
-				proxy {
-					proxy_protocol v2
-					upstream 127.0.0.1:10025
-				}
-			}
-		}
 		:465 {
 			route {
 				tls

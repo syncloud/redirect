@@ -1134,7 +1134,7 @@ def test_relay_usage_persisted_and_served(domain, device_host, artifact_dir, frp
         backend.shutdown()
 
 
-MAIL_INBOUND_PORT = 25
+MAIL_INBOUND_PORT = 10025
 
 
 class MailDevice:
