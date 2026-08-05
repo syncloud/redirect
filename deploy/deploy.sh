@@ -99,6 +99,15 @@ done
 
 . "$STAGE/common/caddy/env/$SYNCLOUD_DOMAIN.env"
 
+MAIL_INBOUND_IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')
+[ -n "$MAIL_INBOUND_IP" ] || MAIL_INBOUND_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+if [ -z "$MAIL_INBOUND_IP" ]; then
+    echo "cannot determine the primary address to listen on for inbound mail" >&2
+    exit 1
+fi
+MAIL_INBOUND_LISTEN="$MAIL_INBOUND_IP:25"
+echo "inbound mail listening on $MAIL_INBOUND_LISTEN"
+
 CADDY_IMAGE=syncloud/caddy:${TAG##*:}
 docker pull "$CADDY_IMAGE"
 docker rm -f caddy 2>/dev/null || true
@@ -119,6 +128,7 @@ docker run -d \
     -e SITE_DOMAIN="$SITE_DOMAIN" \
     -e GRAFANA_DOMAIN="$GRAFANA_DOMAIN" \
     -e RELAY_SITE_SNI="$RELAY_SITE_SNI" \
+    -e MAIL_INBOUND_LISTEN="$MAIL_INBOUND_LISTEN" \
     -v /etc/caddy:/etc/caddy:ro \
     -v /var/www:/var/www:ro \
     -v caddy_data:/data \
