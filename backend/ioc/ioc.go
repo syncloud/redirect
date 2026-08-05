@@ -101,8 +101,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(route53 *route53.Route53, metrics *metrics.Metrics) *dns.AmazonDns {
-		return dns.New(route53, metrics, 255, logger)
+	err = c.Singleton(func(route53 *route53.Route53, metrics *metrics.Metrics, config *utils.Config) *dns.AmazonDns {
+		return dns.New(route53, metrics, 255, config.Domain(), logger)
 	})
 	if err != nil {
 		return nil, err

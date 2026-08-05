@@ -49,18 +49,20 @@ type Route53 interface {
 }
 
 type AmazonDns struct {
-	client   Route53
-	metrics  *metrics.Metrics
-	txtLimit int
-	logger   *zap.Logger
+	client     Route53
+	metrics    *metrics.Metrics
+	txtLimit   int
+	mainDomain string
+	logger     *zap.Logger
 }
 
-func New(client Route53, metrics *metrics.Metrics, txtLimit int, logger *zap.Logger) *AmazonDns {
+func New(client Route53, metrics *metrics.Metrics, txtLimit int, mainDomain string, logger *zap.Logger) *AmazonDns {
 	return &AmazonDns{
-		client:   client,
-		metrics:  metrics,
-		txtLimit: txtLimit,
-		logger:   logger,
+		client:     client,
+		metrics:    metrics,
+		txtLimit:   txtLimit,
+		mainDomain: mainDomain,
+		logger:     logger,
 	}
 }
 
@@ -116,7 +118,7 @@ func (a *AmazonDns) UpdateDomainRecords(domain *model.Domain) error {
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", fmt.Sprintf("1 %s", domain.FQDN()), "CREATE", domain.HostedZoneId)
+	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", a.mx(domain), "CREATE", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
@@ -244,4 +246,11 @@ func splitBy(s string, n int) []string {
 	}
 	ss = append(ss, s)
 	return ss
+}
+
+func (a *AmazonDns) mx(domain *model.Domain) string {
+	if domain.MailRelay {
+		return fmt.Sprintf("1 %s", domain.MailHost(a.mainDomain))
+	}
+	return fmt.Sprintf("1 %s", domain.FQDN())
 }

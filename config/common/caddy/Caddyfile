@@ -59,6 +59,11 @@ mail-relay.{$REDIRECT_DOMAIN} {
 	respond 404
 }
 
+*.mx.{$REDIRECT_DOMAIN} {
+	import syncloud_tls
+	respond 404
+}
+
 {$SHOP_DOMAIN} {
 	import syncloud_tls
 	root * /var/www/shop/opencart

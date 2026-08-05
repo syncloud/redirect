@@ -48,6 +48,11 @@ func (d *Domain) FQDN() string {
 	return fmt.Sprintf("%s.", d.Name)
 }
 
+func (d *Domain) MailHost(mainDomain string) string {
+	label := strings.ReplaceAll(strings.TrimSuffix(d.Name, "."+mainDomain), ".", "-")
+	return fmt.Sprintf("%s.mx.%s.", label, mainDomain)
+}
+
 func (d *Domain) accessIp() *string {
 	if d.MapLocalAddress {
 		return d.LocalIp
