@@ -15,6 +15,7 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/mailin"
 	"github.com/syncloud/redirect/mailnet"
 	"github.com/syncloud/redirect/mailrelay"
 	"github.com/syncloud/redirect/metrics"
@@ -457,6 +458,28 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
 			relayService, sender, scanner, limiter, connections, inFlight, certificate,
 			config.GetMailRelayMaxMessageBytes(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql) *mailin.Router {
+		return mailin.NewRouter(database, mailin.DeviceHost)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(router *mailin.Router, config *utils.Config) *mailin.Server {
+		return mailin.NewServer(
+			config.GetMailInboundAddress(),
+			config.GetMailInboundHostname(),
+			router,
+			mailnet.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
+			mailnet.NewInFlight(config.GetMailInboundMaxConcurrent()),
+			mailnet.NewCertificateLoader(config.GetMailInboundCertFile(), config.GetMailInboundKeyFile()),
+			config.GetMailInboundMaxMessageBytes(),
+			logger)
 	})
 	if err != nil {
 		return nil, err

@@ -8,6 +8,7 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/mailin"
 	"github.com/syncloud/redirect/mailrelay"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/relay"
@@ -42,6 +43,7 @@ func main() {
 				relayAccountant *relay.Accountant,
 				scanner *mailrelay.Rspamd,
 				mailRelay *mailrelay.Server,
+				mailIn *mailin.Server,
 				reputation *mailrelay.Reputation,
 				usageMetrics *mailrelay.UsageMetrics,
 				config *utils.Config,
@@ -58,6 +60,7 @@ func main() {
 					reputation,
 					scanner,
 					mailRelay,
+					mailIn,
 					api,
 				}
 				for _, s := range services {

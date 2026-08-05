@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/bigkevmcd/go-configparser"
 	"log"
 	"os"
@@ -503,4 +504,47 @@ func (config *Config) GetMailInboundPortFrom() int {
 
 func (config *Config) GetMailInboundPortTo() int {
 	return config.mailInboundPort("port_to", 29999)
+}
+
+func (config *Config) GetMailInboundAddress() string {
+	if value, err := config.parser.Get("mail_inbound", "address"); err == nil {
+		return value
+	}
+	return ":25"
+}
+
+func (config *Config) GetMailInboundHostname() string {
+	if value, err := config.parser.Get("mail_inbound", "hostname"); err == nil {
+		return value
+	}
+	return fmt.Sprintf("mx.%s", config.Domain())
+}
+
+func (config *Config) GetMailInboundCertFile() string {
+	if value, err := config.parser.Get("mail_inbound", "cert_file"); err == nil {
+		return value
+	}
+	return ""
+}
+
+func (config *Config) GetMailInboundKeyFile() string {
+	if value, err := config.parser.Get("mail_inbound", "key_file"); err == nil {
+		return value
+	}
+	return ""
+}
+
+func (config *Config) GetMailInboundMaxMessageBytes() int64 {
+	if value, err := config.parser.GetInt64("mail_inbound", "max_message_bytes"); err == nil {
+		return value
+	}
+	return 35 * 1024 * 1024
+}
+
+func (config *Config) GetMailInboundMaxConnectionsPerPeer() int {
+	return config.mailInboundPort("max_connections_per_peer", 20)
+}
+
+func (config *Config) GetMailInboundMaxConcurrent() int {
+	return config.mailInboundPort("max_concurrent", 200)
 }
