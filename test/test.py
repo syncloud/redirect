@@ -1296,6 +1296,7 @@ def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_
         domain_name, device.port, smtp_port, 'valid')
     try:
         delivered = None
+        last_error = None
         for _ in range(30):
             try:
                 mail_send(device_host, 'sender@example.com',
@@ -1303,10 +1304,12 @@ def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_
                 delivered = device.wait()
                 if delivered:
                     break
-            except Exception:
-                pass
+                last_error = 'smtp accepted the message but the device never saw it'
+            except Exception as e:
+                last_error = '{0}: {1}'.format(type(e).__name__, e)
             time.sleep(2)
-        assert delivered, open(log_path).read()
+        assert delivered, 'last smtp error: {0}\nfrpc log:\n{1}'.format(
+            last_error, open(log_path).read())
         assert 'inbound-e2e' in delivered[0]['body'], delivered
         assert domain_name in delivered[0]['recipients'][0], delivered
     finally:
