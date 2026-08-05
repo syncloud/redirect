@@ -1,5 +1,7 @@
 import json
 import os
+import socket
+import smtplib
 import ssl
 import subprocess
 import tarfile
@@ -1129,3 +1131,219 @@ def test_relay_usage_persisted_and_served(domain, device_host, artifact_dir, frp
     finally:
         process.terminate()
         backend.shutdown()
+
+
+MAIL_INBOUND_PORT = 25
+
+
+class MailDevice:
+
+    def __init__(self):
+        self.socket = socket.socket()
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(('127.0.0.1', 0))
+        self.socket.listen(5)
+        self.port = self.socket.getsockname()[1]
+        self.messages = []
+        self.running = True
+        threading.Thread(target=self.serve, daemon=True).start()
+
+    def serve(self):
+        while self.running:
+            try:
+                connection, _ = self.socket.accept()
+            except OSError:
+                return
+            threading.Thread(target=self.session, args=(connection,), daemon=True).start()
+
+    def session(self, connection):
+        stream = connection.makefile('rwb')
+        stream.write(b'220 device.syncloud.test ESMTP\r\n')
+        stream.flush()
+        recipients = []
+        body = []
+        reading = False
+        for raw in stream:
+            line = raw.decode('utf-8', 'replace')
+            if reading:
+                if line.strip() == '.':
+                    reading = False
+                    self.messages.append({'recipients': list(recipients), 'body': ''.join(body)})
+                    stream.write(b'250 accepted\r\n')
+                    stream.flush()
+                else:
+                    body.append(line)
+                continue
+            command = line.upper()
+            if command.startswith('EHLO') or command.startswith('HELO'):
+                stream.write(b'250-device.syncloud.test\r\n250 8BITMIME\r\n')
+            elif command.startswith('DATA'):
+                reading = True
+                stream.write(b'354 go ahead\r\n')
+            elif command.startswith('RCPT'):
+                recipients.append(line.strip())
+                stream.write(b'250 ok\r\n')
+            elif command.startswith('RSET'):
+                recipients, body = [], []
+                stream.write(b'250 ok\r\n')
+            elif command.startswith('QUIT'):
+                stream.write(b'221 bye\r\n')
+                stream.flush()
+                break
+            else:
+                stream.write(b'250 ok\r\n')
+            stream.flush()
+        connection.close()
+
+    def stop(self):
+        self.running = False
+        self.socket.close()
+
+    def wait(self, attempts=30):
+        for _ in range(attempts):
+            if self.messages:
+                return self.messages
+            time.sleep(1)
+        return self.messages
+
+
+def mail_write_frpc_config(path, server_addr, server_name, token, domain_name, local_port, remote_port):
+    config = (
+        'serverAddr = "{addr}"\n'
+        'serverPort = 443\n'
+        'transport.tls.enable = true\n'
+        'transport.tls.serverName = "{sni}"\n'
+        'transport.tls.disableCustomTLSFirstByte = true\n'
+        'metadatas.token = "{token}"\n'
+        '\n'
+        '[[proxies]]\n'
+        'name = "{domain}-smtp"\n'
+        'type = "tcp"\n'
+        'localIP = "127.0.0.1"\n'
+        'localPort = {local}\n'
+        'remotePort = {remote}\n'
+    ).format(addr=server_addr, sni=server_name, token=token, domain=domain_name,
+             local=local_port, remote=remote_port)
+    with open(path, 'w') as f:
+        f.write(config)
+
+
+def mail_start_frpc(frpc_path, work_dir, server_addr, server_name, token, domain_name,
+                    local_port, remote_port, tag):
+    config_path = join(work_dir, 'frpc-mail-{0}.toml'.format(tag))
+    log_path = join(work_dir, 'frpc-mail-{0}.log'.format(tag))
+    mail_write_frpc_config(config_path, server_addr, server_name, token, domain_name,
+                           local_port, remote_port)
+    log = open(log_path, 'w')
+    process = subprocess.Popen([frpc_path, '-c', config_path], stdout=log, stderr=subprocess.STDOUT)
+    return process, log_path
+
+
+def mail_enable_relay(domain, update_token):
+    response = requests.post('https://api.{0}/domain/update'.format(domain), json={
+        'token': update_token,
+        'ipv4_enabled': True,
+        'mail_relay': True,
+        'web_protocol': 'https',
+        'web_local_port': 443,
+    }, verify=False)
+    assert response.status_code == 200, response.text
+    return get_domain(update_token, domain)
+
+
+def mail_send(host, sender, recipient, subject):
+    server = smtplib.SMTP(host, MAIL_INBOUND_PORT, timeout=30)
+    try:
+        message = 'Subject: {0}\r\n\r\nhello\r\n'.format(subject)
+        server.sendmail(sender, [recipient], message)
+    finally:
+        server.quit()
+
+
+def test_mail_inbound_update_assigns_an_smtp_port(domain, artifact_dir):
+    email = 'mail_port@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    domain_name = 'mailport.{0}'.format(domain)
+    update_token = api.domain_acquire(domain, domain_name, email, password)
+
+    data = mail_enable_relay(domain, update_token)
+
+    assert 'smtp_port' in data, data
+    assert data['smtp_port'] >= 20000, data
+
+    again = mail_enable_relay(domain, update_token)
+    assert again['smtp_port'] == data['smtp_port'], again
+
+
+def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_dir, frpc):
+    user_domain = 'mailin'
+    domain_name = '{0}.{1}'.format(user_domain, domain)
+    email = 'mail_inbound@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    update_token = api.domain_acquire(domain, domain_name, email, password)
+    add_host_alias(user_domain, device_host, domain)
+
+    data = mail_enable_relay(domain, update_token)
+    smtp_port = data['smtp_port']
+
+    device = MailDevice()
+    work_dir = tempfile.mkdtemp()
+    process, log_path = mail_start_frpc(
+        frpc, work_dir, device_host, 'relay.{0}'.format(domain), update_token,
+        domain_name, device.port, smtp_port, 'valid')
+    try:
+        delivered = None
+        for _ in range(30):
+            try:
+                mail_send(device_host, 'sender@example.com',
+                          'user@{0}'.format(domain_name), 'inbound-e2e')
+                delivered = device.wait()
+                if delivered:
+                    break
+            except Exception:
+                pass
+            time.sleep(2)
+        assert delivered, open(log_path).read()
+        assert 'inbound-e2e' in delivered[0]['body'], delivered
+        assert domain_name in delivered[0]['recipients'][0], delivered
+    finally:
+        process.terminate()
+        device.stop()
+
+
+def test_mail_inbound_unknown_domain_rejected(domain, device_host):
+    server = smtplib.SMTP(device_host, MAIL_INBOUND_PORT, timeout=30)
+    try:
+        server.ehlo()
+        server.mail('sender@example.com')
+        code, _ = server.rcpt('user@nosuchdevice.{0}'.format(domain))
+        assert code == 550, code
+    finally:
+        server.quit()
+
+
+def test_mail_inbound_wrong_port_rejected(domain, device_host, artifact_dir, frpc):
+    user_domain = 'mailinbad'
+    domain_name = '{0}.{1}'.format(user_domain, domain)
+    email = 'mail_inbound_bad@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    update_token = api.domain_acquire(domain, domain_name, email, password)
+
+    data = mail_enable_relay(domain, update_token)
+    stolen_port = data['smtp_port'] + 1
+
+    device = MailDevice()
+    work_dir = tempfile.mkdtemp()
+    process, log_path = mail_start_frpc(
+        frpc, work_dir, device_host, 'relay.{0}'.format(domain), update_token,
+        domain_name, device.port, stolen_port, 'bad')
+    try:
+        time.sleep(10)
+        log = open(log_path).read()
+        assert 'port not assigned to this domain' in log or 'start error' in log, log
+    finally:
+        process.terminate()
+        device.stop()
