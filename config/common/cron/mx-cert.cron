@@ -1,0 +1,4 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+17 4 * * * root /var/www/redirect/current/bin/mx-cert-copy.sh REDIRECT_DOMAIN >> /var/log/mx-cert-copy.log 2>&1
