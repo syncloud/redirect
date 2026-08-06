@@ -10,34 +10,33 @@ var (
 	ErrNotAccepted  = fmt.Errorf("mail is not accepted for this domain")
 )
 
-// Router decides which device a recipient belongs to. Every device is reached
-// through the same frps multiplexer port and told apart by name, so there is
-// nothing to look up beyond whether the domain wants mail at all.
+// Router decides which device a recipient belongs to. Devices are told apart
+// by name, so there is nothing to look up beyond whether the domain wants mail.
 type Router struct {
 	store DomainStore
-	muxer string
 }
 
-func NewRouter(store DomainStore, muxer string) *Router {
-	return &Router{store: store, muxer: muxer}
+func NewRouter(store DomainStore) *Router {
+	return &Router{store: store}
 }
 
-func (r *Router) Route(recipient string) (*Route, error) {
+// Route names the device that should receive a recipient's mail.
+func (r *Router) Route(recipient string) (string, error) {
 	name, err := recipientDomain(recipient)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	domain, err := r.store.GetDomainByName(name)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if domain == nil {
-		return nil, ErrNoSuchDomain
+		return "", ErrNoSuchDomain
 	}
 	if !domain.MailRelay {
-		return nil, ErrNotAccepted
+		return "", ErrNotAccepted
 	}
-	return &Route{Domain: domain.Name, Muxer: r.muxer}, nil
+	return domain.Name, nil
 }
 
 func recipientDomain(recipient string) (string, error) {

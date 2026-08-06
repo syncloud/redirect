@@ -12,7 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
-const dialTimeout = 30 * time.Second
+// DialTimeout bounds reaching a device through the tunnel
+const DialTimeout = 30 * time.Second
 
 type Server struct {
 	server        *smtp.Server
@@ -21,8 +22,9 @@ type Server struct {
 	logger        *zap.Logger
 }
 
-func NewServer(address string, hostname string, router *Router, connections *mailnet.Connections,
-	inFlight *mailnet.InFlight, certificate *mailnet.CertificateLoader, maxMessageBytes int64,
+func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
+	connections *mailnet.Connections, inFlight *mailnet.InFlight,
+	certificate *mailnet.CertificateLoader, maxMessageBytes int64,
 	proxyProtocol bool, logger *zap.Logger) *Server {
 	s := &Server{proxyProtocol: proxyProtocol, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
@@ -32,8 +34,8 @@ func NewServer(address string, hostname string, router *Router, connections *mai
 			return nil, mailnet.ErrTooManyConnections
 		}
 		return &Session{
-			router: router, connections: connections, inFlight: inFlight,
-			hostname: hostname, dialTimeout: dialTimeout, peer: peer, logger: logger,
+			router: router, dialer: dialer, connections: connections, inFlight: inFlight,
+			hostname: hostname, peer: peer, logger: logger,
 		}, nil
 	}))
 	server.Addr = address

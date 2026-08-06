@@ -1,11 +1,9 @@
 package mailin
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"net/smtp"
 	"os"
 	"path/filepath"
@@ -23,7 +21,7 @@ import (
 )
 
 type fakeDevice struct {
-	muxer   string
+	address string
 	rcptErr error
 	dataErr error
 
@@ -77,11 +75,9 @@ func (d *fakeDevice) got() ([]string, string) {
 	return append([]string{}, d.recipients...), d.body
 }
 
-// startDevice stands in for frps: it answers the CONNECT for the names it
-// knows, then joins the raw stream to an smtp server pretending to be the
-// device behind the tunnel.
-func startDevice(device *fakeDevice, domains ...string) (*fakeDevice, func(), error) {
-	smtpListener, err := net.Listen("tcp", "127.0.0.1:0")
+// startDevice runs an smtp server standing in for the device behind the tunnel
+func startDevice(device *fakeDevice) (*fakeDevice, func(), error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,62 +85,26 @@ func startDevice(device *fakeDevice, domains ...string) (*fakeDevice, func(), er
 		return &deviceSession{device: device}, nil
 	}))
 	server.Domain = "device.syncloud.it"
-	go func() { _ = server.Serve(smtpListener) }()
-
-	muxer, stopMuxer, err := startMuxer(smtpListener.Addr().String(), domains...)
-	if err != nil {
-		_ = server.Close()
-		return nil, nil, err
-	}
-	device.muxer = muxer
-	return device, func() { stopMuxer(); _ = server.Close() }, nil
+	go func() { _ = server.Serve(listener) }()
+	device.address = listener.Addr().String()
+	return device, func() { _ = server.Close() }, nil
 }
 
-func startMuxer(upstream string, domains ...string) (string, func(), error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return "", nil, err
-	}
-	known := map[string]bool{}
-	for _, d := range domains {
-		known[d] = true
-	}
-	go func() {
-		for {
-			connection, err := listener.Accept()
-			if err != nil {
-				return
-			}
-			go serveMux(connection, upstream, known)
-		}
-	}()
-	return listener.Addr().String(), func() { _ = listener.Close() }, nil
+// fakeDialer stands in for the tunnel: it knows which devices have one open
+type fakeDialer struct {
+	devices map[string]string
 }
 
-func serveMux(connection net.Conn, upstream string, known map[string]bool) {
-	defer connection.Close()
-	request, err := http.ReadRequest(bufio.NewReader(connection))
-	if err != nil || request.Method != http.MethodConnect {
-		return
+func (d *fakeDialer) Dial(domain string) (net.Conn, error) {
+	address, ok := d.devices[domain]
+	if !ok {
+		return nil, fmt.Errorf("no tunnel for %s", domain)
 	}
-	host := request.Host
-	if h, _, err := net.SplitHostPort(host); err == nil {
-		host = h
-	}
-	if !known[host] {
-		_, _ = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
-		return
-	}
-	device, err := net.Dial("tcp", upstream)
-	if err != nil {
-		return
-	}
-	defer device.Close()
-	if _, err := connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n")); err != nil {
-		return
-	}
-	go func() { _, _ = io.Copy(device, connection) }()
-	_, _ = io.Copy(connection, device)
+	return net.Dial("tcp", address)
+}
+
+func tunnelTo(domain string, device *fakeDevice) *fakeDialer {
+	return &fakeDialer{devices: map[string]string{domain: device.address}}
 }
 
 type fakeStore struct {
@@ -155,11 +115,11 @@ func (f *fakeStore) GetDomainByName(name string) (*model.Domain, error) {
 	return f.domains[name], nil
 }
 
-func relayed(muxer string, domains map[string]*model.Domain) (string, func(), error) {
-	return relayedWith(muxer, domains, mailnet.NewConnections(0), false)
+func relayed(dialer DeviceDialer, domains map[string]*model.Domain) (string, func(), error) {
+	return relayedWith(dialer, domains, mailnet.NewConnections(0), false)
 }
 
-func relayedWith(muxer string, domains map[string]*model.Domain,
+func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 	connections *mailnet.Connections, proxyProtocol bool) (string, func(), error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -170,8 +130,8 @@ func relayedWith(muxer string, domains map[string]*model.Domain,
 		return "", nil, err
 	}
 
-	router := NewRouter(&fakeStore{domains: domains}, muxer)
-	server := NewServer(address, "mx.syncloud.it", router, connections,
+	router := NewRouter(&fakeStore{domains: domains})
+	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
 		mailnet.NewInFlight(0), mailnet.NewCertificateLoader("", ""), 1024*1024, proxyProtocol, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, err
@@ -227,10 +187,10 @@ func assertCode(t *testing.T, err error, code string) {
 }
 
 func TestInbound_DeliversToTheDevice(t *testing.T) {
-	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
+	device, stopDevice, err := startDevice(&fakeDevice{})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
@@ -243,7 +203,7 @@ func TestInbound_DeliversToTheDevice(t *testing.T) {
 }
 
 func TestInbound_UnknownDomainRejected(t *testing.T) {
-	address, stop, err := relayed("127.0.0.1:1", map[string]*model.Domain{})
+	address, stop, err := relayed(&fakeDialer{}, map[string]*model.Domain{})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -251,7 +211,7 @@ func TestInbound_UnknownDomainRejected(t *testing.T) {
 }
 
 func TestInbound_MailRelayOffRejected(t *testing.T) {
-	address, stop, err := relayed("127.0.0.1:1", map[string]*model.Domain{
+	address, stop, err := relayed(&fakeDialer{}, map[string]*model.Domain{
 		"alice.syncloud.it": {Name: "alice.syncloud.it", MailRelay: false}})
 	assert.NoError(t, err)
 	defer stop()
@@ -259,24 +219,9 @@ func TestInbound_MailRelayOffRejected(t *testing.T) {
 	assertCode(t, deliver(address, "user@alice.syncloud.it"), "550")
 }
 
-func TestInbound_NoMultiplexerDeferred(t *testing.T) {
-	// nothing is listening where frps should be, as when the relay host is up
-	// but frps is not
-	address, stop, err := relayed("127.0.0.1:1", map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
-	assert.NoError(t, err)
-	defer stop()
-
-	assertCode(t, deliver(address, "user@alice.syncloud.it"), "451")
-}
-
-func TestInbound_DeviceWithoutATunnelDeferred(t *testing.T) {
-	// the multiplexer answers but this device has no proxy registered, so the
-	// CONNECT is refused rather than the connection failing
-	device, stopDevice, err := startDevice(&fakeDevice{}, "someone-else.syncloud.it")
-	assert.NoError(t, err)
-	defer stopDevice()
-	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+func TestInbound_NoTunnelDeferred(t *testing.T) {
+	// the device has no tunnel open, so there is nowhere to deliver
+	address, stop, err := relayed(&fakeDialer{}, map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
@@ -286,11 +231,10 @@ func TestInbound_DeviceWithoutATunnelDeferred(t *testing.T) {
 
 func TestInbound_DeviceRejectsRecipient(t *testing.T) {
 	device, stopDevice, err := startDevice(&fakeDevice{rcptErr: &gosmtp.SMTPError{
-		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 1, 1}, Message: "user unknown"}},
-		"alice.syncloud.it")
+		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 1, 1}, Message: "user unknown"}})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
@@ -303,11 +247,10 @@ func TestInbound_DeviceRejectsRecipient(t *testing.T) {
 
 func TestInbound_DeviceRejectsMessage(t *testing.T) {
 	device, stopDevice, err := startDevice(&fakeDevice{dataErr: &gosmtp.SMTPError{
-		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 7, 1}, Message: "spam rejected"}},
-		"alice.syncloud.it")
+		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 7, 1}, Message: "spam rejected"}})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
@@ -319,12 +262,15 @@ func TestInbound_DeviceRejectsMessage(t *testing.T) {
 }
 
 func TestInbound_SecondDomainDeferred(t *testing.T) {
-	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it", "bob.syncloud.it")
+	device, stopDevice, err := startDevice(&fakeDevice{})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it"),
-		"bob.syncloud.it":   mailRelayDomain("bob.syncloud.it")})
+	address, stop, err := relayed(
+		&fakeDialer{devices: map[string]string{
+			"alice.syncloud.it": device.address, "bob.syncloud.it": device.address}},
+		map[string]*model.Domain{
+			"alice.syncloud.it": mailRelayDomain("alice.syncloud.it"),
+			"bob.syncloud.it":   mailRelayDomain("bob.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -347,10 +293,10 @@ func TestInbound_SecondDomainDeferred(t *testing.T) {
 }
 
 func TestInbound_ManyRecipientsOnOneDevice(t *testing.T) {
-	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
+	device, stopDevice, err := startDevice(&fakeDevice{})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
@@ -380,10 +326,10 @@ func proxyDial(address string, client string) (*smtp.Client, error) {
 }
 
 func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
-	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
+	device, stopDevice, err := startDevice(&fakeDevice{})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayedWith(device.muxer, map[string]*model.Domain{
+	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
 		mailnet.NewConnections(1), true)
 	assert.NoError(t, err)
@@ -401,10 +347,10 @@ func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
 }
 
 func TestInbound_ProxyProtocolLimitsOneSender(t *testing.T) {
-	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
+	device, stopDevice, err := startDevice(&fakeDevice{})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayedWith(device.muxer, map[string]*model.Domain{
+	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
 		mailnet.NewConnections(1), true)
 	assert.NoError(t, err)
@@ -439,7 +385,7 @@ func TestInbound_BrokenCertificateStopsTheServer(t *testing.T) {
 	assert.NoError(t, os.WriteFile(keyPath, []byte("not a key"), 0600))
 
 	server := NewServer("127.0.0.1:0", "mx.syncloud.it",
-		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}, "127.0.0.1:1"),
+		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
 		mailnet.NewConnections(0), mailnet.NewInFlight(0),
 		mailnet.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
 

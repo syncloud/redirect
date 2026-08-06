@@ -468,18 +468,26 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, config *utils.Config) *mailin.Router {
-		return mailin.NewRouter(database, config.GetMailInboundMuxer())
+	err = c.Singleton(func(database *db.MySql) *mailin.Router {
+		return mailin.NewRouter(database)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(router *mailin.Router, config *utils.Config) *mailin.Server {
+	err = c.Singleton(func(config *utils.Config) mailin.DeviceDialer {
+		return mailin.NewTunnelDialer(config.GetMailInboundMuxer(), mailin.DialTimeout)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(router *mailin.Router, dialer mailin.DeviceDialer, config *utils.Config) *mailin.Server {
 		return mailin.NewServer(
 			config.GetMailInboundAddress(),
 			config.GetMailInboundHostname(),
 			router,
+			dialer,
 			mailnet.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
 			mailnet.NewInFlight(config.GetMailInboundMaxConcurrent()),
 			mailnet.NewCertificateLoader(config.GetMailInboundCertFile(), config.GetMailInboundKeyFile()),
