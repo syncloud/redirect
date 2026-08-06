@@ -68,12 +68,27 @@ func TestCertificateLoader_NoPathsMeansNoTls(t *testing.T) {
 	assert.Nil(t, config)
 }
 
-func TestCertificateLoader_MissingFileIsAnError(t *testing.T) {
+func TestCertificateLoader_MissingFileIsNotYetThere(t *testing.T) {
 	dir := t.TempDir()
 
 	_, err := NewCertificateLoader(filepath.Join(dir, "nope.crt"), filepath.Join(dir, "nope.key")).Load()
 
+	// caddy has to obtain it before the copy can run, so a new host has to be
+	// able to start without it
+	assert.ErrorIs(t, err, ErrCertificateMissing)
+}
+
+func TestCertificateLoader_UnparseableFileIsAnError(t *testing.T) {
+	dir := t.TempDir()
+	certPath := filepath.Join(dir, "mx.crt")
+	keyPath := filepath.Join(dir, "mx.key")
+	assert.NoError(t, os.WriteFile(certPath, []byte("not a certificate"), 0644))
+	assert.NoError(t, os.WriteFile(keyPath, []byte("not a key"), 0600))
+
+	_, err := NewCertificateLoader(certPath, keyPath).Load()
+
 	assert.Error(t, err)
+	assert.NotErrorIs(t, err, ErrCertificateMissing)
 }
 
 func TestCertificateLoader_ServesTheCertificate(t *testing.T) {

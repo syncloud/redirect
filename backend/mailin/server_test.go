@@ -377,6 +377,20 @@ func TestInbound_ProxyProtocolPolicy(t *testing.T) {
 	assert.Equal(t, proxyproto.REJECT, remote)
 }
 
+func TestInbound_MissingCertificateStartsWithoutTls(t *testing.T) {
+	dir := t.TempDir()
+
+	server := NewServer("127.0.0.1:0", "mx.syncloud.it",
+		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
+		mail.NewConnections(0), mail.NewInFlight(0),
+		mail.NewCertificateLoader(filepath.Join(dir, "mx.crt"), filepath.Join(dir, "mx.key")),
+		1024*1024, false, zap.NewNop())
+
+	// a host deploying for the first time has no certificate yet
+	assert.NoError(t, server.Start())
+	assert.NoError(t, server.Close())
+}
+
 func TestInbound_BrokenCertificateStopsTheServer(t *testing.T) {
 	dir := t.TempDir()
 	certPath := filepath.Join(dir, "mx.crt")
@@ -389,7 +403,7 @@ func TestInbound_BrokenCertificateStopsTheServer(t *testing.T) {
 		mail.NewConnections(0), mail.NewInFlight(0),
 		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
 
-	// a configured certificate that cannot be read must stop the service rather
-	// than leave it accepting mail in the clear
+	// a certificate that will not parse must stop the service rather than leave
+	// it accepting mail in the clear
 	assert.Error(t, server.Start())
 }

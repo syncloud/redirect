@@ -50,14 +50,19 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 }
 
 func (s *Server) Start() error {
-	// a configured certificate that will not load is a failure, not a reason to
-	// carry on without starttls: every sender would quietly fall back to
-	// cleartext and only the log would say so
+	// a certificate that is configured but will not parse is a failure: carrying
+	// on would drop every sender to cleartext and only the log would say so.
+	// one that has not been copied across yet is not, or no host could ever
+	// start before caddy had obtained it
 	tlsConfig, err := s.certificate.Load()
-	if err != nil {
+	if errors.Is(err, mail.ErrCertificateMissing) {
+		s.logger.Error("no inbound mail certificate yet, starting without starttls",
+			zap.Error(err))
+	} else if err != nil {
 		return fmt.Errorf("inbound mail certificate: %w", err)
+	} else {
+		s.server.TLSConfig = tlsConfig
 	}
-	s.server.TLSConfig = tlsConfig
 
 	listener, err := net.Listen("tcp", s.server.Addr)
 	if err != nil {
