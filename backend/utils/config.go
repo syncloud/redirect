@@ -556,3 +556,10 @@ func (config *Config) GetMailInboundProxyProtocol() bool {
 	}
 	return value
 }
+
+func (config *Config) AwsEndpoint() string {
+	if value, err := config.parser.Get("aws", "endpoint"); err == nil {
+		return value
+	}
+	return ""
+}

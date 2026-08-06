@@ -80,7 +80,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(session *session.Session) *route53.Route53 {
+	err = c.Singleton(func(session *session.Session, config *utils.Config) *route53.Route53 {
+		if endpoint := config.AwsEndpoint(); endpoint != "" {
+			return route53.New(session, aws.NewConfig().WithEndpoint(endpoint).WithRegion("us-east-1"))
+		}
 		return route53.New(session)
 	})
 	if err != nil {
