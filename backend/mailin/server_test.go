@@ -1,8 +1,11 @@
 package mailin
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"net/smtp"
 	"strings"
 	"sync"
@@ -18,7 +21,7 @@ import (
 )
 
 type fakeDevice struct {
-	port    int
+	muxer   string
 	rcptErr error
 	dataErr error
 
@@ -72,19 +75,74 @@ func (d *fakeDevice) got() ([]string, string) {
 	return append([]string{}, d.recipients...), d.body
 }
 
-func startDevice(t *testing.T, device *fakeDevice) *fakeDevice {
-	t.Helper()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	assert.NoError(t, err)
-	device.port = listener.Addr().(*net.TCPAddr).Port
-
+// startDevice stands in for frps: it answers the CONNECT for the names it
+// knows, then joins the raw stream to an smtp server pretending to be the
+// device behind the tunnel.
+func startDevice(device *fakeDevice, domains ...string) (*fakeDevice, func(), error) {
+	smtpListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return nil, nil, err
+	}
 	server := gosmtp.NewServer(gosmtp.BackendFunc(func(_ *gosmtp.Conn) (gosmtp.Session, error) {
 		return &deviceSession{device: device}, nil
 	}))
 	server.Domain = "device.syncloud.it"
-	go func() { _ = server.Serve(listener) }()
-	t.Cleanup(func() { _ = server.Close() })
-	return device
+	go func() { _ = server.Serve(smtpListener) }()
+
+	muxer, stopMuxer, err := startMuxer(smtpListener.Addr().String(), domains...)
+	if err != nil {
+		_ = server.Close()
+		return nil, nil, err
+	}
+	device.muxer = muxer
+	return device, func() { stopMuxer(); _ = server.Close() }, nil
+}
+
+func startMuxer(upstream string, domains ...string) (string, func(), error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", nil, err
+	}
+	known := map[string]bool{}
+	for _, d := range domains {
+		known[d] = true
+	}
+	go func() {
+		for {
+			connection, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			go serveMux(connection, upstream, known)
+		}
+	}()
+	return listener.Addr().String(), func() { _ = listener.Close() }, nil
+}
+
+func serveMux(connection net.Conn, upstream string, known map[string]bool) {
+	defer connection.Close()
+	request, err := http.ReadRequest(bufio.NewReader(connection))
+	if err != nil || request.Method != http.MethodConnect {
+		return
+	}
+	host := request.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	if !known[host] {
+		_, _ = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		return
+	}
+	device, err := net.Dial("tcp", upstream)
+	if err != nil {
+		return
+	}
+	defer device.Close()
+	if _, err := connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n")); err != nil {
+		return
+	}
+	go func() { _, _ = io.Copy(device, connection) }()
+	_, _ = io.Copy(connection, device)
 }
 
 type fakeStore struct {
@@ -95,46 +153,52 @@ func (f *fakeStore) GetDomainByName(name string) (*model.Domain, error) {
 	return f.domains[name], nil
 }
 
-func relayed(t *testing.T, domains map[string]*model.Domain) string {
-	return relayedWith(t, domains, mailnet.NewConnections(0), false)
+func relayed(muxer string, domains map[string]*model.Domain) (string, func(), error) {
+	return relayedWith(muxer, domains, mailnet.NewConnections(0), false)
 }
 
-func relayedWith(t *testing.T, domains map[string]*model.Domain,
-	connections *mailnet.Connections, proxyProtocol bool) string {
-	t.Helper()
+func relayedWith(muxer string, domains map[string]*model.Domain,
+	connections *mailnet.Connections, proxyProtocol bool) (string, func(), error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	assert.NoError(t, err)
+	if err != nil {
+		return "", nil, err
+	}
 	address := listener.Addr().String()
-	assert.NoError(t, listener.Close())
+	if err := listener.Close(); err != nil {
+		return "", nil, err
+	}
 
-	router := NewRouter(&fakeStore{domains: domains}, "127.0.0.1")
+	router := NewRouter(&fakeStore{domains: domains}, muxer)
 	server := NewServer(address, "mx.syncloud.it", router, connections,
 		mailnet.NewInFlight(0), mailnet.NewCertificateLoader("", ""), 1024*1024, proxyProtocol, zap.NewNop())
-	assert.NoError(t, server.Start())
-	t.Cleanup(func() { _ = server.Close() })
-	return address
+	if err := server.Start(); err != nil {
+		return "", nil, err
+	}
+	return address, func() { _ = server.Close() }, nil
 }
 
-func mailRelayDomain(name string, port int) *model.Domain {
-	return &model.Domain{Name: name, MailRelay: true, SmtpPort: &port}
+func mailRelayDomain(name string) *model.Domain {
+	return &model.Domain{Name: name, MailRelay: true}
 }
 
-func dial(t *testing.T, address string) *smtp.Client {
-	t.Helper()
+func dial(address string) (*smtp.Client, error) {
+	var err error
 	for i := 0; i < 100; i++ {
-		client, err := smtp.Dial(address)
+		var client *smtp.Client
+		client, err = smtp.Dial(address)
 		if err == nil {
-			return client
+			return client, nil
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	t.Fatalf("inbound server never came up on %s", address)
-	return nil
+	return nil, fmt.Errorf("inbound server never came up on %s: %w", address, err)
 }
 
-func deliver(t *testing.T, address string, recipients ...string) error {
-	t.Helper()
-	client := dial(t, address)
+func deliver(address string, recipients ...string) error {
+	client, err := dial(address)
+	if err != nil {
+		return err
+	}
 	defer client.Close()
 	if err := client.Mail("sender@example.com"); err != nil {
 		return err
@@ -144,9 +208,9 @@ func deliver(t *testing.T, address string, recipients ...string) error {
 			return err
 		}
 	}
-	writer, err := client.Data()
-	if err != nil {
-		return err
+	writer, dataErr := client.Data()
+	if dataErr != nil {
+		return dataErr
 	}
 	if _, err := writer.Write([]byte("Subject: hello\r\n\r\nbody\r\n")); err != nil {
 		return err
@@ -157,94 +221,118 @@ func deliver(t *testing.T, address string, recipients ...string) error {
 func assertCode(t *testing.T, err error, code string) {
 	t.Helper()
 	assert.Error(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), code),
-		"expected %s, got %v", code, err)
+	assert.True(t, strings.HasPrefix(err.Error(), code), "expected %s, got %v", code, err)
 }
 
 func TestInbound_DeliversToTheDevice(t *testing.T) {
-	device := startDevice(t, &fakeDevice{})
-	address := relayed(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)})
-
-	err := deliver(t, address, "user@alice.syncloud.it")
-
+	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
 	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
+
+	assert.NoError(t, deliver(address, "user@alice.syncloud.it"))
+
 	recipients, body := device.got()
 	assert.Equal(t, []string{"user@alice.syncloud.it"}, recipients)
 	assert.Contains(t, body, "Subject: hello")
 }
 
 func TestInbound_UnknownDomainRejected(t *testing.T) {
-	address := relayed(t, map[string]*model.Domain{})
+	address, stop, err := relayed("127.0.0.1:1", map[string]*model.Domain{})
+	assert.NoError(t, err)
+	defer stop()
 
-	err := deliver(t, address, "user@stranger.syncloud.it")
-
-	assertCode(t, err, "550")
+	assertCode(t, deliver(address, "user@stranger.syncloud.it"), "550")
 }
 
 func TestInbound_MailRelayOffRejected(t *testing.T) {
-	port := 20000
-	address := relayed(t, map[string]*model.Domain{
-		"alice.syncloud.it": {Name: "alice.syncloud.it", MailRelay: false, SmtpPort: &port}})
+	address, stop, err := relayed("127.0.0.1:1", map[string]*model.Domain{
+		"alice.syncloud.it": {Name: "alice.syncloud.it", MailRelay: false}})
+	assert.NoError(t, err)
+	defer stop()
 
-	err := deliver(t, address, "user@alice.syncloud.it")
-
-	assertCode(t, err, "550")
+	assertCode(t, deliver(address, "user@alice.syncloud.it"), "550")
 }
 
-func TestInbound_DeviceOfflineDeferred(t *testing.T) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+func TestInbound_NoMultiplexerDeferred(t *testing.T) {
+	// nothing is listening where frps should be, as when the relay host is up
+	// but frps is not
+	address, stop, err := relayed("127.0.0.1:1", map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
-	closedPort := listener.Addr().(*net.TCPAddr).Port
-	assert.NoError(t, listener.Close())
+	defer stop()
 
-	address := relayed(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", closedPort)})
+	assertCode(t, deliver(address, "user@alice.syncloud.it"), "451")
+}
 
-	err = deliver(t, address, "user@alice.syncloud.it")
+func TestInbound_DeviceWithoutATunnelDeferred(t *testing.T) {
+	// the multiplexer answers but this device has no proxy registered, so the
+	// CONNECT is refused rather than the connection failing
+	device, stopDevice, err := startDevice(&fakeDevice{}, "someone-else.syncloud.it")
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
 
-	assertCode(t, err, "451")
+	assertCode(t, deliver(address, "user@alice.syncloud.it"), "451")
 }
 
 func TestInbound_DeviceRejectsRecipient(t *testing.T) {
-	device := startDevice(t, &fakeDevice{rcptErr: &gosmtp.SMTPError{
-		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 1, 1}, Message: "user unknown"}})
-	address := relayed(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)})
+	device, stopDevice, err := startDevice(&fakeDevice{rcptErr: &gosmtp.SMTPError{
+		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 1, 1}, Message: "user unknown"}},
+		"alice.syncloud.it")
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
 
-	err := deliver(t, address, "nobody@alice.syncloud.it")
+	deliverErr := deliver(address, "nobody@alice.syncloud.it")
 
-	assertCode(t, err, "550")
-	assert.Contains(t, err.Error(), "user unknown")
+	assertCode(t, deliverErr, "550")
+	assert.Contains(t, deliverErr.Error(), "user unknown")
 }
 
 func TestInbound_DeviceRejectsMessage(t *testing.T) {
-	device := startDevice(t, &fakeDevice{dataErr: &gosmtp.SMTPError{
-		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 7, 1}, Message: "spam rejected"}})
-	address := relayed(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)})
+	device, stopDevice, err := startDevice(&fakeDevice{dataErr: &gosmtp.SMTPError{
+		Code: 550, EnhancedCode: gosmtp.EnhancedCode{5, 7, 1}, Message: "spam rejected"}},
+		"alice.syncloud.it")
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
 
-	err := deliver(t, address, "user@alice.syncloud.it")
+	deliverErr := deliver(address, "user@alice.syncloud.it")
 
-	assertCode(t, err, "550")
-	assert.Contains(t, err.Error(), "spam rejected")
+	assertCode(t, deliverErr, "550")
+	assert.Contains(t, deliverErr.Error(), "spam rejected")
 }
 
 func TestInbound_SecondDomainDeferred(t *testing.T) {
-	alice := startDevice(t, &fakeDevice{})
-	bob := startDevice(t, &fakeDevice{})
-	address := relayed(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", alice.port),
-		"bob.syncloud.it":   mailRelayDomain("bob.syncloud.it", bob.port)})
+	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it", "bob.syncloud.it")
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it"),
+		"bob.syncloud.it":   mailRelayDomain("bob.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
 
-	client := dial(t, address)
+	client, err := dial(address)
+	assert.NoError(t, err)
 	defer client.Close()
 	assert.NoError(t, client.Mail("sender@example.com"))
 	assert.NoError(t, client.Rcpt("user@alice.syncloud.it"))
 
-	err := client.Rcpt("user@bob.syncloud.it")
-
-	assertCode(t, err, "452")
+	assertCode(t, client.Rcpt("user@bob.syncloud.it"), "452")
 
 	writer, dataErr := client.Data()
 	assert.NoError(t, dataErr)
@@ -252,28 +340,30 @@ func TestInbound_SecondDomainDeferred(t *testing.T) {
 	assert.NoError(t, writeErr)
 	assert.NoError(t, writer.Close())
 
-	aliceRecipients, _ := alice.got()
-	bobRecipients, _ := bob.got()
-	assert.Equal(t, []string{"user@alice.syncloud.it"}, aliceRecipients)
-	assert.Empty(t, bobRecipients)
+	recipients, _ := device.got()
+	assert.Equal(t, []string{"user@alice.syncloud.it"}, recipients)
 }
 
 func TestInbound_ManyRecipientsOnOneDevice(t *testing.T) {
-	device := startDevice(t, &fakeDevice{})
-	address := relayed(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)})
-
-	err := deliver(t, address, "one@alice.syncloud.it", "two@alice.syncloud.it")
-
+	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
 	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
+
+	assert.NoError(t, deliver(address, "one@alice.syncloud.it", "two@alice.syncloud.it"))
+
 	recipients, _ := device.got()
 	assert.Equal(t, []string{"one@alice.syncloud.it", "two@alice.syncloud.it"}, recipients)
 }
 
-func proxyDial(t *testing.T, address string, client string) *smtp.Client {
-	t.Helper()
+func proxyDial(address string, client string) (*smtp.Client, error) {
 	connection, err := net.Dial("tcp", address)
-	assert.NoError(t, err)
+	if err != nil {
+		return nil, err
+	}
 	header := &proxyproto.Header{
 		Version:           2,
 		Command:           proxyproto.PROXY,
@@ -281,22 +371,27 @@ func proxyDial(t *testing.T, address string, client string) *smtp.Client {
 		SourceAddr:        &net.TCPAddr{IP: net.ParseIP(client), Port: 40000},
 		DestinationAddr:   &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 10025},
 	}
-	_, err = header.WriteTo(connection)
-	assert.NoError(t, err)
-	smtpClient, err := smtp.NewClient(connection, "mx.syncloud.it")
-	assert.NoError(t, err)
-	return smtpClient
+	if _, err := header.WriteTo(connection); err != nil {
+		return nil, err
+	}
+	return smtp.NewClient(connection, "mx.syncloud.it")
 }
 
 func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
-	device := startDevice(t, &fakeDevice{})
-	address := relayedWith(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)},
+	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayedWith(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
 		mailnet.NewConnections(1), true)
+	assert.NoError(t, err)
+	defer stop()
 
-	first := proxyDial(t, address, "203.0.113.7")
+	first, err := proxyDial(address, "203.0.113.7")
+	assert.NoError(t, err)
 	defer first.Close()
-	second := proxyDial(t, address, "198.51.100.9")
+	second, err := proxyDial(address, "198.51.100.9")
+	assert.NoError(t, err)
 	defer second.Close()
 
 	assert.NoError(t, first.Mail("sender@example.com"))
@@ -304,14 +399,20 @@ func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
 }
 
 func TestInbound_ProxyProtocolLimitsOneSender(t *testing.T) {
-	device := startDevice(t, &fakeDevice{})
-	address := relayedWith(t, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it", device.port)},
+	device, stopDevice, err := startDevice(&fakeDevice{}, "alice.syncloud.it")
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayedWith(device.muxer, map[string]*model.Domain{
+		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
 		mailnet.NewConnections(1), true)
+	assert.NoError(t, err)
+	defer stop()
 
-	first := proxyDial(t, address, "203.0.113.7")
+	first, err := proxyDial(address, "203.0.113.7")
+	assert.NoError(t, err)
 	defer first.Close()
-	second := proxyDial(t, address, "203.0.113.7")
+	second, err := proxyDial(address, "203.0.113.7")
+	assert.NoError(t, err)
 	defer second.Close()
 
 	assert.NoError(t, first.Mail("sender@example.com"))

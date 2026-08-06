@@ -1208,7 +1208,7 @@ class MailDevice:
         return self.messages
 
 
-def mail_write_frpc_config(path, server_addr, server_name, token, domain_name, local_port, remote_port):
+def mail_write_frpc_config(path, server_addr, server_name, token, domain_name, local_port):
     config = (
         'serverAddr = "{addr}"\n'
         'serverPort = 443\n'
@@ -1219,22 +1219,23 @@ def mail_write_frpc_config(path, server_addr, server_name, token, domain_name, l
         '\n'
         '[[proxies]]\n'
         'name = "{domain}-smtp"\n'
-        'type = "tcp"\n'
+        'type = "tcpmux"\n'
+        'multiplexer = "httpconnect"\n'
+        'customDomains = ["{domain}"]\n'
         'localIP = "127.0.0.1"\n'
         'localPort = {local}\n'
-        'remotePort = {remote}\n'
     ).format(addr=server_addr, sni=server_name, token=token, domain=domain_name,
-             local=local_port, remote=remote_port)
+             local=local_port)
     with open(path, 'w') as f:
         f.write(config)
 
 
 def mail_start_frpc(frpc_path, work_dir, server_addr, server_name, token, domain_name,
-                    local_port, remote_port, tag):
+                    local_port, tag):
     config_path = join(work_dir, 'frpc-mail-{0}.toml'.format(tag))
     log_path = join(work_dir, 'frpc-mail-{0}.log'.format(tag))
     mail_write_frpc_config(config_path, server_addr, server_name, token, domain_name,
-                           local_port, remote_port)
+                           local_port)
     log = open(log_path, 'w')
     process = subprocess.Popen([frpc_path, '-c', config_path], stdout=log, stderr=subprocess.STDOUT)
     return process, log_path
@@ -1261,22 +1262,6 @@ def mail_send(host, sender, recipient, subject):
         server.quit()
 
 
-def test_mail_inbound_update_assigns_an_smtp_port(domain, artifact_dir):
-    email = 'mail_port@syncloud.test'
-    password = 'pass123456'
-    create_user(domain, email, password, artifact_dir)
-    domain_name = 'mailport.{0}'.format(domain)
-    update_token = api.domain_acquire(domain, domain_name, email, password)
-
-    data = mail_enable_relay(domain, update_token)
-
-    assert 'smtp_port' in data, data
-    assert data['smtp_port'] >= 20000, data
-
-    again = mail_enable_relay(domain, update_token)
-    assert again['smtp_port'] == data['smtp_port'], again
-
-
 def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_dir, frpc):
     user_domain = 'mailin'
     domain_name = '{0}.{1}'.format(user_domain, domain)
@@ -1286,14 +1271,13 @@ def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_
     update_token = api.domain_acquire(domain, domain_name, email, password)
     add_host_alias(user_domain, device_host, domain)
 
-    data = mail_enable_relay(domain, update_token)
-    smtp_port = data['smtp_port']
+    mail_enable_relay(domain, update_token)
 
     device = MailDevice()
     work_dir = tempfile.mkdtemp()
     process, log_path = mail_start_frpc(
         frpc, work_dir, device_host, 'relay.{0}'.format(domain), update_token,
-        domain_name, device.port, smtp_port, 'valid')
+        domain_name, device.port, 'valid')
     try:
         delivered = None
         last_error = None
@@ -1328,31 +1312,6 @@ def test_mail_inbound_unknown_domain_rejected(domain, device_host):
         server.quit()
 
 
-def test_mail_inbound_wrong_port_rejected(domain, device_host, artifact_dir, frpc):
-    user_domain = 'mailinbad'
-    domain_name = '{0}.{1}'.format(user_domain, domain)
-    email = 'mail_inbound_bad@syncloud.test'
-    password = 'pass123456'
-    create_user(domain, email, password, artifact_dir)
-    update_token = api.domain_acquire(domain, domain_name, email, password)
-
-    data = mail_enable_relay(domain, update_token)
-    stolen_port = data['smtp_port'] + 1
-
-    device = MailDevice()
-    work_dir = tempfile.mkdtemp()
-    process, log_path = mail_start_frpc(
-        frpc, work_dir, device_host, 'relay.{0}'.format(domain), update_token,
-        domain_name, device.port, stolen_port, 'bad')
-    try:
-        time.sleep(10)
-        log = open(log_path).read()
-        assert 'port not assigned to this domain' in log or 'start error' in log, log
-    finally:
-        process.terminate()
-        device.stop()
-
-
 def mail_send_big(host, sender, recipient):
     server = smtplib.SMTP(host, MAIL_INBOUND_PORT, timeout=30)
     try:
@@ -1372,12 +1331,12 @@ def mail_tunnel(domain, device_host, artifact_dir, frpc, user_domain, email, tag
     update_token = api.domain_acquire(domain, domain_name, email, password)
     add_host_alias(user_domain, device_host, domain)
 
-    data = mail_enable_relay(domain, update_token)
+    mail_enable_relay(domain, update_token)
     device = MailDevice()
     work_dir = tempfile.mkdtemp()
     process, log_path = mail_start_frpc(
         frpc, work_dir, device_host, 'relay.{0}'.format(domain), update_token,
-        domain_name, device.port, data['smtp_port'], tag)
+        domain_name, device.port, tag)
     return domain_name, password, device, process, log_path
 
 

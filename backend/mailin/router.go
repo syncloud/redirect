@@ -2,37 +2,24 @@ package mailin
 
 import (
 	"fmt"
-	"net"
-	"strconv"
 	"strings"
-
-	"github.com/syncloud/redirect/model"
 )
-
-const DeviceHost = "127.0.0.1"
 
 var (
-	ErrNoSuchDomain  = fmt.Errorf("no such domain here")
-	ErrNotAccepted   = fmt.Errorf("mail is not accepted for this domain")
-	ErrNoDeviceRoute = fmt.Errorf("device has no inbound route")
+	ErrNoSuchDomain = fmt.Errorf("no such domain here")
+	ErrNotAccepted  = fmt.Errorf("mail is not accepted for this domain")
 )
 
-type DomainStore interface {
-	GetDomainByName(name string) (*model.Domain, error)
-}
-
+// Router decides which device a recipient belongs to. Every device is reached
+// through the same frps multiplexer port and told apart by name, so there is
+// nothing to look up beyond whether the domain wants mail at all.
 type Router struct {
 	store DomainStore
-	host  string
+	muxer string
 }
 
-func NewRouter(store DomainStore, host string) *Router {
-	return &Router{store: store, host: host}
-}
-
-type Route struct {
-	Domain  string
-	Address string
+func NewRouter(store DomainStore, muxer string) *Router {
+	return &Router{store: store, muxer: muxer}
 }
 
 func (r *Router) Route(recipient string) (*Route, error) {
@@ -50,13 +37,7 @@ func (r *Router) Route(recipient string) (*Route, error) {
 	if !domain.MailRelay {
 		return nil, ErrNotAccepted
 	}
-	if domain.SmtpPort == nil {
-		return nil, ErrNoDeviceRoute
-	}
-	return &Route{
-		Domain:  domain.Name,
-		Address: net.JoinHostPort(r.host, strconv.Itoa(*domain.SmtpPort)),
-	}, nil
+	return &Route{Domain: domain.Name, Muxer: r.muxer}, nil
 }
 
 func recipientDomain(recipient string) (string, error) {

@@ -498,12 +498,13 @@ func (config *Config) mailInboundPort(key string, port int) int {
 	return port
 }
 
-func (config *Config) GetMailInboundPortFrom() int {
-	return config.mailInboundPort("port_from", 20000)
-}
-
-func (config *Config) GetMailInboundPortTo() int {
-	return config.mailInboundPort("port_to", 29999)
+// the frps tcpmux port every device's tunnel is reached through, told apart by
+// the name in the CONNECT request rather than by a port of its own
+func (config *Config) GetMailInboundMuxer() string {
+	if value, err := config.parser.Get("mail_inbound", "muxer"); err == nil {
+		return value
+	}
+	return "127.0.0.1:1337"
 }
 
 func (config *Config) GetMailInboundAddress() string {
@@ -558,8 +559,9 @@ func (config *Config) GetMailInboundProxyProtocol() bool {
 }
 
 func (config *Config) AwsEndpoint() string {
-	if value, err := config.parser.Get("aws", "endpoint"); err == nil {
-		return value
+	value, err := config.parser.Get("aws", "endpoint")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
 	}
-	return ""
+	return value
 }

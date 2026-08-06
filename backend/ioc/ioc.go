@@ -32,6 +32,9 @@ import (
 	"time"
 )
 
+// route53 is a global service and signs with this region wherever it runs
+const awsRoute53Region = "us-east-1"
+
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
 	var logger = log.Default()
 
@@ -81,10 +84,9 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(session *session.Session, config *utils.Config) *route53.Route53 {
-		if endpoint := config.AwsEndpoint(); endpoint != "" {
-			return route53.New(session, aws.NewConfig().WithEndpoint(endpoint).WithRegion("us-east-1"))
-		}
-		return route53.New(session)
+		return route53.New(session, aws.NewConfig().
+			WithEndpoint(config.AwsEndpoint()).
+			WithRegion(awsRoute53Region))
 	})
 	if err != nil {
 		return nil, err
@@ -228,8 +230,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *service.Domains {
-		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector,
-			config.GetRelayAddress(), config.GetMailInboundPortFrom(), config.GetMailInboundPortTo())
+		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(),
+			detector, config.GetRelayAddress())
 	})
 	if err != nil {
 		return nil, err
@@ -466,8 +468,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql) *mailin.Router {
-		return mailin.NewRouter(database, mailin.DeviceHost)
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *mailin.Router {
+		return mailin.NewRouter(database, config.GetMailInboundMuxer())
 	})
 	if err != nil {
 		return nil, err

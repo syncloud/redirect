@@ -37,6 +37,26 @@ func domainNamed(name string) *model.Domain {
 	return &model.Domain{Name: name}
 }
 
+func TestAuthorize_TcpMuxProxyAuthorisedByName(t *testing.T) {
+	s := newServer(map[string]*model.Domain{"good": domainNamed("alice.syncloud.it")})
+	resp := s.Authorize(newProxyContent{
+		User:          pluginUser{Metas: map[string]string{"token": "good"}},
+		ProxyType:     "tcpmux",
+		CustomDomains: []string{"alice.syncloud.it"},
+	})
+	assert.False(t, resp.Reject, resp.RejectReason)
+}
+
+func TestAuthorize_TcpMuxProxyForAnotherDomainRejected(t *testing.T) {
+	s := newServer(map[string]*model.Domain{"good": domainNamed("alice.syncloud.it")})
+	resp := s.Authorize(newProxyContent{
+		User:          pluginUser{Metas: map[string]string{"token": "good"}},
+		ProxyType:     "tcpmux",
+		CustomDomains: []string{"bob.syncloud.it"},
+	})
+	assert.True(t, resp.Reject)
+}
+
 func TestAuthorize_ValidTokenOwnsCustomDomain(t *testing.T) {
 	s := newServer(map[string]*model.Domain{"good": domainNamed("alice.syncloud.it")})
 	resp := s.Authorize(newProxyContent{
@@ -87,60 +107,4 @@ func TestEnforce_UnderLimitAllows(t *testing.T) {
 func TestEnforce_OverLimitRejects(t *testing.T) {
 	s := NewAuthServer("127.0.0.1:0", &fakeDomains{}, &fakeLimiter{over: map[string]bool{"alice.syncloud.it": true}}, "syncloud.it", zap.NewNop())
 	assert.True(t, s.Enforce(newUserConnContent{ProxyName: "alice.syncloud.it"}).Reject)
-}
-
-func mailRelayDomain(name string, port int) *model.Domain {
-	return &model.Domain{Name: name, MailRelay: true, SmtpPort: &port}
-}
-
-func TestAuthorize_SmtpAssignedPort(t *testing.T) {
-	s := newServer(map[string]*model.Domain{"good": mailRelayDomain("alice.syncloud.it", 20000)})
-	resp := s.Authorize(newProxyContent{
-		User:       pluginUser{Metas: map[string]string{"token": "good"}},
-		ProxyType:  proxyTypeTcp,
-		RemotePort: 20000,
-	})
-	assert.False(t, resp.Reject, resp.RejectReason)
-}
-
-func TestAuthorize_SmtpOtherDevicePort(t *testing.T) {
-	s := newServer(map[string]*model.Domain{"good": mailRelayDomain("alice.syncloud.it", 20000)})
-	resp := s.Authorize(newProxyContent{
-		User:       pluginUser{Metas: map[string]string{"token": "good"}},
-		ProxyType:  proxyTypeTcp,
-		RemotePort: 20001,
-	})
-	assert.True(t, resp.Reject)
-}
-
-func TestAuthorize_SmtpNoPortAssigned(t *testing.T) {
-	s := newServer(map[string]*model.Domain{"good": &model.Domain{Name: "alice.syncloud.it", MailRelay: true}})
-	resp := s.Authorize(newProxyContent{
-		User:       pluginUser{Metas: map[string]string{"token": "good"}},
-		ProxyType:  proxyTypeTcp,
-		RemotePort: 20000,
-	})
-	assert.True(t, resp.Reject)
-}
-
-func TestAuthorize_SmtpMailRelayOff(t *testing.T) {
-	port := 20000
-	s := newServer(map[string]*model.Domain{
-		"good": {Name: "alice.syncloud.it", MailRelay: false, SmtpPort: &port}})
-	resp := s.Authorize(newProxyContent{
-		User:       pluginUser{Metas: map[string]string{"token": "good"}},
-		ProxyType:  proxyTypeTcp,
-		RemotePort: 20000,
-	})
-	assert.True(t, resp.Reject)
-}
-
-func TestAuthorize_SmtpUnknownToken(t *testing.T) {
-	s := newServer(map[string]*model.Domain{"good": mailRelayDomain("alice.syncloud.it", 20000)})
-	resp := s.Authorize(newProxyContent{
-		User:       pluginUser{Metas: map[string]string{"token": "bad"}},
-		ProxyType:  proxyTypeTcp,
-		RemotePort: 20000,
-	})
-	assert.True(t, resp.Reject)
 }

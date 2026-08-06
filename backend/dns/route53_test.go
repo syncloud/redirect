@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/log"
@@ -58,15 +59,13 @@ func TestAmazonDns_UpdateDomainRecords_Dkim255CharsLimit(t *testing.T) {
 
 }
 
-func mxRecord(t *testing.T, client *Route53Stub) string {
-	t.Helper()
+func mxRecord(client *Route53Stub) (string, error) {
 	for _, change := range client.resourceRecordSetsInput.ChangeBatch.Changes {
 		if *change.ResourceRecordSet.Type == "MX" {
-			return *change.ResourceRecordSet.ResourceRecords[0].Value
+			return *change.ResourceRecordSet.ResourceRecords[0].Value, nil
 		}
 	}
-	t.Fatal("no MX record")
-	return ""
+	return "", fmt.Errorf("no MX record was written")
 }
 
 func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheDeviceWithoutMailRelay(t *testing.T) {
@@ -76,7 +75,9 @@ func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheDeviceWithoutMailRelay(t *te
 	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "alice.syncloud.it"})
 
 	assert.Nil(t, err)
-	assert.Equal(t, "1 alice.syncloud.it.", mxRecord(t, client))
+	mx, err := mxRecord(client)
+	assert.Nil(t, err)
+	assert.Equal(t, "1 alice.syncloud.it.", mx)
 }
 
 func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheRelayWithMailRelay(t *testing.T) {
@@ -86,7 +87,9 @@ func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheRelayWithMailRelay(t *testin
 	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "alice.syncloud.it", MailRelay: true})
 
 	assert.Nil(t, err)
-	assert.Equal(t, "1 alice.mx.syncloud.it.", mxRecord(t, client))
+	mx, err := mxRecord(client)
+	assert.Nil(t, err)
+	assert.Equal(t, "1 alice.mx.syncloud.it.", mx)
 }
 
 func TestAmazonDns_UpdateDomainRecords_MxForACustomDomain(t *testing.T) {
@@ -96,5 +99,7 @@ func TestAmazonDns_UpdateDomainRecords_MxForACustomDomain(t *testing.T) {
 	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "example.com", MailRelay: true})
 
 	assert.Nil(t, err)
-	assert.Equal(t, "1 example-com.mx.syncloud.it.", mxRecord(t, client))
+	mx, err := mxRecord(client)
+	assert.Nil(t, err)
+	assert.Equal(t, "1 example-com.mx.syncloud.it.", mx)
 }

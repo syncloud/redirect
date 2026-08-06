@@ -23,8 +23,6 @@ type Domains struct {
 	freeHostedZoneId string
 	detector         change.Detector
 	relayAddress     string
-	smtpPortFrom     int
-	smtpPortTo       int
 }
 
 type DomainsDb interface {
@@ -36,7 +34,6 @@ type DomainsDb interface {
 	InsertDomain(domain *model.Domain) error
 	UpdateDomain(domain *model.Domain) error
 	DeleteDomain(domainId uint64) error
-	AllocateSmtpPort(domainId uint64, from int, to int) (*int, error)
 }
 
 type DomainsUsers interface {
@@ -61,8 +58,6 @@ func NewDomains(
 	freeHostedZoneId string,
 	detector change.Detector,
 	relayAddress string,
-	smtpPortFrom int,
-	smtpPortTo int,
 ) *Domains {
 	return &Domains{
 		amazonDns:        dnsImpl,
@@ -72,9 +67,7 @@ func NewDomains(
 		domain:           domain,
 		freeHostedZoneId: freeHostedZoneId,
 		detector:         detector,
-		relayAddress:     relayAddress,
-		smtpPortFrom:     smtpPortFrom,
-		smtpPortTo:       smtpPortTo}
+		relayAddress:     relayAddress}
 }
 
 func (d *Domains) GetDomain(token string) (*model.Domain, error) {
@@ -364,14 +357,6 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	domain.WebPort = webPort
 	domain.Relay = request.Relay
 	domain.MailRelay = request.MailRelay
-
-	if domain.MailRelay && domain.SmtpPort == nil {
-		port, err := d.db.AllocateSmtpPort(domain.Id, d.smtpPortFrom, d.smtpPortTo)
-		if err != nil {
-			return nil, err
-		}
-		domain.SmtpPort = port
-	}
 
 	if changed {
 		err := d.amazonDns.UpdateDomainRecords(domain)

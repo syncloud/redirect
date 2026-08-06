@@ -10,8 +10,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const proxyTypeTcp = "tcp"
-
 type Domains interface {
 	GetDomain(token string) (*model.Domain, error)
 }
@@ -50,7 +48,6 @@ type newProxyContent struct {
 	ProxyType     string            `json:"proxy_type"`
 	Subdomain     string            `json:"subdomain"`
 	CustomDomains []string          `json:"custom_domains"`
-	RemotePort    int               `json:"remote_port"`
 	Metas         map[string]string `json:"metas"`
 }
 
@@ -131,9 +128,6 @@ func (s *AuthServer) Authorize(content newProxyContent) pluginResponse {
 		s.logger.Warn("relay authorize rejected", zap.String("proxy", content.ProxyName), zap.Error(err))
 		return deny("unknown token")
 	}
-	if content.ProxyType == proxyTypeTcp {
-		return s.authorizeSmtp(content, domain)
-	}
 	for _, requested := range s.requestedNames(content) {
 		if strings.EqualFold(requested, domain.Name) {
 			return allow()
@@ -144,22 +138,6 @@ func (s *AuthServer) Authorize(content newProxyContent) pluginResponse {
 		zap.Strings("custom_domains", content.CustomDomains),
 		zap.String("subdomain", content.Subdomain))
 	return deny("domain not owned by token")
-}
-
-func (s *AuthServer) authorizeSmtp(content newProxyContent, domain *model.Domain) pluginResponse {
-	if !domain.MailRelay {
-		s.logger.Warn("relay authorize rejected, mail relay is off",
-			zap.String("proxy", content.ProxyName), zap.String("domain", domain.Name))
-		return deny("mail relay is not enabled")
-	}
-	if domain.SmtpPort == nil || *domain.SmtpPort != content.RemotePort {
-		s.logger.Warn("relay authorize port mismatch",
-			zap.String("domain", domain.Name),
-			zap.Int("requested", content.RemotePort),
-			zap.Any("assigned", domain.SmtpPort))
-		return deny("port not assigned to this domain")
-	}
-	return allow()
 }
 
 func (s *AuthServer) requestedNames(content newProxyContent) []string {
