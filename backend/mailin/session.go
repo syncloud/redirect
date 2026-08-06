@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/emersion/go-smtp"
-	"github.com/syncloud/redirect/mailnet"
+	"github.com/syncloud/redirect/mail"
 	"go.uber.org/zap"
 )
 
@@ -20,8 +20,8 @@ var (
 type Session struct {
 	router      *Router
 	dialer      DeviceDialer
-	connections *mailnet.Connections
-	inFlight    *mailnet.InFlight
+	connections *mail.Connections
+	inFlight    *mail.InFlight
 	hostname    string
 	peer        string
 	logger      *zap.Logger
@@ -71,7 +71,7 @@ func (s *Session) Data(r io.Reader) error {
 		}
 	}
 	if !s.inFlight.Acquire() {
-		return tryAgain(mailnet.ErrBusy, smtp.EnhancedCode{4, 3, 2})
+		return tryAgain(mail.ErrBusy, smtp.EnhancedCode{4, 3, 2})
 	}
 	defer s.inFlight.Release()
 

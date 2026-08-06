@@ -15,8 +15,8 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
+	"github.com/syncloud/redirect/mail"
 	"github.com/syncloud/redirect/mailin"
-	"github.com/syncloud/redirect/mailnet"
 	"github.com/syncloud/redirect/mailrelay"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
@@ -198,7 +198,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(
 		database *db.MySql,
-		mail *service.Mail,
+		mailService *service.Mail,
 		actions *service.Actions,
 		config *utils.Config,
 		subscriptions *subscription.Router,
@@ -207,7 +207,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			database,
 			config.ActivateByEmail(),
 			actions,
-			mail,
+			mailService,
 			subscriptions,
 		)
 	})
@@ -297,8 +297,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *relay.LimitWarner {
-		return relay.NewLimitWarner(database, mail)
+	err = c.Singleton(func(database *db.MySql, mailService *service.Mail) *relay.LimitWarner {
+		return relay.NewLimitWarner(database, mailService)
 	})
 	if err != nil {
 		return nil, err
@@ -346,8 +346,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *mailrelay.LimitWarner {
-		return mailrelay.NewLimitWarner(database, mail)
+	err = c.Singleton(func(database *db.MySql, mailService *service.Mail) *mailrelay.LimitWarner {
+		return mailrelay.NewLimitWarner(database, mailService)
 	})
 	if err != nil {
 		return nil, err
@@ -429,22 +429,22 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailnet.Connections {
-		return mailnet.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
+	err = c.Singleton(func(config *utils.Config) *mail.Connections {
+		return mail.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailnet.InFlight {
-		return mailnet.NewInFlight(config.GetMailRelayMaxConcurrentSends())
+	err = c.Singleton(func(config *utils.Config) *mail.InFlight {
+		return mail.NewInFlight(config.GetMailRelayMaxConcurrentSends())
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailnet.CertificateLoader {
-		return mailnet.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+	err = c.Singleton(func(config *utils.Config) *mail.CertificateLoader {
+		return mail.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
 	})
 	if err != nil {
 		return nil, err
@@ -455,9 +455,9 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		sender mailrelay.Sender,
 		scanner *mailrelay.Rspamd,
 		limiter *mailrelay.Limiter,
-		connections *mailnet.Connections,
-		inFlight *mailnet.InFlight,
-		certificate *mailnet.CertificateLoader,
+		connections *mail.Connections,
+		inFlight *mail.InFlight,
+		certificate *mail.CertificateLoader,
 		config *utils.Config,
 	) *mailrelay.Server {
 		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
@@ -488,9 +488,9 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.GetMailInboundHostname(),
 			router,
 			dialer,
-			mailnet.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
-			mailnet.NewInFlight(config.GetMailInboundMaxConcurrent()),
-			mailnet.NewCertificateLoader(config.GetMailInboundCertFile(), config.GetMailInboundKeyFile()),
+			mail.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
+			mail.NewInFlight(config.GetMailInboundMaxConcurrent()),
+			mail.NewCertificateLoader(config.GetMailInboundCertFile(), config.GetMailInboundKeyFile()),
 			config.GetMailInboundMaxMessageBytes(),
 			config.GetMailInboundProxyProtocol(),
 			logger)
@@ -502,7 +502,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		domains *service.Domains,
 		users *service.Users,
-		mail *service.Mail,
+		mailService *service.Mail,
 		prober *probe.Service,
 		certbot *service.Certbot,
 		metrics *metrics.Metrics,
@@ -512,7 +512,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return rest.NewApi(
 			domains,
 			users,
-			mail,
+			mailService,
 			prober,
 			certbot,
 			metrics,
@@ -530,7 +530,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		domains *service.Domains,
 		nsChecker *service.NsChecker,
 		users *service.Users,
-		mail *service.Mail,
+		mailService *service.Mail,
 		actions *service.Actions,
 		stripe *subscription.Stripe,
 		paypal *subscription.PayPal,
@@ -549,7 +549,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			nsChecker,
 			users,
 			actions,
-			mail,
+			mailService,
 			stripe,
 			usage,
 			mailUsage,
@@ -568,13 +568,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		database *db.MySql,
 		domains *service.Domains,
-		mail *service.Mail,
+		mailService *service.Mail,
 		metrics *metrics.Metrics,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
 			domains,
-			mail,
+			mailService,
 			metrics,
 		)
 	})
@@ -597,7 +597,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		database *db.MySql,
 		state *user.CleanerState,
-		mail *service.Mail,
+		mailService *service.Mail,
 		config *utils.Config,
 		domains *service.Domains,
 		router *subscription.Router,
@@ -605,7 +605,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return user.NewCleaner(
 			database,
 			state,
-			mail,
+			mailService,
 			domains,
 			router,
 			config.UserCleanerEnabled(),

@@ -8,7 +8,7 @@ import (
 
 	"github.com/emersion/go-smtp"
 	"github.com/pires/go-proxyproto"
-	"github.com/syncloud/redirect/mailnet"
+	"github.com/syncloud/redirect/mail"
 	"go.uber.org/zap"
 )
 
@@ -17,21 +17,21 @@ const DialTimeout = 30 * time.Second
 
 type Server struct {
 	server        *smtp.Server
-	certificate   *mailnet.CertificateLoader
+	certificate   *mail.CertificateLoader
 	proxyProtocol bool
 	logger        *zap.Logger
 }
 
 func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
-	connections *mailnet.Connections, inFlight *mailnet.InFlight,
-	certificate *mailnet.CertificateLoader, maxMessageBytes int64,
+	connections *mail.Connections, inFlight *mail.InFlight,
+	certificate *mail.CertificateLoader, maxMessageBytes int64,
 	proxyProtocol bool, logger *zap.Logger) *Server {
 	s := &Server{proxyProtocol: proxyProtocol, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
 		if !connections.Acquire(peer) {
 			logger.Info("inbound refused a connection", zap.String("peer", peer))
-			return nil, mailnet.ErrTooManyConnections
+			return nil, mail.ErrTooManyConnections
 		}
 		return &Session{
 			router: router, dialer: dialer, connections: connections, inFlight: inFlight,

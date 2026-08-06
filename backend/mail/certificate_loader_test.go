@@ -1,4 +1,4 @@
-package mailnet
+package mail
 
 import (
 	"crypto/ecdsa"

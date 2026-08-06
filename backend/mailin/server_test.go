@@ -15,7 +15,7 @@ import (
 	gosmtp "github.com/emersion/go-smtp"
 	"github.com/pires/go-proxyproto"
 	"github.com/stretchr/testify/assert"
-	"github.com/syncloud/redirect/mailnet"
+	"github.com/syncloud/redirect/mail"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
@@ -116,11 +116,11 @@ func (f *fakeStore) GetDomainByName(name string) (*model.Domain, error) {
 }
 
 func relayed(dialer DeviceDialer, domains map[string]*model.Domain) (string, func(), error) {
-	return relayedWith(dialer, domains, mailnet.NewConnections(0), false)
+	return relayedWith(dialer, domains, mail.NewConnections(0), false)
 }
 
 func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
-	connections *mailnet.Connections, proxyProtocol bool) (string, func(), error) {
+	connections *mail.Connections, proxyProtocol bool) (string, func(), error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return "", nil, err
@@ -132,7 +132,7 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mailnet.NewInFlight(0), mailnet.NewCertificateLoader("", ""), 1024*1024, proxyProtocol, zap.NewNop())
+		mail.NewInFlight(0), mail.NewCertificateLoader("", ""), 1024*1024, proxyProtocol, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, err
 	}
@@ -331,7 +331,7 @@ func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
 	defer stopDevice()
 	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
-		mailnet.NewConnections(1), true)
+		mail.NewConnections(1), true)
 	assert.NoError(t, err)
 	defer stop()
 
@@ -352,7 +352,7 @@ func TestInbound_ProxyProtocolLimitsOneSender(t *testing.T) {
 	defer stopDevice()
 	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
-		mailnet.NewConnections(1), true)
+		mail.NewConnections(1), true)
 	assert.NoError(t, err)
 	defer stop()
 
@@ -386,8 +386,8 @@ func TestInbound_BrokenCertificateStopsTheServer(t *testing.T) {
 
 	server := NewServer("127.0.0.1:0", "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mailnet.NewConnections(0), mailnet.NewInFlight(0),
-		mailnet.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
+		mail.NewConnections(0), mail.NewInFlight(0),
+		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
 
 	// a configured certificate that cannot be read must stop the service rather
 	// than leave it accepting mail in the clear

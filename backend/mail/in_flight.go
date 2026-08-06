@@ -1,4 +1,4 @@
-package mailnet
+package mail
 
 type InFlight struct {
 	slots chan struct{}
