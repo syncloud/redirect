@@ -1240,11 +1240,11 @@ def mail_start_frpc(frpc_path, work_dir, server_addr, server_name, token, domain
     return process, log_path
 
 
-def mail_enable_relay(domain, update_token):
+def mail_enable_relay(domain, update_token, mail_relay=True):
     response = requests.post('https://api.{0}/domain/update'.format(domain), json={
         'token': update_token,
         'ipv4_enabled': True,
-        'mail_relay': True,
+        'mail_relay': mail_relay,
         'web_protocol': 'https',
         'web_local_port': 443,
     }, verify=False)
@@ -1461,10 +1461,11 @@ def test_mail_inbound_update_points_mx_at_relay(domain, device_host, artifact_di
     create_user(domain, email, password, artifact_dir)
     update_token = api.domain_acquire(domain, domain_name, email, password)
 
+    mail_enable_relay(domain, update_token, mail_relay=False)
     before = mx_records(device_host).get('{0}.'.format(domain_name), [])
     assert before == ['1 {0}.'.format(domain_name)], before
 
-    mail_enable_relay(domain, update_token)
+    mail_enable_relay(domain, update_token, mail_relay=True)
 
     after = mx_records(device_host).get('{0}.'.format(domain_name), [])
     assert after == ['1 {0}.mx.{1}.'.format(user_domain, domain)], after
