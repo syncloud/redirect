@@ -1351,3 +1351,97 @@ def test_mail_inbound_wrong_port_rejected(domain, device_host, artifact_dir, frp
     finally:
         process.terminate()
         device.stop()
+
+
+def mail_send_big(host, sender, recipient):
+    server = smtplib.SMTP(host, MAIL_INBOUND_PORT, timeout=30)
+    try:
+        message = 'Subject: bulk\r\n\r\n{0}\r\n'.format('x' * 65536)
+        server.sendmail(sender, [recipient], message)
+    finally:
+        try:
+            server.quit()
+        except Exception:
+            pass
+
+
+def mail_tunnel(domain, device_host, artifact_dir, frpc, user_domain, email, tag):
+    domain_name = '{0}.{1}'.format(user_domain, domain)
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    update_token = api.domain_acquire(domain, domain_name, email, password)
+    add_host_alias(user_domain, device_host, domain)
+
+    data = mail_enable_relay(domain, update_token)
+    device = MailDevice()
+    work_dir = tempfile.mkdtemp()
+    process, log_path = mail_start_frpc(
+        frpc, work_dir, device_host, 'relay.{0}'.format(domain), update_token,
+        domain_name, device.port, data['smtp_port'], tag)
+    return domain_name, password, device, process, log_path
+
+
+def test_mail_inbound_usage_persisted_and_served(domain, device_host, artifact_dir, frpc):
+    email = 'mail_usage@syncloud.test'
+    domain_name, password, device, process, log_path = mail_tunnel(
+        domain, device_host, artifact_dir, frpc, 'mailusage', email, 'usage')
+    try:
+        session = requests.Session()
+        login = session.post('https://www.{0}/api/user/login'.format(domain),
+                             json={'email': email, 'password': password}, verify=False)
+        assert login.status_code == 200, login.text
+
+        used = 0
+        for _ in range(20):
+            try:
+                mail_send_big(device_host, 'sender@example.com', 'user@{0}'.format(domain_name))
+            except Exception:
+                pass
+            usage = session.get('https://www.{0}/api/relay/usage'.format(domain), verify=False)
+            assert usage.status_code == 200, usage.text
+            used = usage.json()['data']['used_bytes']
+            if used > 0:
+                break
+            time.sleep(1)
+        assert used > 0, 'inbound mail bytes were not counted against relay usage\n' + open(log_path).read()
+    finally:
+        process.terminate()
+        device.stop()
+
+
+def test_mail_inbound_monthly_limit_blocks_delivery(domain, device_host, artifact_dir, frpc):
+    email = 'mail_quota@syncloud.test'
+    domain_name, password, device, process, log_path = mail_tunnel(
+        domain, device_host, artifact_dir, frpc, 'mailquota', email, 'quota')
+    try:
+        delivered = None
+        for _ in range(30):
+            try:
+                mail_send(device_host, 'sender@example.com',
+                          'user@{0}'.format(domain_name), 'quota-warmup')
+                delivered = device.wait(attempts=3)
+                if delivered:
+                    break
+            except Exception:
+                pass
+            time.sleep(2)
+        assert delivered, 'inbound never worked before testing the limit\n' + open(log_path).read()
+
+        for _ in range(5):
+            try:
+                mail_send_big(device_host, 'sender@example.com', 'user@{0}'.format(domain_name))
+            except Exception:
+                pass
+
+        blocked = False
+        for _ in range(20):
+            try:
+                mail_send_big(device_host, 'sender@example.com', 'user@{0}'.format(domain_name))
+            except Exception:
+                blocked = True
+                break
+            time.sleep(1)
+        assert blocked, 'inbound mail kept flowing after the monthly limit was exceeded\n' + open(log_path).read()
+    finally:
+        process.terminate()
+        device.stop()
