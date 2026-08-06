@@ -1445,3 +1445,26 @@ def test_mail_inbound_monthly_limit_blocks_delivery(domain, device_host, artifac
     finally:
         process.terminate()
         device.stop()
+
+
+def mx_records(device_host):
+    response = requests.get('http://{0}:4566/faker/mx'.format(device_host), timeout=10)
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_mail_inbound_update_points_mx_at_relay(domain, device_host, artifact_dir):
+    email = 'mail_mx@syncloud.test'
+    password = 'pass123456'
+    user_domain = 'mailmx'
+    domain_name = '{0}.{1}'.format(user_domain, domain)
+    create_user(domain, email, password, artifact_dir)
+    update_token = api.domain_acquire(domain, domain_name, email, password)
+
+    before = mx_records(device_host).get('{0}.'.format(domain_name), [])
+    assert before == ['1 {0}.'.format(domain_name)], before
+
+    mail_enable_relay(domain, update_token)
+
+    after = mx_records(device_host).get('{0}.'.format(domain_name), [])
+    assert after == ['1 {0}.mx.{1}.'.format(user_domain, domain)], after
