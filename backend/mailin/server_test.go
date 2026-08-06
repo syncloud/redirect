@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/smtp"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -427,4 +429,21 @@ func TestInbound_ProxyProtocolPolicy(t *testing.T) {
 	remote, err := fromLoopbackOnly(&net.TCPAddr{IP: net.ParseIP("203.0.113.7"), Port: 1})
 	assert.NoError(t, err)
 	assert.Equal(t, proxyproto.REJECT, remote)
+}
+
+func TestInbound_BrokenCertificateStopsTheServer(t *testing.T) {
+	dir := t.TempDir()
+	certPath := filepath.Join(dir, "mx.crt")
+	keyPath := filepath.Join(dir, "mx.key")
+	assert.NoError(t, os.WriteFile(certPath, []byte("not a certificate"), 0644))
+	assert.NoError(t, os.WriteFile(keyPath, []byte("not a key"), 0600))
+
+	server := NewServer("127.0.0.1:0", "mx.syncloud.it",
+		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}, "127.0.0.1:1"),
+		mailnet.NewConnections(0), mailnet.NewInFlight(0),
+		mailnet.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
+
+	// a configured certificate that cannot be read must stop the service rather
+	// than leave it accepting mail in the clear
+	assert.Error(t, server.Start())
 }

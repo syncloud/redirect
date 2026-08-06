@@ -2,6 +2,7 @@ package mailin
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
@@ -15,6 +16,7 @@ const dialTimeout = 30 * time.Second
 
 type Server struct {
 	server        *smtp.Server
+	certificate   *mailnet.CertificateLoader
 	proxyProtocol bool
 	logger        *zap.Logger
 }
@@ -40,21 +42,21 @@ func NewServer(address string, hostname string, router *Router, connections *mai
 	server.WriteTimeout = 5 * time.Minute
 	server.MaxMessageBytes = maxMessageBytes
 	server.AllowInsecureAuth = false
-	s.certificate(server, certificate)
 	s.server = server
+	s.certificate = certificate
 	return s
 }
 
-func (s *Server) certificate(server *smtp.Server, certificate *mailnet.CertificateLoader) {
-	config, err := certificate.Load()
-	if err != nil {
-		s.logger.Error("inbound certificate load failed, starting without starttls", zap.Error(err))
-		return
-	}
-	server.TLSConfig = config
-}
-
 func (s *Server) Start() error {
+	// a configured certificate that will not load is a failure, not a reason to
+	// carry on without starttls: every sender would quietly fall back to
+	// cleartext and only the log would say so
+	tlsConfig, err := s.certificate.Load()
+	if err != nil {
+		return fmt.Errorf("inbound mail certificate: %w", err)
+	}
+	s.server.TLSConfig = tlsConfig
+
 	listener, err := net.Listen("tcp", s.server.Addr)
 	if err != nil {
 		return err
