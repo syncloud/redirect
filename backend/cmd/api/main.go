@@ -42,8 +42,8 @@ func main() {
 				relayAuth *relay.AuthServer,
 				relayAccountant *relay.Accountant,
 				scanner *outbound.Rspamd,
-				mailRelay *outbound.Server,
-				mailIn *inbound.Server,
+				mailOutbound *outbound.Server,
+				mailInbound *inbound.Server,
 				reputation *outbound.Reputation,
 				usageMetrics *outbound.UsageMetrics,
 				config *utils.Config,
@@ -59,8 +59,8 @@ func main() {
 					relayAuth,
 					reputation,
 					scanner,
-					mailRelay,
-					mailIn,
+					mailOutbound,
+					mailInbound,
 					api,
 				}
 				for _, s := range services {
