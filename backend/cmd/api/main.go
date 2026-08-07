@@ -8,8 +8,8 @@ import (
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
-	mailrelay "github.com/syncloud/redirect/mail/relay"
-	"github.com/syncloud/redirect/mailin"
+	"github.com/syncloud/redirect/mail/inbound"
+	"github.com/syncloud/redirect/mail/outbound"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/relay"
 	"github.com/syncloud/redirect/rest"
@@ -41,11 +41,11 @@ func main() {
 				metricsCollector *metrics.Metrics,
 				relayAuth *relay.AuthServer,
 				relayAccountant *relay.Accountant,
-				scanner *mailrelay.Rspamd,
-				mailRelay *mailrelay.Server,
-				mailIn *mailin.Server,
-				reputation *mailrelay.Reputation,
-				usageMetrics *mailrelay.UsageMetrics,
+				scanner *outbound.Rspamd,
+				mailRelay *outbound.Server,
+				mailIn *inbound.Server,
+				reputation *outbound.Reputation,
+				usageMetrics *outbound.UsageMetrics,
 				config *utils.Config,
 			) error {
 				metricsServer := metrics.NewServer(config.GetApiMetricsAddr(), log.Default(), metricsCollector, relayAccountant, reputation, usageMetrics)
