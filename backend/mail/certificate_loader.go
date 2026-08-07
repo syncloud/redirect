@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-var ErrCertificateMissing = errors.New("certificate file is not there yet")
+var (
+	ErrCertificateNotConfigured = errors.New("no certificate is configured")
+	ErrCertificateMissing       = errors.New("certificate file is not there yet")
+)
 
 type CertificateLoader struct {
 	certFile string
@@ -25,7 +28,7 @@ func NewCertificateLoader(certFile string, keyFile string) *CertificateLoader {
 
 func (c *CertificateLoader) Load() (*tls.Config, error) {
 	if c.certFile == "" || c.keyFile == "" {
-		return nil, nil
+		return nil, ErrCertificateNotConfigured
 	}
 	if _, err := os.Stat(c.certFile); errors.Is(err, os.ErrNotExist) {
 		return nil, ErrCertificateMissing

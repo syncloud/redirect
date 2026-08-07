@@ -17,8 +17,8 @@ type Scanner interface {
 }
 
 type RspamdConfig interface {
-	GetMailRelayRspamdUrl() string
-	GetMailRelayRspamdRejectOnError() bool
+	GetMailOutboundRspamdUrl() string
+	GetMailOutboundRspamdRejectOnError() bool
 }
 
 type Rspamd struct {
@@ -38,11 +38,11 @@ func NewRspamd(config RspamdConfig, timeout time.Duration, logger *zap.Logger) *
 }
 
 func (r *Rspamd) Start() error {
-	r.url = r.config.GetMailRelayRspamdUrl()
+	r.url = r.config.GetMailOutboundRspamdUrl()
 	if r.url == "" {
 		return fmt.Errorf("mail relay spam filter url is not configured")
 	}
-	if r.config.GetMailRelayRspamdRejectOnError() {
+	if r.config.GetMailOutboundRspamdRejectOnError() {
 		r.failed = fmt.Errorf("spam filter unavailable")
 	}
 	return nil

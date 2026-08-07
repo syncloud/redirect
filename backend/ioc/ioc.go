@@ -331,9 +331,9 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(database *db.MySql, config *utils.Config) *outbound.Tiers {
 		return outbound.NewTiers(database,
-			config.GetMailRelayFreeLimitMessages(),
-			config.GetMailRelayProLimitMessages(),
-			config.GetMailRelayMaxLimitMessages(), logger)
+			config.GetMailOutboundFreeLimitMessages(),
+			config.GetMailOutboundProLimitMessages(),
+			config.GetMailOutboundMaxLimitMessages(), logger)
 	})
 	if err != nil {
 		return nil, err
@@ -374,7 +374,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(store *outbound.DbStore, config *utils.Config) *outbound.Feedback {
 		return outbound.NewFeedback(store, store,
-			config.GetMailRelayBounceRatio(), config.GetMailRelayBounceMinimum(), logger)
+			config.GetMailOutboundBounceRatio(), config.GetMailOutboundBounceMinimum(), logger)
 	})
 	if err != nil {
 		return nil, err
@@ -395,8 +395,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) *outbound.Reputation {
-		source := outbound.NewCloudWatch(awsSession, config.GetMailRelaySesRegion(), time.Hour)
-		return outbound.NewReputation(source, time.Duration(config.GetMailRelayReputationIntervalSeconds())*time.Second, logger)
+		source := outbound.NewCloudWatch(awsSession, config.GetMailOutboundSesRegion(), time.Hour)
+		return outbound.NewReputation(source, time.Duration(config.GetMailOutboundReputationIntervalSeconds())*time.Second, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -404,10 +404,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(config *utils.Config) *outbound.Limiter {
 		return outbound.NewLimiter(outbound.Limits{
-			Minute:     config.GetMailRelayLimitPerMinute(),
-			Hour:       config.GetMailRelayLimitPerHour(),
-			Day:        config.GetMailRelayLimitPerDay(),
-			Recipients: config.GetMailRelayMaxRecipients(),
+			Minute:     config.GetMailOutboundLimitPerMinute(),
+			Hour:       config.GetMailOutboundLimitPerHour(),
+			Day:        config.GetMailOutboundLimitPerDay(),
+			Recipients: config.GetMailOutboundMaxRecipients(),
 		})
 	})
 	if err != nil {
@@ -422,29 +422,22 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) outbound.Sender {
-		return outbound.NewSesSender(awsSession, config.GetMailRelaySesRegion(),
-			config.GetMailRelaySesEndpoint(), config.GetMailRelaySesConfigurationSet(), logger)
+		return outbound.NewSesSender(awsSession, config.GetMailOutboundSesRegion(),
+			config.GetMailOutboundSesEndpoint(), config.GetMailOutboundSesConfigurationSet(), logger)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	err = c.Singleton(func(config *utils.Config) *mail.Connections {
-		return mail.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
+		return mail.NewConnections(config.GetMailOutboundMaxConnectionsPerPeer())
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	err = c.Singleton(func(config *utils.Config) *mail.InFlight {
-		return mail.NewInFlight(config.GetMailRelayMaxConcurrentSends())
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	err = c.Singleton(func(config *utils.Config) *mail.CertificateLoader {
-		return mail.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+		return mail.NewInFlight(config.GetMailOutboundMaxConcurrentSends())
 	})
 	if err != nil {
 		return nil, err
@@ -457,12 +450,11 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		limiter *outbound.Limiter,
 		connections *mail.Connections,
 		inFlight *mail.InFlight,
-		certificate *mail.CertificateLoader,
 		config *utils.Config,
 	) *outbound.Server {
-		return outbound.NewServer(config.GetMailRelayAddress(), config.Domain(),
-			relayService, sender, scanner, limiter, connections, inFlight, certificate,
-			config.GetMailRelayMaxMessageBytes(), logger)
+		return outbound.NewServer(config.GetMailOutboundAddress(), config.Domain(),
+			relayService, sender, scanner, limiter, connections, inFlight,
+			config.GetMailOutboundMaxMessageBytes(), logger)
 	})
 	if err != nil {
 		return nil, err

@@ -61,11 +61,10 @@ func commonName(t *testing.T, loader *CertificateLoader) string {
 	return leaf.Subject.CommonName
 }
 
-func TestCertificateLoader_NoPathsMeansNoTls(t *testing.T) {
-	config, err := NewCertificateLoader("", "").Load()
+func TestCertificateLoader_NoPathsIsAnError(t *testing.T) {
+	_, err := NewCertificateLoader("", "").Load()
 
-	assert.NoError(t, err)
-	assert.Nil(t, config)
+	assert.ErrorIs(t, err, ErrCertificateNotConfigured)
 }
 
 func TestCertificateLoader_MissingFileIsNotYetThere(t *testing.T) {

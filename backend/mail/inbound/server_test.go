@@ -132,11 +132,17 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mail.NewInFlight(0), mail.NewCertificateLoader("", ""), 1024*1024, proxyProtocol, zap.NewNop())
+		mail.NewInFlight(0), mail.NewCertificateLoader(missingCertificate()), 1024*1024, proxyProtocol, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, err
 	}
 	return address, func() { _ = server.Close() }, nil
+}
+
+// no certificate in tests: a path that is not there starts without starttls,
+// the same as a host that has not had one copied across yet
+func missingCertificate() (string, string) {
+	return filepath.Join(os.TempDir(), "no-such-mx.crt"), filepath.Join(os.TempDir(), "no-such-mx.key")
 }
 
 func mailRelayDomain(name string) *model.Domain {

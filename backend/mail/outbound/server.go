@@ -11,17 +11,16 @@ import (
 )
 
 type Server struct {
-	relay       *Relay
-	sender      Sender
-	certificate *mail.CertificateLoader
-	server      *smtp.Server
-	logger      *zap.Logger
+	relay  *Relay
+	sender Sender
+	server *smtp.Server
+	logger *zap.Logger
 }
 
 func NewServer(address string, domain string, relay *Relay, sender Sender, scanner Scanner,
-	limiter *Limiter, connections *mail.Connections, inFlight *mail.InFlight, certificate *mail.CertificateLoader,
+	limiter *Limiter, connections *mail.Connections, inFlight *mail.InFlight,
 	maxMessageBytes int64, logger *zap.Logger) *Server {
-	s := &Server{relay: relay, sender: sender, certificate: certificate, logger: logger}
+	s := &Server{relay: relay, sender: sender, logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
 		if !connections.Acquire(peer) {
@@ -38,21 +37,18 @@ func NewServer(address string, domain string, relay *Relay, sender Sender, scann
 	server.ReadTimeout = time.Minute
 	server.WriteTimeout = time.Minute
 	server.MaxMessageBytes = maxMessageBytes
+	// caddy terminates tls on 465 and forwards plaintext to loopback, so this
+	// listener never sees a handshake of its own
+	server.AllowInsecureAuth = true
 	s.server = server
 	return s
 }
 
 func (s *Server) Start() error {
-	tlsConfig, err := s.certificate.Load()
-	if err != nil {
-		return err
-	}
-	s.server.TLSConfig = tlsConfig
-	s.server.AllowInsecureAuth = tlsConfig == nil
-	s.logger.Info("mail relay listening", zap.String("address", s.server.Addr))
+	s.logger.Info("outbound mail listening", zap.String("address", s.server.Addr))
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, smtp.ErrServerClosed) {
-			s.logger.Error("mail relay stopped", zap.Error(err))
+			s.logger.Error("outbound mail stopped", zap.Error(err))
 		}
 	}()
 	return nil

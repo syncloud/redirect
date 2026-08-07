@@ -29,8 +29,8 @@ type fakeRspamdConfig struct {
 	rejectOnError bool
 }
 
-func (f *fakeRspamdConfig) GetMailRelayRspamdUrl() string         { return f.url }
-func (f *fakeRspamdConfig) GetMailRelayRspamdRejectOnError() bool { return f.rejectOnError }
+func (f *fakeRspamdConfig) GetMailOutboundRspamdUrl() string         { return f.url }
+func (f *fakeRspamdConfig) GetMailOutboundRspamdRejectOnError() bool { return f.rejectOnError }
 
 func scan(t *testing.T, status int, body string, rejectOnError bool) error {
 	t.Helper()
