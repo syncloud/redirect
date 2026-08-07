@@ -10,8 +10,6 @@ var (
 	ErrNotAccepted  = fmt.Errorf("mail is not accepted for this domain")
 )
 
-// Router decides which device a recipient belongs to. Devices are told apart
-// by name, so there is nothing to look up beyond whether the domain wants mail.
 type Router struct {
 	store DomainStore
 }
@@ -20,7 +18,6 @@ func NewRouter(store DomainStore) *Router {
 	return &Router{store: store}
 }
 
-// Route names the device that should receive a recipient's mail.
 func (r *Router) Route(recipient string) (string, error) {
 	name, err := recipientDomain(recipient)
 	if err != nil {

@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// DialTimeout bounds reaching a device through the tunnel
 const DialTimeout = 30 * time.Second
 
 type Server struct {
@@ -50,10 +49,6 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 }
 
 func (s *Server) Start() error {
-	// a certificate that is configured but will not parse is a failure: carrying
-	// on would drop every sender to cleartext and only the log would say so.
-	// one that has not been copied across yet is not, or no host could ever
-	// start before caddy had obtained it
 	tlsConfig, err := s.certificate.Load()
 	if errors.Is(err, mail.ErrCertificateMissing) {
 		s.logger.Error("no inbound mail certificate yet, starting without starttls",

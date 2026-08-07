@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-// ErrCertificateMissing means the certificate is configured but has not been
-// put in place yet, which is expected before caddy has obtained one
 var ErrCertificateMissing = errors.New("certificate file is not there yet")
 
 type CertificateLoader struct {
@@ -25,10 +23,6 @@ func NewCertificateLoader(certFile string, keyFile string) *CertificateLoader {
 	return &CertificateLoader{certFile: certFile, keyFile: keyFile}
 }
 
-// Load returns nil when no certificate is configured, and an error when one is
-// configured but will not parse. A configured file that is not there yet is
-// neither: caddy has to obtain it before the first copy can run, so a new host
-// starts without starttls and picks it up on the next restart.
 func (c *CertificateLoader) Load() (*tls.Config, error) {
 	if c.certFile == "" || c.keyFile == "" {
 		return nil, nil

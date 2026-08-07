@@ -11,15 +11,11 @@ import (
 )
 
 const (
-	// the port the device's postfix listens on behind the tunnel; frps strips
-	// it when matching the CONNECT host, but it has to be well formed
 	deviceSmtpPort = 25
 
 	maxConnectResponse = 4096
 )
 
-// TunnelDialer reaches a device through the frps multiplexer, which routes on
-// the name in an http CONNECT rather than giving every device a port.
 type TunnelDialer struct {
 	muxer   string
 	timeout time.Duration
@@ -41,10 +37,8 @@ func (d *TunnelDialer) Dial(domain string) (net.Conn, error) {
 	return connection, nil
 }
 
-// connect asks the multiplexer for the device's tunnel by name. The reply is
-// read a byte at a time on purpose: buffering would swallow the greeting
-// postfix sends the moment the stream is joined, and go-smtp's client takes the
-// connection rather than a reader, so those bytes could not be handed back.
+// go-smtp's client takes the connection, not a reader, so a buffered read here
+// would swallow the greeting postfix sends the moment the stream is joined
 func (d *TunnelDialer) connect(connection net.Conn, domain string) error {
 	if err := connection.SetDeadline(time.Now().Add(d.timeout)); err != nil {
 		return err

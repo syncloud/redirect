@@ -23,9 +23,6 @@ func (u *Usage) UsedBytes(userId int64) (int64, error) {
 	return u.store.GetRelayTraffic(ProxyNames(domains), month())
 }
 
-// ProxyNames lists the frps proxies a set of domains can have: one carrying
-// app traffic and one carrying inbound mail, both counting against the same
-// allowance.
 func ProxyNames(domains []string) []string {
 	names := make([]string, 0, len(domains)*2)
 	for _, domain := range domains {
