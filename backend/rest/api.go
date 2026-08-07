@@ -147,7 +147,12 @@ func (a *Api) Start() error {
 	}
 	l := netutil.LimitListener(listener, 1000)
 	log.Printf("Started backend (%s)\n", a.socket)
-	return srv.Serve(l)
+	go func() {
+		if err := srv.Serve(l); err != nil {
+			log.Fatalf("backend stopped: %v", err)
+		}
+	}()
+	return nil
 }
 
 func (a *Api) Status(_ http.ResponseWriter, req *http.Request) (interface{}, error) {

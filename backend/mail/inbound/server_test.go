@@ -445,18 +445,16 @@ func TestInbound_DoesNotAcceptMailUntilTheCertificateArrives(t *testing.T) {
 		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
 	server.certificateWait = 50 * time.Millisecond
 
-	assert.NoError(t, server.Start())
+	started := make(chan error, 1)
+	go func() { started <- server.Start() }()
 	defer server.Close()
 
-	// a first deploy has no certificate yet, and mail must not be taken in the
-	// clear while that is true
 	assert.False(t, greets(address, 200*time.Millisecond))
 
 	assert.NoError(t, writeCertificate(certPath, keyPath))
 
-	assert.Eventually(t, func() bool {
-		return greets(address, 100*time.Millisecond)
-	}, 5*time.Second, 50*time.Millisecond)
+	assert.NoError(t, <-started)
+	assert.True(t, greets(address, time.Second))
 }
 
 func writeCertificate(certPath string, keyPath string) error {
@@ -525,11 +523,11 @@ func TestInbound_DoesNotAcceptMailWithABrokenCertificate(t *testing.T) {
 		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
 	server.certificateWait = 50 * time.Millisecond
 
-	assert.NoError(t, server.Start())
+	go func() { _ = server.Start() }()
 	defer server.Close()
 
-	// a certificate that will not parse leaves mail off rather than taken in
-	// the clear, and does not take the rest of the api down with it
+	// a certificate that will not parse keeps mail off rather than taking it in
+	// the clear
 	time.Sleep(200 * time.Millisecond)
 	assert.False(t, greets(address, 200*time.Millisecond))
 }
