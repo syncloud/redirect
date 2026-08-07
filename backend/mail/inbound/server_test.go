@@ -1,8 +1,15 @@
 package inbound
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"io"
+	"math/big"
 	"net"
 	"net/smtp"
 	"os"
@@ -130,19 +137,22 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 		return "", nil, err
 	}
 
+	dir, err := os.MkdirTemp("", "mailin")
+	if err != nil {
+		return "", nil, err
+	}
+	certificate, err := certificateIn(dir)
+	if err != nil {
+		return "", nil, err
+	}
+
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mail.NewInFlight(0), mail.NewCertificateLoader(missingCertificate()), 1024*1024, proxyProtocol, zap.NewNop())
+		mail.NewInFlight(0), certificate, 1024*1024, proxyProtocol, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, err
 	}
-	return address, func() { _ = server.Close() }, nil
-}
-
-// no certificate in tests: a path that is not there starts without starttls,
-// the same as a host that has not had one copied across yet
-func missingCertificate() (string, string) {
-	return filepath.Join(os.TempDir(), "no-such-mx.crt"), filepath.Join(os.TempDir(), "no-such-mx.key")
+	return address, func() { _ = server.Close(); _ = os.RemoveAll(dir) }, nil
 }
 
 func mailRelayDomain(name string) *model.Domain {
@@ -383,18 +393,88 @@ func TestInbound_ProxyProtocolPolicy(t *testing.T) {
 	assert.Equal(t, proxyproto.REJECT, remote)
 }
 
-func TestInbound_MissingCertificateStartsWithoutTls(t *testing.T) {
+func TestInbound_DoesNotAcceptMailUntilTheCertificateArrives(t *testing.T) {
 	dir := t.TempDir()
+	certPath := filepath.Join(dir, "mx.crt")
+	keyPath := filepath.Join(dir, "mx.key")
 
-	server := NewServer("127.0.0.1:0", "mx.syncloud.it",
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	assert.NoError(t, err)
+	address := listener.Addr().String()
+	assert.NoError(t, listener.Close())
+
+	server := NewServer(address, "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
 		mail.NewConnections(0), mail.NewInFlight(0),
-		mail.NewCertificateLoader(filepath.Join(dir, "mx.crt"), filepath.Join(dir, "mx.key")),
-		1024*1024, false, zap.NewNop())
+		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
+	server.certificateWait = 50 * time.Millisecond
 
-	// a host deploying for the first time has no certificate yet
 	assert.NoError(t, server.Start())
-	assert.NoError(t, server.Close())
+	defer server.Close()
+
+	// a first deploy has no certificate yet, and mail must not be taken in the
+	// clear while that is true
+	_, err = net.DialTimeout("tcp", address, 200*time.Millisecond)
+	assert.Error(t, err)
+
+	assert.NoError(t, writeCertificate(certPath, keyPath))
+
+	assert.Eventually(t, func() bool {
+		connection, err := net.DialTimeout("tcp", address, 100*time.Millisecond)
+		if err != nil {
+			return false
+		}
+		_ = connection.Close()
+		return true
+	}, 5*time.Second, 50*time.Millisecond)
+}
+
+func writeCertificate(certPath string, keyPath string) error {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return err
+	}
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "mx.syncloud.it"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+	}
+	der, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	if err != nil {
+		return err
+	}
+	certOut, err := os.Create(certPath)
+	if err != nil {
+		return err
+	}
+	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: der}); err != nil {
+		return err
+	}
+	if err := certOut.Close(); err != nil {
+		return err
+	}
+	keyDer, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		return err
+	}
+	keyOut, err := os.Create(keyPath)
+	if err != nil {
+		return err
+	}
+	if err := pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDer}); err != nil {
+		return err
+	}
+	return keyOut.Close()
+}
+
+func certificateIn(dir string) (*mail.CertificateLoader, error) {
+	certPath := filepath.Join(dir, "mx.crt")
+	keyPath := filepath.Join(dir, "mx.key")
+	if err := writeCertificate(certPath, keyPath); err != nil {
+		return nil, err
+	}
+	return mail.NewCertificateLoader(certPath, keyPath), nil
 }
 
 func TestInbound_BrokenCertificateStopsTheServer(t *testing.T) {

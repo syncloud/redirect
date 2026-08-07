@@ -1,6 +1,7 @@
 package inbound
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -12,20 +13,30 @@ import (
 	"go.uber.org/zap"
 )
 
-const DialTimeout = 30 * time.Second
+const (
+	DialTimeout     = 30 * time.Second
+	certificateWait = 30 * time.Second
+)
 
 type Server struct {
-	server        *smtp.Server
-	certificate   *mail.CertificateLoader
-	proxyProtocol bool
-	logger        *zap.Logger
+	server          *smtp.Server
+	certificate     *mail.CertificateLoader
+	certificateWait time.Duration
+	proxyProtocol   bool
+	stopped         chan struct{}
+	logger          *zap.Logger
 }
 
 func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
 	connections *mail.Connections, inFlight *mail.InFlight,
 	certificate *mail.CertificateLoader, maxMessageBytes int64,
 	proxyProtocol bool, logger *zap.Logger) *Server {
-	s := &Server{proxyProtocol: proxyProtocol, logger: logger}
+	s := &Server{
+		certificateWait: certificateWait,
+		proxyProtocol:   proxyProtocol,
+		stopped:         make(chan struct{}),
+		logger:          logger,
+	}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
 		if !connections.Acquire(peer) {
@@ -51,13 +62,44 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 func (s *Server) Start() error {
 	tlsConfig, err := s.certificate.Load()
 	if errors.Is(err, mail.ErrCertificateMissing) {
-		s.logger.Error("no inbound mail certificate yet, starting without starttls",
-			zap.Error(err))
-	} else if err != nil {
-		return fmt.Errorf("inbound mail certificate: %w", err)
-	} else {
-		s.server.TLSConfig = tlsConfig
+		s.logger.Warn("waiting for the inbound mail certificate before accepting mail",
+			zap.String("address", s.server.Addr), zap.Duration("retry", s.certificateWait))
+		go s.serveOnceCertified()
+		return nil
 	}
+	if err != nil {
+		return fmt.Errorf("inbound mail certificate: %w", err)
+	}
+	return s.serve(tlsConfig)
+}
+
+func (s *Server) serveOnceCertified() {
+	for {
+		select {
+		case <-s.stopped:
+			return
+		case <-time.After(s.certificateWait):
+		}
+		tlsConfig, err := s.certificate.Load()
+		if errors.Is(err, mail.ErrCertificateMissing) {
+			s.logger.Warn("still no inbound mail certificate, not accepting mail yet",
+				zap.String("address", s.server.Addr))
+			continue
+		}
+		if err != nil {
+			s.logger.Error("inbound mail certificate cannot be read, not accepting mail",
+				zap.Error(err))
+			continue
+		}
+		if err := s.serve(tlsConfig); err != nil {
+			s.logger.Error("inbound mail cannot listen", zap.Error(err))
+		}
+		return
+	}
+}
+
+func (s *Server) serve(tlsConfig *tls.Config) error {
+	s.server.TLSConfig = tlsConfig
 
 	listener, err := net.Listen("tcp", s.server.Addr)
 	if err != nil {
@@ -88,6 +130,7 @@ func fromLoopbackOnly(upstream net.Addr) (proxyproto.Policy, error) {
 }
 
 func (s *Server) Close() error {
+	close(s.stopped)
 	return s.server.Close()
 }
 
