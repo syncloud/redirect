@@ -160,6 +160,24 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 	return address, stop, nil
 }
 
+// the port is bound as soon as the server starts, so what says whether mail is
+// being taken is the smtp greeting, not the connection
+func greets(address string, within time.Duration) bool {
+	connection, err := net.DialTimeout("tcp", address, within)
+	if err != nil {
+		return false
+	}
+	defer connection.Close()
+	if err := connection.SetReadDeadline(time.Now().Add(within)); err != nil {
+		return false
+	}
+	banner := make([]byte, 3)
+	if _, err := io.ReadFull(connection, banner); err != nil {
+		return false
+	}
+	return string(banner) == "220"
+}
+
 func waitListening(address string) error {
 	var err error
 	for i := 0; i < 100; i++ {
@@ -432,18 +450,12 @@ func TestInbound_DoesNotAcceptMailUntilTheCertificateArrives(t *testing.T) {
 
 	// a first deploy has no certificate yet, and mail must not be taken in the
 	// clear while that is true
-	_, err = net.DialTimeout("tcp", address, 200*time.Millisecond)
-	assert.Error(t, err)
+	assert.False(t, greets(address, 200*time.Millisecond))
 
 	assert.NoError(t, writeCertificate(certPath, keyPath))
 
 	assert.Eventually(t, func() bool {
-		connection, err := net.DialTimeout("tcp", address, 100*time.Millisecond)
-		if err != nil {
-			return false
-		}
-		_ = connection.Close()
-		return true
+		return greets(address, 100*time.Millisecond)
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
@@ -519,6 +531,22 @@ func TestInbound_DoesNotAcceptMailWithABrokenCertificate(t *testing.T) {
 	// a certificate that will not parse leaves mail off rather than taken in
 	// the clear, and does not take the rest of the api down with it
 	time.Sleep(200 * time.Millisecond)
-	_, err = net.DialTimeout("tcp", address, 200*time.Millisecond)
-	assert.Error(t, err)
+	assert.False(t, greets(address, 200*time.Millisecond))
+}
+
+func TestInbound_PortConflictStopsTheApi(t *testing.T) {
+	held, err := net.Listen("tcp", "127.0.0.1:0")
+	assert.NoError(t, err)
+	defer held.Close()
+
+	dir := t.TempDir()
+	certificate, err := certificateIn(dir)
+	assert.NoError(t, err)
+	server := NewServer(held.Addr().String(), "mx.syncloud.it",
+		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
+		mail.NewConnections(0), mail.NewInFlight(0), certificate, 1024*1024, false, zap.NewNop())
+
+	// a port already taken never resolves on its own, so it has to reach main
+	// rather than leave the api up with mail quietly missing
+	assert.Error(t, server.Start())
 }

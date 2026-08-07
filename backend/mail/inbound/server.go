@@ -1,7 +1,6 @@
 package inbound
 
 import (
-	"crypto/tls"
 	"errors"
 	"net"
 	"time"
@@ -59,42 +58,41 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 }
 
 func (s *Server) Start() error {
-	go s.serveOnceCertified()
+	listener, err := s.listen()
+	if err != nil {
+		return err
+	}
+	go s.serveOnceCertified(listener)
 	return nil
 }
 
-func (s *Server) serveOnceCertified() {
+func (s *Server) listen() (net.Listener, error) {
+	listener, err := net.Listen("tcp", s.server.Addr)
+	if err != nil {
+		return nil, err
+	}
+	if s.proxyProtocol {
+		return &proxyproto.Listener{Listener: listener, Policy: fromLoopbackOnly}, nil
+	}
+	return listener, nil
+}
+
+func (s *Server) serveOnceCertified(listener net.Listener) {
 	tlsConfig := s.certificate.Await(s.stopped, s.certificateWait, func(err error) {
 		s.logger.Error("not accepting mail until the certificate is usable",
 			zap.String("address", s.server.Addr), zap.Error(err))
 	})
 	if tlsConfig == nil {
+		_ = listener.Close()
 		return
 	}
-	if err := s.serve(tlsConfig); err != nil {
-		s.logger.Error("inbound mail cannot listen",
-			zap.String("address", s.server.Addr), zap.Error(err))
-	}
-}
-
-func (s *Server) serve(tlsConfig *tls.Config) error {
 	s.server.TLSConfig = tlsConfig
 
-	listener, err := net.Listen("tcp", s.server.Addr)
-	if err != nil {
-		return err
-	}
-	if s.proxyProtocol {
-		listener = &proxyproto.Listener{Listener: listener, Policy: fromLoopbackOnly}
-	}
 	s.logger.Info("inbound mail listening",
 		zap.String("address", s.server.Addr), zap.Bool("proxy protocol", s.proxyProtocol))
-	go func() {
-		if err := s.server.Serve(listener); err != nil && !errors.Is(err, smtp.ErrServerClosed) {
-			s.logger.Error("inbound mail stopped", zap.Error(err))
-		}
-	}()
-	return nil
+	if err := s.server.Serve(listener); err != nil && !errors.Is(err, smtp.ErrServerClosed) {
+		s.logger.Error("inbound mail stopped", zap.Error(err))
+	}
 }
 
 func fromLoopbackOnly(upstream net.Addr) (proxyproto.Policy, error) {
