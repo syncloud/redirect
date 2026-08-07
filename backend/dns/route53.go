@@ -19,8 +19,13 @@ var defaultIpv6 string
 var defaultDkim string
 
 const (
-	defaultMx  = "1 mx"
-	defaultSpf = "\"v=spf1 -all\""
+	defaultMx = "1 mx"
+
+	// what a domain publishes while nobody owns it: nothing may send for it
+	unownedSpf = "\"v=spf1 -all\""
+	// what a live domain publishes: its own address and its mx may send
+	domainSpf = "\"v=spf1 a mx -all\""
+
 	defaultTtl = 600
 	certbotTtl = 10
 )
@@ -118,19 +123,16 @@ func (a *AmazonDns) UpdateDomainRecords(domain *model.Domain) error {
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", a.mx(domain), "CREATE", domain.HostedZoneId)
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey,
+		domainSpf, a.mx(domain), "CREATE", domain.HostedZoneId)
 }
 
 func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
-	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", domain.HostedZoneId)
+	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, unownedSpf, defaultMx, "UPSERT", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", domain.HostedZoneId)
+	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, unownedSpf, defaultMx, "DELETE", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
