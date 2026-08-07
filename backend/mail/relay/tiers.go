@@ -1,4 +1,4 @@
-package mailrelay
+package relay
 
 import (
 	"github.com/syncloud/redirect/model"

@@ -1,4 +1,4 @@
-package mailrelay
+package relay
 
 type counters struct {
 	minute window

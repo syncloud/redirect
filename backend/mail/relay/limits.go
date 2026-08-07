@@ -1,4 +1,4 @@
-package mailrelay
+package relay
 
 type Limits struct {
 	Minute     int64

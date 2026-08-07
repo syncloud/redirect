@@ -1,4 +1,4 @@
-package mailrelay
+package relay
 
 type snsNotification struct {
 	Type    string `json:"Type"`

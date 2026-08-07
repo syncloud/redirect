@@ -1,4 +1,4 @@
-package mailrelay
+package relay
 
 type sesEvent struct {
 	NotificationType string `json:"notificationType"`
