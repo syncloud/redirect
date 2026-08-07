@@ -43,6 +43,24 @@ func (c *CertificateLoader) Load() (*tls.Config, error) {
 	}, nil
 }
 
+// Await blocks until the certificate can be used, reporting each attempt that
+// could not. It gives up only when stopped.
+func (c *CertificateLoader) Await(stopped <-chan struct{}, retry time.Duration,
+	waiting func(error)) *tls.Config {
+	for {
+		config, err := c.Load()
+		if err == nil {
+			return config
+		}
+		waiting(err)
+		select {
+		case <-stopped:
+			return nil
+		case <-time.After(retry):
+		}
+	}
+}
+
 func (c *CertificateLoader) certificate() (*tls.Certificate, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

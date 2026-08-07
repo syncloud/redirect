@@ -3,7 +3,6 @@ package inbound
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net"
 	"time"
 
@@ -60,41 +59,21 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 }
 
 func (s *Server) Start() error {
-	tlsConfig, err := s.certificate.Load()
-	if errors.Is(err, mail.ErrCertificateMissing) {
-		s.logger.Warn("waiting for the inbound mail certificate before accepting mail",
-			zap.String("address", s.server.Addr), zap.Duration("retry", s.certificateWait))
-		go s.serveOnceCertified()
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("inbound mail certificate: %w", err)
-	}
-	return s.serve(tlsConfig)
+	go s.serveOnceCertified()
+	return nil
 }
 
 func (s *Server) serveOnceCertified() {
-	for {
-		select {
-		case <-s.stopped:
-			return
-		case <-time.After(s.certificateWait):
-		}
-		tlsConfig, err := s.certificate.Load()
-		if errors.Is(err, mail.ErrCertificateMissing) {
-			s.logger.Warn("still no inbound mail certificate, not accepting mail yet",
-				zap.String("address", s.server.Addr))
-			continue
-		}
-		if err != nil {
-			s.logger.Error("inbound mail certificate cannot be read, not accepting mail",
-				zap.Error(err))
-			continue
-		}
-		if err := s.serve(tlsConfig); err != nil {
-			s.logger.Error("inbound mail cannot listen", zap.Error(err))
-		}
+	tlsConfig := s.certificate.Await(s.stopped, s.certificateWait, func(err error) {
+		s.logger.Error("not accepting mail until the certificate is usable",
+			zap.String("address", s.server.Addr), zap.Error(err))
+	})
+	if tlsConfig == nil {
 		return
+	}
+	if err := s.serve(tlsConfig); err != nil {
+		s.logger.Error("inbound mail cannot listen",
+			zap.String("address", s.server.Addr), zap.Error(err))
 	}
 }
 

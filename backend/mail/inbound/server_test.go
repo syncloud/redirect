@@ -152,7 +152,25 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 	if err := server.Start(); err != nil {
 		return "", nil, err
 	}
-	return address, func() { _ = server.Close(); _ = os.RemoveAll(dir) }, nil
+	stop := func() { _ = server.Close(); _ = os.RemoveAll(dir) }
+	if err := waitListening(address); err != nil {
+		stop()
+		return "", nil, err
+	}
+	return address, stop, nil
+}
+
+func waitListening(address string) error {
+	var err error
+	for i := 0; i < 100; i++ {
+		var connection net.Conn
+		connection, err = net.DialTimeout("tcp", address, 100*time.Millisecond)
+		if err == nil {
+			return connection.Close()
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return fmt.Errorf("inbound server never came up on %s: %w", address, err)
 }
 
 func mailRelayDomain(name string) *model.Domain {
@@ -477,19 +495,30 @@ func certificateIn(dir string) (*mail.CertificateLoader, error) {
 	return mail.NewCertificateLoader(certPath, keyPath), nil
 }
 
-func TestInbound_BrokenCertificateStopsTheServer(t *testing.T) {
+func TestInbound_DoesNotAcceptMailWithABrokenCertificate(t *testing.T) {
 	dir := t.TempDir()
 	certPath := filepath.Join(dir, "mx.crt")
 	keyPath := filepath.Join(dir, "mx.key")
 	assert.NoError(t, os.WriteFile(certPath, []byte("not a certificate"), 0644))
 	assert.NoError(t, os.WriteFile(keyPath, []byte("not a key"), 0600))
 
-	server := NewServer("127.0.0.1:0", "mx.syncloud.it",
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	assert.NoError(t, err)
+	address := listener.Addr().String()
+	assert.NoError(t, listener.Close())
+
+	server := NewServer(address, "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
 		mail.NewConnections(0), mail.NewInFlight(0),
 		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
+	server.certificateWait = 50 * time.Millisecond
 
-	// a certificate that will not parse must stop the service rather than leave
-	// it accepting mail in the clear
-	assert.Error(t, server.Start())
+	assert.NoError(t, server.Start())
+	defer server.Close()
+
+	// a certificate that will not parse leaves mail off rather than taken in
+	// the clear, and does not take the rest of the api down with it
+	time.Sleep(200 * time.Millisecond)
+	_, err = net.DialTimeout("tcp", address, 200*time.Millisecond)
+	assert.Error(t, err)
 }
