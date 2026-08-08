@@ -881,7 +881,7 @@ BIG_BODY = ('x' * 65536).encode()
 
 
 @pytest.fixture(scope='function')
-def device(device_host):
+def mail_device(device_host):
     device = Device(device_host)
     device.reset()
     return device
@@ -1221,51 +1221,51 @@ def mail_domain(domain, device_host, artifact_dir, user_domain, email):
     return domain_name, update_token, password
 
 
-def mail_tunnel(domain, device_host, artifact_dir, device, user_domain, email):
+def mail_tunnel(domain, device_host, artifact_dir, mail_device, user_domain, email):
     domain_name, update_token, password = mail_domain(
         domain, device_host, artifact_dir, user_domain, email)
-    device.tunnel(domain_name, update_token)
+    mail_device.tunnel(domain_name, update_token)
     return domain_name, password
 
 
-def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_dir, device):
-    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, device,
+def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_dir, mail_device):
+    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                                  'mailin', 'mail_inbound@syncloud.test')
 
     mail_send(device_host, 'sender@example.com', 'user@{0}'.format(domain_name), 'inbound-e2e')
 
-    delivered = device.messages()
+    delivered = mail_device.messages()
     assert delivered, 'the device never saw the message'
     assert 'inbound-e2e' in delivered[0]['body'], delivered
     assert domain_name in delivered[0]['recipients'][0], delivered
 
 
-def test_mail_inbound_delivers_over_starttls(domain, device_host, artifact_dir, device):
-    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, device,
+def test_mail_inbound_delivers_over_starttls(domain, device_host, artifact_dir, mail_device):
+    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                                  'mailtls', 'mail_inbound_tls@syncloud.test')
     add_host_alias('mailtls.mx', device_host, domain)
     mx_host = 'mailtls.mx.{0}'.format(domain)
 
     mail_send(device_host, 'sender@example.com', 'user@{0}'.format(domain_name), 'warmup')
-    assert device.messages(), 'inbound never worked before testing starttls'
+    assert mail_device.messages(), 'inbound never worked before testing starttls'
 
     certificate = mail_send_starttls(mx_host, 'sender@example.com',
                                      'user@{0}'.format(domain_name), 'inbound-starttls')
 
-    delivered = device.messages(expected=2)
+    delivered = mail_device.messages(expected=2)
     assert len(delivered) == 2, delivered
     assert 'inbound-starttls' in delivered[1]['body'], delivered
     names = certificate_text(certificate)
     assert '*.mx.{0}'.format(domain) in names, names
 
 
-def test_mail_inbound_device_rejects_recipient(domain, device_host, artifact_dir, device):
-    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, device,
+def test_mail_inbound_device_rejects_recipient(domain, device_host, artifact_dir, mail_device):
+    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                                  'mailrcpt', 'mail_rcpt@syncloud.test')
     mail_send(device_host, 'sender@example.com', 'user@{0}'.format(domain_name), 'warmup')
-    assert device.messages(), 'inbound never worked before testing rejection'
+    assert mail_device.messages(), 'inbound never worked before testing rejection'
 
-    device.behaviour(rcpt='reject')
+    mail_device.behaviour(rcpt='reject')
     server = smtplib.SMTP(device_host, MAIL_INBOUND_PORT, timeout=30)
     try:
         server.ehlo()
@@ -1275,16 +1275,16 @@ def test_mail_inbound_device_rejects_recipient(domain, device_host, artifact_dir
         server.quit()
 
     assert code == 550, '{0} {1}'.format(code, message)
-    assert len(device.messages(expected=2, attempts=3)) == 1
+    assert len(mail_device.messages(expected=2, attempts=3)) == 1
 
 
-def test_mail_inbound_device_rejects_message(domain, device_host, artifact_dir, device):
-    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, device,
+def test_mail_inbound_device_rejects_message(domain, device_host, artifact_dir, mail_device):
+    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                                  'mailbody', 'mail_body@syncloud.test')
     mail_send(device_host, 'sender@example.com', 'user@{0}'.format(domain_name), 'warmup')
-    assert device.messages(), 'inbound never worked before testing rejection'
+    assert mail_device.messages(), 'inbound never worked before testing rejection'
 
-    device.behaviour(data='reject')
+    mail_device.behaviour(data='reject')
     server = smtplib.SMTP(device_host, MAIL_INBOUND_PORT, timeout=30)
     try:
         server.ehlo()
@@ -1297,16 +1297,16 @@ def test_mail_inbound_device_rejects_message(domain, device_host, artifact_dir, 
         server.quit()
 
     assert failure.value.smtp_code == 554, failure.value
-    assert len(device.messages(expected=2, attempts=3)) == 1
+    assert len(mail_device.messages(expected=2, attempts=3)) == 1
 
 
-def test_mail_inbound_device_dropping_the_connection_defers(domain, device_host, artifact_dir, device):
-    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, device,
+def test_mail_inbound_device_dropping_the_connection_defers(domain, device_host, artifact_dir, mail_device):
+    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                                  'maildrop', 'mail_drop@syncloud.test')
     mail_send(device_host, 'sender@example.com', 'user@{0}'.format(domain_name), 'warmup')
-    assert device.messages(), 'inbound never worked before testing the drop'
+    assert mail_device.messages(), 'inbound never worked before testing the drop'
 
-    device.behaviour(data='drop')
+    mail_device.behaviour(data='drop')
     server = smtplib.SMTP(device_host, MAIL_INBOUND_PORT, timeout=30)
     try:
         server.ehlo()
@@ -1324,13 +1324,13 @@ def test_mail_inbound_device_dropping_the_connection_defers(domain, device_host,
     assert failure.value.smtp_code == 451, failure.value
 
 
-def test_mail_inbound_second_domain_deferred(domain, device_host, artifact_dir, device):
-    first, _ = mail_tunnel(domain, device_host, artifact_dir, device,
+def test_mail_inbound_second_domain_deferred(domain, device_host, artifact_dir, mail_device):
+    first, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                            'mailone', 'mail_one@syncloud.test')
     second, _, _ = mail_domain(domain, device_host, artifact_dir,
                                'mailtwo', 'mail_two@syncloud.test')
     mail_send(device_host, 'sender@example.com', 'user@{0}'.format(first), 'warmup')
-    assert device.messages(), 'inbound never worked before testing two domains'
+    assert mail_device.messages(), 'inbound never worked before testing two domains'
 
     server = smtplib.SMTP(device_host, MAIL_INBOUND_PORT, timeout=30)
     try:
@@ -1356,9 +1356,9 @@ def test_mail_inbound_unknown_domain_rejected(domain, device_host):
         server.quit()
 
 
-def test_mail_inbound_usage_persisted_and_served(domain, device_host, artifact_dir, device):
+def test_mail_inbound_usage_persisted_and_served(domain, device_host, artifact_dir, mail_device):
     email = 'mail_usage@syncloud.test'
-    domain_name, password = mail_tunnel(domain, device_host, artifact_dir, device,
+    domain_name, password = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                                         'mailusage', email)
     session = requests.Session()
     login = session.post('https://www.{0}/api/user/login'.format(domain),
@@ -1380,11 +1380,11 @@ def test_mail_inbound_usage_persisted_and_served(domain, device_host, artifact_d
     assert used > 0, 'inbound mail bytes were not counted against relay usage'
 
 
-def test_mail_inbound_monthly_limit_blocks_delivery(domain, device_host, artifact_dir, device):
-    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, device,
+def test_mail_inbound_monthly_limit_blocks_delivery(domain, device_host, artifact_dir, mail_device):
+    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
                                  'mailquota', 'mail_quota@syncloud.test')
     mail_send(device_host, 'sender@example.com', 'user@{0}'.format(domain_name), 'quota-warmup')
-    assert device.messages(), 'inbound never worked before testing the limit'
+    assert mail_device.messages(), 'inbound never worked before testing the limit'
 
     for _ in range(5):
         try:
