@@ -37,6 +37,26 @@ func domainNamed(name string) *model.Domain {
 	return &model.Domain{Name: name}
 }
 
+func TestAuthorize_TcpMuxProxyAuthorisedByName(t *testing.T) {
+	s := newServer(map[string]*model.Domain{"good": domainNamed("alice.syncloud.it")})
+	resp := s.Authorize(newProxyContent{
+		User:          pluginUser{Metas: map[string]string{"token": "good"}},
+		ProxyType:     "tcpmux",
+		CustomDomains: []string{"alice.syncloud.it"},
+	})
+	assert.False(t, resp.Reject, resp.RejectReason)
+}
+
+func TestAuthorize_TcpMuxProxyForAnotherDomainRejected(t *testing.T) {
+	s := newServer(map[string]*model.Domain{"good": domainNamed("alice.syncloud.it")})
+	resp := s.Authorize(newProxyContent{
+		User:          pluginUser{Metas: map[string]string{"token": "good"}},
+		ProxyType:     "tcpmux",
+		CustomDomains: []string{"bob.syncloud.it"},
+	})
+	assert.True(t, resp.Reject)
+}
+
 func TestAuthorize_ValidTokenOwnsCustomDomain(t *testing.T) {
 	s := newServer(map[string]*model.Domain{"good": domainNamed("alice.syncloud.it")})
 	resp := s.Authorize(newProxyContent{

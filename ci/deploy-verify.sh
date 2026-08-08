@@ -80,3 +80,17 @@ if [ -z "$frps_running" ]; then
     exit 1
 fi
 echo "frps OK"
+
+$SSH $REMOTE "sudo -n docker exec caddy find /data/caddy/certificates -name '*.crt'" 2>&1 || true
+
+for i in $(seq 1 30); do
+    caps=$($SSH $REMOTE "exec 3<>/dev/tcp/127.0.0.1/25; printf 'EHLO verify\r\nQUIT\r\n' >&3; timeout 10 cat <&3" 2>/dev/null || true)
+    if echo "$caps" | grep -q STARTTLS; then break; fi
+    sleep 2
+done
+if ! echo "$caps" | grep -q STARTTLS; then
+    echo "port 25 did not offer STARTTLS, got: $caps"
+    $SSH $REMOTE sudo -n docker logs caddy 2>&1 | tail -60 || true
+    exit 1
+fi
+echo "smtp STARTTLS OK"

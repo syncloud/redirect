@@ -38,6 +38,14 @@ local build(arch) = [{
             ]
         },
         {
+            name: "test caddy plugin",
+            image: "golang:" + go,
+            commands: [
+                "cd caddy-smtp",
+                "go test ./...",
+            ]
+        },
+        {
             name: "build backend",
             image: "golang:" + go,
             commands: [
@@ -91,7 +99,7 @@ local build(arch) = [{
             settings: {
                 repo: "syncloud/caddy",
                 dockerfile: "docker/caddy/Dockerfile",
-                context: "docker/caddy",
+                context: ".",
                 username: { from_secret: "DOCKER_USERNAME" },
                 password: { from_secret: "DOCKER_PASSWORD" },
                 tags: [version],
@@ -106,6 +114,14 @@ local build(arch) = [{
             commands: [
                 "cd dns-faker",
                 "CGO_ENABLED=0 go build -o ../ci/sim/dns-faker .",
+            ],
+        },
+        {
+            name: "build device-faker",
+            image: "golang:" + go,
+            commands: [
+                "cd device-faker",
+                "CGO_ENABLED=0 go build -o ../ci/sim/device-faker .",
             ],
         },
         {

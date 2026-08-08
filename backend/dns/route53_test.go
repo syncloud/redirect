@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/log"
@@ -38,7 +39,7 @@ func (r *Route53Stub) GetHostedZone(input *route53.GetHostedZoneInput) (*route53
 
 func TestAmazonDns_CreateCertbotRecord_QuoteValue(t *testing.T) {
 	client := &Route53Stub{}
-	amazonDns := New(client, metrics.New(), 10, log.Default())
+	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
 	err := amazonDns.CreateCertbotRecord("", "name", []string{"value"})
 	assert.Nil(t, err)
 	record := client.resourceRecordSetsInput.ChangeBatch.Changes[0].ResourceRecordSet.ResourceRecords[0]
@@ -48,7 +49,7 @@ func TestAmazonDns_CreateCertbotRecord_QuoteValue(t *testing.T) {
 
 func TestAmazonDns_UpdateDomainRecords_Dkim255CharsLimit(t *testing.T) {
 	client := &Route53Stub{}
-	amazonDns := New(client, metrics.New(), 10, log.Default())
+	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
 	dkimKey := "12345abcde"
 	domain := &model.Domain{DkimKey: &dkimKey}
 	err := amazonDns.UpdateDomainRecords(domain)
@@ -56,4 +57,49 @@ func TestAmazonDns_UpdateDomainRecords_Dkim255CharsLimit(t *testing.T) {
 	record := client.resourceRecordSetsInput.ChangeBatch.Changes[0].ResourceRecordSet.ResourceRecords[0]
 	assert.Equal(t, `"v=DKIM1; k" "=rsa; p=12" "345abcde"`, *record.Value)
 
+}
+
+func mxRecord(client *Route53Stub) (string, error) {
+	for _, change := range client.resourceRecordSetsInput.ChangeBatch.Changes {
+		if *change.ResourceRecordSet.Type == "MX" {
+			return *change.ResourceRecordSet.ResourceRecords[0].Value, nil
+		}
+	}
+	return "", fmt.Errorf("no MX record was written")
+}
+
+func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheDeviceWithoutRelay(t *testing.T) {
+	client := &Route53Stub{}
+	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
+
+	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "alice.syncloud.it"})
+
+	assert.Nil(t, err)
+	mx, err := mxRecord(client)
+	assert.Nil(t, err)
+	assert.Equal(t, "1 alice.syncloud.it.", mx)
+}
+
+func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheRelayWithRelay(t *testing.T) {
+	client := &Route53Stub{}
+	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
+
+	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "alice.syncloud.it", Relay: true})
+
+	assert.Nil(t, err)
+	mx, err := mxRecord(client)
+	assert.Nil(t, err)
+	assert.Equal(t, "1 alice.mx.syncloud.it.", mx)
+}
+
+func TestAmazonDns_UpdateDomainRecords_MxForACustomDomain(t *testing.T) {
+	client := &Route53Stub{}
+	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
+
+	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "example.com", Relay: true})
+
+	assert.Nil(t, err)
+	mx, err := mxRecord(client)
+	assert.Nil(t, err)
+	assert.Equal(t, "1 example-com.mx.syncloud.it.", mx)
 }

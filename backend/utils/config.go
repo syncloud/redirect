@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/bigkevmcd/go-configparser"
 	"log"
 	"os"
@@ -164,100 +165,86 @@ func (config *Config) GetRelayAddress() string {
 	return ""
 }
 
-func (config *Config) GetMailRelayAddress() string {
-	if value, err := config.parser.Get("mail_relay", "address"); err == nil {
+func (config *Config) GetMailOutboundAddress() string {
+	if value, err := config.parser.Get("mail_outbound", "address"); err == nil {
 		return value
 	}
 	return "127.0.0.1:2465"
 }
 
-func (config *Config) GetMailRelayCertFile() string {
-	if value, err := config.parser.Get("mail_relay", "cert_file"); err == nil {
-		return value
-	}
-	return ""
-}
-
-func (config *Config) GetMailRelayKeyFile() string {
-	if value, err := config.parser.Get("mail_relay", "key_file"); err == nil {
-		return value
-	}
-	return ""
-}
-
-func (config *Config) GetMailRelaySesRegion() string {
-	if value, err := config.parser.Get("mail_relay", "ses_region"); err == nil {
+func (config *Config) GetMailOutboundSesRegion() string {
+	if value, err := config.parser.Get("mail_outbound", "ses_region"); err == nil {
 		return value
 	}
 	return "us-west-2"
 }
 
-func (config *Config) GetMailRelaySesEndpoint() string {
-	if value, err := config.parser.Get("mail_relay", "ses_endpoint"); err == nil {
+func (config *Config) GetMailOutboundSesEndpoint() string {
+	if value, err := config.parser.Get("mail_outbound", "ses_endpoint"); err == nil {
 		return value
 	}
 	return ""
 }
 
-func (config *Config) GetMailRelaySesConfigurationSet() string {
-	if value, err := config.parser.Get("mail_relay", "ses_configuration_set"); err == nil {
+func (config *Config) GetMailOutboundSesConfigurationSet() string {
+	if value, err := config.parser.Get("mail_outbound", "ses_configuration_set"); err == nil {
 		return value
 	}
 	return ""
 }
 
-func (config *Config) GetMailRelayMaxMessageBytes() int64 {
-	if value, err := config.parser.GetInt64("mail_relay", "max_message_bytes"); err == nil {
+func (config *Config) GetMailOutboundMaxMessageBytes() int64 {
+	if value, err := config.parser.GetInt64("mail_outbound", "max_message_bytes"); err == nil {
 		return value
 	}
 	return 25 * 1024 * 1024
 }
 
-func (config *Config) mailRelayLimitMessages(key string, messages int64) int64 {
-	if value, err := config.parser.GetInt64("mail_relay", key); err == nil {
+func (config *Config) mailOutboundLimit(key string, messages int64) int64 {
+	if value, err := config.parser.GetInt64("mail_outbound", key); err == nil {
 		return value
 	}
 	return messages
 }
 
-func (config *Config) GetMailRelayFreeLimitMessages() int64 {
-	return config.mailRelayLimitMessages("free_limit_messages", 50)
+func (config *Config) GetMailOutboundFreeLimitMessages() int64 {
+	return config.mailOutboundLimit("free_limit_messages", 50)
 }
 
-func (config *Config) GetMailRelayProLimitMessages() int64 {
-	return config.mailRelayLimitMessages("pro_limit_messages", 2000)
+func (config *Config) GetMailOutboundProLimitMessages() int64 {
+	return config.mailOutboundLimit("pro_limit_messages", 2000)
 }
 
-func (config *Config) GetMailRelayMaxLimitMessages() int64 {
-	return config.mailRelayLimitMessages("max_limit_messages", 10000)
+func (config *Config) GetMailOutboundMaxLimitMessages() int64 {
+	return config.mailOutboundLimit("max_limit_messages", 10000)
 }
 
-func (config *Config) GetMailRelayLimitPerMinute() int64 {
-	return config.mailRelayLimitMessages("limit_per_minute", 10)
+func (config *Config) GetMailOutboundLimitPerMinute() int64 {
+	return config.mailOutboundLimit("limit_per_minute", 10)
 }
 
-func (config *Config) GetMailRelayLimitPerHour() int64 {
-	return config.mailRelayLimitMessages("limit_per_hour", 100)
+func (config *Config) GetMailOutboundLimitPerHour() int64 {
+	return config.mailOutboundLimit("limit_per_hour", 100)
 }
 
-func (config *Config) GetMailRelayLimitPerDay() int64 {
-	return config.mailRelayLimitMessages("limit_per_day", 500)
+func (config *Config) GetMailOutboundLimitPerDay() int64 {
+	return config.mailOutboundLimit("limit_per_day", 500)
 }
 
-func (config *Config) GetMailRelayMaxRecipients() int {
-	return int(config.mailRelayLimitMessages("max_recipients", 50))
+func (config *Config) GetMailOutboundMaxRecipients() int {
+	return int(config.mailOutboundLimit("max_recipients", 50))
 }
 
-func (config *Config) GetMailRelayMaxConnectionsPerPeer() int {
-	return int(config.mailRelayLimitMessages("max_connections_per_peer", 100))
+func (config *Config) GetMailOutboundMaxConnectionsPerPeer() int {
+	return int(config.mailOutboundLimit("max_connections_per_peer", 100))
 }
 
-func (config *Config) GetMailRelayMaxConcurrentSends() int {
-	return int(config.mailRelayLimitMessages("max_concurrent_sends", 20))
+func (config *Config) GetMailOutboundMaxConcurrentSends() int {
+	return int(config.mailOutboundLimit("max_concurrent_sends", 20))
 }
 
-func (config *Config) GetMailRelayBounceRatio() float64 {
-	if value, err := config.parser.Get("mail_relay", "bounce_ratio"); err == nil {
+func (config *Config) GetMailOutboundBounceRatio() float64 {
+	if value, err := config.parser.Get("mail_outbound", "bounce_ratio"); err == nil {
 		if parsed, err := strconv.ParseFloat(value, 64); err == nil {
 			return parsed
 		}
@@ -265,26 +252,19 @@ func (config *Config) GetMailRelayBounceRatio() float64 {
 	return 0.05
 }
 
-func (config *Config) GetMailRelayBounceMinimum() int64 {
-	return config.mailRelayLimitMessages("bounce_minimum", 20)
+func (config *Config) GetMailOutboundBounceMinimum() int64 {
+	return config.mailOutboundLimit("bounce_minimum", 20)
 }
 
-func (config *Config) GetMailRelayReputationIntervalSeconds() int64 {
-	return config.mailRelayLimitMessages("reputation_interval_seconds", 300)
+func (config *Config) GetMailOutboundReputationIntervalSeconds() int64 {
+	return config.mailOutboundLimit("reputation_interval_seconds", 300)
 }
 
-func (config *Config) GetMailRelayRspamdUrl() string {
-	if value, err := config.parser.Get("mail_relay", "rspamd_url"); err == nil {
+func (config *Config) GetMailOutboundRspamdUrl() string {
+	if value, err := config.parser.Get("mail_outbound", "rspamd_url"); err == nil {
 		return value
 	}
 	return ""
-}
-
-func (config *Config) GetMailRelayRspamdRejectOnError() bool {
-	if value, err := config.parser.Get("mail_relay", "rspamd_reject_on_error"); err == nil {
-		return value == "true"
-	}
-	return true
 }
 
 func (config *Config) AwsAccessKeyId() string {
@@ -488,4 +468,55 @@ func (config *Config) UserCleanerEnabled() bool {
 		log.Fatalln("Cannot read config: ", err)
 	}
 	return result
+}
+
+func (config *Config) mailInboundPort(key string, port int) int {
+	if value, err := config.parser.GetInt64("mail_inbound", key); err == nil {
+		return int(value)
+	}
+	return port
+}
+
+func (config *Config) GetMailInboundMuxer() string {
+	if value, err := config.parser.Get("mail_inbound", "muxer"); err == nil {
+		return value
+	}
+	return "127.0.0.1:1337"
+}
+
+func (config *Config) GetMailInboundAddress() string {
+	if value, err := config.parser.Get("mail_inbound", "address"); err == nil {
+		return value
+	}
+	return ":25"
+}
+
+func (config *Config) GetMailInboundHostname() string {
+	if value, err := config.parser.Get("mail_inbound", "hostname"); err == nil {
+		return value
+	}
+	return fmt.Sprintf("mx.%s", config.Domain())
+}
+
+func (config *Config) GetMailInboundMaxMessageBytes() int64 {
+	if value, err := config.parser.GetInt64("mail_inbound", "max_message_bytes"); err == nil {
+		return value
+	}
+	return 35 * 1024 * 1024
+}
+
+func (config *Config) GetMailInboundMaxConnectionsPerPeer() int {
+	return config.mailInboundPort("max_connections_per_peer", 20)
+}
+
+func (config *Config) GetMailInboundMaxConcurrent() int {
+	return config.mailInboundPort("max_concurrent", 200)
+}
+
+func (config *Config) AwsEndpoint() string {
+	value, err := config.parser.Get("aws", "endpoint")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
 }

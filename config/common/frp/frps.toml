@@ -2,6 +2,7 @@ bindAddr = "127.0.0.1"
 bindPort = 7000
 proxyBindAddr = "127.0.0.1"
 vhostHTTPSPort = 4443
+tcpMuxHTTPConnectPort = 1337
 
 webServer.addr = "127.0.0.1"
 webServer.port = 7500

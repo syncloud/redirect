@@ -799,13 +799,38 @@ func (m *MySql) IsMailRelayBlocked(name string) (bool, error) {
 	return count > 0, nil
 }
 
-func (m *MySql) GetRelayUsageForUser(userId int64, yearMonth string) (int64, error) {
-	row := m.db.QueryRow(
-		"SELECT COALESCE(SUM(rt.bytes), 0) FROM relay_traffic rt "+
-			"JOIN domain d ON rt.name = d.name "+
-			"WHERE d.user_id = ? AND rt.`year_month` = ?", userId, yearMonth)
+func (m *MySql) GetUserDomainNames(userId int64) ([]string, error) {
+	rows, err := m.db.Query("SELECT lower(name) FROM domain WHERE user_id = ?", userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+	return names, rows.Err()
+}
+
+func (m *MySql) GetRelayTraffic(names []string, yearMonth string) (int64, error) {
+	if len(names) == 0 {
+		return 0, nil
+	}
+	arguments := make([]interface{}, 0, len(names)+1)
+	arguments = append(arguments, yearMonth)
+	placeholders := make([]string, len(names))
+	for i, name := range names {
+		placeholders[i] = "?"
+		arguments = append(arguments, name)
+	}
+	query := "SELECT COALESCE(SUM(bytes), 0) FROM relay_traffic " +
+		"WHERE `year_month` = ? AND name IN (" + strings.Join(placeholders, ",") + ")"
 	var bytes int64
-	if err := row.Scan(&bytes); err != nil {
+	if err := m.db.QueryRow(query, arguments...).Scan(&bytes); err != nil {
 		return 0, err
 	}
 	return bytes, nil

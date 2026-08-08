@@ -19,8 +19,11 @@ var defaultIpv6 string
 var defaultDkim string
 
 const (
-	defaultMx  = "1 mx"
-	defaultSpf = "\"v=spf1 -all\""
+	defaultMx = "1 mx"
+
+	denyAllSpf          = "\"v=spf1 -all\""
+	allowDeviceAndMxSpf = "\"v=spf1 a mx -all\""
+
 	defaultTtl = 600
 	certbotTtl = 10
 )
@@ -49,18 +52,20 @@ type Route53 interface {
 }
 
 type AmazonDns struct {
-	client   Route53
-	metrics  *metrics.Metrics
-	txtLimit int
-	logger   *zap.Logger
+	client     Route53
+	metrics    *metrics.Metrics
+	txtLimit   int
+	mainDomain string
+	logger     *zap.Logger
 }
 
-func New(client Route53, metrics *metrics.Metrics, txtLimit int, logger *zap.Logger) *AmazonDns {
+func New(client Route53, metrics *metrics.Metrics, txtLimit int, mainDomain string, logger *zap.Logger) *AmazonDns {
 	return &AmazonDns{
-		client:   client,
-		metrics:  metrics,
-		txtLimit: txtLimit,
-		logger:   logger,
+		client:     client,
+		metrics:    metrics,
+		txtLimit:   txtLimit,
+		mainDomain: mainDomain,
+		logger:     logger,
 	}
 }
 
@@ -116,19 +121,16 @@ func (a *AmazonDns) UpdateDomainRecords(domain *model.Domain) error {
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey, "\"v=spf1 a mx -all\"", fmt.Sprintf("1 %s", domain.FQDN()), "CREATE", domain.HostedZoneId)
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.actionDomain(domain.FQDN(), domain.DnsIpv4(), domain.DnsIpv6(), domain.DkimKey,
+		allowDeviceAndMxSpf, a.mx(domain), "CREATE", domain.HostedZoneId)
 }
 
 func (a *AmazonDns) DeleteDomainRecords(domain *model.Domain) error {
-	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "UPSERT", domain.HostedZoneId)
+	err := a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, denyAllSpf, defaultMx, "UPSERT", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
-	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, defaultSpf, defaultMx, "DELETE", domain.HostedZoneId)
+	err = a.actionDomain(domain.FQDN(), &defaultIpv4, &defaultIpv6, &defaultDkim, denyAllSpf, defaultMx, "DELETE", domain.HostedZoneId)
 	if err != nil {
 		return err
 	}
@@ -244,4 +246,11 @@ func splitBy(s string, n int) []string {
 	}
 	ss = append(ss, s)
 	return ss
+}
+
+func (a *AmazonDns) mx(domain *model.Domain) string {
+	if domain.Relay {
+		return fmt.Sprintf("1 %s", domain.MailHost(a.mainDomain))
+	}
+	return fmt.Sprintf("1 %s", domain.FQDN())
 }

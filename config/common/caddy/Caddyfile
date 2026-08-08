@@ -3,6 +3,15 @@
 	acme_ca {$ACME_CA}
 	https_port 8443
 	layer4 {
+		:25 {
+			route {
+				smtp_starttls {
+					hostname mx.{$REDIRECT_DOMAIN}
+					upstream 127.0.0.1:10025
+					default_sni mail.mx.{$REDIRECT_DOMAIN}
+				}
+			}
+		}
 		:465 {
 			route {
 				tls
@@ -55,6 +64,11 @@ api.{$REDIRECT_DOMAIN} {
 }
 
 mail-relay.{$REDIRECT_DOMAIN} {
+	import syncloud_tls
+	respond 404
+}
+
+*.mx.{$REDIRECT_DOMAIN} {
 	import syncloud_tls
 	respond 404
 }

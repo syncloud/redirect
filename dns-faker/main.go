@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,10 +20,11 @@ const zone = "test."
 type Store struct {
 	mu  sync.RWMutex
 	txt map[string][]string
+	mx  map[string][]string
 }
 
 func NewStore() *Store {
-	return &Store{txt: map[string][]string{}}
+	return &Store{txt: map[string][]string{}, mx: map[string][]string{}}
 }
 
 func (s *Store) Set(name string, values []string) {
@@ -41,6 +44,35 @@ func (s *Store) Get(name string) ([]string, bool) {
 	defer s.mu.RUnlock()
 	v, ok := s.txt[strings.ToLower(name)]
 	return v, ok
+}
+
+func (s *Store) SetMX(name string, values []string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.mx[strings.ToLower(name)] = values
+}
+
+func (s *Store) DeleteMX(name string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.mx, strings.ToLower(name))
+}
+
+func (s *Store) GetMX(name string) ([]string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	v, ok := s.mx[strings.ToLower(name)]
+	return v, ok
+}
+
+func (s *Store) AllMX() map[string][]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make(map[string][]string, len(s.mx))
+	for k, v := range s.mx {
+		out[k] = append([]string{}, v...)
+	}
+	return out
 }
 
 func soa() *dns.SOA {
@@ -85,6 +117,20 @@ func (s *Store) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 				m.Ns = append(m.Ns, soa())
 				m.Rcode = dns.RcodeNameError
 			}
+		case q.Qtype == dns.TypeMX:
+			if vals, ok := s.GetMX(name); ok {
+				for _, v := range vals {
+					preference, host := splitMX(v)
+					m.Answer = append(m.Answer, &dns.MX{
+						Hdr:        dns.RR_Header{Name: q.Name, Rrtype: dns.TypeMX, Class: dns.ClassINET, Ttl: 60},
+						Preference: preference,
+						Mx:         dns.Fqdn(host),
+					})
+				}
+			} else {
+				m.Ns = append(m.Ns, soa())
+				m.Rcode = dns.RcodeNameError
+			}
 		case q.Qtype == dns.TypeSOA && name == zone:
 			m.Answer = append(m.Answer, soa())
 		default:
@@ -100,11 +146,11 @@ func (s *Store) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 type changeRequest struct {
 	XMLName xml.Name `xml:"ChangeResourceRecordSetsRequest"`
 	Changes []struct {
-		Action        string `xml:"Action"`
+		Action            string `xml:"Action"`
 		ResourceRecordSet struct {
-			Name    string   `xml:"Name"`
-			Type    string   `xml:"Type"`
-			Values  []string `xml:"ResourceRecords>ResourceRecord>Value"`
+			Name   string   `xml:"Name"`
+			Type   string   `xml:"Type"`
+			Values []string `xml:"ResourceRecords>ResourceRecord>Value"`
 		} `xml:"ResourceRecordSet"`
 	} `xml:"ChangeBatch>Changes>Change"`
 }
@@ -131,12 +177,32 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case strings.Contains(path, "hostedzone"):
 		a.listZones(w)
+	case path == "/faker/mx":
+		a.mxRecords(w)
 	case path == "/" || strings.Contains(path, "health"):
 		w.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(w, "ok")
 	default:
 		http.Error(w, "unsupported", http.StatusBadRequest)
 	}
+}
+
+func (a *API) mxRecords(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(a.store.AllMX())
+}
+
+func splitMX(value string) (uint16, string) {
+	fields := strings.Fields(value)
+	if len(fields) != 2 {
+		return 10, strings.TrimSpace(value)
+	}
+	preference, err := strconv.ParseUint(fields[0], 10, 16)
+	if err != nil {
+		return 10, fields[1]
+	}
+	return uint16(preference), fields[1]
 }
 
 func writeXML(w http.ResponseWriter, body string) {
@@ -173,13 +239,19 @@ func (a *API) change(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, c := range req.Changes {
 		rr := c.ResourceRecordSet
-		if rr.Type != "TXT" {
-			continue
-		}
-		if strings.EqualFold(c.Action, "DELETE") {
-			a.store.Delete(rr.Name)
-		} else {
-			a.store.Set(rr.Name, rr.Values)
+		switch rr.Type {
+		case "TXT":
+			if strings.EqualFold(c.Action, "DELETE") {
+				a.store.Delete(rr.Name)
+			} else {
+				a.store.Set(rr.Name, rr.Values)
+			}
+		case "MX":
+			if strings.EqualFold(c.Action, "DELETE") {
+				a.store.DeleteMX(rr.Name)
+			} else {
+				a.store.SetMX(rr.Name, rr.Values)
+			}
 		}
 	}
 	writeXML(w, `<ChangeResourceRecordSetsResponse xmlns="`+xmlns+`"><ChangeInfo><Id>/change/CSYNC</Id>`+

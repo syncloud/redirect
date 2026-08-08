@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"testing"
@@ -71,11 +72,15 @@ type DomainsDbStub struct {
 	deleted      bool
 	hostedZoneId string
 	userStatus   int64
+	relay        bool
+	ip           *string
 }
 
 func (db *DomainsDbStub) GetDomainByToken(_ string) (*model.Domain, error) {
 	if db.found {
-		return &model.Domain{Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId}, nil
+		return &model.Domain{
+			Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId,
+			Relay: db.relay, Ip: db.ip}, nil
 	}
 	return nil, nil
 }
@@ -144,10 +149,12 @@ func (d *DetectorStub) Changed(
 	_ *string,
 	_ *string,
 	_ bool,
+	_ bool,
 	_ *string,
 	_ *string,
 	_ *string,
-	_ *string) bool {
+	_ *string,
+	_ bool) bool {
 	return d.changed
 }
 
@@ -446,4 +453,65 @@ func TestDomains_Update_LockedUser_Error(t *testing.T) {
 	}, &requestIp)
 
 	assert.Error(t, err)
+}
+
+func updateWithMailRelay(db *DomainsDbStub, mailRelay bool) (*model.Domain, error) {
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	token := "123"
+	requestIp := "10.0.0.1"
+	webLocalPort := 443
+	webProtocol := "https"
+	detector := &DetectorStub{changed: true}
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", detector, "")
+	return domainService.Update(model.DomainUpdateRequest{
+		WebLocalPort: &webLocalPort,
+		WebProtocol:  &webProtocol,
+		Token:        &token,
+		Ipv4Enabled:  true,
+		MailRelay:    mailRelay,
+	}, &requestIp)
+}
+
+func updateRelayWithoutAddressChange(db *DomainsDbStub, relay bool) *DnsStub {
+	dnsStub := &DnsStub{}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	token := "123"
+	requestIp := "10.0.0.1"
+	webLocalPort := 443
+	webProtocol := "https"
+	db.ip = &requestIp
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", change.New(), "")
+	_, _ = domainService.Update(model.DomainUpdateRequest{
+		WebLocalPort: &webLocalPort,
+		WebProtocol:  &webProtocol,
+		Token:        &token,
+		Ipv4Enabled:  true,
+		Relay:        relay,
+	}, &requestIp)
+	return dnsStub
+}
+
+func TestDomains_Update_RelayTurnedOnRewritesDns(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+
+	dnsStub := updateRelayWithoutAddressChange(db, true)
+
+	assert.True(t, dnsStub.updated, "turning the relay on must move the mx record")
+}
+
+func TestDomains_Update_RelayTurnedOffRewritesDns(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1", relay: true}
+
+	dnsStub := updateRelayWithoutAddressChange(db, false)
+
+	assert.True(t, dnsStub.updated, "turning the relay off must move the mx record back")
+}
+
+func TestDomains_Update_UnchangedRelayLeavesDnsAlone(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
+
+	dnsStub := updateRelayWithoutAddressChange(db, false)
+
+	assert.False(t, dnsStub.updated)
 }
