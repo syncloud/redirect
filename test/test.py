@@ -1291,12 +1291,11 @@ def test_mail_inbound_device_rejects_message(domain, device_host, artifact_dir, 
         server.mail('sender@example.com')
         code, message = server.rcpt('user@{0}'.format(domain_name))
         assert code == 250, '{0} {1}'.format(code, message)
-        with pytest.raises(smtplib.SMTPDataError) as failure:
-            server.data('Subject: refused\r\n\r\nbody\r\n')
+        data_code, data_message = server.data('Subject: refused\r\n\r\nbody\r\n')
     finally:
         server.quit()
 
-    assert failure.value.smtp_code == 554, failure.value
+    assert data_code == 554, '{0} {1}'.format(data_code, data_message)
     assert len(mail_device.messages(expected=2, attempts=3)) == 1
 
 
@@ -1313,15 +1312,14 @@ def test_mail_inbound_device_dropping_the_connection_defers(domain, device_host,
         server.mail('sender@example.com')
         code, message = server.rcpt('user@{0}'.format(domain_name))
         assert code == 250, '{0} {1}'.format(code, message)
-        with pytest.raises(smtplib.SMTPDataError) as failure:
-            server.data('Subject: dropped\r\n\r\nbody\r\n')
+        data_code, data_message = server.data('Subject: dropped\r\n\r\nbody\r\n')
     finally:
         try:
             server.quit()
         except Exception:
             pass
 
-    assert failure.value.smtp_code == 451, failure.value
+    assert data_code == 451, '{0} {1}'.format(data_code, data_message)
 
 
 def test_mail_inbound_second_domain_deferred(domain, device_host, artifact_dir, mail_device):
