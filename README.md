@@ -17,7 +17,10 @@ We do not support independent installations of redirect
 #### Configure mysql database (once)
 
     mysql -ulogin -ppassword -e "create database redirect";
-    mysql -ulogin -ppassword redirect < db/init.sql
+
+The schema is managed by golang-migrate with migrations embedded in the api
+binary (`backend/db/migrations`). The api applies pending migrations on
+startup, so an empty database is enough.
 
 ### Running locally (development)
 
@@ -25,9 +28,18 @@ We do not support independent installations of redirect
 
     sudo docker run --name mysqld -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql:5.7.30
     mysql -uroot -proot -hlocalhost --protocol=TCP -e "create database redirect"
-    mysql -uroot -proot -hlocalhost --protocol=TCP redirect < db/init.sql
-    mysql -uroot -proot -hlocalhost --protocol=TCP redirect < db/update.sql
+    cd backend && go run ./cmd/migrate up --dsn "mysql://root:root@tcp(localhost:3306)/redirect"
     mysql -uroot -proot -hlocalhost --protocol=TCP redirect -e "insert into user (email, password_hash, update_token, active) values ('test@example.com', sha2('password', 256), 'token', 1)"
+
+#### Migrations
+
+    cd backend
+    go run ./cmd/migrate up --dsn "mysql://root:root@tcp(localhost:3306)/redirect"
+    go run ./cmd/migrate version --dsn "..."
+    go run ./cmd/migrate force 19 --dsn "..."
+
+Add a migration as a pair of files in `backend/db/migrations`, numbered from
+the highest existing prefix: `0000NN_name.up.sql` and `0000NN_name.down.sql`.
 
 #### StatsD
 

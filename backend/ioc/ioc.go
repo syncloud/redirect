@@ -15,7 +15,9 @@ import (
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
 	"github.com/syncloud/redirect/log"
-	"github.com/syncloud/redirect/mailrelay"
+	"github.com/syncloud/redirect/mail"
+	"github.com/syncloud/redirect/mail/inbound"
+	"github.com/syncloud/redirect/mail/outbound"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/probe"
 	"github.com/syncloud/redirect/relay"
@@ -29,6 +31,9 @@ import (
 	"net/http"
 	"time"
 )
+
+// route53 is a global service and signs with this region wherever it runs
+const awsRoute53Region = "us-east-1"
 
 func NewContainer(configPath string, secretPath string, mailPath string) (container.Container, error) {
 	var logger = log.Default()
@@ -78,8 +83,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(session *session.Session) *route53.Route53 {
-		return route53.New(session)
+	err = c.Singleton(func(session *session.Session, config *utils.Config) *route53.Route53 {
+		return route53.New(session, aws.NewConfig().
+			WithEndpoint(config.AwsEndpoint()).
+			WithRegion(awsRoute53Region))
 	})
 	if err != nil {
 		return nil, err
@@ -99,8 +106,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(route53 *route53.Route53, metrics *metrics.Metrics) *dns.AmazonDns {
-		return dns.New(route53, metrics, 255, logger)
+	err = c.Singleton(func(route53 *route53.Route53, metrics *metrics.Metrics, config *utils.Config) *dns.AmazonDns {
+		return dns.New(route53, metrics, 255, config.Domain(), logger)
 	})
 	if err != nil {
 		return nil, err
@@ -191,7 +198,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(
 		database *db.MySql,
-		mail *service.Mail,
+		mailService *service.Mail,
 		actions *service.Actions,
 		config *utils.Config,
 		subscriptions *subscription.Router,
@@ -200,7 +207,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			database,
 			config.ActivateByEmail(),
 			actions,
-			mail,
+			mailService,
 			subscriptions,
 		)
 	})
@@ -223,7 +230,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) *service.Domains {
-		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(), detector, config.GetRelayAddress())
+		return service.NewDomains(amazonDns, database, users, metrics, config.Domain(), config.AwsHostedZoneId(),
+			detector, config.GetRelayAddress())
 	})
 	if err != nil {
 		return nil, err
@@ -289,8 +297,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *relay.LimitWarner {
-		return relay.NewLimitWarner(database, mail)
+	err = c.Singleton(func(database *db.MySql, mailService *service.Mail) *relay.LimitWarner {
+		return relay.NewLimitWarner(database, mailService)
 	})
 	if err != nil {
 		return nil, err
@@ -321,32 +329,32 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, config *utils.Config) *mailrelay.Tiers {
-		return mailrelay.NewTiers(database,
-			config.GetMailRelayFreeLimitMessages(),
-			config.GetMailRelayProLimitMessages(),
-			config.GetMailRelayMaxLimitMessages(), logger)
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *outbound.Tiers {
+		return outbound.NewTiers(database,
+			config.GetMailOutboundFreeLimitMessages(),
+			config.GetMailOutboundProLimitMessages(),
+			config.GetMailOutboundMaxLimitMessages(), logger)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, tiers *mailrelay.Tiers) *mailrelay.AccountUsage {
-		return mailrelay.NewAccountUsage(database, tiers)
+	err = c.Singleton(func(database *db.MySql, tiers *outbound.Tiers) *outbound.AccountUsage {
+		return outbound.NewAccountUsage(database, tiers)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, mail *service.Mail) *mailrelay.LimitWarner {
-		return mailrelay.NewLimitWarner(database, mail)
+	err = c.Singleton(func(database *db.MySql, mailService *service.Mail) *outbound.LimitWarner {
+		return outbound.NewLimitWarner(database, mailService)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql) *mailrelay.DbStore {
-		return mailrelay.NewDbStore(database)
+	err = c.Singleton(func(database *db.MySql) *outbound.DbStore {
+		return outbound.NewDbStore(database)
 	})
 	if err != nil {
 		return nil, err
@@ -354,19 +362,19 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	err = c.Singleton(func(
 		domains *service.Domains,
-		tiers *mailrelay.Tiers,
-		store *mailrelay.DbStore,
-		warner *mailrelay.LimitWarner,
-	) *mailrelay.Relay {
-		return mailrelay.New(domains, tiers, store, store, warner, logger)
+		tiers *outbound.Tiers,
+		store *outbound.DbStore,
+		warner *outbound.LimitWarner,
+	) *outbound.Relay {
+		return outbound.New(domains, tiers, store, store, warner, logger)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(store *mailrelay.DbStore, config *utils.Config) *mailrelay.Feedback {
-		return mailrelay.NewFeedback(store, store,
-			config.GetMailRelayBounceRatio(), config.GetMailRelayBounceMinimum(), logger)
+	err = c.Singleton(func(store *outbound.DbStore, config *utils.Config) *outbound.Feedback {
+		return outbound.NewFeedback(store, store,
+			config.GetMailOutboundBounceRatio(), config.GetMailOutboundBounceMinimum(), logger)
 	})
 	if err != nil {
 		return nil, err
@@ -379,82 +387,103 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql, systemClock *clock.SystemClock) *mailrelay.UsageMetrics {
-		return mailrelay.NewUsageMetrics(database, systemClock, logger)
+	err = c.Singleton(func(database *db.MySql, systemClock *clock.SystemClock) *outbound.UsageMetrics {
+		return outbound.NewUsageMetrics(database, systemClock, logger)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) *mailrelay.Reputation {
-		source := mailrelay.NewCloudWatch(awsSession, config.GetMailRelaySesRegion(), time.Hour)
-		return mailrelay.NewReputation(source, time.Duration(config.GetMailRelayReputationIntervalSeconds())*time.Second, logger)
+	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) *outbound.Reputation {
+		source := outbound.NewCloudWatch(awsSession, config.GetMailOutboundSesRegion(), time.Hour)
+		return outbound.NewReputation(source, time.Duration(config.GetMailOutboundReputationIntervalSeconds())*time.Second, logger)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.Limiter {
-		return mailrelay.NewLimiter(mailrelay.Limits{
-			Minute:     config.GetMailRelayLimitPerMinute(),
-			Hour:       config.GetMailRelayLimitPerHour(),
-			Day:        config.GetMailRelayLimitPerDay(),
-			Recipients: config.GetMailRelayMaxRecipients(),
+	err = c.Singleton(func(config *utils.Config) *outbound.Limiter {
+		return outbound.NewLimiter(outbound.Limits{
+			Minute:     config.GetMailOutboundLimitPerMinute(),
+			Hour:       config.GetMailOutboundLimitPerHour(),
+			Day:        config.GetMailOutboundLimitPerDay(),
+			Recipients: config.GetMailOutboundMaxRecipients(),
 		})
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.Rspamd {
-		return mailrelay.NewRspamd(config, 10*time.Second, logger)
+	err = c.Singleton(func(config *utils.Config) *outbound.Rspamd {
+		return outbound.NewRspamd(config, 10*time.Second, logger)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) mailrelay.Sender {
-		return mailrelay.NewSesSender(awsSession, config.GetMailRelaySesRegion(),
-			config.GetMailRelaySesEndpoint(), config.GetMailRelaySesConfigurationSet(), logger)
+	err = c.Singleton(func(awsSession *session.Session, config *utils.Config) outbound.Sender {
+		return outbound.NewSesSender(awsSession, config.GetMailOutboundSesRegion(),
+			config.GetMailOutboundSesEndpoint(), config.GetMailOutboundSesConfigurationSet(), logger)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.Connections {
-		return mailrelay.NewConnections(config.GetMailRelayMaxConnectionsPerPeer())
+	err = c.Singleton(func(config *utils.Config) *mail.Connections {
+		return mail.NewConnections(config.GetMailOutboundMaxConnectionsPerPeer())
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Singleton(func(config *utils.Config) *mailrelay.InFlight {
-		return mailrelay.NewInFlight(config.GetMailRelayMaxConcurrentSends())
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	err = c.Singleton(func(config *utils.Config) *mailrelay.CertificateLoader {
-		return mailrelay.NewCertificateLoader(config.GetMailRelayCertFile(), config.GetMailRelayKeyFile())
+	err = c.Singleton(func(config *utils.Config) *mail.InFlight {
+		return mail.NewInFlight(config.GetMailOutboundMaxConcurrentSends())
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	err = c.Singleton(func(
-		relayService *mailrelay.Relay,
-		sender mailrelay.Sender,
-		scanner *mailrelay.Rspamd,
-		limiter *mailrelay.Limiter,
-		connections *mailrelay.Connections,
-		inFlight *mailrelay.InFlight,
-		certificate *mailrelay.CertificateLoader,
+		relayService *outbound.Relay,
+		sender outbound.Sender,
+		scanner *outbound.Rspamd,
+		limiter *outbound.Limiter,
+		connections *mail.Connections,
+		inFlight *mail.InFlight,
 		config *utils.Config,
-	) *mailrelay.Server {
-		return mailrelay.NewServer(config.GetMailRelayAddress(), config.Domain(),
-			relayService, sender, scanner, limiter, connections, inFlight, certificate,
-			config.GetMailRelayMaxMessageBytes(), logger)
+	) *outbound.Server {
+		return outbound.NewServer(config.GetMailOutboundAddress(), config.Domain(),
+			relayService, sender, scanner, limiter, connections, inFlight,
+			config.GetMailOutboundMaxMessageBytes(), logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql) *inbound.Router {
+		return inbound.NewRouter(database)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(config *utils.Config) inbound.DeviceDialer {
+		return inbound.NewTunnelDialer(config.GetMailInboundMuxer(), inbound.DialTimeout)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(router *inbound.Router, dialer inbound.DeviceDialer, config *utils.Config) *inbound.Server {
+		return inbound.NewServer(
+			config.GetMailInboundAddress(),
+			config.GetMailInboundHostname(),
+			router,
+			dialer,
+			mail.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
+			mail.NewInFlight(config.GetMailInboundMaxConcurrent()),
+			config.GetMailInboundMaxMessageBytes(),
+			logger)
 	})
 	if err != nil {
 		return nil, err
@@ -463,17 +492,17 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		domains *service.Domains,
 		users *service.Users,
-		mail *service.Mail,
+		mailService *service.Mail,
 		prober *probe.Service,
 		certbot *service.Certbot,
 		metrics *metrics.Metrics,
-		feedback *mailrelay.Feedback,
+		feedback *outbound.Feedback,
 		config *utils.Config,
 	) *rest.Api {
 		return rest.NewApi(
 			domains,
 			users,
-			mail,
+			mailService,
 			prober,
 			certbot,
 			metrics,
@@ -491,12 +520,12 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		domains *service.Domains,
 		nsChecker *service.NsChecker,
 		users *service.Users,
-		mail *service.Mail,
+		mailService *service.Mail,
 		actions *service.Actions,
 		stripe *subscription.Stripe,
 		paypal *subscription.PayPal,
 		usage *relay.Usage,
-		mailUsage *mailrelay.AccountUsage,
+		mailUsage *outbound.AccountUsage,
 		metrics *metrics.Metrics,
 		config *utils.Config,
 	) (*rest.Www, error) {
@@ -510,7 +539,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			nsChecker,
 			users,
 			actions,
-			mail,
+			mailService,
 			stripe,
 			usage,
 			mailUsage,
@@ -529,13 +558,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		database *db.MySql,
 		domains *service.Domains,
-		mail *service.Mail,
+		mailService *service.Mail,
 		metrics *metrics.Metrics,
 	) *dns.Cleaner {
 		return dns.NewCleaner(
 			database,
 			domains,
-			mail,
+			mailService,
 			metrics,
 		)
 	})
@@ -558,7 +587,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		database *db.MySql,
 		state *user.CleanerState,
-		mail *service.Mail,
+		mailService *service.Mail,
 		config *utils.Config,
 		domains *service.Domains,
 		router *subscription.Router,
@@ -566,7 +595,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return user.NewCleaner(
 			database,
 			state,
-			mail,
+			mailService,
 			domains,
 			router,
 			config.UserCleanerEnabled(),

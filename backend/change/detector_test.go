@@ -17,8 +17,8 @@ func TestNotChanged(t *testing.T) {
 	newLocalIp := "1"
 	detector := New()
 	changed := detector.Changed(
-		true, &ip, &ipv6, &dkim, &localIp,
-		true, &newIp, &newIpv6, &newDkim, &newLocalIp)
+		true, &ip, &ipv6, &dkim, &localIp, false,
+		true, &newIp, &newIpv6, &newDkim, &newLocalIp, false)
 
 	assert.False(t, changed)
 }
@@ -35,8 +35,8 @@ func TestIpChanged(t *testing.T) {
 	newLocalIp := "1"
 	detector := New()
 	changed := detector.Changed(
-		true, &ip, &ipv6, &dkim, &localIp,
-		true, &newIp, &newIpv6, &newDkim, &newLocalIp)
+		true, &ip, &ipv6, &dkim, &localIp, false,
+		true, &newIp, &newIpv6, &newDkim, &newLocalIp, false)
 
 	assert.True(t, changed)
 }
@@ -53,8 +53,8 @@ func TestIpv6Changed(t *testing.T) {
 	newLocalIp := "1"
 	detector := New()
 	changed := detector.Changed(
-		true, &ip, &ipv6, &dkim, &localIp,
-		true, &newIp, &newIpv6, &newDkim, &newLocalIp)
+		true, &ip, &ipv6, &dkim, &localIp, false,
+		true, &newIp, &newIpv6, &newDkim, &newLocalIp, false)
 
 	assert.True(t, changed)
 }
@@ -71,8 +71,8 @@ func TestDkimChanged(t *testing.T) {
 	newLocalIp := "1"
 	detector := New()
 	changed := detector.Changed(
-		true, &ip, &ipv6, &dkim, &localIp,
-		true, &newIp, &newIpv6, &newDkim, &newLocalIp)
+		true, &ip, &ipv6, &dkim, &localIp, false,
+		true, &newIp, &newIpv6, &newDkim, &newLocalIp, false)
 
 	assert.True(t, changed)
 }
@@ -89,8 +89,8 @@ func TestLocalIpChanged(t *testing.T) {
 	newLocalIp := "2"
 	detector := New()
 	changed := detector.Changed(
-		true, &ip, &ipv6, &dkim, &localIp,
-		true, &newIp, &newIpv6, &newDkim, &newLocalIp)
+		true, &ip, &ipv6, &dkim, &localIp, false,
+		true, &newIp, &newIpv6, &newDkim, &newLocalIp, false)
 
 	assert.True(t, changed)
 }
@@ -107,8 +107,8 @@ func TestMapLocalAddressChanged(t *testing.T) {
 	newLocalIp := "1"
 	detector := New()
 	changed := detector.Changed(
-		true, &ip, &ipv6, &dkim, &localIp,
-		false, &newIp, &newIpv6, &newDkim, &newLocalIp)
+		true, &ip, &ipv6, &dkim, &localIp, false,
+		false, &newIp, &newIpv6, &newDkim, &newLocalIp, false)
 
 	assert.True(t, changed)
 }
@@ -121,4 +121,18 @@ func TestEquals(t *testing.T) {
 	assert.True(t, Equals(nil, nil))
 	assert.False(t, Equals(&ip, nil))
 	assert.False(t, Equals(nil, &ip))
+}
+
+func TestRelayChanged(t *testing.T) {
+	ip := "1"
+	ipv6 := "1"
+	dkim := "1"
+	localIp := "1"
+
+	detector := New()
+	changed := detector.Changed(
+		true, &ip, &ipv6, &dkim, &localIp, false,
+		true, &ip, &ipv6, &dkim, &localIp, true)
+
+	assert.True(t, changed)
 }
