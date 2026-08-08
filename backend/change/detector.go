@@ -10,11 +10,13 @@ type Detector interface {
 		existingIpv6 *string,
 		existingDkimKey *string,
 		existingLocalIp *string,
+		existingMailRelay bool,
 		newMapLocalAddress bool,
 		newIp *string,
 		newIpv6 *string,
 		newDkimKey *string,
-		newLocalIp *string) bool
+		newLocalIp *string,
+		newMailRelay bool) bool
 }
 
 func New() *RequestDetector {
@@ -22,14 +24,15 @@ func New() *RequestDetector {
 }
 
 func (d *RequestDetector) Changed(
-	existingMapLocalAddress bool, existingIp *string, existingIpv6 *string, existingDkimKey *string, existingLocalIp *string,
-	newMapLocalAddress bool, newIp *string, newIpv6 *string, newDkimKey *string, newLocalIp *string) bool {
+	existingMapLocalAddress bool, existingIp *string, existingIpv6 *string, existingDkimKey *string, existingLocalIp *string, existingMailRelay bool,
+	newMapLocalAddress bool, newIp *string, newIpv6 *string, newDkimKey *string, newLocalIp *string, newMailRelay bool) bool {
 
 	changed := (existingMapLocalAddress != newMapLocalAddress) ||
 		!Equals(existingIp, newIp) ||
 		!Equals(existingLocalIp, newLocalIp) ||
 		!Equals(existingIpv6, newIpv6) ||
-		!Equals(existingDkimKey, newDkimKey)
+		!Equals(existingDkimKey, newDkimKey) ||
+		(existingMailRelay != newMailRelay)
 
 	return changed
 }

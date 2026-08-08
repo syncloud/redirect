@@ -342,9 +342,8 @@ func (d *Domains) Update(request model.DomainUpdateRequest, requestIp *string) (
 	}
 
 	changed := d.detector.Changed(
-		domain.MapLocalAddress, domain.Ip, domain.Ipv6, domain.DkimKey, domain.LocalIp,
-		mapLocalAddress, ipv4, ipv6, dkimKey, localIpv4) ||
-		domain.MailRelay != request.MailRelay
+		domain.MapLocalAddress, domain.Ip, domain.Ipv6, domain.DkimKey, domain.LocalIp, domain.MailRelay,
+		mapLocalAddress, ipv4, ipv6, dkimKey, localIpv4, request.MailRelay)
 
 	domain.Ip = ipv4
 	domain.LocalIp = localIpv4

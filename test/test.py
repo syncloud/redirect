@@ -996,6 +996,7 @@ def test_relay_valid_token_tunnels_traffic(domain, device_host, artifact_dir, fr
     finally:
         process.terminate()
         backend.shutdown()
+        backend.server_close()
 
 
 def test_relay_bad_token_rejected(domain, device_host, frpc):
@@ -1084,6 +1085,7 @@ def test_relay_monthly_limit_blocks_traffic(domain, device_host, artifact_dir, f
     finally:
         process.terminate()
         backend.shutdown()
+        backend.server_close()
 
 
 def test_relay_usage_persisted_and_served(domain, device_host, artifact_dir, frpc):
@@ -1132,6 +1134,7 @@ def test_relay_usage_persisted_and_served(domain, device_host, artifact_dir, frp
     finally:
         process.terminate()
         backend.shutdown()
+        backend.server_close()
 
 
 MAIL_INBOUND_PORT = 25

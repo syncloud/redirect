@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"testing"
@@ -72,13 +73,14 @@ type DomainsDbStub struct {
 	hostedZoneId string
 	userStatus   int64
 	mailRelay    bool
+	ip           *string
 }
 
 func (db *DomainsDbStub) GetDomainByToken(_ string) (*model.Domain, error) {
 	if db.found {
 		return &model.Domain{
 			Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId,
-			MailRelay: db.mailRelay}, nil
+			MailRelay: db.mailRelay, Ip: db.ip}, nil
 	}
 	return nil, nil
 }
@@ -147,10 +149,12 @@ func (d *DetectorStub) Changed(
 	_ *string,
 	_ *string,
 	_ bool,
+	_ bool,
 	_ *string,
 	_ *string,
 	_ *string,
-	_ *string) bool {
+	_ *string,
+	_ bool) bool {
 	return d.changed
 }
 
@@ -476,8 +480,8 @@ func updateMailRelayWithoutAddressChange(db *DomainsDbStub, mailRelay bool) *Dns
 	requestIp := "10.0.0.1"
 	webLocalPort := 443
 	webProtocol := "https"
-	detector := &DetectorStub{changed: false}
-	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", detector, "")
+	db.ip = &requestIp
+	domainService := NewDomains(dnsStub, db, users, metrics.New(), "syncloud.it", "1", change.New(), "")
 	_, _ = domainService.Update(model.DomainUpdateRequest{
 		WebLocalPort: &webLocalPort,
 		WebProtocol:  &webProtocol,
