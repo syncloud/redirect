@@ -42,6 +42,8 @@ for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 docker rm -f pebble 2>/dev/null || true
 pkill -f /usr/local/bin/dns-faker 2>/dev/null || true
 pkill -f /usr/local/bin/ses-faker 2>/dev/null || true
+pkill -f /usr/local/bin/device-faker 2>/dev/null || true
+pkill -f /usr/local/bin/frpc 2>/dev/null || true
 
 install -m 0755 "$STAGE/sim/dns-faker" /usr/local/bin/dns-faker
 ( /usr/local/bin/dns-faker </dev/null >/var/log/dns-faker.log 2>&1 & )
@@ -53,4 +55,21 @@ for i in $(seq 1 30); do curl -sf http://localhost:4579/faker/messages >/dev/nul
 
 docker run -d --name pebble --network=host ghcr.io/letsencrypt/pebble:2.6.0 -dnsserver 127.0.0.1:53
 docker cp pebble:/test/certs/pebble.minica.pem "$REDIRECT_DIR/pebble.crt"
+
+FRP_VERSION=0.70.0
+curl -sfL "https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_amd64.tar.gz" -o /tmp/frp.tgz
+tar -xzf /tmp/frp.tgz -C /tmp
+install -m 0755 "/tmp/frp_${FRP_VERSION}_linux_amd64/frpc" /usr/local/bin/frpc
+
+rm -rf /var/lib/device-faker
+mkdir -p /var/lib/device-faker
+install -m 0755 "$STAGE/sim/device-faker" /usr/local/bin/device-faker
+( /usr/local/bin/device-faker \
+    --smtp 127.0.0.1:2525 \
+    --api :4580 \
+    --frpc /usr/local/bin/frpc \
+    --server-addr "www.$SYNCLOUD_DOMAIN" \
+    --server-name "relay.$SYNCLOUD_DOMAIN" \
+    --work-dir /var/lib/device-faker </dev/null >/var/log/device-faker.log 2>&1 & )
+for i in $(seq 1 30); do curl -sf http://localhost:4580/faker/messages >/dev/null 2>&1 && break; sleep 1; done
 REMOTE_SCRIPT

@@ -117,6 +117,15 @@ local build(arch) = [{
             ],
         },
         {
+            name: "build device-faker",
+            image: "golang:" + go,
+            commands: [
+                "cd device-faker",
+                "go test ./...",
+                "CGO_ENABLED=0 go build -o ../ci/sim/device-faker .",
+            ],
+        },
+        {
             name: "build ses-faker",
             image: "golang:" + go,
             commands: [
