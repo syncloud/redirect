@@ -37,8 +37,6 @@ func NewServer(address string, domain string, relay *Relay, sender Sender, scann
 	server.ReadTimeout = time.Minute
 	server.WriteTimeout = time.Minute
 	server.MaxMessageBytes = maxMessageBytes
-	// caddy terminates tls on 465 and forwards plaintext to loopback, so this
-	// listener never sees a handshake of its own
 	server.AllowInsecureAuth = true
 	s.server = server
 	return s

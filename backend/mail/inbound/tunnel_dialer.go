@@ -37,8 +37,6 @@ func (d *TunnelDialer) Dial(domain string) (net.Conn, error) {
 	return connection, nil
 }
 
-// go-smtp's client takes the connection, not a reader, so a buffered read here
-// would swallow the greeting postfix sends the moment the stream is joined
 func (d *TunnelDialer) connect(connection net.Conn, domain string) error {
 	if err := connection.SetDeadline(time.Now().Add(d.timeout)); err != nil {
 		return err

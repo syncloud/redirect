@@ -69,7 +69,7 @@ func main() {
 						return err
 					}
 				}
-				select {}
+				return nil
 			})
 		},
 	}

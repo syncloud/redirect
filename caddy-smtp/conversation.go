@@ -89,9 +89,6 @@ func (c *Conversation) relay(client net.Conn, clientReader *bufio.Reader, remote
 		return err
 	}
 	serverReader := newReader(server)
-	// the greeting has already been spoken here, so the one the upstream sends the
-	// moment it accepts has to be consumed rather than forwarded, and any greeting
-	// answered on its behalf has to be replayed so both ends agree on session state
 	if _, err := readResponse(serverReader); err != nil {
 		_ = server.Close()
 		return err
