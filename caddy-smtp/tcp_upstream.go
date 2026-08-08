@@ -10,21 +10,17 @@ import (
 const dialTimeout = 30 * time.Second
 
 type TcpUpstream struct {
-	address       string
-	proxyProtocol bool
+	address string
 }
 
-func NewTcpUpstream(address string, proxyProtocol bool) *TcpUpstream {
-	return &TcpUpstream{address: address, proxyProtocol: proxyProtocol}
+func NewTcpUpstream(address string) *TcpUpstream {
+	return &TcpUpstream{address: address}
 }
 
 func (u *TcpUpstream) Connect(remote net.Addr, local net.Addr) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", u.address, dialTimeout)
 	if err != nil {
 		return nil, err
-	}
-	if !u.proxyProtocol {
-		return conn, nil
 	}
 	header := proxyproto.HeaderProxyFromAddrs(2, remote, local)
 	if _, err := header.WriteTo(conn); err != nil {

@@ -73,7 +73,6 @@ func (d *fakeDevice) got() ([]string, string) {
 	return append([]string{}, d.recipients...), d.body
 }
 
-// startDevice runs an smtp server standing in for the device behind the tunnel
 func startDevice(device *fakeDevice) (*fakeDevice, func(), error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -88,7 +87,6 @@ func startDevice(device *fakeDevice) (*fakeDevice, func(), error) {
 	return device, func() { _ = server.Close() }, nil
 }
 
-// fakeDialer stands in for the tunnel: it knows which devices have one open
 type fakeDialer struct {
 	devices map[string]string
 }
@@ -114,11 +112,11 @@ func (f *fakeStore) GetDomainByName(name string) (*model.Domain, error) {
 }
 
 func relayed(dialer DeviceDialer, domains map[string]*model.Domain) (string, func(), error) {
-	return relayedWith(dialer, domains, mail.NewConnections(0), false)
+	return relayedWith(dialer, domains, mail.NewConnections(0))
 }
 
 func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
-	connections *mail.Connections, proxyProtocol bool) (string, func(), error) {
+	connections *mail.Connections) (string, func(), error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return "", nil, err
@@ -130,7 +128,7 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mail.NewInFlight(0), 1024*1024, proxyProtocol, zap.NewNop())
+		mail.NewInFlight(0), 1024*1024, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, err
 	}
@@ -163,7 +161,7 @@ func dial(address string) (*smtp.Client, error) {
 	var err error
 	for i := 0; i < 100; i++ {
 		var client *smtp.Client
-		client, err = smtp.Dial(address)
+		client, err = proxyDial(address, "203.0.113.1")
 		if err == nil {
 			return client, nil
 		}
@@ -236,7 +234,6 @@ func TestInbound_MailRelayOffRejected(t *testing.T) {
 }
 
 func TestInbound_NoTunnelDeferred(t *testing.T) {
-	// the device has no tunnel open, so there is nowhere to deliver
 	address, stop, err := relayed(&fakeDialer{}, map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
@@ -347,7 +344,7 @@ func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
 	defer stopDevice()
 	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
-		mail.NewConnections(1), true)
+		mail.NewConnections(1))
 	assert.NoError(t, err)
 	defer stop()
 
@@ -368,7 +365,7 @@ func TestInbound_ProxyProtocolLimitsOneSender(t *testing.T) {
 	defer stopDevice()
 	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
 		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
-		mail.NewConnections(1), true)
+		mail.NewConnections(1))
 	assert.NoError(t, err)
 	defer stop()
 
@@ -400,9 +397,7 @@ func TestInbound_PortConflictStopsTheApi(t *testing.T) {
 
 	server := NewServer(held.Addr().String(), "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mail.NewConnections(0), mail.NewInFlight(0), 1024*1024, false, zap.NewNop())
+		mail.NewConnections(0), mail.NewInFlight(0), 1024*1024, zap.NewNop())
 
-	// a port already taken never resolves on its own, so it has to reach main
-	// rather than leave the api up with mail quietly missing
 	assert.Error(t, server.Start())
 }

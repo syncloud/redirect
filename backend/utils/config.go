@@ -520,14 +520,6 @@ func (config *Config) GetMailInboundMaxConcurrent() int {
 	return config.mailInboundPort("max_concurrent", 200)
 }
 
-func (config *Config) GetMailInboundProxyProtocol() bool {
-	value, err := config.parser.GetBool("mail_inbound", "proxy_protocol")
-	if err != nil {
-		return false
-	}
-	return value
-}
-
 func (config *Config) AwsEndpoint() string {
 	value, err := config.parser.Get("aws", "endpoint")
 	if err != nil {

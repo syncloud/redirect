@@ -18,7 +18,6 @@ func init() {
 type Handler struct {
 	Hostname           string                      `json:"hostname,omitempty"`
 	Upstream           string                      `json:"upstream,omitempty"`
-	ProxyProtocol      bool                        `json:"proxy_protocol,omitempty"`
 	DefaultSni         string                      `json:"default_sni,omitempty"`
 	ConnectionPolicies caddytls.ConnectionPolicies `json:"connection_policies,omitempty"`
 
@@ -50,7 +49,7 @@ func (h *Handler) Provision(ctx caddy.Context) error {
 	if err := h.ConnectionPolicies.Provision(ctx); err != nil {
 		return fmt.Errorf("smtp_starttls: setting up connection policies: %v", err)
 	}
-	h.conversation = NewConversation(h.Hostname, NewTcpUpstream(h.Upstream, h.ProxyProtocol),
+	h.conversation = NewConversation(h.Hostname, NewTcpUpstream(h.Upstream),
 		func() *tls.Config { return h.ConnectionPolicies.TLSConfig(h.ctx) }, h.logger)
 	return nil
 }
@@ -82,8 +81,6 @@ func (h *Handler) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 				return d.ArgErr()
 			}
 			h.DefaultSni = d.Val()
-		case "proxy_protocol":
-			h.ProxyProtocol = true
 		default:
 			return d.Errf("unrecognized %s option '%s'", wrapper, option)
 		}

@@ -483,7 +483,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mail.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
 			mail.NewInFlight(config.GetMailInboundMaxConcurrent()),
 			config.GetMailInboundMaxMessageBytes(),
-			config.GetMailInboundProxyProtocol(),
 			logger)
 	})
 	if err != nil {

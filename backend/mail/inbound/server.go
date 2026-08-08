@@ -14,18 +14,14 @@ import (
 const DialTimeout = 30 * time.Second
 
 type Server struct {
-	server        *smtp.Server
-	proxyProtocol bool
-	logger        *zap.Logger
+	server *smtp.Server
+	logger *zap.Logger
 }
 
 func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
 	connections *mail.Connections, inFlight *mail.InFlight, maxMessageBytes int64,
-	proxyProtocol bool, logger *zap.Logger) *Server {
-	s := &Server{
-		proxyProtocol: proxyProtocol,
-		logger:        logger,
-	}
+	logger *zap.Logger) *Server {
+	s := &Server{logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
 		if !connections.Acquire(peer) {
@@ -53,8 +49,7 @@ func (s *Server) Start() error {
 		return err
 	}
 
-	s.logger.Info("inbound mail listening",
-		zap.String("address", s.server.Addr), zap.Bool("proxy protocol", s.proxyProtocol))
+	s.logger.Info("inbound mail listening", zap.String("address", s.server.Addr))
 	go func() {
 		if err := s.server.Serve(listener); err != nil && !errors.Is(err, smtp.ErrServerClosed) {
 			s.logger.Error("inbound mail stopped", zap.Error(err))
@@ -68,10 +63,7 @@ func (s *Server) listen() (net.Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s.proxyProtocol {
-		return &proxyproto.Listener{Listener: listener, Policy: fromLoopbackOnly}, nil
-	}
-	return listener, nil
+	return &proxyproto.Listener{Listener: listener, Policy: fromLoopbackOnly}, nil
 }
 
 func fromLoopbackOnly(upstream net.Addr) (proxyproto.Policy, error) {
