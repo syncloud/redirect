@@ -153,8 +153,8 @@ func waitListening(address string) error {
 	return fmt.Errorf("inbound server never came up on %s: %w", address, err)
 }
 
-func mailRelayDomain(name string) *model.Domain {
-	return &model.Domain{Name: name, MailRelay: true}
+func relayDomain(name string) *model.Domain {
+	return &model.Domain{Name: name, Relay: true}
 }
 
 func dial(address string) (*smtp.Client, error) {
@@ -205,7 +205,7 @@ func TestInbound_DeliversToTheDevice(t *testing.T) {
 	assert.NoError(t, err)
 	defer stopDevice()
 	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+		"alice.syncloud.it": relayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -224,9 +224,9 @@ func TestInbound_UnknownDomainRejected(t *testing.T) {
 	assertCode(t, deliver(address, "user@stranger.syncloud.it"), "550")
 }
 
-func TestInbound_MailRelayOffRejected(t *testing.T) {
+func TestInbound_RelayOffRejected(t *testing.T) {
 	address, stop, err := relayed(&fakeDialer{}, map[string]*model.Domain{
-		"alice.syncloud.it": {Name: "alice.syncloud.it", MailRelay: false}})
+		"alice.syncloud.it": {Name: "alice.syncloud.it", Relay: false}})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -235,7 +235,7 @@ func TestInbound_MailRelayOffRejected(t *testing.T) {
 
 func TestInbound_NoTunnelDeferred(t *testing.T) {
 	address, stop, err := relayed(&fakeDialer{}, map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+		"alice.syncloud.it": relayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -248,7 +248,7 @@ func TestInbound_DeviceRejectsRecipient(t *testing.T) {
 	assert.NoError(t, err)
 	defer stopDevice()
 	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+		"alice.syncloud.it": relayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -264,7 +264,7 @@ func TestInbound_DeviceRejectsMessage(t *testing.T) {
 	assert.NoError(t, err)
 	defer stopDevice()
 	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+		"alice.syncloud.it": relayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -282,8 +282,8 @@ func TestInbound_SecondDomainDeferred(t *testing.T) {
 		&fakeDialer{devices: map[string]string{
 			"alice.syncloud.it": device.address, "bob.syncloud.it": device.address}},
 		map[string]*model.Domain{
-			"alice.syncloud.it": mailRelayDomain("alice.syncloud.it"),
-			"bob.syncloud.it":   mailRelayDomain("bob.syncloud.it")})
+			"alice.syncloud.it": relayDomain("alice.syncloud.it"),
+			"bob.syncloud.it":   relayDomain("bob.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -310,7 +310,7 @@ func TestInbound_ManyRecipientsOnOneDevice(t *testing.T) {
 	assert.NoError(t, err)
 	defer stopDevice()
 	address, stop, err := relayed(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")})
+		"alice.syncloud.it": relayDomain("alice.syncloud.it")})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -343,7 +343,7 @@ func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
 	assert.NoError(t, err)
 	defer stopDevice()
 	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
+		"alice.syncloud.it": relayDomain("alice.syncloud.it")},
 		mail.NewConnections(1))
 	assert.NoError(t, err)
 	defer stop()
@@ -364,7 +364,7 @@ func TestInbound_ProxyProtocolLimitsOneSender(t *testing.T) {
 	assert.NoError(t, err)
 	defer stopDevice()
 	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": mailRelayDomain("alice.syncloud.it")},
+		"alice.syncloud.it": relayDomain("alice.syncloud.it")},
 		mail.NewConnections(1))
 	assert.NoError(t, err)
 	defer stop()

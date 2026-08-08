@@ -30,7 +30,7 @@ func (r *Router) Route(recipient string) (string, error) {
 	if domain == nil {
 		return "", ErrNoSuchDomain
 	}
-	if !domain.MailRelay {
+	if !domain.Relay {
 		return "", ErrNotAccepted
 	}
 	return domain.Name, nil
