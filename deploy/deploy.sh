@@ -125,7 +125,6 @@ docker run -d \
     "$CADDY_IMAGE"
 
 crontab -u redirect "$STAGE/common/cron/crontab"
-rm -f /etc/cron.d/redirect-mx-cert
 
 DB_HOST=$(cfg mysql host)
 DB_USER=$(cfg mysql user)
