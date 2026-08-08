@@ -68,7 +68,7 @@ func mxRecord(client *Route53Stub) (string, error) {
 	return "", fmt.Errorf("no MX record was written")
 }
 
-func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheDeviceWithoutMailRelay(t *testing.T) {
+func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheDeviceWithoutRelay(t *testing.T) {
 	client := &Route53Stub{}
 	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
 
@@ -80,11 +80,11 @@ func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheDeviceWithoutMailRelay(t *te
 	assert.Equal(t, "1 alice.syncloud.it.", mx)
 }
 
-func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheRelayWithMailRelay(t *testing.T) {
+func TestAmazonDns_UpdateDomainRecords_MxPointsAtTheRelayWithRelay(t *testing.T) {
 	client := &Route53Stub{}
 	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
 
-	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "alice.syncloud.it", MailRelay: true})
+	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "alice.syncloud.it", Relay: true})
 
 	assert.Nil(t, err)
 	mx, err := mxRecord(client)
@@ -96,7 +96,7 @@ func TestAmazonDns_UpdateDomainRecords_MxForACustomDomain(t *testing.T) {
 	client := &Route53Stub{}
 	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
 
-	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "example.com", MailRelay: true})
+	err := amazonDns.UpdateDomainRecords(&model.Domain{Name: "example.com", Relay: true})
 
 	assert.Nil(t, err)
 	mx, err := mxRecord(client)

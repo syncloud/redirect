@@ -123,7 +123,7 @@ func TestEquals(t *testing.T) {
 	assert.False(t, Equals(nil, &ip))
 }
 
-func TestMailRelayChanged(t *testing.T) {
+func TestRelayChanged(t *testing.T) {
 	ip := "1"
 	ipv6 := "1"
 	dkim := "1"

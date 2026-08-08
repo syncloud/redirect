@@ -249,7 +249,7 @@ func splitBy(s string, n int) []string {
 }
 
 func (a *AmazonDns) mx(domain *model.Domain) string {
-	if domain.MailRelay {
+	if domain.Relay {
 		return fmt.Sprintf("1 %s", domain.MailHost(a.mainDomain))
 	}
 	return fmt.Sprintf("1 %s", domain.FQDN())

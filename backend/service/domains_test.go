@@ -72,7 +72,7 @@ type DomainsDbStub struct {
 	deleted      bool
 	hostedZoneId string
 	userStatus   int64
-	mailRelay    bool
+	relay        bool
 	ip           *string
 }
 
@@ -80,7 +80,7 @@ func (db *DomainsDbStub) GetDomainByToken(_ string) (*model.Domain, error) {
 	if db.found {
 		return &model.Domain{
 			Name: "name", UserId: db.userId, HostedZoneId: db.hostedZoneId,
-			MailRelay: db.mailRelay, Ip: db.ip}, nil
+			Relay: db.relay, Ip: db.ip}, nil
 	}
 	return nil, nil
 }
@@ -473,7 +473,7 @@ func updateWithMailRelay(db *DomainsDbStub, mailRelay bool) (*model.Domain, erro
 	}, &requestIp)
 }
 
-func updateMailRelayWithoutAddressChange(db *DomainsDbStub, mailRelay bool) *DnsStub {
+func updateRelayWithoutAddressChange(db *DomainsDbStub, relay bool) *DnsStub {
 	dnsStub := &DnsStub{}
 	users := &DomainsUsersStub{authenticated: true, userId: 1}
 	token := "123"
@@ -487,31 +487,31 @@ func updateMailRelayWithoutAddressChange(db *DomainsDbStub, mailRelay bool) *Dns
 		WebProtocol:  &webProtocol,
 		Token:        &token,
 		Ipv4Enabled:  true,
-		MailRelay:    mailRelay,
+		Relay:        relay,
 	}, &requestIp)
 	return dnsStub
 }
 
-func TestDomains_Update_MailRelayTurnedOnRewritesDns(t *testing.T) {
+func TestDomains_Update_RelayTurnedOnRewritesDns(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 
-	dnsStub := updateMailRelayWithoutAddressChange(db, true)
+	dnsStub := updateRelayWithoutAddressChange(db, true)
 
-	assert.True(t, dnsStub.updated, "turning the mail relay on must move the mx record")
+	assert.True(t, dnsStub.updated, "turning the relay on must move the mx record")
 }
 
-func TestDomains_Update_MailRelayTurnedOffRewritesDns(t *testing.T) {
-	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1", mailRelay: true}
+func TestDomains_Update_RelayTurnedOffRewritesDns(t *testing.T) {
+	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1", relay: true}
 
-	dnsStub := updateMailRelayWithoutAddressChange(db, false)
+	dnsStub := updateRelayWithoutAddressChange(db, false)
 
-	assert.True(t, dnsStub.updated, "turning the mail relay off must move the mx record back")
+	assert.True(t, dnsStub.updated, "turning the relay off must move the mx record back")
 }
 
-func TestDomains_Update_UnchangedMailRelayLeavesDnsAlone(t *testing.T) {
+func TestDomains_Update_UnchangedRelayLeavesDnsAlone(t *testing.T) {
 	db := &DomainsDbStub{found: true, userId: 1, hostedZoneId: "1"}
 
-	dnsStub := updateMailRelayWithoutAddressChange(db, false)
+	dnsStub := updateRelayWithoutAddressChange(db, false)
 
 	assert.False(t, dnsStub.updated)
 }
