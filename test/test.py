@@ -1230,6 +1230,73 @@ def test_mail_inbound_delivers_through_the_tunnel(domain, device_host, artifact_
         device.stop()
 
 
+def mail_send_starttls(host, sender, recipient, subject):
+    server = smtplib.SMTP(host, MAIL_INBOUND_PORT, timeout=30)
+    try:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        server.starttls(context=context)
+        certificate = server.sock.getpeercert(binary_form=True)
+        message = 'Subject: {0}\r\n\r\nhello\r\n'.format(subject)
+        server.sendmail(sender, [recipient], message)
+        return certificate
+    finally:
+        server.quit()
+
+
+def certificate_text(der):
+    path = join(tempfile.mkdtemp(), 'peer.der')
+    with open(path, 'wb') as peer:
+        peer.write(der)
+    return subprocess.check_output(
+        ['openssl', 'x509', '-inform', 'DER', '-in', path, '-noout', '-text']).decode()
+
+
+def test_mail_inbound_delivers_over_starttls(domain, device_host, artifact_dir, frpc):
+    user_domain = 'mailtls'
+    domain_name = '{0}.{1}'.format(user_domain, domain)
+    mx_host = '{0}.mx.{1}'.format(user_domain, domain)
+    email = 'mail_inbound_tls@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    update_token = api.domain_acquire(domain, domain_name, email, password)
+    add_host_alias(user_domain, device_host, domain)
+    add_host_alias('{0}.mx'.format(user_domain), device_host, domain)
+
+    mail_enable_relay(domain, update_token)
+
+    device = MailDevice()
+    work_dir = tempfile.mkdtemp()
+    process, log_path = mail_start_frpc(
+        frpc, work_dir, device_host, 'relay.{0}'.format(domain), update_token,
+        domain_name, device.port, 'valid')
+    try:
+        delivered = None
+        certificate = None
+        last_error = None
+        for _ in range(30):
+            try:
+                certificate = mail_send_starttls(
+                    mx_host, 'sender@example.com',
+                    'user@{0}'.format(domain_name), 'inbound-starttls')
+                delivered = device.wait()
+                if delivered:
+                    break
+                last_error = 'smtp accepted the message over tls but the device never saw it'
+            except Exception as e:
+                last_error = '{0}: {1}'.format(type(e).__name__, e)
+            time.sleep(2)
+        assert delivered, 'last smtp error: {0}\nfrpc log:\n{1}'.format(
+            last_error, open(log_path).read())
+        assert 'inbound-starttls' in delivered[0]['body'], delivered
+        names = certificate_text(certificate)
+        assert '*.mx.{0}'.format(domain) in names, names
+    finally:
+        process.terminate()
+        device.stop()
+
+
 def test_mail_inbound_unknown_domain_rejected(domain, device_host):
     server = smtplib.SMTP(device_host, MAIL_INBOUND_PORT, timeout=30)
     try:

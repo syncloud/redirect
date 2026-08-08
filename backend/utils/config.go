@@ -484,8 +484,6 @@ func (config *Config) mailInboundPort(key string, port int) int {
 	return port
 }
 
-// the frps tcpmux port every device's tunnel is reached through, told apart by
-// the name in the CONNECT request rather than by a port of its own
 func (config *Config) GetMailInboundMuxer() string {
 	if value, err := config.parser.Get("mail_inbound", "muxer"); err == nil {
 		return value
