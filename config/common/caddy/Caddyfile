@@ -5,9 +5,11 @@
 	layer4 {
 		:25 {
 			route {
-				proxy {
-					proxy_protocol v2
+				smtp_starttls {
+					hostname mx.{$REDIRECT_DOMAIN}
 					upstream 127.0.0.1:10025
+					default_sni mail.mx.{$REDIRECT_DOMAIN}
+					proxy_protocol
 				}
 			}
 		}

@@ -11,29 +11,20 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	DialTimeout     = 30 * time.Second
-	certificateWait = 30 * time.Second
-)
+const DialTimeout = 30 * time.Second
 
 type Server struct {
-	server          *smtp.Server
-	certificate     *mail.CertificateLoader
-	certificateWait time.Duration
-	proxyProtocol   bool
-	stopped         chan struct{}
-	logger          *zap.Logger
+	server        *smtp.Server
+	proxyProtocol bool
+	logger        *zap.Logger
 }
 
 func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
-	connections *mail.Connections, inFlight *mail.InFlight,
-	certificate *mail.CertificateLoader, maxMessageBytes int64,
+	connections *mail.Connections, inFlight *mail.InFlight, maxMessageBytes int64,
 	proxyProtocol bool, logger *zap.Logger) *Server {
 	s := &Server{
-		certificateWait: certificateWait,
-		proxyProtocol:   proxyProtocol,
-		stopped:         make(chan struct{}),
-		logger:          logger,
+		proxyProtocol: proxyProtocol,
+		logger:        logger,
 	}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
@@ -53,20 +44,10 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 	server.MaxMessageBytes = maxMessageBytes
 	server.AllowInsecureAuth = false
 	s.server = server
-	s.certificate = certificate
 	return s
 }
 
 func (s *Server) Start() error {
-	tlsConfig := s.certificate.Await(s.stopped, s.certificateWait, func(err error) {
-		s.logger.Error("not accepting mail until the certificate is usable",
-			zap.String("address", s.server.Addr), zap.Error(err))
-	})
-	if tlsConfig == nil {
-		return nil
-	}
-	s.server.TLSConfig = tlsConfig
-
 	listener, err := s.listen()
 	if err != nil {
 		return err
@@ -105,7 +86,6 @@ func fromLoopbackOnly(upstream net.Addr) (proxyproto.Policy, error) {
 }
 
 func (s *Server) Close() error {
-	close(s.stopped)
 	return s.server.Close()
 }
 

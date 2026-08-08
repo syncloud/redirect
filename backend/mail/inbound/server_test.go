@@ -1,19 +1,10 @@
 package inbound
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"io"
-	"math/big"
 	"net"
 	"net/smtp"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -137,45 +128,18 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 		return "", nil, err
 	}
 
-	dir, err := os.MkdirTemp("", "mailin")
-	if err != nil {
-		return "", nil, err
-	}
-	certificate, err := certificateIn(dir)
-	if err != nil {
-		return "", nil, err
-	}
-
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mail.NewInFlight(0), certificate, 1024*1024, proxyProtocol, zap.NewNop())
+		mail.NewInFlight(0), 1024*1024, proxyProtocol, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, err
 	}
-	stop := func() { _ = server.Close(); _ = os.RemoveAll(dir) }
+	stop := func() { _ = server.Close() }
 	if err := waitListening(address); err != nil {
 		stop()
 		return "", nil, err
 	}
 	return address, stop, nil
-}
-
-// the port is bound as soon as the server starts, so what says whether mail is
-// being taken is the smtp greeting, not the connection
-func greets(address string, within time.Duration) bool {
-	connection, err := net.DialTimeout("tcp", address, within)
-	if err != nil {
-		return false
-	}
-	defer connection.Close()
-	if err := connection.SetReadDeadline(time.Now().Add(within)); err != nil {
-		return false
-	}
-	banner := make([]byte, 3)
-	if _, err := io.ReadFull(connection, banner); err != nil {
-		return false
-	}
-	return string(banner) == "220"
 }
 
 func waitListening(address string) error {
@@ -429,120 +393,14 @@ func TestInbound_ProxyProtocolPolicy(t *testing.T) {
 	assert.Equal(t, proxyproto.REJECT, remote)
 }
 
-func TestInbound_DoesNotAcceptMailUntilTheCertificateArrives(t *testing.T) {
-	dir := t.TempDir()
-	certPath := filepath.Join(dir, "mx.crt")
-	keyPath := filepath.Join(dir, "mx.key")
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	assert.NoError(t, err)
-	address := listener.Addr().String()
-	assert.NoError(t, listener.Close())
-
-	server := NewServer(address, "mx.syncloud.it",
-		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mail.NewConnections(0), mail.NewInFlight(0),
-		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
-	server.certificateWait = 50 * time.Millisecond
-
-	started := make(chan error, 1)
-	go func() { started <- server.Start() }()
-	defer server.Close()
-
-	assert.False(t, greets(address, 200*time.Millisecond))
-
-	assert.NoError(t, writeCertificate(certPath, keyPath))
-
-	assert.NoError(t, <-started)
-	assert.True(t, greets(address, time.Second))
-}
-
-func writeCertificate(certPath string, keyPath string) error {
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return err
-	}
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "mx.syncloud.it"},
-		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(24 * time.Hour),
-	}
-	der, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-	if err != nil {
-		return err
-	}
-	certOut, err := os.Create(certPath)
-	if err != nil {
-		return err
-	}
-	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: der}); err != nil {
-		return err
-	}
-	if err := certOut.Close(); err != nil {
-		return err
-	}
-	keyDer, err := x509.MarshalECPrivateKey(key)
-	if err != nil {
-		return err
-	}
-	keyOut, err := os.Create(keyPath)
-	if err != nil {
-		return err
-	}
-	if err := pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDer}); err != nil {
-		return err
-	}
-	return keyOut.Close()
-}
-
-func certificateIn(dir string) (*mail.CertificateLoader, error) {
-	certPath := filepath.Join(dir, "mx.crt")
-	keyPath := filepath.Join(dir, "mx.key")
-	if err := writeCertificate(certPath, keyPath); err != nil {
-		return nil, err
-	}
-	return mail.NewCertificateLoader(certPath, keyPath), nil
-}
-
-func TestInbound_DoesNotAcceptMailWithABrokenCertificate(t *testing.T) {
-	dir := t.TempDir()
-	certPath := filepath.Join(dir, "mx.crt")
-	keyPath := filepath.Join(dir, "mx.key")
-	assert.NoError(t, os.WriteFile(certPath, []byte("not a certificate"), 0644))
-	assert.NoError(t, os.WriteFile(keyPath, []byte("not a key"), 0600))
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	assert.NoError(t, err)
-	address := listener.Addr().String()
-	assert.NoError(t, listener.Close())
-
-	server := NewServer(address, "mx.syncloud.it",
-		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mail.NewConnections(0), mail.NewInFlight(0),
-		mail.NewCertificateLoader(certPath, keyPath), 1024*1024, false, zap.NewNop())
-	server.certificateWait = 50 * time.Millisecond
-
-	go func() { _ = server.Start() }()
-	defer server.Close()
-
-	// a certificate that will not parse keeps mail off rather than taking it in
-	// the clear
-	time.Sleep(200 * time.Millisecond)
-	assert.False(t, greets(address, 200*time.Millisecond))
-}
-
 func TestInbound_PortConflictStopsTheApi(t *testing.T) {
 	held, err := net.Listen("tcp", "127.0.0.1:0")
 	assert.NoError(t, err)
 	defer held.Close()
 
-	dir := t.TempDir()
-	certificate, err := certificateIn(dir)
-	assert.NoError(t, err)
 	server := NewServer(held.Addr().String(), "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mail.NewConnections(0), mail.NewInFlight(0), certificate, 1024*1024, false, zap.NewNop())
+		mail.NewConnections(0), mail.NewInFlight(0), 1024*1024, false, zap.NewNop())
 
 	// a port already taken never resolves on its own, so it has to reach main
 	// rather than leave the api up with mail quietly missing

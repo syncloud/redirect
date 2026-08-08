@@ -482,7 +482,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			dialer,
 			mail.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
 			mail.NewInFlight(config.GetMailInboundMaxConcurrent()),
-			mail.NewCertificateLoader(config.GetMailInboundCertFile(), config.GetMailInboundKeyFile()),
 			config.GetMailInboundMaxMessageBytes(),
 			config.GetMailInboundProxyProtocol(),
 			logger)

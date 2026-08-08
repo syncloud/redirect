@@ -507,20 +507,6 @@ func (config *Config) GetMailInboundHostname() string {
 	return fmt.Sprintf("mx.%s", config.Domain())
 }
 
-func (config *Config) GetMailInboundCertFile() string {
-	if value, err := config.parser.Get("mail_inbound", "cert_file"); err == nil {
-		return value
-	}
-	return ""
-}
-
-func (config *Config) GetMailInboundKeyFile() string {
-	if value, err := config.parser.Get("mail_inbound", "key_file"); err == nil {
-		return value
-	}
-	return ""
-}
-
 func (config *Config) GetMailInboundMaxMessageBytes() int64 {
 	if value, err := config.parser.GetInt64("mail_inbound", "max_message_bytes"); err == nil {
 		return value

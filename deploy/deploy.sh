@@ -125,12 +125,7 @@ docker run -d \
     "$CADDY_IMAGE"
 
 crontab -u redirect "$STAGE/common/cron/crontab"
-
-# reading caddy's certificates needs root, so this one cannot live in the
-# redirect user's crontab
-sed "s/REDIRECT_DOMAIN/$SYNCLOUD_DOMAIN/" "$STAGE/common/cron/mx-cert.cron" > /etc/cron.d/redirect-mx-cert
-chmod 0644 /etc/cron.d/redirect-mx-cert
-"$REDIRECT_DIR/current/bin/mx-cert-copy.sh" "$SYNCLOUD_DOMAIN" || true
+rm -f /etc/cron.d/redirect-mx-cert
 
 DB_HOST=$(cfg mysql host)
 DB_USER=$(cfg mysql user)
