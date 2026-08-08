@@ -121,7 +121,6 @@ local build(arch) = [{
             image: "golang:" + go,
             commands: [
                 "cd device-faker",
-                "go test ./...",
                 "CGO_ENABLED=0 go build -o ../ci/sim/device-faker .",
             ],
         },

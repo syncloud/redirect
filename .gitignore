@@ -13,8 +13,5 @@ build
 /api
 .replies
 .claude
-ci/sim/dns-faker
-ci/sim/ses-faker
-ses-faker/ses-faker
-ci/sim/device-faker
-device-faker/device-faker
+ci/sim/
+*-faker/*-faker
