@@ -267,13 +267,6 @@ func (config *Config) GetMailOutboundRspamdUrl() string {
 	return ""
 }
 
-func (config *Config) GetMailOutboundRspamdRejectOnError() bool {
-	if value, err := config.parser.Get("mail_outbound", "rspamd_reject_on_error"); err == nil {
-		return value == "true"
-	}
-	return true
-}
-
 func (config *Config) AwsAccessKeyId() string {
 	value, err := config.parser.Get("aws", "access_key_id")
 	if err != nil {

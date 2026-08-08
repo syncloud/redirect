@@ -10,7 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrRejectedAsSpam = fmt.Errorf("message rejected by spam filter")
+var (
+	ErrRejectedAsSpam     = fmt.Errorf("message rejected by spam filter")
+	ErrScannerUnavailable = fmt.Errorf("spam filter unavailable")
+)
 
 type Scanner interface {
 	Scan(from string, recipients []string, domain string, message []byte) error
@@ -18,14 +21,12 @@ type Scanner interface {
 
 type RspamdConfig interface {
 	GetMailOutboundRspamdUrl() string
-	GetMailOutboundRspamdRejectOnError() bool
 }
 
 type Rspamd struct {
 	config RspamdConfig
 	url    string
 	client *http.Client
-	failed error
 	logger *zap.Logger
 }
 
@@ -41,9 +42,6 @@ func (r *Rspamd) Start() error {
 	r.url = r.config.GetMailOutboundRspamdUrl()
 	if r.url == "" {
 		return fmt.Errorf("mail relay spam filter url is not configured")
-	}
-	if r.config.GetMailOutboundRspamdRejectOnError() {
-		r.failed = fmt.Errorf("spam filter unavailable")
 	}
 	return nil
 }
@@ -80,5 +78,5 @@ func (r *Rspamd) Scan(from string, recipients []string, domain string, message [
 
 func (r *Rspamd) unavailable(err error) error {
 	r.logger.Error("spam filter failed", zap.Error(err))
-	return r.failed
+	return ErrScannerUnavailable
 }

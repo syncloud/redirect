@@ -25,17 +25,15 @@ func rspamdReturning(t *testing.T, status int, body string) (*httptest.Server, *
 }
 
 type fakeRspamdConfig struct {
-	url           string
-	rejectOnError bool
+	url string
 }
 
-func (f *fakeRspamdConfig) GetMailOutboundRspamdUrl() string         { return f.url }
-func (f *fakeRspamdConfig) GetMailOutboundRspamdRejectOnError() bool { return f.rejectOnError }
+func (f *fakeRspamdConfig) GetMailOutboundRspamdUrl() string { return f.url }
 
-func scan(t *testing.T, status int, body string, rejectOnError bool) error {
+func scan(t *testing.T, status int, body string) error {
 	t.Helper()
 	server, _ := rspamdReturning(t, status, body)
-	scanner := NewRspamd(&fakeRspamdConfig{url: server.URL, rejectOnError: rejectOnError}, time.Second, zap.NewNop())
+	scanner := NewRspamd(&fakeRspamdConfig{url: server.URL}, time.Second, zap.NewNop())
 	assert.NoError(t, scanner.Start())
 	return scanner.Scan("user@device.syncloud.it", []string{"to@example.com"}, "device.syncloud.it", []byte("message"))
 }
@@ -45,19 +43,15 @@ func TestRspamd_RefusesToStartWithoutUrl(t *testing.T) {
 }
 
 func TestRspamd_AllowsClean(t *testing.T) {
-	assert.NoError(t, scan(t, http.StatusOK, `{"action":"no action","score":0.1}`, true))
+	assert.NoError(t, scan(t, http.StatusOK, `{"action":"no action","score":0.1}`))
 }
 
 func TestRspamd_RejectsSpam(t *testing.T) {
-	assert.ErrorIs(t, scan(t, http.StatusOK, `{"action":"reject","score":15.0}`, true), ErrRejectedAsSpam)
+	assert.ErrorIs(t, scan(t, http.StatusOK, `{"action":"reject","score":15.0}`), ErrRejectedAsSpam)
 }
 
 func TestRspamd_FailsClosedWhenUnavailable(t *testing.T) {
-	assert.Error(t, scan(t, http.StatusInternalServerError, "", true))
-}
-
-func TestRspamd_FailsOpenWhenConfigured(t *testing.T) {
-	assert.NoError(t, scan(t, http.StatusInternalServerError, "", false))
+	assert.ErrorIs(t, scan(t, http.StatusInternalServerError, ""), ErrScannerUnavailable)
 }
 
 func TestScanRejectionIsPermanent(t *testing.T) {
