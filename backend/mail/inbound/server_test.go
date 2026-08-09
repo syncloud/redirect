@@ -103,6 +103,31 @@ func tunnelTo(domain string, device *fakeDevice) *fakeDialer {
 	return &fakeDialer{devices: map[string]string{domain: device.address}}
 }
 
+type fakeTraffic struct {
+	mutex    sync.Mutex
+	over     bool
+	recorded map[string]int64
+}
+
+func (f *fakeTraffic) OverLimit(_ string) bool {
+	return f.over
+}
+
+func (f *fakeTraffic) Record(domain string, bytes int64) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	if f.recorded == nil {
+		f.recorded = map[string]int64{}
+	}
+	f.recorded[domain] += bytes
+}
+
+func (f *fakeTraffic) bytes(domain string) int64 {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	return f.recorded[domain]
+}
+
 type fakeStore struct {
 	domains map[string]*model.Domain
 }
@@ -112,32 +137,34 @@ func (f *fakeStore) GetDomainByName(name string) (*model.Domain, error) {
 }
 
 func relayed(dialer DeviceDialer, domains map[string]*model.Domain) (string, func(), error) {
-	return relayedWith(dialer, domains, mail.NewConnections(0))
+	address, stop, _, err := relayedWith(dialer, domains, mail.NewConnections(0), &fakeTraffic{})
+	return address, stop, err
 }
 
 func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
-	connections *mail.Connections) (string, func(), error) {
+	connections *mail.Connections, traffic Traffic) (string, func(), *fakeTraffic, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 	address := listener.Addr().String()
 	if err := listener.Close(); err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mail.NewInFlight(0), 1024*1024, zap.NewNop())
+		mail.NewInFlight(0), traffic, 1024*1024, zap.NewNop())
 	if err := server.Start(); err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 	stop := func() { _ = server.Close() }
 	if err := waitListening(address); err != nil {
 		stop()
-		return "", nil, err
+		return "", nil, nil, err
 	}
-	return address, stop, nil
+	counter, _ := traffic.(*fakeTraffic)
+	return address, stop, counter, nil
 }
 
 func waitListening(address string) error {
@@ -342,9 +369,9 @@ func TestInbound_ProxyProtocolKeepsSendersApart(t *testing.T) {
 	device, stopDevice, err := startDevice(&fakeDevice{})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": relayDomain("alice.syncloud.it")},
-		mail.NewConnections(1))
+	address, stop, _, err := relayedWith(tunnelTo("alice.syncloud.it", device),
+		map[string]*model.Domain{"alice.syncloud.it": relayDomain("alice.syncloud.it")},
+		mail.NewConnections(1), &fakeTraffic{})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -363,9 +390,9 @@ func TestInbound_ProxyProtocolLimitsOneSender(t *testing.T) {
 	device, stopDevice, err := startDevice(&fakeDevice{})
 	assert.NoError(t, err)
 	defer stopDevice()
-	address, stop, err := relayedWith(tunnelTo("alice.syncloud.it", device), map[string]*model.Domain{
-		"alice.syncloud.it": relayDomain("alice.syncloud.it")},
-		mail.NewConnections(1))
+	address, stop, _, err := relayedWith(tunnelTo("alice.syncloud.it", device),
+		map[string]*model.Domain{"alice.syncloud.it": relayDomain("alice.syncloud.it")},
+		mail.NewConnections(1), &fakeTraffic{})
 	assert.NoError(t, err)
 	defer stop()
 
@@ -397,7 +424,36 @@ func TestInbound_PortConflictStopsTheApi(t *testing.T) {
 
 	server := NewServer(held.Addr().String(), "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mail.NewConnections(0), mail.NewInFlight(0), 1024*1024, zap.NewNop())
+		mail.NewConnections(0), mail.NewInFlight(0), &fakeTraffic{}, 1024*1024, zap.NewNop())
 
 	assert.Error(t, server.Start())
+}
+
+func TestInbound_CountsTheBytesItRelays(t *testing.T) {
+	device, stopDevice, err := startDevice(&fakeDevice{})
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, traffic, err := relayedWith(tunnelTo("alice.syncloud.it", device),
+		map[string]*model.Domain{"alice.syncloud.it": relayDomain("alice.syncloud.it")},
+		mail.NewConnections(0), &fakeTraffic{})
+	assert.NoError(t, err)
+	defer stop()
+
+	assert.NoError(t, deliver(address, "user@alice.syncloud.it"))
+
+	assert.Greater(t, traffic.bytes("alice.syncloud.it"), int64(0))
+}
+
+func TestInbound_OverTheLimitIsDeferred(t *testing.T) {
+	device, stopDevice, err := startDevice(&fakeDevice{})
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, traffic, err := relayedWith(tunnelTo("alice.syncloud.it", device),
+		map[string]*model.Domain{"alice.syncloud.it": relayDomain("alice.syncloud.it")},
+		mail.NewConnections(0), &fakeTraffic{over: true})
+	assert.NoError(t, err)
+	defer stop()
+
+	assertCode(t, deliver(address, "user@alice.syncloud.it"), "451")
+	assert.Equal(t, int64(0), traffic.bytes("alice.syncloud.it"))
 }

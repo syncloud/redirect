@@ -1,13 +1,9 @@
 package relay
 
 import (
-	"strings"
-
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
-
-const SmtpProxySuffix = "-smtp"
 
 type DomainStore interface {
 	GetDomainByName(name string) (*model.Domain, error)
@@ -27,7 +23,7 @@ func NewTiers(store DomainStore, free int64, pro int64, max int64, logger *zap.L
 }
 
 func (t *Tiers) OwnerLimit(name string) (int64, int64, bool) {
-	domain, err := t.store.GetDomainByName(strings.TrimSuffix(name, SmtpProxySuffix))
+	domain, err := t.store.GetDomainByName(name)
 	if err != nil || domain == nil {
 		return 0, 0, false
 	}
