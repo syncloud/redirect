@@ -29,12 +29,11 @@ func (f *fakeUsageStore) IsRelayEnabledForUser(_ int64) (bool, error) {
 	return true, nil
 }
 
-func TestUsage_CountsBothProxiesOfEveryDomain(t *testing.T) {
+func TestUsage_CountsEveryDomainOfTheUser(t *testing.T) {
 	store := &fakeUsageStore{
 		domains: []string{"alice.syncloud.it", "spare.syncloud.it"},
 		traffic: map[string]int64{
 			"alice.syncloud.it":         100,
-			"alice.syncloud.it-smtp":    20,
 			"spare.syncloud.it":         3,
 			"somebody-else.syncloud.it": 9000,
 		},
@@ -43,16 +42,16 @@ func TestUsage_CountsBothProxiesOfEveryDomain(t *testing.T) {
 	used, err := NewUsage(store, nil).UsedBytes(1)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(123), used)
+	assert.Equal(t, int64(103), used)
 }
 
-func TestUsage_AsksForTheMailProxyOfEachDomain(t *testing.T) {
+func TestUsage_AsksForTheDomainsOfTheUser(t *testing.T) {
 	store := &fakeUsageStore{domains: []string{"alice.syncloud.it"}}
 
 	_, err := NewUsage(store, nil).UsedBytes(1)
 
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"alice.syncloud.it", "alice.syncloud.it-smtp"}, store.asked)
+	assert.Equal(t, []string{"alice.syncloud.it"}, store.asked)
 }
 
 func TestUsage_NoDomainsMeansNoTraffic(t *testing.T) {

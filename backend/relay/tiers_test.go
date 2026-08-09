@@ -75,23 +75,21 @@ func TestTiers_OwnerLimit_WebProxy(t *testing.T) {
 	assert.Equal(t, int64(100), limit)
 }
 
-func TestTiers_OwnerLimit_SmtpProxyBelongsToSameUser(t *testing.T) {
+func TestTiers_OwnerLimit_TunnelProxyIsNotADomain(t *testing.T) {
 	store := newDomainStore()
 	tiers := NewTiers(store, 1, 10, 100, zap.NewNop())
 
-	userId, limit, ok := tiers.OwnerLimit("alice.syncloud.it" + SmtpProxySuffix)
+	_, _, ok := tiers.OwnerLimit("alice.syncloud.it-smtp")
 
-	assert.True(t, ok)
-	assert.Equal(t, int64(7), userId)
-	assert.Equal(t, int64(100), limit)
-	assert.Equal(t, []string{"alice.syncloud.it"}, store.asked)
+	assert.False(t, ok)
+	assert.Equal(t, []string{"alice.syncloud.it-smtp"}, store.asked)
 }
 
 func TestTiers_OwnerLimit_UnknownProxy(t *testing.T) {
 	store := newDomainStore()
 	tiers := NewTiers(store, 1, 10, 100, zap.NewNop())
 
-	_, _, ok := tiers.OwnerLimit("stranger.syncloud.it" + SmtpProxySuffix)
+	_, _, ok := tiers.OwnerLimit("stranger.syncloud.it")
 
 	assert.False(t, ok)
 }

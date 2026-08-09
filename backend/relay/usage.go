@@ -20,15 +20,7 @@ func (u *Usage) UsedBytes(userId int64) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return u.store.GetRelayTraffic(ProxyNames(domains), month())
-}
-
-func ProxyNames(domains []string) []string {
-	names := make([]string, 0, len(domains)*2)
-	for _, domain := range domains {
-		names = append(names, domain, domain+SmtpProxySuffix)
-	}
-	return names
+	return u.store.GetRelayTraffic(domains, month())
 }
 
 func (u *Usage) Enabled(userId int64) (bool, error) {

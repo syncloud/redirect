@@ -474,7 +474,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(router *inbound.Router, dialer inbound.DeviceDialer, config *utils.Config) *inbound.Server {
+	err = c.Singleton(func(router *inbound.Router, dialer inbound.DeviceDialer,
+		accountant *relay.Accountant, config *utils.Config) *inbound.Server {
 		return inbound.NewServer(
 			config.GetMailInboundAddress(),
 			config.GetMailInboundHostname(),
@@ -482,6 +483,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			dialer,
 			mail.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
 			mail.NewInFlight(config.GetMailInboundMaxConcurrent()),
+			accountant,
 			config.GetMailInboundMaxMessageBytes(),
 			logger)
 	})

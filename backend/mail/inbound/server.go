@@ -19,8 +19,8 @@ type Server struct {
 }
 
 func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
-	connections *mail.Connections, inFlight *mail.InFlight, maxMessageBytes int64,
-	logger *zap.Logger) *Server {
+	connections *mail.Connections, inFlight *mail.InFlight, traffic Traffic,
+	maxMessageBytes int64, logger *zap.Logger) *Server {
 	s := &Server{logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		peer := peerOf(c)
@@ -30,6 +30,7 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 		}
 		return &Session{
 			router: router, dialer: dialer, connections: connections, inFlight: inFlight,
+			traffic:  traffic,
 			hostname: hostname, peer: peer, logger: logger,
 		}, nil
 	}))

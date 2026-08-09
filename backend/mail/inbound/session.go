@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	ErrOverLimit     = errors.New("monthly relay limit exceeded, try again later")
 	ErrUnreachable   = errors.New("device is not reachable, try again later")
 	ErrNoRecipients  = errors.New("no valid recipients")
 	ErrMixedDomains  = errors.New("too many recipients, send to one domain per message")
@@ -20,6 +21,7 @@ var (
 type Session struct {
 	router      *Router
 	dialer      DeviceDialer
+	traffic     Traffic
 	connections *mail.Connections
 	inFlight    *mail.InFlight
 	hostname    string
@@ -44,6 +46,10 @@ func (s *Session) Rcpt(to string, _ *smtp.RcptOptions) error {
 		return routeError(err)
 	}
 	if s.domain == "" {
+		if s.traffic.OverLimit(domain) {
+			s.logger.Info("inbound over the monthly limit", zap.String("domain", domain))
+			return tryAgain(ErrOverLimit, smtp.EnhancedCode{4, 5, 3})
+		}
 		if err := s.connect(domain); err != nil {
 			return err
 		}
@@ -79,7 +85,9 @@ func (s *Session) Data(r io.Reader) error {
 	if err != nil {
 		return relayError(err)
 	}
-	if _, err := io.Copy(writer, r); err != nil {
+	written, err := io.Copy(writer, r)
+	s.traffic.Record(s.domain, written)
+	if err != nil {
 		_ = writer.Close()
 		return relayError(err)
 	}
