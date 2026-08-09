@@ -170,6 +170,26 @@ func (a *Accountant) recomputeOver() []warning {
 	return warnings
 }
 
+func (a *Accountant) Record(name string, bytes int64) {
+	if bytes <= 0 {
+		return
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	current := month()
+	if current != a.month {
+		a.month = current
+		a.monthly = map[string]int64{}
+		a.over = map[string]bool{}
+		a.warned = map[int64]bool{}
+	}
+	a.monthly[name] += bytes
+	if err := a.db.AddRelayTraffic(name, current, bytes); err != nil {
+		a.logger.Warn("relay traffic persist failed",
+			zap.String("proxy", name), zap.Error(err))
+	}
+}
+
 func (a *Accountant) OverLimit(name string) bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()

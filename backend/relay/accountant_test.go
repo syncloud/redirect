@@ -168,22 +168,7 @@ something_else{name="alice.syncloud.it"} 999`
 	assert.Equal(t, int64(50), totals["bob.syncloud.it"])
 }
 
-func TestAccountant_SmtpAndWebProxiesShareOneUserLimit(t *testing.T) {
-	tiers := NewTiers(newDomainStore(), 1, 10, 100, zap.NewNop())
-	source := &fakeSource{values: []map[string]int64{
-		{"alice.syncloud.it": 0, "alice.syncloud.it-smtp": 0},
-		{"alice.syncloud.it": 60, "alice.syncloud.it-smtp": 60},
-	}}
-	a := newAccountant(tiers, source, &fakeRelayDb{})
-
-	a.poll()
-	a.poll()
-
-	assert.True(t, a.OverLimit("alice.syncloud.it-smtp"))
-	assert.True(t, a.OverLimit("alice.syncloud.it"))
-}
-
-func TestAccountant_SmtpOnlyTrafficCountsTowardsTheLimit(t *testing.T) {
+func TestAccountant_TunnelProxyTrafficIsNotAttributed(t *testing.T) {
 	tiers := NewTiers(newDomainStore(), 1, 10, 100, zap.NewNop())
 	source := &fakeSource{values: []map[string]int64{
 		{"alice.syncloud.it-smtp": 0},
@@ -194,19 +179,41 @@ func TestAccountant_SmtpOnlyTrafficCountsTowardsTheLimit(t *testing.T) {
 	a.poll()
 	a.poll()
 
-	assert.True(t, a.OverLimit("alice.syncloud.it-smtp"))
+	assert.False(t, a.OverLimit("alice.syncloud.it-smtp"))
+	assert.False(t, a.OverLimit("alice.syncloud.it"))
 }
 
-func TestAccountant_SmtpTrafficUnderTheLimitIsAllowed(t *testing.T) {
+func TestAccountant_RecordedInboundBytesCountTowardsTheLimit(t *testing.T) {
+	tiers := NewTiers(newDomainStore(), 1, 10, 100, zap.NewNop())
+	a := newAccountant(tiers, &fakeSource{values: []map[string]int64{{}}}, &fakeRelayDb{})
+
+	a.Record("alice.syncloud.it", 150)
+	a.poll()
+
+	assert.True(t, a.OverLimit("alice.syncloud.it"))
+}
+
+func TestAccountant_RecordedInboundBytesUnderTheLimitAreAllowed(t *testing.T) {
+	tiers := NewTiers(newDomainStore(), 1, 10, 100, zap.NewNop())
+	a := newAccountant(tiers, &fakeSource{values: []map[string]int64{{}}}, &fakeRelayDb{})
+
+	a.Record("alice.syncloud.it", 40)
+	a.poll()
+
+	assert.False(t, a.OverLimit("alice.syncloud.it"))
+}
+
+func TestAccountant_RecordedBytesAddToWebTraffic(t *testing.T) {
 	tiers := NewTiers(newDomainStore(), 1, 10, 100, zap.NewNop())
 	source := &fakeSource{values: []map[string]int64{
-		{"alice.syncloud.it-smtp": 0},
-		{"alice.syncloud.it-smtp": 40},
+		{"alice.syncloud.it": 0},
+		{"alice.syncloud.it": 60},
 	}}
 	a := newAccountant(tiers, source, &fakeRelayDb{})
 
 	a.poll()
+	a.Record("alice.syncloud.it", 60)
 	a.poll()
 
-	assert.False(t, a.OverLimit("alice.syncloud.it-smtp"))
+	assert.True(t, a.OverLimit("alice.syncloud.it"))
 }
