@@ -1179,7 +1179,7 @@ def mail_send(host, sender, recipient, subject, attempts=15):
 def mail_send_big(host, sender, recipient):
     server = smtplib.SMTP(host, MAIL_INBOUND_PORT, timeout=30)
     try:
-        message = 'Subject: bulk\r\n\r\n{0}\r\n'.format('x' * 65536)
+        message = 'Subject: bulk\r\n\r\n{0}'.format(('x' * 900 + '\r\n') * 72)
         server.sendmail(sender, [recipient], message)
     finally:
         try:
