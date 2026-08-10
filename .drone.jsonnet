@@ -1,6 +1,5 @@
 local name = "redirect";
 local go = "1.25";
-local dind = "19.03.8-dind";
 local node = "18.12.0";
 local playwright = "v1.59.1-jammy";
 local platform = "26.04.2";
@@ -108,6 +107,40 @@ local build(arch) = [{
                 event: ["push", "tag"],
             },
         },
+        {
+            name: "build test api",
+            image: "golang:" + go,
+            commands: [
+                "cd backend",
+                "CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../docker/build/testapi-amd64 ./cmd/testapi",
+                "CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ../docker/build/testapi-arm64 ./cmd/testapi",
+                "CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o ../docker/build/testapi-arm ./cmd/testapi",
+            ],
+        },
+    ] + [
+        {
+            name: "push redirect-test " + testapi.arch,
+            image: "plugins/docker:20.18",
+            settings: {
+                repo: "syncloud/redirect-test-" + testapi.arch,
+                dockerfile: "docker/Dockerfile.redirect-test",
+                context: "docker",
+                platform: testapi.platform,
+                build_args: ["TESTAPI=testapi-" + testapi.arch],
+                username: { from_secret: "DOCKER_USERNAME" },
+                password: { from_secret: "DOCKER_PASSWORD" },
+                tags: ["${DRONE_TAG:-latest}"],
+            },
+            when: {
+                branch: ["stable", "master"]
+            },
+        }
+        for testapi in [
+            { arch: "amd64", platform: "linux/amd64" },
+            { arch: "arm64", platform: "linux/arm64" },
+            { arch: "arm", platform: "linux/arm/v7" },
+        ]
+    ] + [
         {
             name: "build dns-faker",
             image: "golang:" + go,
@@ -327,77 +360,4 @@ local build(arch) = [{
     ]
 }];
 
-local build_testapi(arch) = [{
-    kind: "pipeline",
-    name: name + "-testapi-" + arch,
-
-    platform: {
-        os: "linux",
-        arch: arch
-    },
-    steps: [
-        {
-            name: "build test api",
-            image: "golang:" + go,
-            commands: [
-                "cd backend",
-                "go build -ldflags '-linkmode external -extldflags -static' -o ../docker/build/testapi ./cmd/testapi",
-            ]
-        },
-        {
-            name: "push redirect-test",
-            image: "docker:" + dind,
-            environment: {
-                DOCKER_USERNAME: {
-                    from_secret: "DOCKER_USERNAME"
-                },
-                DOCKER_PASSWORD: {
-                    from_secret: "DOCKER_PASSWORD"
-                }
-            },
-            commands: [
-                "cd docker",
-                "./push-redirect-test.sh " + arch
-            ],
-            volumes: [
-                {
-                    name: "dockersock",
-                    path: "/var/run"
-                }
-            ],
-            when: {
-                branch: ["stable", "master"]
-            }
-        },
-    ],
-    services: [
-        {
-            name: "docker",
-            image: "docker:" + dind,
-            privileged: true,
-            volumes: [
-                {
-                    name: "dockersock",
-                    path: "/var/run"
-                }
-            ]
-        }
-    ],
-    volumes: [
-        {
-            name: "dbus",
-            host: {
-                path: "/var/run/dbus"
-            }
-        },
-        {
-            name: "dockersock",
-            temp: {}
-        }
-    ]
-}];
-
-build("amd64") +
-build_testapi("amd64") +
-build_testapi("arm64") +
-build_testapi("arm")
+build("amd64")
