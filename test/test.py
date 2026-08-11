@@ -1,6 +1,7 @@
 import json
 import os
 import smtplib
+import socket
 import ssl
 import subprocess
 import tarfile
@@ -1257,6 +1258,38 @@ def test_mail_inbound_delivers_over_starttls(domain, device_host, artifact_dir, 
     assert 'inbound-starttls' in delivered[1]['body'], delivered
     names = certificate_text(certificate)
     assert '*.mx.{0}'.format(domain) in names, names
+
+
+def mail_starttls_without_sni(host):
+    connection = socket.create_connection((host, MAIL_INBOUND_PORT), timeout=30)
+    stream = connection.makefile('rwb')
+    stream.readline()
+    stream.write(b'EHLO verify.test\r\n')
+    stream.flush()
+    while True:
+        line = stream.readline()
+        if len(line) < 4 or line[3:4] != b'-':
+            break
+    stream.write(b'STARTTLS\r\n')
+    stream.flush()
+    ready = stream.readline()
+    assert ready.startswith(b'220'), ready
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    secure = context.wrap_socket(connection)
+    certificate = secure.getpeercert(binary_form=True)
+    secure.close()
+    return certificate
+
+
+def test_mail_inbound_starttls_without_sni(domain, device_host, artifact_dir, mail_device):
+    domain_name, _ = mail_tunnel(domain, device_host, artifact_dir, mail_device,
+                                 'mailnosni', 'mail_no_sni@syncloud.test')
+
+    certificate = mail_starttls_without_sni(device_host)
+
+    assert certificate, 'the server sent no certificate without sni'
 
 
 def test_mail_inbound_device_rejects_recipient(domain, device_host, artifact_dir, mail_device):
