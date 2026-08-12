@@ -53,16 +53,27 @@ func (h *Handler) Provision(ctx caddy.Context) error {
 	return nil
 }
 
-// a name is only expanded to a wildcard when the client sent one, so an
-// unnamed connection is given the default before the certificate is chosen
+// a name is only widened to a wildcard when the client sent one, so an unnamed
+// connection is given the default. the hello is rebuilt between choosing the
+// config and choosing the certificate, so the name has to be filled in on the
+// second one to survive
 func (h *Handler) tlsConfig() *tls.Config {
 	config := h.ConnectionPolicies.TLSConfig(h.ctx)
 	chooseConfig := config.GetConfigForClient
 	config.GetConfigForClient = func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
-		if hello.ServerName == "" {
-			hello.ServerName = h.DefaultSni
+		chosen, err := chooseConfig(hello)
+		if err != nil || hello.ServerName != "" || h.DefaultSni == "" {
+			return chosen, err
 		}
-		return chooseConfig(hello)
+		named := chosen.Clone()
+		chooseCertificate := chosen.GetCertificate
+		named.GetCertificate = func(fresh *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			if fresh.ServerName == "" {
+				fresh.ServerName = h.DefaultSni
+			}
+			return chooseCertificate(fresh)
+		}
+		return named, nil
 	}
 	return config
 }

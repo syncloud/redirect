@@ -27,7 +27,7 @@ DIR = dirname(__file__)
 @pytest.fixture(scope="session", autouse=True)
 def server_logs(request, device_host, artifact_dir):
     def teardown():
-        for container in ['redirect-api', 'redirect-www']:
+        for container in ['redirect-api', 'redirect-www', 'caddy']:
             run_ssh(device_host, 'docker logs {0} > /tmp/{0}.log 2>&1'.format(container), throw=False)
             run_scp('root@{0}:/tmp/{1}.log {2}'.format(device_host, container, artifact_dir), throw=False)
     request.addfinalizer(teardown)
