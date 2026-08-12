@@ -43,15 +43,28 @@ func (h *Handler) Provision(ctx caddy.Context) error {
 		return fmt.Errorf("smtp_starttls: upstream is required")
 	}
 	if len(h.ConnectionPolicies) == 0 {
-		h.ConnectionPolicies = append(h.ConnectionPolicies,
-			&caddytls.ConnectionPolicy{DefaultSNI: h.DefaultSni})
+		h.ConnectionPolicies = append(h.ConnectionPolicies, new(caddytls.ConnectionPolicy))
 	}
 	if err := h.ConnectionPolicies.Provision(ctx); err != nil {
 		return fmt.Errorf("smtp_starttls: setting up connection policies: %v", err)
 	}
 	h.conversation = NewConversation(h.Hostname, NewTcpUpstream(h.Upstream),
-		func() *tls.Config { return h.ConnectionPolicies.TLSConfig(h.ctx) }, h.logger)
+		h.tlsConfig, h.logger)
 	return nil
+}
+
+// a name is only expanded to a wildcard when the client sent one, so an
+// unnamed connection is given the default before the certificate is chosen
+func (h *Handler) tlsConfig() *tls.Config {
+	config := h.ConnectionPolicies.TLSConfig(h.ctx)
+	chooseConfig := config.GetConfigForClient
+	config.GetConfigForClient = func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
+		if hello.ServerName == "" {
+			hello.ServerName = h.DefaultSni
+		}
+		return chooseConfig(hello)
+	}
+	return config
 }
 
 func (h *Handler) Handle(cx *layer4.Connection, _ layer4.Handler) error {
