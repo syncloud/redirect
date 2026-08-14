@@ -26,6 +26,8 @@ type Session struct {
 	inFlight    *mail.InFlight
 	hostname    string
 	peer        string
+	helo        string
+	resolver    Resolver
 	logger      *zap.Logger
 
 	from   string
@@ -107,7 +109,18 @@ func (s *Session) connect(domain string) error {
 			zap.String("domain", domain), zap.Error(err))
 		return tryAgain(ErrUnreachable, smtp.EnhancedCode{4, 4, 1})
 	}
-	client := smtp.NewClient(connection)
+	announced, err := Announce(connection, s.hostname, Client{
+		Address: s.peer,
+		Name:    s.resolver.Name(s.peer),
+		Helo:    s.helo,
+	})
+	if err != nil {
+		_ = connection.Close()
+		s.logger.Info("cannot announce the client to the device",
+			zap.String("domain", domain), zap.Error(err))
+		return relayError(err)
+	}
+	client := smtp.NewClient(announced)
 	if err := client.Hello(s.hostname); err != nil {
 		_ = client.Close()
 		return relayError(err)
