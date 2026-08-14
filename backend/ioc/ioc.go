@@ -484,6 +484,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mail.NewConnections(config.GetMailInboundMaxConnectionsPerPeer()),
 			mail.NewInFlight(config.GetMailInboundMaxConcurrent()),
 			accountant,
+			inbound.NewPtrResolver(inbound.ResolveTimeout),
 			config.GetMailInboundMaxMessageBytes(),
 			logger)
 	})

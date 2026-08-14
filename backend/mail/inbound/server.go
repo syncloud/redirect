@@ -11,7 +11,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const DialTimeout = 30 * time.Second
+const (
+	DialTimeout    = 30 * time.Second
+	ResolveTimeout = 2 * time.Second
+)
 
 type Server struct {
 	server *smtp.Server
@@ -19,7 +22,7 @@ type Server struct {
 }
 
 func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
-	connections *mail.Connections, inFlight *mail.InFlight, traffic Traffic,
+	connections *mail.Connections, inFlight *mail.InFlight, traffic Traffic, resolver Resolver,
 	maxMessageBytes int64, logger *zap.Logger) *Server {
 	s := &Server{logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
@@ -31,7 +34,8 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 		return &Session{
 			router: router, dialer: dialer, connections: connections, inFlight: inFlight,
 			traffic:  traffic,
-			hostname: hostname, peer: peer, logger: logger,
+			hostname: hostname, peer: peer, helo: c.Hostname(), resolver: resolver,
+			logger: logger,
 		}, nil
 	}))
 	server.Addr = address

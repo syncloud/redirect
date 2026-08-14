@@ -154,7 +154,7 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mail.NewInFlight(0), traffic, 1024*1024, zap.NewNop())
+		mail.NewInFlight(0), traffic, testResolver(), 1024*1024, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, nil, err
 	}
@@ -424,7 +424,7 @@ func TestInbound_PortConflictStopsTheApi(t *testing.T) {
 
 	server := NewServer(held.Addr().String(), "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mail.NewConnections(0), mail.NewInFlight(0), &fakeTraffic{}, 1024*1024, zap.NewNop())
+		mail.NewConnections(0), mail.NewInFlight(0), &fakeTraffic{}, testResolver(), 1024*1024, zap.NewNop())
 
 	assert.Error(t, server.Start())
 }
