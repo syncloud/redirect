@@ -25,28 +25,32 @@ func (g *greeted) Read(p []byte) (int, error) {
 	return g.reader.Read(p)
 }
 
-func Announce(connection net.Conn, hostname string, client Client) (net.Conn, error) {
+func Announce(connection net.Conn, hostname string, client Client) (net.Conn, string, error) {
 	text := textproto.NewConn(connection)
 	if _, _, err := text.ReadResponse(220); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := text.PrintfLine("EHLO %s", hostname); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	_, capabilities, err := text.ReadResponse(250)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
+	helo := hostname
 	if supports(capabilities, "XCLIENT") {
 		if err := text.PrintfLine("XCLIENT %s", attributes(client)); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		if _, _, err := text.ReadResponse(220); err != nil {
-			return nil, err
+			return nil, "", err
+		}
+		if client.Helo != "" {
+			helo = client.Helo
 		}
 	}
 	greeting := strings.NewReader(fmt.Sprintf("220 %s ESMTP\r\n", hostname))
-	return &greeted{Conn: connection, reader: io.MultiReader(greeting, text.R)}, nil
+	return &greeted{Conn: connection, reader: io.MultiReader(greeting, text.R)}, helo, nil
 }
 
 func supports(capabilities string, extension string) bool {
