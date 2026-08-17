@@ -109,7 +109,7 @@ func (s *Session) connect(domain string) error {
 			zap.String("domain", domain), zap.Error(err))
 		return tryAgain(ErrUnreachable, smtp.EnhancedCode{4, 4, 1})
 	}
-	announced, err := Announce(connection, s.hostname, Client{
+	announced, helo, err := Announce(connection, s.hostname, Client{
 		Address: s.peer,
 		Name:    s.resolver.Name(s.peer),
 		Helo:    s.helo,
@@ -121,7 +121,7 @@ func (s *Session) connect(domain string) error {
 		return relayError(err)
 	}
 	client := smtp.NewClient(announced)
-	if err := client.Hello(s.hostname); err != nil {
+	if err := client.Hello(helo); err != nil {
 		_ = client.Close()
 		return relayError(err)
 	}
