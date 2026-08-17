@@ -29,6 +29,7 @@ type xclientDevice struct {
 	mutex      sync.Mutex
 	announced  string
 	greetings  int
+	helos      []string
 	recipients []string
 	body       string
 }
@@ -67,6 +68,7 @@ func (d *xclientDevice) serve(connection net.Conn) {
 		upper := strings.ToUpper(command)
 		switch {
 		case strings.HasPrefix(upper, "EHLO"):
+			d.addHelo(strings.TrimSpace(command[len("EHLO"):]))
 			if d.advertise {
 				write("250-device.syncloud.it")
 				write("250 XCLIENT ADDR NAME HELO")
@@ -124,6 +126,18 @@ func (d *xclientDevice) count() {
 	d.greetings++
 }
 
+func (d *xclientDevice) addHelo(name string) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.helos = append(d.helos, name)
+}
+
+func (d *xclientDevice) greeted() []string {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	return append([]string(nil), d.helos...)
+}
+
 func (d *xclientDevice) addRecipient(command string) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -154,6 +168,34 @@ func TestXclient_AnnouncesTheRealClientToTheDevice(t *testing.T) {
 	assert.Contains(t, body, "Subject: hello")
 }
 
+func TestXclient_DeviceIsGreetedWithTheClientHeloAfterTheReset(t *testing.T) {
+	device, stopDevice, err := startXclientDevice(true)
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(&fakeDialer{devices: map[string]string{"alice.syncloud.it": device.address}},
+		map[string]*model.Domain{"alice.syncloud.it": relayDomain("alice.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
+
+	assert.NoError(t, deliver(address, "user@alice.syncloud.it"))
+
+	assert.Equal(t, []string{"mx.syncloud.it", "localhost"}, device.greeted())
+}
+
+func TestXclient_DeviceWithoutTheExtensionKeepsTheRelayHelo(t *testing.T) {
+	device, stopDevice, err := startXclientDevice(false)
+	assert.NoError(t, err)
+	defer stopDevice()
+	address, stop, err := relayed(&fakeDialer{devices: map[string]string{"alice.syncloud.it": device.address}},
+		map[string]*model.Domain{"alice.syncloud.it": relayDomain("alice.syncloud.it")})
+	assert.NoError(t, err)
+	defer stop()
+
+	assert.NoError(t, deliver(address, "user@alice.syncloud.it"))
+
+	assert.Equal(t, []string{"mx.syncloud.it", "mx.syncloud.it"}, device.greeted())
+}
+
 func TestXclient_DeviceWithoutTheExtensionStillGetsTheMessage(t *testing.T) {
 	device, stopDevice, err := startXclientDevice(false)
 	assert.NoError(t, err)
@@ -179,8 +221,9 @@ func TestXclient_UnresolvedClientIsReportedUnavailable(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = connection.Close() }()
 
-	announced, err := Announce(connection, "mx.syncloud.it", Client{Address: "198.51.100.7"})
+	announced, helo, err := Announce(connection, "mx.syncloud.it", Client{Address: "198.51.100.7"})
 	assert.NoError(t, err)
+	assert.Equal(t, "mx.syncloud.it", helo)
 	defer func() { _ = announced.Close() }()
 
 	attributes, greetings, _ := device.got()
