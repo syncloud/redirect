@@ -38,5 +38,37 @@ def clear():
     assert response.status_code == 200, response.text
 
 
+def token_of(body):
+    match = re.search(r'https://.*token=(.*)\r', body.replace('=\r\n', ''))
+    return match.group(1) if match else None
+
+
 def get_token(body):
-    return re.search(r'https://.*token=(.*)\r', body.replace('=\r\n', '')).group(1)
+    token = token_of(body)
+    assert token is not None, 'email carries no token'
+    return token
+
+
+def wait_for(match, artifact_dir=None, timeout=30, poll=0.25):
+    deadline = time.monotonic() + timeout
+    while True:
+        for body in try_emails(None):
+            value = match(body)
+            if value is not None:
+                if artifact_dir:
+                    try_emails(artifact_dir)
+                return value
+        if time.monotonic() >= deadline:
+            if artifact_dir:
+                try_emails(artifact_dir)
+            return None
+        time.sleep(poll)
+
+
+def wait_for_token(artifact_dir=None, timeout=30, poll=0.25):
+    return wait_for(token_of, artifact_dir, timeout, poll)
+
+
+def wait_for_body(substring, artifact_dir=None, timeout=30, poll=0.25):
+    return wait_for(lambda body: body if substring in body else None,
+                    artifact_dir, timeout, poll)
