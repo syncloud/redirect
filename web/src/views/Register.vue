@@ -15,7 +15,7 @@
           <label class="control-label" for="register_email">Email</label>
         </div>
         <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="register_email" name="email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
+          <input id="register_email" data-testid="register-email" name="email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
           <span id="help-email" class="help-block">{{ emailError }}</span>
         </div>
       </div>
@@ -25,7 +25,7 @@
           <label class="control-label" for="register_password">Password</label>
         </div>
         <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="register_password" name="password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
+          <input id="register_password" data-testid="register-password" name="password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
           <span id="help-password" class="help-block">{{ passwordError }}</span>
         </div>
       </div>
@@ -33,7 +33,7 @@
       <div class="form-group">
         <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
           <router-link to="/privacy" class="pull-left" style="padding-top: 10px;">Read our privacy policy</router-link>
-          <button id="btnregister" name="btnregister" class="btn btn-primary pull-right">Register</button>
+          <button id="btnregister" data-testid="register-submit" name="btnregister" class="btn btn-primary pull-right">Register</button>
         </div>
       </div>
 
@@ -83,7 +83,12 @@ export default {
   methods: {
     register: function (event) {
       this.isError = false
-      axios.post('/api/user/create', { email: this.email, password: this.password })
+      const request = { email: this.email, password: this.password }
+      const gclid = this.$route.query.gclid
+      if (gclid) {
+        request.gclid = gclid
+      }
+      axios.post('/api/user/create', request)
         .then(_ => {
           this.$router.push('/check-email')
         })

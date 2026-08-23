@@ -191,8 +191,25 @@ func TestUserCreate(t *testing.T) {
 	assert.NotEqual(t, password, user.PasswordHash)
 	assert.Equal(t, email, user.Email)
 	assert.False(t, user.Active)
-	assert.Equal(t, user.Email, *mail.sentEmail)
-	assert.Equal(t, actions.action.Token, *mail.sentToken)
+	assert.NotNil(t, actions.action)
+	assert.Equal(t, uint64(ActionActivate), actions.action.ActionTypeId)
+	assert.Nil(t, mail.sentEmail)
+	assert.Nil(t, mail.sentToken)
+}
+
+func TestUserCreateQueuesActivationWhenMailIsDown(t *testing.T) {
+	db := &UsersDbStub{}
+	actions := &UsersActionsStub{}
+	mail := &UsersMailStub{}
+	users := &Users{db, true, actions, mail, &SubscriptionsStub{}}
+
+	email := "test@example.com"
+	password := "password"
+	user, err := users.CreateNewUser(model.UserCreateRequest{Email: &email, Password: &password})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, user)
+	assert.NotNil(t, actions.action)
 }
 
 func TestUserCreateSuccessNoActivation(t *testing.T) {

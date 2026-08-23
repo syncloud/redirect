@@ -8,15 +8,19 @@ import re
 import requests
 
 
-def emails(artifact_dir=None):
-    attempts = 1
-    while attempts < 10:
-        results = try_emails(artifact_dir)
+def emails(artifact_dir=None, timeout=30, poll=0.25):
+    deadline = time.monotonic() + timeout
+    while True:
+        results = try_emails(None)
         if len(results) > 0:
+            if artifact_dir:
+                try_emails(artifact_dir)
             return results
-        attempts += 1
-        time.sleep(1)
-    return []
+        if time.monotonic() >= deadline:
+            if artifact_dir:
+                try_emails(artifact_dir)
+            return []
+        time.sleep(poll)
 
 
 def try_emails(artifact_dir):
