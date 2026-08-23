@@ -151,6 +151,7 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 		UpdateToken:         updateToken,
 		Timestamp:           time.Now(),
 		NotificationEnabled: true,
+		Gclid:               validation.SanitizeGclid(request.Gclid),
 	}
 
 	userId, err := u.db.InsertUser(user)
@@ -160,15 +161,11 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	log.Printf("user created")
 
 	if u.activateByEmail {
-		action, err := u.actions.UpsertActivateAction(userId)
+		_, err := u.actions.UpsertActivateAction(userId)
 		if err != nil {
 			return nil, err
 		}
-		err = u.usersMail.SendActivate(user.Email, action.Token)
-		if err != nil {
-			return nil, err
-		}
-		log.Printf("activation email sent")
+		log.Printf("activation queued")
 	}
 
 	return user, nil

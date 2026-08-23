@@ -23,8 +23,9 @@ function bodyFromMessage(message) {
     .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
 }
 
-async function waitForMessage(extract, attempts = 10) {
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
+async function waitForMessage(extract, timeoutMs = 30000, pollMs = 250) {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
     const messages = await fetchMessages()
     if (messages.length > 0) {
       const result = extract(bodyFromMessage(messages[0]))
@@ -32,9 +33,11 @@ async function waitForMessage(extract, attempts = 10) {
         return result
       }
     }
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    if (Date.now() >= deadline) {
+      throw new Error(`Timed out after ${timeoutMs}ms waiting for email message`)
+    }
+    await new Promise(resolve => setTimeout(resolve, pollMs))
   }
-  throw new Error('Timed out waiting for email message')
 }
 
 function extractActivateUrl(body) {

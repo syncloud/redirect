@@ -28,6 +28,7 @@ type User struct {
 	SubscriptionId      *string   `json:"subscription_id,omitempty"`
 	SubscriptionType    *int      `json:"subscription_type,omitempty"`
 	Plan                *string   `json:"plan,omitempty"`
+	Gclid               *string   `json:"-"`
 	Status              int64     `json:"status,omitempty"`
 	StatusAt            time.Time `json:"status_at,omitempty"`
 	RegisteredAt        time.Time `json:"registered_at,omitempty"`

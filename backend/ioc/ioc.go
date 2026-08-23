@@ -611,5 +611,21 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(
+		database *db.MySql,
+		mailService *service.Mail,
+		config *utils.Config,
+	) *user.ActivationSender {
+		return user.NewActivationSender(
+			database,
+			mailService,
+			config.ActivateByEmail(),
+			logger,
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }

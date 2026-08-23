@@ -3,6 +3,7 @@ package validation
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
+	"strings"
 	"testing"
 )
 
@@ -46,6 +47,37 @@ func TestEmailValid(t *testing.T) {
 	result := validator.Email(&email)
 	assert.Equal(t, len(validator.errors), 0)
 	assert.Equal(t, "user@example.com", *result)
+}
+
+func TestSanitizeGclidNil(t *testing.T) {
+	assert.Nil(t, SanitizeGclid(nil))
+}
+
+func TestSanitizeGclidValid(t *testing.T) {
+	gclid := "Cj0KCQjw_-GFBhDeARIsACH_kdY-abc_123"
+	assert.Equal(t, gclid, *SanitizeGclid(&gclid))
+}
+
+func TestSanitizeGclidEmpty(t *testing.T) {
+	gclid := ""
+	assert.Nil(t, SanitizeGclid(&gclid))
+}
+
+func TestSanitizeGclidTooLong(t *testing.T) {
+	gclid := strings.Repeat("a", 129)
+	assert.Nil(t, SanitizeGclid(&gclid))
+}
+
+func TestSanitizeGclidMaxLength(t *testing.T) {
+	gclid := strings.Repeat("a", 128)
+	assert.Equal(t, gclid, *SanitizeGclid(&gclid))
+}
+
+func TestSanitizeGclidRejectsInjection(t *testing.T) {
+	for _, bad := range []string{"abc'; drop table user;--", "<script>x</script>", "abc def", "abc\n", "../../etc"} {
+		value := bad
+		assert.Nil(t, SanitizeGclid(&value), bad)
+	}
 }
 
 func TestDomainMissing(t *testing.T) {

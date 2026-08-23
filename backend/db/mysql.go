@@ -117,6 +117,13 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 	return user, nil
 }
 
+func gclidAt(user *model.User) *time.Time {
+	if user.Gclid == nil {
+		return nil
+	}
+	return &user.Timestamp
+}
+
 func (m *MySql) InsertUser(user *model.User) (int64, error) {
 	stmt, err := m.db.Prepare(
 		"INSERT into user (" +
@@ -125,8 +132,10 @@ func (m *MySql) InsertUser(user *model.User) (int64, error) {
 			"active, " +
 			"update_token, " +
 			"notification_enabled, " +
-			"timestamp " +
-			") values (?,?,?,?,?,?)")
+			"timestamp, " +
+			"gclid, " +
+			"gclid_at " +
+			") values (?,?,?,?,?,?,?,?)")
 	if err != nil {
 		log.Println("unable to insert user (prepare): ", err)
 		return 0, err
@@ -139,6 +148,8 @@ func (m *MySql) InsertUser(user *model.User) (int64, error) {
 		user.UpdateToken,
 		user.NotificationEnabled,
 		user.Timestamp,
+		user.Gclid,
+		gclidAt(user),
 	)
 	if err != nil {
 		log.Println("unable to insert user (exec): ", err)
@@ -543,8 +554,10 @@ func (m *MySql) InsertAction(action *model.Action) error {
 			"action_type_id, " +
 			"user_id, " +
 			"token, " +
-			"timestamp" +
-			") values (?,?,?,?)")
+			"timestamp, " +
+			"sent_at, " +
+			"attempts" +
+			") values (?,?,?,?,?,?)")
 	if err != nil {
 		log.Println("unable to insert action (prepare): ", err)
 		return err
@@ -555,6 +568,8 @@ func (m *MySql) InsertAction(action *model.Action) error {
 		action.UserId,
 		action.Token,
 		action.Timestamp,
+		action.SentAt,
+		action.Attempts,
 	)
 	if err != nil {
 		log.Println("unable to insert action (exec): ", err)
@@ -570,7 +585,9 @@ func (m *MySql) UpdateAction(action *model.Action) error {
 			"action_type_id = ?, " +
 			"user_id = ?, " +
 			"token = ?, " +
-			"timestamp = ? " +
+			"timestamp = ?, " +
+			"sent_at = NULL, " +
+			"attempts = 0 " +
 			"WHERE id = ?")
 	if err != nil {
 		log.Println("unable to update action (prepare): ", err)
@@ -590,6 +607,45 @@ func (m *MySql) UpdateAction(action *model.Action) error {
 	}
 	return nil
 
+}
+
+func (m *MySql) GetPendingActivations(actionTypeId uint64, maxAttempts int, limit int) ([]*model.PendingActivation, error) {
+	rows, err := m.db.Query(
+		"SELECT a.id, a.token, u.email, a.attempts "+
+			"FROM action a JOIN user u ON u.id = a.user_id "+
+			"WHERE a.action_type_id = ? AND a.sent_at IS NULL AND a.attempts < ? "+
+			"ORDER BY a.id LIMIT ?", actionTypeId, maxAttempts, limit)
+	if err != nil {
+		log.Println("unable to query pending activations: ", err)
+		return nil, err
+	}
+	defer rows.Close()
+	var pending []*model.PendingActivation
+	for rows.Next() {
+		p := &model.PendingActivation{}
+		if err := rows.Scan(&p.ActionId, &p.Token, &p.Email, &p.Attempts); err != nil {
+			log.Println("unable to scan pending activation: ", err)
+			return nil, err
+		}
+		pending = append(pending, p)
+	}
+	return pending, rows.Err()
+}
+
+func (m *MySql) MarkActionSent(actionId uint64, now time.Time) error {
+	_, err := m.db.Exec("UPDATE action SET sent_at = ?, attempts = attempts + 1 WHERE id = ?", now, actionId)
+	if err != nil {
+		log.Println("unable to mark action sent: ", err)
+	}
+	return err
+}
+
+func (m *MySql) IncrementActionAttempts(actionId uint64) error {
+	_, err := m.db.Exec("UPDATE action SET attempts = attempts + 1 WHERE id = ?", actionId)
+	if err != nil {
+		log.Println("unable to increment action attempts: ", err)
+	}
+	return err
 }
 
 func (m *MySql) DeleteActions(userId int64) error {

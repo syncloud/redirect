@@ -67,3 +67,7 @@ func TestRateLimiterBurstMatchesObservedBotPattern(t *testing.T) {
 	assert.True(t, limiter.Allow("1.2.3.4", now.Add(2*time.Second)))
 	assert.False(t, limiter.Allow("1.2.3.4", now.Add(3*time.Second)))
 }
+
+func TestWriteTimeoutAllowsForThirdPartyCalls(t *testing.T) {
+	assert.GreaterOrEqual(t, writeTimeout, 30*time.Second)
+}

@@ -71,6 +71,8 @@ type WwwPayPal interface {
 	Plans() model.PlanResponse
 }
 
+const writeTimeout = 30 * time.Second
+
 type Www struct {
 	domains        WwwDomains
 	nsChecker      WwwNsChecker
@@ -202,7 +204,7 @@ func (w *Www) Start() error {
 
 	srv := &http.Server{
 		Handler:      r,
-		WriteTimeout: 5 * time.Second,
+		WriteTimeout: writeTimeout,
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
