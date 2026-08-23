@@ -72,21 +72,23 @@ type WwwPayPal interface {
 }
 
 type Www struct {
-	domains   WwwDomains
-	nsChecker WwwNsChecker
-	users     WwwUsers
-	actions   WwwActions
-	mail      WwwMail
-	stripe    WwwStripe
-	relay     WwwRelay
-	mailRelay WwwMailRelay
-	paypal    WwwPayPal
-	metrics   *metrics.Metrics
-	domain    string
-	store     *sessions.CookieStore
-	count404  int64
-	socket    string
-	logger    *zap.Logger
+	domains        WwwDomains
+	nsChecker      WwwNsChecker
+	users          WwwUsers
+	actions        WwwActions
+	mail           WwwMail
+	stripe         WwwStripe
+	relay          WwwRelay
+	mailRelay      WwwMailRelay
+	paypal         WwwPayPal
+	metrics        *metrics.Metrics
+	domain         string
+	store          *sessions.CookieStore
+	count404       int64
+	socket         string
+	logger         *zap.Logger
+	burstLimit     *RateLimiter
+	sustainedLimit *RateLimiter
 }
 
 func NewWww(
@@ -103,34 +105,55 @@ func NewWww(
 	domain string,
 	authSecretSey []byte,
 	socket string,
+	rateLimitPerMinute int,
+	rateLimitPerHour int,
 	logger *zap.Logger,
 ) *Www {
 	return &Www{
-		domains:   domains,
-		nsChecker: nsChecker,
-		users:     users,
-		actions:   actions,
-		mail:      mail,
-		stripe:    stripe,
-		relay:     relay,
-		mailRelay: mailRelay,
-		paypal:    paypal,
-		metrics:   metrics,
-		domain:    domain,
-		store:     sessions.NewCookieStore(authSecretSey),
-		socket:    socket,
-		logger:    logger,
+		domains:        domains,
+		nsChecker:      nsChecker,
+		users:          users,
+		actions:        actions,
+		mail:           mail,
+		stripe:         stripe,
+		relay:          relay,
+		mailRelay:      mailRelay,
+		paypal:         paypal,
+		metrics:        metrics,
+		domain:         domain,
+		store:          sessions.NewCookieStore(authSecretSey),
+		socket:         socket,
+		logger:         logger,
+		burstLimit:     NewRateLimiter(rateLimitPerMinute, time.Minute),
+		sustainedLimit: NewRateLimiter(rateLimitPerHour, time.Hour),
+	}
+}
+
+func (w *Www) Limited(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(writer http.ResponseWriter, req *http.Request) {
+		ip, err := w.requestIp(req)
+		if err != nil {
+			fail(writer, err)
+			return
+		}
+		now := time.Now()
+		if !w.burstLimit.Allow(*ip, now) || !w.sustainedLimit.Allow(*ip, now) {
+			w.logger.Info("rate limit exceeded", zap.String("path", req.URL.Path))
+			fail(writer, model.NewServiceErrorWithCode("too many requests", http.StatusTooManyRequests))
+			return
+		}
+		next(writer, req)
 	}
 }
 
 func (w *Www) Start() error {
 
 	r := mux.NewRouter()
-	r.HandleFunc("/user/reset_password", Handle(w.WebUserPasswordReset)).Methods("POST")
+	r.HandleFunc("/user/reset_password", w.Limited(Handle(w.WebUserPasswordReset))).Methods("POST")
 	r.HandleFunc("/user/set_password", Handle(w.UserSetPassword)).Methods("POST")
 	r.HandleFunc("/user/activate", Handle(w.WebUserActivate)).Methods("POST")
-	r.HandleFunc("/user/create", Handle(w.UserCreateV2)).Methods("POST")
-	r.HandleFunc("/user/login", Handle(w.UserLogin)).Methods("POST")
+	r.HandleFunc("/user/create", w.Limited(Handle(w.UserCreateV2))).Methods("POST")
+	r.HandleFunc("/user/login", w.Limited(Handle(w.UserLogin))).Methods("POST")
 
 	r.HandleFunc("/logout", w.Secured(HandleUser(w.UserLogout))).Methods("POST")
 	r.HandleFunc("/notification/enable", w.Secured(HandleUser(w.WebNotificationEnable))).Methods("POST")

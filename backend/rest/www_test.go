@@ -154,6 +154,8 @@ func TestLogin_CreateSession(t *testing.T) {
 		"example.com",
 		[]byte("secret_key"),
 		"",
+		1000,
+		10000,
 		log.Default(),
 	)
 	email := "test@example.com"
@@ -194,6 +196,8 @@ func TestLoginAgain_NotError(t *testing.T) {
 		"example.com",
 		[]byte("secret_key"),
 		"",
+		1000,
+		10000,
 		log.Default(),
 	)
 	email := "test@example.com"
@@ -249,6 +253,8 @@ func TestLoginFresh_NotError(t *testing.T) {
 		"example.com",
 		[]byte("secret_key"),
 		"",
+		1000,
+		10000,
 		log.Default(),
 	)
 	email := "test@example.com"
@@ -290,6 +296,8 @@ func TestLogout_ClearSession(t *testing.T) {
 		"example.com",
 		[]byte("secret_key"),
 		"",
+		1000,
+		10000,
 		log.Default(),
 	)
 	email := "test@example.com"

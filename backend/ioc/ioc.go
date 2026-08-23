@@ -551,6 +551,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.Domain(),
 			secretKey,
 			config.GetWwwSocket(),
+			config.GetWwwRateLimitPerMinute(),
+			config.GetWwwRateLimitPerHour(),
 			logger,
 		), nil
 	})

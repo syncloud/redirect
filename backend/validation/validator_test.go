@@ -19,6 +19,35 @@ func TestEmailInvalid(t *testing.T) {
 	assert.Equal(t, len(validator.errors), 1)
 }
 
+func TestEmailWithSpace(t *testing.T) {
+	validator := New()
+	email := "wannisa.com 2531@gmail.com"
+	_ = validator.Email(&email)
+	assert.Equal(t, len(validator.errors), 1)
+}
+
+func TestEmailWithSurroundingText(t *testing.T) {
+	validator := New()
+	email := "name <user@example.com>"
+	_ = validator.Email(&email)
+	assert.Equal(t, len(validator.errors), 1)
+}
+
+func TestEmailWithNewline(t *testing.T) {
+	validator := New()
+	email := "user@example.com\nbcc: victim@example.com"
+	_ = validator.Email(&email)
+	assert.Equal(t, len(validator.errors), 1)
+}
+
+func TestEmailValid(t *testing.T) {
+	validator := New()
+	email := "User@Example.COM"
+	result := validator.Email(&email)
+	assert.Equal(t, len(validator.errors), 0)
+	assert.Equal(t, "user@example.com", *result)
+}
+
 func TestDomainMissing(t *testing.T) {
 
 	validator := New()
