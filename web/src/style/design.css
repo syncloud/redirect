@@ -19,28 +19,34 @@
   --sc-bg: linear-gradient(140deg, #f7fafe 0%, #eaf2fb 55%, #dbe7f4 100%);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --sc-primary: #4d96e6;
-    --sc-primary-dark: #2b7bd6;
-    --sc-primary-soft: rgba(77, 150, 230, 0.16);
-    --sc-ink: #e7edf4;
-    --sc-ink-2: #bcc9d8;
-    --sc-muted: #8b9bb0;
-    --sc-field-bg: #1b2531;
-    --sc-border: #2d3b4d;
-    --sc-surface: #141c27;
-    --sc-surface-2: #1d2735;
-    --sc-danger: #f06a70;
-    --sc-success: #43c073;
-    --sc-shadow-card: 0 24px 60px -20px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
-    --sc-shadow-soft: 0 10px 24px -12px rgba(0, 0, 0, 0.5);
-    --sc-bg: linear-gradient(140deg, #0d141d 0%, #111a25 55%, #0b121a 100%);
-  }
+:root[data-theme="dark"] {
+  --sc-primary: #4d96e6;
+  --sc-primary-dark: #2b7bd6;
+  --sc-primary-soft: rgba(77, 150, 230, 0.16);
+  --sc-ink: #e7edf4;
+  --sc-ink-2: #bcc9d8;
+  --sc-muted: #8b9bb0;
+  --sc-field-bg: #1b2531;
+  --sc-border: #2d3b4d;
+  --sc-surface: #141c27;
+  --sc-surface-2: #1d2735;
+  --sc-danger: #f06a70;
+  --sc-success: #43c073;
+  --sc-shadow-card: 0 24px 60px -20px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --sc-shadow-soft: 0 10px 24px -12px rgba(0, 0, 0, 0.5);
+  --sc-bg: linear-gradient(140deg, #0d141d 0%, #111a25 55%, #0b121a 100%);
+}
+
+html {
+  min-height: 100%;
 }
 
 body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
   background: var(--sc-bg);
+  background-attachment: fixed;
   color: var(--sc-ink);
 }
 
@@ -277,4 +283,42 @@ body {
     height: 48px;
     margin-bottom: 18px;
   }
+}
+
+.sc-auth-message {
+  text-align: center;
+  color: var(--sc-ink-2);
+  line-height: 1.55;
+}
+
+.sc-auth-message .sc-help {
+  color: var(--sc-ink-2);
+}
+
+.sc-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-ink);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sc-icon-btn:hover {
+  background: var(--sc-surface-2);
+  border-color: var(--sc-primary);
+}
+
+.sc-theme-fixed {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
 }

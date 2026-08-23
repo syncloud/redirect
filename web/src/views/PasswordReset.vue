@@ -1,34 +1,26 @@
 <template>
+  <div class="sc-auth">
+    <div class="sc-auth-wordmark">SYNCLOUD</div>
+    <form class="sc-auth-card" data-testid="reset-form">
+      <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
+      <h2 class="sc-auth-title" data-testid="reset-heading">Reset password</h2>
 
-  <form class="form-horizontal" data-testid="reset-form">
-    <h2>Reset password</h2>
-    <br/>
-    <fieldset>
-
-      <div id="errors_placeholder" v-if="error !== ''" >
-        <div class="alert alert-danger">
-          {{ error }}
-        </div>
+      <div id="errors_placeholder" v-if="error !== ''">
+        <div class="sc-alert">{{ error }}</div>
       </div>
 
-      <div class="form-group" v-if="error === ''">
-        <div class="col-4 col-md-4 col-sm-4 col-lg-4">
-          <label class="control-label" for="password">New password</label>
-        </div>
-        <div class="col-8 col-md-8 col-sm-8 col-lg-8">
-          <input id="password" data-testid="reset-password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
-        </div>
+      <div class="sc-field" v-if="error === ''">
+        <label for="password">New password</label>
+        <input id="password" data-testid="reset-password" type="password" required="" v-model="password">
       </div>
 
-      <div class="form-group" v-if="error === ''">
-        <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <button id="reset" data-testid="reset-submit" class="btn btn-primary pull-right" @click="reset">Reset</button>
-        </div>
+      <button id="reset" data-testid="reset-submit" class="sc-btn" v-if="error === ''" @click="reset">Reset password</button>
+
+      <div class="sc-auth-links">
+        <router-link to="/login" data-testid="reset-login">Back to log in</router-link>
       </div>
-
-    </fieldset>
-  </form>
-
+    </form>
+  </div>
 </template>
 
 <script>

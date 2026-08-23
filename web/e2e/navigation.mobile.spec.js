@@ -20,3 +20,18 @@ test('auth pages show no site navigation', async ({ page }) => {
   await expect(page.getByTestId('register-heading')).toBeVisible()
   await expect(page.locator('#navbar')).toHaveCount(0)
 })
+
+test('theme can be switched and is remembered', async ({ page }) => {
+  await page.goto('/login')
+  const toggle = page.getByTestId('theme-toggle')
+  await expect(toggle).toBeVisible()
+
+  const before = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
+  await toggle.click()
+  const after = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
+  expect(after).not.toBe(before)
+
+  await page.reload()
+  const persisted = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
+  expect(persisted).toBe(after)
+})

@@ -1,11 +1,16 @@
 <template>
-
-  <div class="container" style="text-align: center">
-    <h2>Activation</h2>
-    <br/>
-    <span id="activated">
-      {{ message }}
-    </span>
+  <div class="sc-auth">
+    <div class="sc-auth-wordmark">SYNCLOUD</div>
+    <div class="sc-auth-card">
+      <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
+      <h2 class="sc-auth-title">Activation</h2>
+      <p class="sc-auth-message" id="activated" data-testid="activate-message">
+        {{ message }}
+      </p>
+      <p class="sc-auth-note">
+        <router-link to="/login" data-testid="activate-login">Continue to log in</router-link>
+      </p>
+    </div>
   </div>
 </template>
 

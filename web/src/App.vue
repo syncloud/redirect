@@ -1,15 +1,21 @@
 <template>
   <CustomMenu v-if="!bare" v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
         v-bind:email="email"/>
+  <ThemeToggle v-if="bare" class="sc-theme-fixed"/>
   <router-view v-bind:checkUserSession="checkUserSession"/>
 </template>
 <script>
 import axios from 'axios'
 import CustomMenu from './components/CustomMenu.vue'
+import ThemeToggle from './components/ThemeToggle.vue'
 
 const bareRoutes = [
   '/login',
-  '/register'
+  '/register',
+  '/forgot',
+  '/reset',
+  '/check-email',
+  '/activate'
 ]
 
 const publicRoutes = [
@@ -27,7 +33,8 @@ const publicRoutes = [
 export default {
   name: 'app',
   components: {
-    CustomMenu
+    CustomMenu,
+    ThemeToggle
   },
   data () {
     return {
