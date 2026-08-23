@@ -5,7 +5,7 @@
         <img src="/logo.svg" alt="">
         <span>Syncloud</span>
       </div>
-      <h2 class="sc-auth-title">Create your account</h2>
+      <h2 class="sc-auth-title" data-testid="register-heading">Create your account</h2>
       <p class="sc-auth-sub">First month free, then £5 a month. Cancel anytime.</p>
 
       <div id="errors_placeholder">

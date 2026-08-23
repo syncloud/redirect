@@ -33,10 +33,10 @@
             <router-link to="/" >Devices</router-link>
           </li>
           <li id="register" :class="{ invisible: loggedIn === undefined || loggedIn === true, active: activeTab === '/register' }">
-            <router-link to="/register" >Register</router-link>
+            <router-link to="/register" data-testid="nav-register">Register</router-link>
           </li>
           <li id="login" :class="{ invisible: loggedIn === undefined || loggedIn === true, active: activeTab === '/login' }">
-            <router-link to="/login" >Log in</router-link>
+            <router-link to="/login" data-testid="nav-login">Log in</router-link>
           </li>
         </ul>
       </div>

@@ -5,7 +5,7 @@
         <img src="/logo.svg" alt="">
         <span>Syncloud</span>
       </div>
-      <h2 class="sc-auth-title">Log in</h2>
+      <h2 class="sc-auth-title" data-testid="login-heading">Log in</h2>
 
       <div id="errors_placeholder">
         <div class="sc-alert" id="error" :class="{ invisible: !isError }">{{ error }}</div>
