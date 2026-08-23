@@ -89,6 +89,15 @@ func (v *FieldValidator) Domain(domain *string, field string, mainDomain string)
 	}
 }
 
+var gclidPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
+
+func SanitizeGclid(gclid *string) *string {
+	if gclid == nil || !gclidPattern.MatchString(*gclid) {
+		return nil
+	}
+	return gclid
+}
+
 func (v *FieldValidator) Email(email *string) *string {
 	var valid = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 	if email != nil {

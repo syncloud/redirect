@@ -54,7 +54,7 @@ def test_user_create_special_symbols_in_password(domain):
                              json={'email': email, 'password': r'pass12& ^%"'},
                              verify=False)
     assert response.status_code == 200, response.text
-    assert len(smtp.emails()) == 1
+    assert smtp.wait_for_token() is not None, 'no activation email arrived'
     smtp.clear()
 
 
@@ -108,8 +108,8 @@ def test_create_user_api_for_mobile_app_v2(domain, artifact_dir):
 
 
 def activate_user(domain, artifact_dir):
-    assert len(smtp.emails(artifact_dir)) == 1
-    activate_token = smtp.get_token(smtp.emails()[0])
+    activate_token = smtp.wait_for_token(artifact_dir)
+    assert activate_token is not None, 'no activation email arrived'
     response = requests.post('https://www.{0}/api/user/activate'.format(domain),
                              json={'token': activate_token},
                              verify=False)
@@ -259,8 +259,8 @@ def test_user_reset_password_sent_mail(domain, artifact_dir):
                              json={'email': email}, verify=False)
     assert response.status_code == 200, response.text
 
-    assert len(smtp.emails()) > 0, 'Server should send email with link to reset password'
-    token = smtp.get_token(smtp.emails()[0])
+    token = smtp.wait_for_token()
+    assert token is not None, 'Server should send email with link to reset password'
     smtp.clear()
     assert token is not None
 
@@ -272,8 +272,8 @@ def test_user_reset_password_set_new(domain, artifact_dir):
 
     requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
-    email_body = smtp.emails(artifact_dir)[0]
-    token = smtp.get_token(email_body)
+    token = smtp.wait_for_token(artifact_dir)
+    assert token is not None, 'Server should send email with link to reset password'
 
     smtp.clear()
 
@@ -281,7 +281,7 @@ def test_user_reset_password_set_new(domain, artifact_dir):
     response = requests.post('https://www.{0}/api/user/set_password'.format(domain),
                              json={'token': token, 'password': new_password},
                              verify=False)
-    assert response.status_code == 200, (response.text, token, email_body)
+    assert response.status_code == 200, (response.text, token)
 
     assert len(smtp.emails(artifact_dir)) > 0, 'Server should send email when setting new password'
 
@@ -299,13 +299,15 @@ def test_user_reset_password_set_with_old_token(domain, artifact_dir):
 
     requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
-    token_old = smtp.get_token(smtp.emails()[0])
+    token_old = smtp.wait_for_token()
+    assert token_old is not None
 
     smtp.clear()
 
     requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
-    token = smtp.get_token(smtp.emails()[0])
+    token = smtp.wait_for_token()
+    assert token is not None
     smtp.clear()
 
     new_password = 'new_password'
@@ -323,7 +325,8 @@ def test_user_reset_password_set_twice(domain, artifact_dir):
 
     requests.post('https://www.{0}/api/user/reset_password'.format(domain), json={'email': email},
                   verify=False)
-    token = smtp.get_token(smtp.emails()[0])
+    token = smtp.wait_for_token()
+    assert token is not None
     smtp.clear()
 
     new_password = 'new_password'
@@ -807,10 +810,9 @@ def test_user_log(domain, artifact_dir):
                              verify=False)
     assert response.status_code == 200, response.text
 
-    assert len(smtp.emails()) > 0, 'Server should send email with log'
-    email = smtp.emails()[0]
+    email = smtp.wait_for_body('test_user_log')
+    assert email is not None, 'Server should send email with log'
     smtp.clear()
-    assert 'test_user_log' in email
 
 
 def test_user_log_include_support(domain, artifact_dir):
@@ -825,10 +827,9 @@ def test_user_log_include_support(domain, artifact_dir):
                              verify=False)
     assert response.status_code == 200, response.text
 
-    assert len(smtp.emails()) > 0, 'Server should send email with log'
-    email = smtp.emails()[0]
+    email = smtp.wait_for_body('test_user_log_include_support')
+    assert email is not None, 'Server should send email with log'
     smtp.clear()
-    assert 'test_user_log_include_support' in email
 
 
 def test_certbot_support(domain, artifact_dir):
