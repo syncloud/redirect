@@ -90,7 +90,7 @@ func (v *FieldValidator) Domain(domain *string, field string, mainDomain string)
 }
 
 func (v *FieldValidator) Email(email *string) *string {
-	var valid = regexp.MustCompile(`[^@]+@[^@]+\.[^@]+`)
+	var valid = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 	if email != nil {
 		if !valid.MatchString(*email) {
 			v.addFieldError("email", "Not valid email")
