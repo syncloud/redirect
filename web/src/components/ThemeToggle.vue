@@ -4,21 +4,17 @@
     type="button"
     aria-label="Toggle dark mode"
     data-testid="theme-toggle"
-    @click="toggle"
-  >{{ isDark ? '☀' : '☾' }}</button>
+    @click="theme.toggle()"
+  >{{ theme.isDark ? '☀' : '☾' }}</button>
 </template>
 
 <script>
-import { computed } from 'vue'
-import { theme, toggleTheme } from '../theme'
+import { useThemeStore } from '../stores/theme'
 
 export default {
   name: 'ThemeToggle',
   setup () {
-    return {
-      isDark: computed(() => theme.value === 'dark'),
-      toggle: toggleTheme
-    }
+    return { theme: useThemeStore() }
   }
 }
 </script>

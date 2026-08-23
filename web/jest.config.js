@@ -15,6 +15,9 @@ module.exports = {
   testPathIgnorePatterns: [
     '<rootDir>/e2e/'
   ],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(element-plus|@element-plus|@vueuse|@popperjs)/)'
+  ],
   setupFiles: ['./tests/setup.js'],
   setupFilesAfterEnv: ['./tests/setup-after-env.js'],
   testEnvironmentOptions: {

@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import App from '../../src/App.vue'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -15,6 +16,7 @@ test('index to login (not logged in)', async () => {
 
   const wrapper = mount(App, {
     global: {
+      plugins: [createPinia()],
       components: {
         RouterView: { render () { return h('div') } }
       },
@@ -50,6 +52,7 @@ test('index stay (logged in)', async () => {
 
   mount(App, {
     global: {
+      plugins: [createPinia()],
       components: {
         RouterView: { render () { return h('div') } }
       },
@@ -84,6 +87,7 @@ test('login to index (logged in)', async () => {
 
   const wrapper = mount(App, {
     global: {
+      plugins: [createPinia()],
       components: {
         RouterView: { render () { return h('div') } }
       },
