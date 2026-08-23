@@ -60,7 +60,7 @@ func TestRateLimiterEvictsStaleKeys(t *testing.T) {
 }
 
 func TestRateLimiterBurstMatchesObservedBotPattern(t *testing.T) {
-	limiter := NewRateLimiter(anonymousBurstLimit, anonymousBurstWindow)
+	limiter := NewRateLimiter(3, time.Minute)
 	now := time.Now()
 	assert.True(t, limiter.Allow("1.2.3.4", now))
 	assert.True(t, limiter.Allow("1.2.3.4", now.Add(time.Second)))

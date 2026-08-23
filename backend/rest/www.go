@@ -71,13 +71,6 @@ type WwwPayPal interface {
 	Plans() model.PlanResponse
 }
 
-const (
-	anonymousBurstLimit      = 3
-	anonymousBurstWindow     = time.Minute
-	anonymousSustainedLimit  = 8
-	anonymousSustainedWindow = time.Hour
-)
-
 type Www struct {
 	domains        WwwDomains
 	nsChecker      WwwNsChecker
@@ -112,6 +105,8 @@ func NewWww(
 	domain string,
 	authSecretSey []byte,
 	socket string,
+	rateLimitPerMinute int,
+	rateLimitPerHour int,
 	logger *zap.Logger,
 ) *Www {
 	return &Www{
@@ -129,8 +124,8 @@ func NewWww(
 		store:          sessions.NewCookieStore(authSecretSey),
 		socket:         socket,
 		logger:         logger,
-		burstLimit:     NewRateLimiter(anonymousBurstLimit, anonymousBurstWindow),
-		sustainedLimit: NewRateLimiter(anonymousSustainedLimit, anonymousSustainedWindow),
+		burstLimit:     NewRateLimiter(rateLimitPerMinute, time.Minute),
+		sustainedLimit: NewRateLimiter(rateLimitPerHour, time.Hour),
 	}
 }
 

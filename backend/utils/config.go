@@ -104,6 +104,20 @@ func (config *Config) GetWwwSocket() string {
 	return value
 }
 
+func (config *Config) GetWwwRateLimitPerMinute() int {
+	if value, err := config.parser.GetInt64("www", "rate_limit_per_minute"); err == nil {
+		return int(value)
+	}
+	return 3
+}
+
+func (config *Config) GetWwwRateLimitPerHour() int {
+	if value, err := config.parser.GetInt64("www", "rate_limit_per_hour"); err == nil {
+		return int(value)
+	}
+	return 8
+}
+
 func (config *Config) GetApiMetricsAddr() string {
 	if value, err := config.parser.Get("metrics", "api_addr"); err == nil {
 		return value
