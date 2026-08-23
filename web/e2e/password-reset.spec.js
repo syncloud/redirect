@@ -18,7 +18,6 @@ test('user can reset password and log in with the new password', async ({ page }
     await navbar.click()
   }
   await page.locator('#logout').click()
-  await expect(page.locator('#login')).toBeVisible()
   await expect(page.getByTestId('login-form')).toBeVisible()
 
   await page.getByTestId('login-forgot').click()

@@ -1,10 +1,8 @@
 <template>
   <div class="sc-auth">
+    <div class="sc-auth-wordmark">SYNCLOUD</div>
     <form class="sc-auth-card" data-testid="login-form" @submit="login">
-      <div class="sc-auth-brand">
-        <img src="/logo.svg" alt="">
-        <span>Syncloud</span>
-      </div>
+      <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
       <h2 class="sc-auth-title" data-testid="login-heading">Log in</h2>
 
       <div id="errors_placeholder">

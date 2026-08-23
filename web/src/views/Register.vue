@@ -1,10 +1,8 @@
 <template>
   <div class="sc-auth">
+    <div class="sc-auth-wordmark">SYNCLOUD</div>
     <form class="sc-auth-card" data-testid="register-form" @submit="register">
-      <div class="sc-auth-brand">
-        <img src="/logo.svg" alt="">
-        <span>Syncloud</span>
-      </div>
+      <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
       <h2 class="sc-auth-title" data-testid="register-heading">Create your account</h2>
       <p class="sc-auth-sub">First month free, then £5 a month. Cancel anytime.</p>
 

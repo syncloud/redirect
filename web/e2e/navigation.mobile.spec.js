@@ -1,14 +1,22 @@
 const { test, expect } = require('./fixtures')
 
-test('mobile navbar opens and navigates to register and login', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.locator('#navbar')).toBeVisible()
+test('mobile user moves between login and register without a menu', async ({ page }) => {
+  await page.goto('/login')
+  await expect(page.getByTestId('login-heading')).toBeVisible()
 
-  await page.locator('#navbar').click()
-  await page.getByTestId('nav-register').click()
+  await page.getByTestId('login-register').click()
   await expect(page.getByTestId('register-heading')).toBeVisible()
 
-  await page.locator('#navbar').click()
-  await page.getByTestId('nav-login').click()
+  await page.getByTestId('register-login').click()
   await expect(page.getByTestId('login-heading')).toBeVisible()
+})
+
+test('auth pages show no site navigation', async ({ page }) => {
+  await page.goto('/login')
+  await expect(page.getByTestId('login-heading')).toBeVisible()
+  await expect(page.locator('#navbar')).toHaveCount(0)
+
+  await page.goto('/register')
+  await expect(page.getByTestId('register-heading')).toBeVisible()
+  await expect(page.locator('#navbar')).toHaveCount(0)
 })

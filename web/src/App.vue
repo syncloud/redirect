@@ -1,11 +1,16 @@
 <template>
-  <CustomMenu v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
+  <CustomMenu v-if="!bare" v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
         v-bind:email="email"/>
   <router-view v-bind:checkUserSession="checkUserSession"/>
 </template>
 <script>
 import axios from 'axios'
 import CustomMenu from './components/CustomMenu.vue'
+
+const bareRoutes = [
+  '/login',
+  '/register'
+]
 
 const publicRoutes = [
   '/register',
@@ -29,6 +34,11 @@ export default {
       currentPath: '',
       loggedIn: undefined,
       email: ''
+    }
+  },
+  computed: {
+    bare () {
+      return bareRoutes.includes(this.currentPath)
     }
   },
   watch: {
