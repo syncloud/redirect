@@ -1,0 +1,203 @@
+:root {
+  --sc-primary: #2b7bd6;
+  --sc-primary-dark: #1d6ec7;
+  --sc-primary-soft: #e7f1fc;
+  --sc-ink: #1a2a3a;
+  --sc-ink-2: #3c5373;
+  --sc-muted: #5a6b80;
+  --sc-field-bg: #f6f9fd;
+  --sc-border: #d5dde8;
+  --sc-surface: #ffffff;
+  --sc-danger: #d9363e;
+  --sc-success: #2faa5d;
+  --sc-card-radius: 22px;
+  --sc-control-radius: 12px;
+  --sc-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sc-shadow-card: 0 24px 60px -20px rgba(22, 50, 92, 0.18), 0 2px 6px rgba(22, 50, 92, 0.04);
+  --sc-shadow-soft: 0 10px 24px -12px rgba(43, 123, 214, 0.3);
+  --sc-bg: linear-gradient(140deg, #f7fafe 0%, #eaf2fb 55%, #dbe7f4 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sc-primary: #4d96e6;
+    --sc-primary-dark: #2b7bd6;
+    --sc-primary-soft: rgba(77, 150, 230, 0.16);
+    --sc-ink: #e7edf4;
+    --sc-ink-2: #bcc9d8;
+    --sc-muted: #8b9bb0;
+    --sc-field-bg: #1b2531;
+    --sc-border: #2d3b4d;
+    --sc-surface: #141c27;
+    --sc-danger: #f06a70;
+    --sc-success: #43c073;
+    --sc-shadow-card: 0 24px 60px -20px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --sc-shadow-soft: 0 10px 24px -12px rgba(0, 0, 0, 0.5);
+    --sc-bg: linear-gradient(140deg, #0d141d 0%, #111a25 55%, #0b121a 100%);
+  }
+}
+
+.sc-auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--sc-bg);
+  font-family: var(--sc-font);
+  color: var(--sc-ink);
+}
+
+.sc-auth-card {
+  width: 100%;
+  max-width: 430px;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-card-radius);
+  box-shadow: var(--sc-shadow-card);
+  padding: 36px 32px 30px;
+}
+
+.sc-auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 1.4rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--sc-ink);
+}
+
+.sc-auth-brand img {
+  width: 34px;
+  height: 34px;
+}
+
+.sc-auth-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 1.5rem;
+  color: var(--sc-ink);
+}
+
+.sc-auth-sub {
+  text-align: center;
+  color: var(--sc-muted);
+  margin: -1rem 0 1.5rem;
+  font-size: 0.95rem;
+}
+
+.sc-field {
+  margin-bottom: 1.1rem;
+}
+
+.sc-field label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: var(--sc-ink-2);
+}
+
+.sc-auth input[type="text"],
+.sc-auth input[type="email"],
+.sc-auth input[type="password"] {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: var(--sc-control-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-field-bg);
+  color: var(--sc-ink);
+  font-size: 16px;
+  font-family: var(--sc-font);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sc-auth input:focus {
+  outline: none;
+  border-color: var(--sc-primary);
+  box-shadow: 0 0 0 3px var(--sc-primary-soft);
+}
+
+.sc-auth .sc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  padding: 0 26px;
+  border-radius: var(--sc-control-radius);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--sc-font);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: var(--sc-primary);
+  color: #fff;
+  box-shadow: var(--sc-shadow-soft);
+  transition: transform 0.12s ease, background 0.2s ease;
+}
+
+.sc-auth .sc-btn:hover {
+  background: var(--sc-primary-dark);
+}
+
+.sc-auth .sc-btn:active {
+  transform: translateY(1px);
+}
+
+.sc-help {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--sc-danger);
+  min-height: 1.05rem;
+}
+
+.sc-alert {
+  border-radius: var(--sc-control-radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.1rem;
+  font-size: 0.92rem;
+  background: rgba(217, 54, 62, 0.1);
+  border: 1px solid var(--sc-danger);
+  color: var(--sc-danger);
+}
+
+.sc-alert.invisible {
+  display: none;
+}
+
+.sc-auth-links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.3rem;
+  font-size: 0.9rem;
+}
+
+.sc-auth-links a {
+  color: var(--sc-primary);
+  text-decoration: none;
+}
+
+.sc-auth-links a:hover {
+  text-decoration: underline;
+}
+
+.sc-auth-note {
+  text-align: center;
+  color: var(--sc-muted);
+  font-size: 0.88rem;
+  margin-top: 1.4rem;
+  line-height: 1.5;
+}
+
+.sc-auth-note a {
+  color: var(--sc-primary);
+  text-decoration: none;
+}

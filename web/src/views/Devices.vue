@@ -144,11 +144,23 @@
         <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
         <div class="col-8 col-md-8 col-sm-8 col-lg-8">
           <div class="jumbotron" style="margin: 40px; padding: 30px">
-            <h1>No Devices</h1>
-            <p>You do not have any activated devices.<br/>Buy or build your first Syncloud device and activate it.</p>
-            <br/>
+            <h1>No devices yet</h1>
+            <p data-testid="no-devices-steps">
+              Your account is ready. Next, install Syncloud on your own hardware and
+              activate it with this account.
+            </p>
+            <ol data-testid="no-devices-list" style="text-align:left; max-width:32rem; margin:1.5rem auto;">
+              <li>Use a Raspberry Pi, an old PC, or a ready-made device</li>
+              <li>Write the Syncloud image to it and connect it to your router</li>
+              <li>Open the device in your browser and activate it with this account</li>
+            </ol>
             <p style="text-align:center;">
-              <a class="btn btn-primary btn-lg" href="https://www.syncloud.org" role="button">Learn more</a>
+              <a
+                class="btn btn-primary btn-lg"
+                href="https://syncloud.org/setup"
+                data-testid="no-devices-setup"
+                role="button"
+              >How to set up your device</a>
             </p>
           </div>
         </div>

@@ -1,44 +1,35 @@
 <template>
-  <div class="container">
-  <form class="form-horizontal" data-testid="login-form" @submit="login">
-    <h2>Log in</h2>
-    <br/>
-
-    <fieldset>
+  <div class="sc-auth">
+    <form class="sc-auth-card" data-testid="login-form" @submit="login">
+      <div class="sc-auth-brand">
+        <img src="/logo.svg" alt="">
+        <span>Syncloud</span>
+      </div>
+      <h2 class="sc-auth-title">Log in</h2>
 
       <div id="errors_placeholder">
-        <div class="alert alert-danger" id="error" :class="{ visible:  isError, invisible:  !isError}">{{ error }}</div>
+        <div class="sc-alert" id="error" :class="{ invisible: !isError }">{{ error }}</div>
       </div>
 
-      <div id="group-email" class="form-group" :class="{ 'has-error':  isEmailError}">
-        <div class="col-3 col-md-3 col-sm-3 col-lg-3">
-          <label class="control-label" for="email">Email</label>
-        </div>
-        <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="email" data-testid="login-email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
-          <span id="help-email" class="help-block">{{ emailError }}</span>
-        </div>
+      <div id="group-email" class="sc-field">
+        <label for="email">Email</label>
+        <input id="email" data-testid="login-email" type="text" placeholder="user@mail.com" required="" v-model="email">
+        <span id="help-email" class="sc-help">{{ emailError }}</span>
       </div>
 
-      <div id="group-password" class="form-group" :class="{ 'has-error':  isPasswordError}">
-        <div class="col-3 col-md-3 col-sm-3 col-lg-3">
-          <label class="control-label" for="password">Password</label>
-        </div>
-        <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="password" data-testid="login-password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
-          <span id="help-password" class="help-block">{{ passwordError }}</span>
-        </div>
+      <div id="group-password" class="sc-field">
+        <label for="password">Password</label>
+        <input id="password" data-testid="login-password" type="password" required="" v-model="password">
+        <span id="help-password" class="sc-help">{{ passwordError }}</span>
       </div>
 
-      <div class="form-group">
-        <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <router-link to="/forgot" id="forgot" data-testid="login-forgot" class="pull-left" style="padding-top: 10px;">Forgot your password?</router-link>
-          <button id="submit" data-testid="login-submit" class="btn btn-primary pull-right" >Log in</button>
-        </div>
-      </div>
+      <button id="submit" data-testid="login-submit" class="sc-btn">Log in</button>
 
-    </fieldset>
-  </form>
+      <div class="sc-auth-links">
+        <router-link to="/forgot" id="forgot" data-testid="login-forgot">Forgot your password?</router-link>
+        <router-link to="/register" id="register" data-testid="login-register">Create an account</router-link>
+      </div>
+    </form>
   </div>
 </template>
 

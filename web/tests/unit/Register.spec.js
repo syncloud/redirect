@@ -34,6 +34,21 @@ async function register (query) {
   return posted
 }
 
+test('tells the user they will need their own hardware next', async () => {
+  const wrapper = mount(Register, {
+    global: {
+      components: { RouterLink: RouterLinkStub },
+      mocks: { $route: { path: '/register', query: {} }, $router: { push: jest.fn() } }
+    }
+  })
+  const note = wrapper.find('[data-testid="register-next-steps"]')
+  expect(note.exists()).toBe(true)
+  expect(note.text()).toContain('Raspberry Pi')
+  expect(wrapper.find('[data-testid="register-setup-link"]').attributes('href'))
+    .toBe('https://syncloud.org/setup')
+  wrapper.unmount()
+})
+
 test('forwards gclid from the query string', async () => {
   const posted = await register({ gclid: 'Cj0KCQjw-abc_123' })
   expect(posted.email).toBe('user@example.com')
