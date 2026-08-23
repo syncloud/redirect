@@ -141,7 +141,7 @@ func (a *Api) Start() error {
 
 	srv := &http.Server{
 		Handler:      r,
-		WriteTimeout: 5 * time.Second,
+		WriteTimeout: writeTimeout,
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
