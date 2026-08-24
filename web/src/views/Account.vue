@@ -208,7 +208,7 @@
             <h4>Delete this account</h4>
             <div class="card-actions">
               <span>Delete your account all domains and personal data.</span>
-              <el-button type="danger" id="delete" :icon="Delete" @click="accountDelete">Delete</el-button>
+              <el-button type="danger" id="delete" data-testid="account-delete" :icon="Delete" @click="accountDelete">Delete</el-button>
             </div>
           </el-card>
         </el-col>

@@ -294,7 +294,7 @@ func (w *Www) WebNotificationDisable(_ http.ResponseWriter, _ *http.Request, use
 	return "OK", w.users.Save(&user)
 }
 
-func (w *Www) WebUserDelete(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+func (w *Www) WebUserDelete(resp http.ResponseWriter, r *http.Request, user model.User) (interface{}, error) {
 	w.metrics.Request("user_delete")
 	err := w.domains.DeleteAllDomains(user.Id)
 	if err != nil {
@@ -305,6 +305,12 @@ func (w *Www) WebUserDelete(_ http.ResponseWriter, _ *http.Request, user model.U
 	if err != nil {
 		w.logger.Error("unable to delete a user", zap.Error(err))
 		return nil, errors.New("invalid request")
+	}
+
+	http.SetCookie(resp, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
+	err = w.clearSessionEmail(resp, r)
+	if err != nil {
+		w.logger.Error("unable to clear session after deleting a user", zap.Error(err))
 	}
 
 	return "OK", nil
