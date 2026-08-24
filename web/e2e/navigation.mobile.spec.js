@@ -14,11 +14,11 @@ test('mobile user moves between login and register without a menu', async ({ pag
 test('auth pages show no site navigation', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByTestId('login-heading')).toBeVisible()
-  await expect(page.locator('#navbar')).toHaveCount(0)
+  await expect(page.getByTestId('menu-burger')).toHaveCount(0)
 
   await page.goto('/register')
   await expect(page.getByTestId('register-heading')).toBeVisible()
-  await expect(page.locator('#navbar')).toHaveCount(0)
+  await expect(page.getByTestId('menu-burger')).toHaveCount(0)
 })
 
 test('theme can be switched and is remembered', async ({ page }) => {

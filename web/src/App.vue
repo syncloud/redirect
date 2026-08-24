@@ -78,6 +78,5 @@ export default {
 }
 </script>
 <style>
-@import 'bootstrap/dist/css/bootstrap.css';
 @import './style/design.css';
 </style>

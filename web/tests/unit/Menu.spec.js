@@ -8,7 +8,7 @@ test('CustomMenu.vue', async () => {
   const email = 'test@example.com'
   const wrapper = mount(CustomMenu, {
     attachTo: document.body,
-    props: { email },
+    props: { email, loggedIn: true },
     global: {
       plugins: [createPinia()],
       components: {

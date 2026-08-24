@@ -13,7 +13,7 @@ test('user can reset password and log in with the new password', async ({ page }
   const originalPassword = 'password123'
   const { email } = await registerActivateAndLogin(page, 'reset', originalPassword)
 
-  const navbar = page.locator('#navbar')
+  const navbar = page.getByTestId('menu-burger')
   if (await navbar.isVisible()) {
     await navbar.click()
   }

@@ -18,7 +18,6 @@ module.exports = {
   transformIgnorePatterns: [
     '/node_modules/(?!(element-plus|@element-plus|@vueuse|@popperjs)/)'
   ],
-  setupFiles: ['./tests/setup.js'],
   setupFilesAfterEnv: ['./tests/setup-after-env.js'],
   testEnvironmentOptions: {
     customExportConditions: ['node', 'node-addons']
