@@ -6,6 +6,7 @@
 <script>
 import axios from 'axios'
 import CustomMenu from './components/CustomMenu.vue'
+import { startKeyboardTracking } from './keyboard'
 
 const bareRoutes = [
   '/login',
@@ -43,6 +44,14 @@ export default {
   computed: {
     bare () {
       return bareRoutes.includes(this.currentPath)
+    }
+  },
+  mounted () {
+    this.stopKeyboardTracking = startKeyboardTracking()
+  },
+  beforeUnmount () {
+    if (this.stopKeyboardTracking) {
+      this.stopKeyboardTracking()
     }
   },
   watch: {

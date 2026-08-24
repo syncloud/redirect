@@ -56,7 +56,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 16px 40px;
+  padding: 32px 16px calc(40px + var(--kb, 0px));
   font-family: var(--sc-font);
   color: var(--sc-ink);
 }
@@ -218,7 +218,7 @@ body {
 
 @media (max-width: 600px) {
   .sc-auth {
-    padding: 20px 12px 28px;
+    padding: 20px 12px calc(28px + var(--kb, 0px));
   }
 
   .sc-auth-wordmark {
