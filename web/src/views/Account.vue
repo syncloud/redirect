@@ -163,7 +163,7 @@
                 You can activate your device with a personal domain:<br>
               </div>
               <ol>
-                <li>Reactivate from Settings - Activation and select a Premium mode</li>
+                <li>Reactivate the device and choose <strong>Your name</strong> when asked for the domain</li>
                 <li>
                   Copy Name Servers for your
                   <router-link to="/">domain</router-link>
@@ -264,7 +264,6 @@ export default {
   data () {
     return {
       notificationEnabled: Boolean,
-      premiumStatusId: Number,
       subscriptionId: String,
       domainGroups: Array,
       planMonthlyId: String,
