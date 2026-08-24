@@ -267,12 +267,6 @@ body {
   border-color: var(--sc-primary);
 }
 
-.sc-theme-fixed {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 20;
-}
 
 * {
   box-sizing: border-box;
@@ -684,4 +678,60 @@ body {
 
 .sc-prose a {
   color: var(--sc-primary);
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+.sc-page .el-row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.sc-page .el-col {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.sc-page .el-card {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .sc-auth-logo {
+    display: none;
+  }
+
+  .sc-auth-wordmark {
+    margin-bottom: 14px;
+  }
+
+  .sc-auth-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .sc-auth-sub {
+    margin: -0.6rem 0 1.1rem;
+    font-size: 0.9rem;
+  }
+
+  .sc-field {
+    margin-bottom: 0.85rem;
+  }
+
+  .sc-auth-note {
+    margin-top: 1rem;
+    font-size: 0.82rem;
+  }
+
+  .sc-auth-links {
+    margin-top: 1rem;
+  }
+
+  .sc-help {
+    min-height: 0;
+  }
 }

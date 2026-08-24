@@ -15,6 +15,7 @@ function preferredTheme () {
 
 function apply (theme) {
   document.documentElement.setAttribute('data-theme', theme)
+  document.documentElement.classList.toggle('dark', theme === 'dark')
 }
 
 export const useThemeStore = defineStore('theme', {

@@ -1,4 +1,5 @@
 const { test, expect } = require('./fixtures')
+const { registerActivateAndLogin } = require('./helpers/user')
 
 test('mobile user moves between login and register without a menu', async ({ page }) => {
   await page.goto('/login')
@@ -21,8 +22,12 @@ test('auth pages show no site navigation', async ({ page }) => {
   await expect(page.getByTestId('menu-burger')).toHaveCount(0)
 })
 
-test('theme can be switched and is remembered', async ({ page }) => {
+test('auth pages have no theme toggle, the app does', async ({ page }) => {
   await page.goto('/login')
+  await expect(page.getByTestId('login-heading')).toBeVisible()
+  await expect(page.getByTestId('theme-toggle')).toHaveCount(0)
+
+  await registerActivateAndLogin(page, 'theme')
   const toggle = page.getByTestId('theme-toggle')
   await expect(toggle).toBeVisible()
 
@@ -34,4 +39,7 @@ test('theme can be switched and is remembered', async ({ page }) => {
   await page.reload()
   const persisted = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
   expect(persisted).toBe(after)
+
+  const elementPlusDark = await page.evaluate(() => document.documentElement.classList.contains('dark'))
+  expect(elementPlusDark).toBe(after === 'dark')
 })

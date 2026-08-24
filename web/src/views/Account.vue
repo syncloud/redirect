@@ -1,9 +1,9 @@
 <template>
 
-  <div class="container">
+  <div class="sc-page">
     <div id="has_domains">
-      <h2 data-testid="account-title">Account</h2>
-      <br/>
+      <h1 class="sc-h1" data-testid="account-title">Account</h1>
+      <p class="sc-lead">Your subscription and account settings.</p>
       <el-row :gutter="20">
         <el-col :xs="24" :md="12">
           <el-card class="account-card" shadow="never">
