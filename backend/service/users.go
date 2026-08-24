@@ -112,6 +112,10 @@ func (u *Users) Save(user *model.User) error {
 	return u.db.UpdateUser(user)
 }
 
+func (u *Users) GetUser(id int64) (*model.User, error) {
+	return u.db.GetUser(id)
+}
+
 func (u *Users) GetUserByEmail(userEmail string) (*model.User, error) {
 	return u.db.GetUserByEmail(userEmail)
 }

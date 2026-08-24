@@ -1,32 +1,22 @@
 <template>
-  <div class="container">
+  <div class="sc-auth">
+    <div class="sc-auth-wordmark">SYNCLOUD</div>
+    <form class="sc-auth-card" id="form-forgot" data-testid="forgot-form" @submit="reset">
+      <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
+      <h2 class="sc-auth-title" data-testid="forgot-heading">Forgot your password?</h2>
+      <p class="sc-auth-sub">Enter your email address and we will send you a link to reset it.</p>
 
-  <form class="form-horizontal" id="form-forgot" data-testid="forgot-form" @submit="reset">
-    <h2>Forgot your password?</h2>
-    <br/>
-    <fieldset>
-
-      <p>
-        Enter your email address to reset your password. We will send you a letter with a link.
-      </p>
-
-      <div class="form-group">
-        <div class="col-12 col-md-12 col-sm-12 col-lg-12">
-          <label class="control-label" for="email">Email</label>
-        </div>
-        <div class="col-12 col-md-12 col-sm-12 col-lg-12">
-          <input id="email" name="email" data-testid="forgot-email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
-        </div>
+      <div class="sc-field">
+        <label for="email">Email</label>
+        <input id="email" name="email" data-testid="forgot-email" type="text" placeholder="user@mail.com" required="" v-model="email">
       </div>
 
-      <div class="form-group">
-        <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <button id="send" data-testid="forgot-send" class="btn btn-primary pull-right">Submit</button>
-        </div>
-      </div>
+      <button id="send" data-testid="forgot-send" class="sc-btn">Send reset link</button>
 
-    </fieldset>
-  </form>
+      <div class="sc-auth-links">
+        <router-link to="/login" data-testid="forgot-login">Back to log in</router-link>
+      </div>
+    </form>
   </div>
 </template>
 

@@ -1,4 +1,5 @@
 import { mount, RouterLinkStub } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import CustomMenu from '../../src/components/CustomMenu.vue'
 
 test('CustomMenu.vue', async () => {
@@ -7,8 +8,9 @@ test('CustomMenu.vue', async () => {
   const email = 'test@example.com'
   const wrapper = mount(CustomMenu, {
     attachTo: document.body,
-    props: { email },
+    props: { email, loggedIn: true },
     global: {
+      plugins: [createPinia()],
       components: {
         RouterLink: RouterLinkStub
       },

@@ -16,17 +16,17 @@ async function submitRegistration (page, path) {
 test('registration forwards the gclid from the landing url', async ({ page }) => {
   const body = await submitRegistration(page, '/register?gclid=e2e-test-gclid-123')
   expect(body.gclid).toBe('e2e-test-gclid-123')
-  await expect(page.getByRole('heading', { name: 'Complete' })).toBeVisible()
+  await expect(page.getByTestId('check-email-complete')).toBeVisible()
 })
 
 test('registration omits gclid when the url has none', async ({ page }) => {
   const body = await submitRegistration(page, '/register')
   expect(body.gclid).toBeUndefined()
-  await expect(page.getByRole('heading', { name: 'Complete' })).toBeVisible()
+  await expect(page.getByTestId('check-email-complete')).toBeVisible()
 })
 
 test('an unrelated query parameter does not become a gclid', async ({ page }) => {
   const body = await submitRegistration(page, '/register?utm_source=newsletter')
   expect(body.gclid).toBeUndefined()
-  await expect(page.getByRole('heading', { name: 'Complete' })).toBeVisible()
+  await expect(page.getByTestId('check-email-complete')).toBeVisible()
 })

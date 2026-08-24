@@ -1,44 +1,40 @@
 <template>
-  <div class="container">
-  <form class="form-horizontal" @submit="register">
-    <h2>Register</h2>
-    <br/>
-
-    <fieldset>
+  <div class="sc-auth">
+    <div class="sc-auth-wordmark">SYNCLOUD</div>
+    <form class="sc-auth-card" data-testid="register-form" @submit="register">
+      <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
+      <h2 class="sc-auth-title" data-testid="register-heading">Create your account</h2>
+      <p class="sc-auth-sub">First month free, then £5 a month. Cancel anytime.</p>
 
       <div id="errors_placeholder">
-        <div class="alert alert-danger" :class="{ visible:  isError, invisible:  !isError}">{{ error }}</div>
+        <div class="sc-alert" :class="{ invisible: !isError }">{{ error }}</div>
       </div>
 
-      <div id="group-email" class="form-group" :class="{ 'has-error':  isEmailError}">
-        <div class="col-3 col-md-3 col-sm-3 col-lg-3">
-          <label class="control-label" for="register_email">Email</label>
-        </div>
-        <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="register_email" data-testid="register-email" name="email" type="text" placeholder="user@mail.com" class="form-control input-md" required="" v-model="email">
-          <span id="help-email" class="help-block">{{ emailError }}</span>
-        </div>
+      <div id="group-email" class="sc-field">
+        <label for="register_email">Email</label>
+        <input id="register_email" data-testid="register-email" name="email" type="text" placeholder="user@mail.com" required="" v-model="email">
+        <span id="help-email" class="sc-help">{{ emailError }}</span>
       </div>
 
-      <div id="group-password" class="form-group" :class="{ 'has-error':  isPasswordError}">
-        <div class="col-3 col-md-3 col-sm-3 col-lg-3">
-          <label class="control-label" for="register_password">Password</label>
-        </div>
-        <div class="col-9 col-md-9 col-sm-9 col-lg-9">
-          <input id="register_password" data-testid="register-password" name="password" type="password" placeholder="" class="form-control input-md" required="" v-model="password">
-          <span id="help-password" class="help-block">{{ passwordError }}</span>
-        </div>
+      <div id="group-password" class="sc-field">
+        <label for="register_password">Password</label>
+        <input id="register_password" data-testid="register-password" name="password" type="password" required="" v-model="password">
+        <span id="help-password" class="sc-help">{{ passwordError }}</span>
       </div>
 
-      <div class="form-group">
-        <div class="button-block col-12 col-md-12 col-sm-12 col-lg-12" style="padding-right:15px; padding-left:15px;">
-          <router-link to="/privacy" class="pull-left" style="padding-top: 10px;">Read our privacy policy</router-link>
-          <button id="btnregister" data-testid="register-submit" name="btnregister" class="btn btn-primary pull-right">Register</button>
-        </div>
-      </div>
+      <button id="btnregister" data-testid="register-submit" name="btnregister" class="sc-btn">Create account</button>
 
-    </fieldset>
-  </form>
+      <p class="sc-auth-note" data-testid="register-next-steps">
+        Next you will install Syncloud on your own hardware &mdash; a Raspberry Pi, an old PC
+        or a ready-made device &mdash; and activate it with this account.
+        <a href="https://syncloud.org/setup" data-testid="register-setup-link">See how it works</a>
+      </p>
+
+      <div class="sc-auth-links">
+        <router-link to="/login" data-testid="register-login">Already have an account?</router-link>
+        <router-link to="/privacy" data-testid="register-privacy">Privacy policy</router-link>
+      </div>
+    </form>
   </div>
 </template>
 

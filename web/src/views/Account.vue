@@ -1,9 +1,9 @@
 <template>
 
-  <div class="container">
+  <div class="sc-page">
     <div id="has_domains">
-      <h2 data-testid="account-title">Account</h2>
-      <br/>
+      <h1 class="sc-h1" data-testid="account-title">Account</h1>
+      <p class="sc-lead">Your subscription and account settings.</p>
       <el-row :gutter="20">
         <el-col :xs="24" :md="12">
           <el-card class="account-card" shadow="never">
@@ -160,17 +160,15 @@
 
             <div v-if="userLoaded && subscriptionId !== undefined">
               <div style="padding-top: 10px">
-                You can activate your device with a personal domain:<br>
+                Using your own domain name:
               </div>
               <ol>
-                <li>Reactivate from Settings - Activation and select a Premium mode</li>
                 <li>
-                  Copy Name Servers for your
+                  Copy the name servers listed for your
                   <router-link to="/">domain</router-link>
-                  (Under this domain Name Servers list)
                 </li>
                 <li>
-                  Update Name Servers on your domain registrar page (GoDaddy for example)
+                  Set those name servers at your domain registrar
                 </li>
               </ol>
 
@@ -210,7 +208,7 @@
             <h4>Delete this account</h4>
             <div class="card-actions">
               <span>Delete your account all domains and personal data.</span>
-              <el-button type="danger" id="delete" :icon="Delete" @click="accountDelete">Delete</el-button>
+              <el-button type="danger" id="delete" data-testid="account-delete" :icon="Delete" @click="accountDelete">Delete</el-button>
             </div>
           </el-card>
         </el-col>
@@ -264,7 +262,6 @@ export default {
   data () {
     return {
       notificationEnabled: Boolean,
-      premiumStatusId: Number,
       subscriptionId: String,
       domainGroups: Array,
       planMonthlyId: String,

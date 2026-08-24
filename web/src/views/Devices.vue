@@ -1,164 +1,154 @@
 <template>
-  <div class="container">
-    <div id="has_domains" v-bind:class="{ invisible:  !hasDomains}">
-      <h2>Devices</h2>
-      <br/>
-      <div class="usage-panel" data-testid="relay-usage">
-        <div class="usage-row" data-testid="usage-traffic">
-          <div class="usage-head">
-            <span class="usage-name">Device access</span>
-            <span class="usage-value" data-testid="relay-usage-text">{{ relayText }}</span>
+  <div class="sc-page">
+    <div id="has_domains" :class="{ invisible: !hasDomains }">
+      <h1 class="sc-h1">Devices</h1>
+      <p class="sc-lead">Your activated Syncloud devices and how much of your plan you are using.</p>
+
+      <div class="sc-card sc-usage" data-testid="relay-usage">
+        <div class="sc-usage-row" data-testid="usage-traffic">
+          <div class="sc-usage-head">
+            <span class="sc-usage-name">Device access</span>
+            <span class="sc-usage-value" data-testid="relay-usage-text">{{ relayText }}</span>
           </div>
-          <div v-if="relayEnabled" class="progress">
-            <div class="progress-bar" :class="relayBarClass" role="progressbar"
-                 :style="{ width: Math.min(relayPercent, 100) + '%' }"
-                 data-testid="relay-usage-bar">
-              {{ relayPercent }}%
-            </div>
+          <div v-if="relayEnabled" class="sc-meter">
+            <div
+              class="sc-meter-fill"
+              :class="relayBarClass"
+              :style="{ width: Math.min(relayPercent, 100) + '%' }"
+              data-testid="relay-usage-bar"
+            ></div>
           </div>
-          <div v-else class="usage-off" data-testid="usage-traffic-off">
+          <p v-else class="sc-usage-off" data-testid="usage-traffic-off">
             Your device is reached directly, with no traffic limit. Turn the relay on if your
             connection has no public address.
-          </div>
+          </p>
         </div>
 
-        <div class="usage-row" data-testid="usage-email">
-          <div class="usage-head">
-            <span class="usage-name">Email sending</span>
-            <span class="usage-value" data-testid="usage-email-text">{{ emailText }}</span>
+        <div class="sc-usage-row" data-testid="usage-email">
+          <div class="sc-usage-head">
+            <span class="sc-usage-name">Email sending</span>
+            <span class="sc-usage-value" data-testid="usage-email-text">{{ emailText }}</span>
           </div>
-          <div v-if="emailEnabled" class="progress">
-            <div class="progress-bar" :class="emailBarClass" role="progressbar"
-                 :style="{ width: Math.min(emailPercent, 100) + '%' }"
-                 data-testid="usage-email-bar">
-              {{ emailPercent }}%
-            </div>
+          <div v-if="emailEnabled" class="sc-meter">
+            <div
+              class="sc-meter-fill"
+              :class="emailBarClass"
+              :style="{ width: Math.min(emailPercent, 100) + '%' }"
+              data-testid="usage-email-bar"
+            ></div>
           </div>
-          <div v-else class="usage-off" data-testid="usage-email-off">
+          <p v-else class="sc-usage-off" data-testid="usage-email-off">
             Your device sends email directly, with no limit. Turn the relay on if providers
             reject mail from your address.
-          </div>
+          </p>
         </div>
 
-        <router-link v-if="nearLimit" to="/account" data-testid="relay-upgrade" class="usage-upgrade">
-          Approaching your limit — upgrade for more
+        <router-link v-if="nearLimit" to="/account" data-testid="relay-upgrade" class="sc-usage-upgrade">
+          Approaching your limit &mdash; upgrade for more
         </router-link>
       </div>
-      <div v-for="(domains, group_index) in domainGroups" :key="group_index">
-        <div class="row">
-          <div v-for="(domain, index) in domains" :key="index">
-          <div class="col-6 col-md-6 col-sm-6 col-lg-6">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <div class="panel-title">
-                  <h3 style="margin-top: 5px; margin-bottom: 5px">
-                    <span id="name" data-testid="domain-name">
-                      {{ domain.name }}
-                    </span>
-                    <span class="pull-right" :class="{ 'circle_online': domain.online, 'circle_offline': !domain.online }"></span>
-                  </h3>
-                </div>
-              </div>
-              <ul class="list-group">
-                <li class="list-group-item clearfix">
-                  <h3 id="title" data-testid="device-title" class="pull-left" style="margin-top: 5px; margin-bottom: 5px">{{ domain.device_title }}</h3>
 
-                  <button type="button" class="btn btn-default pull-right" id="delete" data-testid="device-delete" @click="domainDeleteConfirm(domain.name)">
-                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Deactivate
-                  </button>
-
-                </li>
-                <li class="list-group-item clearfix">
-                  <span>Domain Address: </span>
-                  <a v-if="domain.has_domain_address" :href="domain.domain_address">{{ domain.domain_address }}</a>
-                  <span v-if="!domain.has_domain_address">Not mapped</span>
-                </li>
-                <li class="list-group-item clearfix">
-                  <span>External Address: </span>
-                  <a id="external_address" v-if="domain.has_external_address" :href="domain.external_address">{{ domain.external_address }}</a>
-                  <span v-if="!domain.has_external_address">Not provided</span>
-                </li>
-                <li class="list-group-item clearfix">
-                  <span>Internal Address: </span>
-                  <a id="internal_address" v-if="domain.has_internal_address" :href="domain.internal_address">{{ domain.internal_address }}</a>
-                  <span v-if="!domain.has_internal_address">Not provided</span>
-                </li>
-                <li class="list-group-item clearfix">
-                  <span>IPv6 Address: </span>
-
-                  <a id="ipv6_address" v-if="domain.has_ipv6_address" :href="domain.ipv6_address">{{ domain.ipv6_address }}</a>
-                  <span id="ipv6_address_not_available" v-if="!domain.has_ipv6_address">Not provided</span>
-                </li>
-                <li class="list-group-item clearfix" v-if="domain.name_servers">
-                  <span>Name Servers: </span>
-                  <span
-                    v-if="domain.ns_check_state === 'matched'"
-                    class="label label-success"
-                    data-testid="ns-status-matched"
-                    style="margin-left: 5px"
-                  >Matched</span>
-                  <span
-                    v-if="domain.ns_check_state === 'mismatched'"
-                    class="label label-danger"
-                    data-testid="ns-status-mismatched"
-                    style="margin-left: 5px"
-                  >Not set at registrar</span>
-                  <span
-                    v-if="domain.ns_check_state === 'checking'"
-                    class="label label-default"
-                    data-testid="ns-status-checking"
-                    style="margin-left: 5px"
-                  >Checking...</span>
-                  <button
-                    type="button"
-                    class="btn btn-default btn-xs pull-right"
-                    data-testid="ns-revalidate"
-                    :disabled="domain.ns_check_state === 'checking'"
-                    @click="checkNameServers(domain)"
-                  >Revalidate</button>
-                  <div v-for="(name_server, name_server_index) in domain.name_servers" :key="name_server_index">
-                    <code>{{ name_server }}</code>
-                  </div>
-                  <div
-                    v-if="domain.ns_check_state === 'mismatched' && domain.ns_check_actual && domain.ns_check_actual.length > 0"
-                    style="padding-top: 5px; font-size: 90%"
-                  >
-                    Currently set at registrar:
-                    <div v-for="(ns, i) in domain.ns_check_actual" :key="i">
-                      <code>{{ ns }}</code>
-                    </div>
-                  </div>
-                </li>
-                <li class="list-group-item clearfix">
-                  <span>Updated: {{ domain.nice_last_update }}</span>
-                </li>
-              </ul>
-            </div>
+      <div class="sc-device-grid">
+        <div v-for="(domain, index) in allDomains" :key="index" class="sc-card sc-device">
+          <div class="sc-device-head">
+            <span id="name" class="sc-device-name" data-testid="domain-name">{{ domain.name }}</span>
+            <span class="sc-dot" :class="domain.online ? 'online' : 'offline'"></span>
           </div>
-        </div>
+
+          <div class="sc-device-title-row">
+            <h3 id="title" class="sc-device-title" data-testid="device-title">{{ domain.device_title }}</h3>
+            <button
+              type="button"
+              class="sc-btn-quiet"
+              id="delete"
+              data-testid="device-delete"
+              @click="domainDeleteConfirm(domain.name)"
+            >Deactivate</button>
+          </div>
+
+          <dl class="sc-kv">
+            <dt>Domain address</dt>
+            <dd>
+              <a v-if="domain.has_domain_address" :href="domain.domain_address">{{ domain.domain_address }}</a>
+              <span v-else class="sc-kv-empty">Not mapped</span>
+            </dd>
+
+            <dt>External address</dt>
+            <dd>
+              <a id="external_address" v-if="domain.has_external_address" :href="domain.external_address">{{ domain.external_address }}</a>
+              <span v-else class="sc-kv-empty">Not provided</span>
+            </dd>
+
+            <dt>Internal address</dt>
+            <dd>
+              <a id="internal_address" v-if="domain.has_internal_address" :href="domain.internal_address">{{ domain.internal_address }}</a>
+              <span v-else class="sc-kv-empty">Not provided</span>
+            </dd>
+
+            <dt>IPv6 address</dt>
+            <dd>
+              <a id="ipv6_address" v-if="domain.has_ipv6_address" :href="domain.ipv6_address">{{ domain.ipv6_address }}</a>
+              <span id="ipv6_address_not_available" v-else class="sc-kv-empty">Not provided</span>
+            </dd>
+
+            <template v-if="domain.name_servers">
+              <dt>Name servers</dt>
+              <dd>
+                <span v-if="domain.ns_check_state === 'matched'" class="sc-tag ok" data-testid="ns-status-matched">Matched</span>
+                <span v-if="domain.ns_check_state === 'mismatched'" class="sc-tag bad" data-testid="ns-status-mismatched">Not set at registrar</span>
+                <span v-if="domain.ns_check_state === 'checking'" class="sc-tag" data-testid="ns-status-checking">Checking...</span>
+                <button
+                  type="button"
+                  class="sc-btn-quiet sc-btn-small"
+                  data-testid="ns-revalidate"
+                  :disabled="domain.ns_check_state === 'checking'"
+                  @click="checkNameServers(domain)"
+                >Revalidate</button>
+                <div v-for="(name_server, i) in domain.name_servers" :key="i">
+                  <code>{{ name_server }}</code>
+                </div>
+                <div
+                  v-if="domain.ns_check_state === 'mismatched' && domain.ns_check_actual && domain.ns_check_actual.length > 0"
+                  class="sc-kv-note"
+                >
+                  Currently set at registrar:
+                  <div v-for="(ns, i) in domain.ns_check_actual" :key="i"><code>{{ ns }}</code></div>
+                </div>
+              </dd>
+            </template>
+
+            <dt>Updated</dt>
+            <dd>{{ domain.nice_last_update }}</dd>
+          </dl>
         </div>
       </div>
     </div>
-    <div id="no_domains" data-testid="no-devices" v-bind:class="{ invisible:  hasDomains}">
-      <div class="row">
-        <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
-        <div class="col-8 col-md-8 col-sm-8 col-lg-8">
-          <div class="jumbotron" style="margin: 40px; padding: 30px">
-            <h1>No Devices</h1>
-            <p>You do not have any activated devices.<br/>Buy or build your first Syncloud device and activate it.</p>
-            <br/>
-            <p style="text-align:center;">
-              <a class="btn btn-primary btn-lg" href="https://www.syncloud.org" role="button">Learn more</a>
-            </p>
-          </div>
-        </div>
-        <div class="col-2 col-md-2 col-sm-2 col-lg-2"><span></span></div>
+
+    <div id="no_domains" data-testid="no-devices" :class="{ invisible: hasDomains }">
+      <div class="sc-card sc-empty">
+        <h1 class="sc-h1">No devices yet</h1>
+        <p class="sc-lead" data-testid="no-devices-steps">
+          Your account is ready. Next, install Syncloud on your own hardware and
+          activate it with this account.
+        </p>
+        <ol data-testid="no-devices-list">
+          <li>Use a Raspberry Pi, an old PC, or a ready-made device</li>
+          <li>Write the Syncloud image to it and connect it to your router</li>
+          <li>Open the device in your browser and activate it with this account</li>
+        </ol>
+        <a class="sc-btn sc-btn-inline" href="https://syncloud.org/setup" data-testid="no-devices-setup">
+          How to set up your device
+        </a>
       </div>
     </div>
   </div>
 
-  <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
-                id="delete_confirmation" @confirm="domainDelete">
+  <CustomDialog
+    :visible="deleteConfirmationVisible"
+    id="delete_confirmation"
+    @cancel="deleteConfirmationVisible = false"
+    @confirm="domainDelete"
+  >
     <template v-slot:title>
       Deactivate {{ domainToDelete }}
     </template>
@@ -242,7 +232,7 @@ export default {
   data () {
     return {
       hasDomains: Boolean,
-      domainGroups: Array,
+      domainGroups: [],
       domainToDelete: '',
       deleteConfirmationVisible: false,
       relayUsed: 0,
@@ -258,6 +248,9 @@ export default {
     this.loadRelayUsage()
   },
   computed: {
+    allDomains () {
+      return Array.isArray(this.domainGroups) ? this.domainGroups.flat() : []
+    },
     relayEnabled () {
       return this.relayOn && this.relayLimit > 0
     },

@@ -104,6 +104,13 @@ func (config *Config) GetWwwSocket() string {
 	return value
 }
 
+func (config *Config) MailSubjectPrefix() string {
+	if value, err := config.parser.Get("mail", "subject_prefix"); err == nil {
+		return value
+	}
+	return ""
+}
+
 func (config *Config) GetWwwRateLimitPerMinute() int {
 	if value, err := config.parser.GetInt64("www", "rate_limit_per_minute"); err == nil {
 		return int(value)

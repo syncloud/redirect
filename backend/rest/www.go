@@ -28,6 +28,7 @@ type WwwNsChecker interface {
 }
 
 type WwwUsers interface {
+	GetUser(id int64) (*model.User, error)
 	GetUserByEmail(userEmail string) (*model.User, error)
 	CreateNewUser(request model.UserCreateRequest) (*model.User, error)
 	Authenticate(email *string, password *string) (*model.User, error)
@@ -221,46 +222,50 @@ func (w *Www) getSession(r *http.Request) (*sessions.Session, error) {
 	return get, err
 }
 
-func (w *Www) setSessionEmail(resp http.ResponseWriter, r *http.Request, email string) error {
+func (w *Www) setSessionUser(resp http.ResponseWriter, r *http.Request, userId int64) error {
 	session, err := w.getSession(r)
 	if err != nil {
 		return err
 	}
-	session.Values["email"] = email
+	session.Values["user_id"] = userId
 	return session.Save(r, resp)
 }
 
-func (w *Www) clearSessionEmail(resp http.ResponseWriter, r *http.Request) error {
+func (w *Www) clearSession(resp http.ResponseWriter, r *http.Request) error {
 	r.Header.Del("Cookie")
 	session, err := w.getSession(r)
 	if err != nil {
 		return err
 	}
+	delete(session.Values, "user_id")
 	delete(session.Values, "email")
 	return session.Save(r, resp)
 }
 
-func (w *Www) getSessionEmail(r *http.Request) (*string, error) {
+func (w *Www) getSessionUserId(r *http.Request) (int64, error) {
 	session, err := w.getSession(r)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	email, found := session.Values["email"]
+	value, found := session.Values["user_id"]
 	if !found {
 		w.logger.Info("no session found")
-		return nil, fmt.Errorf("no session found")
+		return 0, fmt.Errorf("no session found")
 	}
-
-	emailString := email.(string)
-	return &emailString, nil
+	userId, ok := value.(int64)
+	if !ok {
+		w.logger.Info("session is not usable")
+		return 0, fmt.Errorf("no session found")
+	}
+	return userId, nil
 }
 
 func (w *Www) getSessionUser(r *http.Request) (*model.User, error) {
-	email, err := w.getSessionEmail(r)
+	userId, err := w.getSessionUserId(r)
 	if err != nil {
 		return nil, err
 	}
-	user, err := w.users.GetUserByEmail(*email)
+	user, err := w.users.GetUser(userId)
 	if err != nil {
 		w.logger.Error("unable to get a user", zap.Error(err))
 		return nil, errors.New("invalid request")
@@ -294,7 +299,7 @@ func (w *Www) WebNotificationDisable(_ http.ResponseWriter, _ *http.Request, use
 	return "OK", w.users.Save(&user)
 }
 
-func (w *Www) WebUserDelete(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+func (w *Www) WebUserDelete(resp http.ResponseWriter, r *http.Request, user model.User) (interface{}, error) {
 	w.metrics.Request("user_delete")
 	err := w.domains.DeleteAllDomains(user.Id)
 	if err != nil {
@@ -305,6 +310,12 @@ func (w *Www) WebUserDelete(_ http.ResponseWriter, _ *http.Request, user model.U
 	if err != nil {
 		w.logger.Error("unable to delete a user", zap.Error(err))
 		return nil, errors.New("invalid request")
+	}
+
+	http.SetCookie(resp, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
+	err = w.clearSession(resp, r)
+	if err != nil {
+		w.logger.Error("unable to clear session after deleting a user", zap.Error(err))
 	}
 
 	return "OK", nil
@@ -587,19 +598,22 @@ func (w *Www) UserLogin(resp http.ResponseWriter, r *http.Request) (interface{},
 		w.logger.Error("unable to parse user login request", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	_, err = w.users.Authenticate(request.Email, request.Password)
+	user, err := w.users.Authenticate(request.Email, request.Password)
 	if err != nil {
 		return nil, err
 	}
-	err = w.clearSessionEmail(resp, r)
-	err = w.setSessionEmail(resp, r, *request.Email)
+	err = w.clearSession(resp, r)
+	if err != nil {
+		return nil, err
+	}
+	err = w.setSessionUser(resp, r, user.Id)
 	return "User logged in", err
 }
 
 func (w *Www) UserLogout(resp http.ResponseWriter, r *http.Request, _ model.User) (interface{}, error) {
 	w.metrics.Request("user_logout")
 	http.SetCookie(resp, &http.Cookie{Name: "session", Value: "", MaxAge: -1})
-	err := w.clearSessionEmail(resp, r)
+	err := w.clearSession(resp, r)
 	return "User logged out", err
 }
 
