@@ -160,17 +160,15 @@
 
             <div v-if="userLoaded && subscriptionId !== undefined">
               <div style="padding-top: 10px">
-                You can activate your device with a personal domain:<br>
+                Using your own domain name:
               </div>
               <ol>
-                <li>Reactivate the device and choose <strong>Your name</strong> when asked for the domain</li>
                 <li>
-                  Copy Name Servers for your
+                  Copy the name servers listed for your
                   <router-link to="/">domain</router-link>
-                  (Under this domain Name Servers list)
                 </li>
                 <li>
-                  Update Name Servers on your domain registrar page (GoDaddy for example)
+                  Set those name servers at your domain registrar
                 </li>
               </ol>
 

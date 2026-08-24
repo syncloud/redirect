@@ -27,3 +27,18 @@ Url: https://www.{domain}/path?token={token}
 	assert.Equal(t, "Reset password", subject)
 	assert.Equal(t, "Url: https://www.example.com/path?token=123\n", body)
 }
+
+func TestSubjectUnprefixedWhenNotConfigured(t *testing.T) {
+	mail := &Mail{subjectPrefix: ""}
+	assert.Equal(t, "Activate your account", mail.subject("Activate your account"))
+}
+
+func TestSubjectPrefixedWhenConfigured(t *testing.T) {
+	mail := &Mail{subjectPrefix: "[TEST]"}
+	assert.Equal(t, "[TEST] Activate your account", mail.subject("Activate your account"))
+}
+
+func TestSubjectPrefixSeparatedByOneSpace(t *testing.T) {
+	mail := &Mail{subjectPrefix: "[TEST]"}
+	assert.NotContains(t, mail.subject("Reset password"), "  ")
+}
