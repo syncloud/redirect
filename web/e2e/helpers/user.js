@@ -12,7 +12,7 @@ async function registerUser(page, email, password) {
   await page.locator('#register_email').fill(email)
   await page.locator('#register_password').fill(password)
   await page.locator('#btnregister').click()
-  await expect(page.getByRole('heading', { name: 'Complete' })).toBeVisible()
+  await expect(page.getByTestId('check-email-complete')).toBeVisible()
 }
 
 async function activateLatestUser(page) {

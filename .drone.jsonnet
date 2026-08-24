@@ -1,6 +1,6 @@
 local name = "redirect";
 local go = "1.25";
-local node = "18.12.0";
+local node = "20-bookworm-slim";
 local playwright = "v1.59.1-jammy";
 local platform = "26.04.2";
 local docker_image = "syncloud/redirect";

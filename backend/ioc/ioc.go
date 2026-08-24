@@ -141,6 +141,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			smtp,
 			mailPath,
 			config.MailFrom(),
+			config.MailSubjectPrefix(),
 			config.MailDeviceErrorTo(),
 			config.Domain(),
 			logger,

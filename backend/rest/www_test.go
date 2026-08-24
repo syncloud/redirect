@@ -39,6 +39,10 @@ type WwwUsersStub struct {
 	authenticated bool
 }
 
+func (w WwwUsersStub) GetUser(id int64) (*model.User, error) {
+	return &model.User{Id: id, Email: "test@example.com"}, nil
+}
+
 func (w WwwUsersStub) GetUserByEmail(_ string) (*model.User, error) {
 	panic("implement me")
 }
@@ -49,7 +53,7 @@ func (w WwwUsersStub) CreateNewUser(_ model.UserCreateRequest) (*model.User, err
 
 func (w WwwUsersStub) Authenticate(email *string, _ *string) (*model.User, error) {
 	if w.authenticated {
-		return &model.User{Email: *email}, nil
+		return &model.User{Id: 1, Email: *email}, nil
 	} else {
 		return nil, fmt.Errorf("not authenticated")
 	}
@@ -327,3 +331,62 @@ type WwwMailRelayStub struct{}
 func (s *WwwMailRelayStub) UsedMessages(_ int64) (int64, error) { return 0, nil }
 func (s *WwwMailRelayStub) LimitMessages(_ int64) int64         { return 0 }
 func (s *WwwMailRelayStub) Enabled(_ int64) (bool, error)       { return false, nil }
+
+func sessionWww() *Www {
+	return NewWww(
+		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
+		&WwwUsersStub{authenticated: true},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		&WwwStripeStub{},
+		&WwwRelayStub{},
+		&WwwMailRelayStub{},
+		&WwwPayPalStub{},
+		metrics.New(),
+		"example.com",
+		[]byte("secret_key"),
+		"",
+		1000,
+		10000,
+		log.Default(),
+	)
+}
+
+func TestSessionCarryingOnlyAnEmailIsRejected(t *testing.T) {
+	www := sessionWww()
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp := httptest.NewRecorder()
+	session, err := www.getSession(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	session.Values["email"] = "test@example.com"
+	if err := session.Save(req, resp); err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Cookie", resp.Header().Get("Set-Cookie"))
+
+	_, err = www.getSessionUser(req)
+	assert.Error(t, err)
+}
+
+func TestSessionCarryingAUserIdIsAccepted(t *testing.T) {
+	www := sessionWww()
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp := httptest.NewRecorder()
+	if err := www.setSessionUser(resp, req, int64(42)); err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Cookie", resp.Header().Get("Set-Cookie"))
+
+	user, err := www.getSessionUser(req)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(42), user.Id)
+}

@@ -26,6 +26,7 @@ type Mail struct {
 	relayLimitWarningPath       string
 	mailRelayLimitWarningPath   string
 	from                        string
+	subjectPrefix               string
 	deviceErrorTo               string
 	mainDomain                  string
 	logger                      *zap.Logger
@@ -34,6 +35,7 @@ type Mail struct {
 func NewMail(smtp *smtp.Smtp,
 	mailPath string,
 	from string,
+	subjectPrefix string,
 	deviceErrorTo string,
 	mainDomain string,
 	logger *zap.Logger,
@@ -41,6 +43,7 @@ func NewMail(smtp *smtp.Smtp,
 
 	return &Mail{
 		smtp:                        smtp,
+		subjectPrefix:               subjectPrefix,
 		resetPasswordTemplatePath:   mailPath + "/reset_password.txt",
 		setPasswordTemplatePath:     mailPath + "/set_password.txt",
 		activateTemplatePath:        mailPath + "/activate.txt",
@@ -145,6 +148,13 @@ func (m *Mail) SendAccountRemoved(to string) error {
 	}, to, m.deviceErrorTo)
 }
 
+func (m *Mail) subject(subject string) string {
+	if m.subjectPrefix == "" {
+		return subject
+	}
+	return "[" + m.subjectPrefix + "] " + subject
+}
+
 func (m *Mail) SendNotification(template string, subs map[string]string, to ...string) error {
 	m.logger.Info("send email notification", zap.String("template", template), zap.Strings("to", to))
 	buf, err := os.ReadFile(template)
@@ -157,7 +167,7 @@ func (m *Mail) SendNotification(template string, subs map[string]string, to ...s
 		m.logger.Error("unable to parse email template", zap.String("template", template), zap.Error(err))
 		return err
 	}
-	err = m.smtp.Send(m.from, "text/plain", body, subject, to...)
+	err = m.smtp.Send(m.from, "text/plain", body, m.subject(subject), to...)
 	if err != nil {
 		m.logger.Error("unable to send email", zap.Strings("to", to), zap.Error(err))
 		return err
@@ -175,7 +185,7 @@ func (m *Mail) SendLogs(to string, data string, includeSupport bool) error {
 	if includeSupport {
 		recipients = append(recipients, m.deviceErrorTo)
 	}
-	return m.smtp.Send(m.from, "text/plain", body, "Device error report", recipients...)
+	return m.smtp.Send(m.from, "text/plain", body, m.subject("Device error report"), recipients...)
 }
 
 func ParseBody(template string, substitution map[string]string) (string, string, error) {

@@ -9,7 +9,9 @@ test('user can register, activate, and log in', async ({ page }) => {
   await activateLatestUser(page)
   await loginUser(page, email, password)
 
-  await expect(page.locator('#no_domains')).toContainText('You do not have any activated devices')
+  await expect(page.getByTestId('no-devices')).toBeVisible()
+  await expect(page.getByTestId('no-devices-steps')).toContainText('install Syncloud on your own hardware')
+  await expect(page.getByTestId('no-devices-setup')).toHaveAttribute('href', 'https://syncloud.org/setup')
 })
 
 test('invalid email shows login validation error', async ({ page }) => {

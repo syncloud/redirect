@@ -1,12 +1,9 @@
 <template>
+  <div class="sc-page">
+    <div class="sc-card sc-prose">
+      <h1 class="sc-h1">Privacy Policy</h1>
+<div>
 
-  <div class="container">
-    <h2>Privacy Policy</h2>
-    <br/>
-
-    <div>
-      <div class="row">
-        <div class="col-12 col-md-12 col-sm-12 col-lg-12">
           This policy specifies what Syncloud does with your personal data.
           <h3>What personal information we collect and store?</h3>
           Syncloud collects and stores you account related information:
@@ -15,7 +12,7 @@
           <li>Email</li>
           <li>Account-related operations, like login/logoff</li>
           </ul>
-          <br/>
+
           Also for each activated Syncloud device we store and track the following information specific to device:
           <ul>
           <li>Domain name associated with the device</li>
@@ -25,7 +22,7 @@
           <li>External IP Address associated with your device (if external access mode used)</li>
           <li>Flag indicating if device is live or not</li>
           </ul>
-          <br/>
+
           We do not collect/analyse traffic between clients used by you and your Syncloud device, neither we have technical possibility to do this.
           <h3>When we collect information?</h3>
           Account related information is collected at the registration time. Device related information is collected at the moment of device registration with Syncloud account. Additionally addresses and activity flag are sent by Syncloud device software periodically.
@@ -37,10 +34,8 @@
           Syncloud does not share your personal information with any third party partners. This does not include hosting partners (like Amazon) and other partners who assist us in providing the service, as long as they agree to keep this information confidential.
           <h3>Third party apps disclosure</h3>
           Syncloud is a platform for hosting third party server applications on your Syncloud device. Personal data that you provide to such third party applications is not used by Syncloud. Personal data entered into third party application is subject for third party product privacy policy. Syncloud checks that privacy policies used by third party applications are following high privacy standards.
-          <br/>
-          <br/>
-        </div>
-      </div>
+
+  </div>
     </div>
   </div>
 </template>
