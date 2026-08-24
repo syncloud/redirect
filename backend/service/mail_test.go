@@ -34,11 +34,11 @@ func TestSubjectUnprefixedWhenNotConfigured(t *testing.T) {
 }
 
 func TestSubjectPrefixedWhenConfigured(t *testing.T) {
-	mail := &Mail{subjectPrefix: "[TEST]"}
+	mail := &Mail{subjectPrefix: "TEST"}
 	assert.Equal(t, "[TEST] Activate your account", mail.subject("Activate your account"))
 }
 
 func TestSubjectPrefixSeparatedByOneSpace(t *testing.T) {
-	mail := &Mail{subjectPrefix: "[TEST]"}
+	mail := &Mail{subjectPrefix: "TEST"}
 	assert.NotContains(t, mail.subject("Reset password"), "  ")
 }

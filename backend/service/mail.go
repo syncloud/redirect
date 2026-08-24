@@ -152,7 +152,7 @@ func (m *Mail) subject(subject string) string {
 	if m.subjectPrefix == "" {
 		return subject
 	}
-	return m.subjectPrefix + " " + subject
+	return "[" + m.subjectPrefix + "] " + subject
 }
 
 func (m *Mail) SendNotification(template string, subs map[string]string, to ...string) error {
