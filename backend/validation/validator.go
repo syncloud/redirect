@@ -89,13 +89,24 @@ func (v *FieldValidator) Domain(domain *string, field string, mainDomain string)
 	}
 }
 
-var gclidPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
+const GclidMaxLength = 128
 
-func SanitizeGclid(gclid *string) *string {
-	if gclid == nil || !gclidPattern.MatchString(*gclid) {
-		return nil
+var gclidPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+func SanitizeGclid(gclid *string) (*string, string) {
+	if gclid == nil {
+		return nil, ""
 	}
-	return gclid
+	if *gclid == "" {
+		return nil, "empty"
+	}
+	if len(*gclid) > GclidMaxLength {
+		return nil, fmt.Sprintf("longer than %d characters: %d", GclidMaxLength, len(*gclid))
+	}
+	if !gclidPattern.MatchString(*gclid) {
+		return nil, "contains characters outside A-Za-z0-9_-"
+	}
+	return gclid, ""
 }
 
 func (v *FieldValidator) Email(email *string) *string {

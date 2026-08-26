@@ -3,6 +3,7 @@ package validation
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -49,34 +50,46 @@ func TestEmailValid(t *testing.T) {
 	assert.Equal(t, "user@example.com", *result)
 }
 
+func sanitized(t *testing.T, gclid *string) *string {
+	value, reason := SanitizeGclid(gclid)
+	assert.Equal(t, "", reason)
+	return value
+}
+
+func rejected(t *testing.T, gclid string) string {
+	value, reason := SanitizeGclid(&gclid)
+	assert.Nil(t, value)
+	assert.NotEqual(t, "", reason, "a rejection must explain itself or it cannot be logged")
+	return reason
+}
+
 func TestSanitizeGclidNil(t *testing.T) {
-	assert.Nil(t, SanitizeGclid(nil))
+	assert.Nil(t, sanitized(t, nil))
 }
 
 func TestSanitizeGclidValid(t *testing.T) {
 	gclid := "Cj0KCQjw_-GFBhDeARIsACH_kdY-abc_123"
-	assert.Equal(t, gclid, *SanitizeGclid(&gclid))
+	assert.Equal(t, gclid, *sanitized(t, &gclid))
 }
 
 func TestSanitizeGclidEmpty(t *testing.T) {
-	gclid := ""
-	assert.Nil(t, SanitizeGclid(&gclid))
+	assert.Equal(t, "empty", rejected(t, ""))
 }
 
 func TestSanitizeGclidTooLong(t *testing.T) {
-	gclid := strings.Repeat("a", 129)
-	assert.Nil(t, SanitizeGclid(&gclid))
+	reason := rejected(t, strings.Repeat("a", GclidMaxLength+1))
+	assert.Contains(t, reason, "longer than")
+	assert.Contains(t, reason, strconv.Itoa(GclidMaxLength+1))
 }
 
 func TestSanitizeGclidMaxLength(t *testing.T) {
-	gclid := strings.Repeat("a", 128)
-	assert.Equal(t, gclid, *SanitizeGclid(&gclid))
+	gclid := strings.Repeat("a", GclidMaxLength)
+	assert.Equal(t, gclid, *sanitized(t, &gclid))
 }
 
 func TestSanitizeGclidRejectsInjection(t *testing.T) {
 	for _, bad := range []string{"abc'; drop table user;--", "<script>x</script>", "abc def", "abc\n", "../../etc"} {
-		value := bad
-		assert.Nil(t, SanitizeGclid(&value), bad)
+		assert.Contains(t, rejected(t, bad), "characters outside", bad)
 	}
 }
 

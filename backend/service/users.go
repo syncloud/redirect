@@ -148,6 +148,10 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 	}
 
 	updateToken := utils.Uuid()
+	gclid, gclidRejected := validation.SanitizeGclid(request.Gclid)
+	if gclidRejected != "" {
+		log.Printf("gclid rejected, ad attribution dropped: %s", gclidRejected)
+	}
 	user := &model.User{
 		Email:               *email,
 		PasswordHash:        Hash(*password),
@@ -155,7 +159,7 @@ func (u *Users) CreateNewUser(request model.UserCreateRequest) (*model.User, err
 		UpdateToken:         updateToken,
 		Timestamp:           time.Now(),
 		NotificationEnabled: true,
-		Gclid:               validation.SanitizeGclid(request.Gclid),
+		Gclid:               gclid,
 	}
 
 	userId, err := u.db.InsertUser(user)
