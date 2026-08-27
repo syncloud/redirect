@@ -5,7 +5,6 @@ import (
 	"github.com/plutov/paypal/v4"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
-	"os"
 )
 
 type PayPal struct {
@@ -23,8 +22,6 @@ func New(clientID, secretID, url, planMonthlyId, planAnnualId, planMaxMonthlyId,
 	if err != nil {
 		return nil, err
 	}
-	c.SetLog(os.Stdout)
-
 	return &PayPal{
 		client:           c,
 		clientId:         clientID,
