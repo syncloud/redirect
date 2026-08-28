@@ -152,6 +152,7 @@ func (w *Www) Limited(next func(http.ResponseWriter, *http.Request)) func(http.R
 func (w *Www) Start() error {
 
 	r := mux.NewRouter()
+	r.HandleFunc("/download/{board}", w.Limited(w.Download)).Methods("GET")
 	r.HandleFunc("/user/reset_password", w.Limited(Handle(w.WebUserPasswordReset))).Methods("POST")
 	r.HandleFunc("/user/set_password", Handle(w.UserSetPassword)).Methods("POST")
 	r.HandleFunc("/user/activate", Handle(w.WebUserActivate)).Methods("POST")

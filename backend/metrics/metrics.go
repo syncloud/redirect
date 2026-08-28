@@ -6,6 +6,7 @@ type Metrics struct {
 	requests  *prometheus.CounterVec
 	dnsClient *prometheus.CounterVec
 	cleaner   *prometheus.CounterVec
+	download  *prometheus.CounterVec
 	rogue     *RogueDevices
 }
 
@@ -32,6 +33,13 @@ func New() *Metrics {
 			},
 			[]string{"result"},
 		),
+		download: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "redirect_download_total",
+				Help: "Device image download links followed, by board and whether the visitor arrived from an ad.",
+			},
+			[]string{"board", "source"},
+		),
 		rogue: NewRogueDevices(),
 	}
 }
@@ -48,6 +56,10 @@ func (m *Metrics) Cleaner(result string) {
 	m.cleaner.WithLabelValues(result).Inc()
 }
 
+func (m *Metrics) Download(board, source string) {
+	m.download.WithLabelValues(board, source).Inc()
+}
+
 func (m *Metrics) Rogue(platformVersion, token string) {
 	m.rogue.Mark(platformVersion, token)
 }
@@ -56,6 +68,7 @@ func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	m.requests.Describe(ch)
 	m.dnsClient.Describe(ch)
 	m.cleaner.Describe(ch)
+	m.download.Describe(ch)
 	m.rogue.Describe(ch)
 }
 
@@ -63,5 +76,6 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	m.requests.Collect(ch)
 	m.dnsClient.Collect(ch)
 	m.cleaner.Collect(ch)
+	m.download.Collect(ch)
 	m.rogue.Collect(ch)
 }
