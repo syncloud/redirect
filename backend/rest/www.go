@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/product"
 	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
 	"net"
@@ -84,6 +85,7 @@ type Www struct {
 	relay          WwwRelay
 	mailRelay      WwwMailRelay
 	paypal         WwwPayPal
+	orders         WwwOrders
 	metrics        *metrics.Metrics
 	domain         string
 	store          *sessions.CookieStore
@@ -101,6 +103,7 @@ func NewWww(
 	actions WwwActions,
 	mail WwwMail,
 	stripe WwwStripe,
+	orders WwwOrders,
 	relay WwwRelay,
 	mailRelay WwwMailRelay,
 	paypal WwwPayPal,
@@ -119,6 +122,7 @@ func NewWww(
 		actions:        actions,
 		mail:           mail,
 		stripe:         stripe,
+		orders:         orders,
 		relay:          relay,
 		mailRelay:      mailRelay,
 		paypal:         paypal,
@@ -172,6 +176,9 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan/subscribe/crypto", w.Secured(HandleUser(w.SubscribeCrypto))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe/checkout", w.Secured(HandleUser(w.StripeCheckout))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe", w.Secured(HandleUser(w.SubscribeStripe))).Methods("POST")
+	r.HandleFunc("/device/catalog", w.Secured(HandleUser(w.DeviceCatalog))).Methods("GET")
+	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrder))).Methods("POST")
+	r.HandleFunc("/device/order/complete", w.Secured(HandleUser(w.DeviceOrderComplete))).Methods("POST")
 	r.HandleFunc("/domain", w.Secured(HandleUser(w.DomainDelete))).Methods("DELETE")
 	r.HandleFunc("/domain/check_nameservers", w.Secured(HandleUser(w.WebDomainCheckNameServers))).Methods("GET")
 	r.NotFoundHandler = http.HandlerFunc(w.notFoundHandler)
@@ -623,4 +630,60 @@ func (w *Www) notFoundHandler(resp http.ResponseWriter, r *http.Request) {
 		w.logger.Info("404", zap.Int64("counter", w.count404))
 	}
 	http.NotFound(resp, r)
+}
+
+func (w *Www) DeviceCatalog(_ http.ResponseWriter, _ *http.Request, _ model.User) (interface{}, error) {
+	w.metrics.Request("device_catalog")
+	return w.orders.Catalog(), nil
+}
+
+func (w *Www) DeviceOrder(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("device_order")
+	request := model.DeviceOrderRequest{}
+	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+		w.logger.Error("unable to parse", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+
+	order := &product.Order{
+		UserId:   user.Id,
+		Email:    user.Email,
+		Device:   request.Device,
+		Option:   request.Option,
+		Name:     request.Name,
+		Address:  request.Address,
+		City:     request.City,
+		Postcode: request.Postcode,
+		Country:  request.Country,
+	}
+	reference, err := w.orders.Start(order, request.Provider)
+	if err != nil {
+		w.logger.Error("unable to start the order", zap.Error(err))
+		return nil, err
+	}
+	return model.DeviceOrderResponse{
+		Reference:         reference,
+		ProviderReference: order.ProviderReference,
+		Total:             order.Total,
+	}, nil
+}
+
+func (w *Www) DeviceOrderComplete(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("device_order_complete")
+	request := model.DeviceOrderCompleteRequest{}
+	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+		w.logger.Error("unable to parse", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	if err := w.orders.Complete(user.Id, request.Reference); err != nil {
+		w.logger.Error("unable to complete the order", zap.Error(err))
+		return nil, err
+	}
+	return "ordered", nil
+}
+
+type WwwOrders interface {
+	Catalog() []product.Device
+	Start(order *product.Order, provider string) (string, error)
+	Complete(userId int64, reference string) error
 }

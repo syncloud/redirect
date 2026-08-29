@@ -30,6 +30,10 @@ func NewOrders(catalog *Catalog, checkouts *Checkouts, store Store, mail Mail, l
 	return &Orders{catalog: catalog, checkouts: checkouts, store: store, mail: mail, logger: logger}
 }
 
+func (o *Orders) Catalog() []Device {
+	return o.catalog.Devices()
+}
+
 func (o *Orders) Start(order *Order, provider string) (string, error) {
 	if missing := order.Missing(); len(missing) > 0 {
 		return "", fmt.Errorf("the address needs %v", missing)

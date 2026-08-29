@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/product"
 	"go.uber.org/zap"
 	"log"
 	"strings"
@@ -954,4 +955,49 @@ where d.id is null
 and u.active = true
 and timestampdiff(day, u.timestamp, now()) > 60
 `)
+}
+
+func (m *MySql) InsertOrder(order *product.Order) (int64, error) {
+	res, err := m.db.Exec(
+		"INSERT into device_order ("+
+			"user_id, device, `option`, total, provider, reference, "+
+			"name, address, city, postcode, country"+
+			") values (?,?,?,?,?,?,?,?,?,?,?)",
+		order.UserId, order.Device, order.Option, order.Total, order.Provider, order.Reference,
+		order.Name, order.Address, order.City, order.Postcode, order.Country)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (m *MySql) SetOrderProviderReference(id int64, providerReference string) error {
+	_, err := m.db.Exec(
+		"UPDATE device_order set provider_reference = ? where id = ?", providerReference, id)
+	return err
+}
+
+func (m *MySql) GetOrderByReference(reference string) (*product.Order, error) {
+	order := &product.Order{}
+	var providerReference sql.NullString
+	err := m.db.QueryRow(
+		"SELECT id, user_id, device, `option`, total, provider, reference, provider_reference, "+
+			"name, address, city, postcode, country, paid "+
+			"from device_order where reference = ?", reference).
+		Scan(&order.Id, &order.UserId, &order.Device, &order.Option, &order.Total,
+			&order.Provider, &order.Reference, &providerReference,
+			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	order.ProviderReference = providerReference.String
+	return order, nil
+}
+
+func (m *MySql) MarkOrderPaid(id int64) error {
+	_, err := m.db.Exec("UPDATE device_order set paid = 1 where id = ?", id)
+	return err
 }
