@@ -2,7 +2,7 @@ package product
 
 type Checkout interface {
 	Start(order *Order, description string) (string, error)
-	Paid(reference string) (bool, int, error)
+	Paid(providerReference string) (bool, int, string, error)
 }
 
 type Checkouts struct {

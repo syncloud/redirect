@@ -12,16 +12,21 @@ type recordingCheckout struct {
 	description string
 	paid        bool
 	amount      int
+	currency    string
 }
 
 func (r *recordingCheckout) Start(order *Order, description string) (string, error) {
 	r.started = order
 	r.description = description
-	return "REF1", nil
+	return "PROVIDER1", nil
 }
 
-func (r *recordingCheckout) Paid(string) (bool, int, error) {
-	return r.paid, r.amount, nil
+func (r *recordingCheckout) Paid(string) (bool, int, string, error) {
+	currency := r.currency
+	if currency == "" {
+		currency = Currency
+	}
+	return r.paid, r.amount, currency, nil
 }
 
 type recordingMail struct{ sent *Order }
@@ -33,17 +38,32 @@ func (m *recordingMail) SendDeviceOrder(order *Order, device, option string) err
 
 type memoryStore struct {
 	orders map[string]*Order
+	byId   map[int64]*Order
 	paid   []int64
 }
 
 func newStore() *memoryStore {
-	return &memoryStore{orders: map[string]*Order{}}
+	return &memoryStore{orders: map[string]*Order{}, byId: map[int64]*Order{}}
 }
 
 func (s *memoryStore) InsertOrder(order *Order) (int64, error) {
-	order.Id = int64(len(s.orders) + 1)
-	s.orders[order.Reference] = order
-	return order.Id, nil
+	stored := *order
+	stored.Id = int64(len(s.orders) + 1)
+	s.orders[stored.Reference] = &stored
+	s.byId[stored.Id] = &stored
+	return stored.Id, nil
+}
+
+func (s *memoryStore) SetOrderProviderReference(id int64, providerReference string) error {
+	s.byId[id].ProviderReference = providerReference
+	return nil
+}
+
+func (s *memoryStore) only() *Order {
+	for _, order := range s.orders {
+		return order
+	}
+	return nil
 }
 
 func (s *memoryStore) GetOrderByReference(reference string) (*Order, error) {
@@ -68,13 +88,14 @@ func addressed() *Order {
 
 const paidTotal = 22900 + 8000 + 1500
 
-func started(t *testing.T, checkout *recordingCheckout, store *memoryStore, mail *recordingMail) *Orders {
+func started(t *testing.T, checkout *recordingCheckout, store *memoryStore, mail *recordingMail) (*Orders, string) {
 	t.Helper()
 	service := orders(checkout, store, mail)
-	if _, err := service.Start(addressed(), "paypal"); err != nil {
+	reference, err := service.Start(addressed(), "paypal")
+	if err != nil {
 		t.Fatal(err)
 	}
-	return service
+	return service, reference
 }
 
 func TestStartPricesFromTheCatalogNotTheRequest(t *testing.T) {
@@ -88,8 +109,40 @@ func TestStartPricesFromTheCatalogNotTheRequest(t *testing.T) {
 	if checkout.started.Total != paidTotal {
 		t.Fatalf("charged %d", checkout.started.Total)
 	}
-	if store.orders["REF1"].Total != paidTotal {
-		t.Fatalf("stored %d", store.orders["REF1"].Total)
+	if store.only().Total != paidTotal {
+		t.Fatalf("stored %d", store.only().Total)
+	}
+}
+
+func TestStartStoresTheOrderBeforeTakingMoney(t *testing.T) {
+	checkout := &recordingCheckout{}
+	store, mail := newStore(), &recordingMail{}
+
+	reference, err := orders(checkout, store, mail).Start(addressed(), "stripe")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if checkout.started.Reference != reference {
+		t.Fatal("the payment was opened without the order reference")
+	}
+	if store.only().ProviderReference != "PROVIDER1" {
+		t.Fatalf("provider reference not recorded: %+v", store.only())
+	}
+}
+
+func TestStartHandsTheProviderOurOwnReference(t *testing.T) {
+	checkout := &recordingCheckout{}
+	store := newStore()
+
+	reference, err := orders(checkout, store, &recordingMail{}).Start(addressed(), "paypal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reference == "PROVIDER1" {
+		t.Fatal("the caller must get our reference, not the provider's")
+	}
+	if len(reference) != 36 {
+		t.Fatalf("want a uuid, got %q", reference)
 	}
 }
 
@@ -105,13 +158,14 @@ func TestCompleteTellsSupportOncePaid(t *testing.T) {
 	checkout := &recordingCheckout{paid: true, amount: paidTotal}
 	store, mail := newStore(), &recordingMail{}
 
-	if err := started(t, checkout, store, mail).Complete(7, "REF1"); err != nil {
+	service, reference := started(t, checkout, store, mail)
+	if err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
 	if mail.sent == nil {
 		t.Fatal("support was not told")
 	}
-	if mail.sent.Reference != "REF1" || mail.sent.Provider != "paypal" {
+	if mail.sent.Reference != reference || mail.sent.Provider != "paypal" {
 		t.Fatalf("order recorded as %+v", mail.sent)
 	}
 	if len(store.paid) != 1 {
@@ -122,9 +176,9 @@ func TestCompleteTellsSupportOncePaid(t *testing.T) {
 func TestCompleteReadsTheOrderFromTheDatabaseNotTheCaller(t *testing.T) {
 	checkout := &recordingCheckout{paid: true, amount: paidTotal}
 	store, mail := newStore(), &recordingMail{}
-	service := started(t, checkout, store, mail)
+	service, reference := started(t, checkout, store, mail)
 
-	if err := service.Complete(7, "REF1"); err != nil {
+	if err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
 	if mail.sent.Device != "h4" || mail.sent.Option != "1t" || mail.sent.Total != paidTotal {
@@ -136,7 +190,8 @@ func TestCompleteRefusesAnotherAccountsOrder(t *testing.T) {
 	checkout := &recordingCheckout{paid: true, amount: paidTotal}
 	store, mail := newStore(), &recordingMail{}
 
-	err := started(t, checkout, store, mail).Complete(8, "REF1")
+	service, reference := started(t, checkout, store, mail)
+	err := service.Complete(8, reference)
 	if !errors.Is(err, ErrNoOrder) {
 		t.Fatalf("want ErrNoOrder got %v", err)
 	}
@@ -156,7 +211,8 @@ func TestCompleteRefusesWhenNothingWasPaid(t *testing.T) {
 	checkout := &recordingCheckout{paid: false}
 	store, mail := newStore(), &recordingMail{}
 
-	err := started(t, checkout, store, mail).Complete(7, "REF1")
+	service, reference := started(t, checkout, store, mail)
+	err := service.Complete(7, reference)
 	if !errors.Is(err, ErrNotPaid) {
 		t.Fatalf("want ErrNotPaid got %v", err)
 	}
@@ -169,7 +225,8 @@ func TestCompleteRefusesWhenTheAmountIsShort(t *testing.T) {
 	checkout := &recordingCheckout{paid: true, amount: 100}
 	store, mail := newStore(), &recordingMail{}
 
-	err := started(t, checkout, store, mail).Complete(7, "REF1")
+	service, reference := started(t, checkout, store, mail)
+	err := service.Complete(7, reference)
 	if !errors.Is(err, ErrWrongAmount) {
 		t.Fatalf("want ErrWrongAmount got %v", err)
 	}
@@ -181,18 +238,32 @@ func TestCompleteRefusesWhenTheAmountIsShort(t *testing.T) {
 func TestCompleteIsIdempotent(t *testing.T) {
 	checkout := &recordingCheckout{paid: true, amount: paidTotal}
 	store, mail := newStore(), &recordingMail{}
-	service := started(t, checkout, store, mail)
+	service, reference := started(t, checkout, store, mail)
 
-	if err := service.Complete(7, "REF1"); err != nil {
+	if err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
-	store.orders["REF1"].Paid = true
+	store.only().Paid = true
 	mail.sent = nil
 
-	if err := service.Complete(7, "REF1"); err != nil {
+	if err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
 	if mail.sent != nil {
 		t.Fatal("support must not be told twice about one order")
+	}
+}
+
+func TestCompleteRefusesAPaymentInAnotherCurrency(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: paidTotal, currency: "EUR"}
+	store, mail := newStore(), &recordingMail{}
+
+	service, reference := started(t, checkout, store, mail)
+	err := service.Complete(7, reference)
+	if !errors.Is(err, ErrWrongCurrency) {
+		t.Fatalf("want ErrWrongCurrency got %v", err)
+	}
+	if mail.sent != nil {
+		t.Fatal("support must not be told about a euro payment for a sterling price")
 	}
 }

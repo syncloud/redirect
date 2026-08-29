@@ -33,8 +33,10 @@ func (p *PayPal) Start(order *product.Order, description string) (string, error)
 	created, err := p.client.CreateOrder(ctx, paypal.OrderIntentCapture,
 		[]paypal.PurchaseUnitRequest{{
 			Description: description,
+			InvoiceID:   order.Reference,
+			CustomID:    order.Reference,
 			Amount: &paypal.PurchaseUnitAmount{
-				Currency: "GBP",
+				Currency: product.Currency,
 				Value:    product.Money(order.Total),
 			},
 		}}, nil,
@@ -45,28 +47,29 @@ func (p *PayPal) Start(order *product.Order, description string) (string, error)
 	return created.ID, nil
 }
 
-func (p *PayPal) Paid(reference string) (bool, int, error) {
+func (p *PayPal) Paid(providerReference string) (bool, int, string, error) {
 	ctx := context.Background()
 	if _, err := p.client.GetAccessToken(ctx); err != nil {
-		return false, 0, err
+		return false, 0, "", err
 	}
-	captured, err := p.client.CaptureOrder(ctx, reference, paypal.CaptureOrderRequest{})
+	captured, err := p.client.CaptureOrder(ctx, providerReference, paypal.CaptureOrderRequest{})
 	if err != nil {
-		return false, 0, err
+		return false, 0, "", err
 	}
 	if captured.Status != "COMPLETED" {
-		return false, 0, nil
+		return false, 0, "", nil
 	}
-	return true, pence(captured), nil
+	amount, currency := taken(captured)
+	return true, amount, currency, nil
 }
 
-func pence(captured *paypal.CaptureOrderResponse) int {
+func taken(captured *paypal.CaptureOrderResponse) (int, string) {
 	for _, unit := range captured.PurchaseUnits {
 		for _, capture := range unit.Payments.Captures {
-			return parse(capture.Amount.Value)
+			return parse(capture.Amount.Value), capture.Amount.Currency
 		}
 	}
-	return 0
+	return 0, ""
 }
 
 func parse(value string) int {

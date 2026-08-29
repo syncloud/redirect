@@ -3,6 +3,7 @@ package product
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -12,6 +13,7 @@ type Mail interface {
 
 type Store interface {
 	InsertOrder(order *Order) (int64, error)
+	SetOrderProviderReference(id int64, providerReference string) error
 	GetOrderByReference(reference string) (*Order, error)
 	MarkOrderPaid(id int64) error
 }
@@ -47,16 +49,22 @@ func (o *Orders) Start(order *Order, provider string) (string, error) {
 
 	order.Total = total
 	order.Provider = provider
-	reference, err := checkout.Start(order, fmt.Sprintf("%s, %s", device, option))
+	order.Reference = uuid.New().String()
+
+	id, err := o.store.InsertOrder(order)
 	if err != nil {
 		return "", err
 	}
+	order.Id = id
 
-	order.Reference = reference
-	if _, err := o.store.InsertOrder(order); err != nil {
+	providerReference, err := checkout.Start(order, fmt.Sprintf("%s, %s", device, option))
+	if err != nil {
 		return "", err
 	}
-	return reference, nil
+	if err := o.store.SetOrderProviderReference(id, providerReference); err != nil {
+		return "", err
+	}
+	return order.Reference, nil
 }
 
 func (o *Orders) Complete(userId int64, reference string) error {
@@ -75,12 +83,18 @@ func (o *Orders) Complete(userId int64, reference string) error {
 	if err != nil {
 		return err
 	}
-	paid, amount, err := checkout.Paid(reference)
+	paid, amount, currency, err := checkout.Paid(order.ProviderReference)
 	if err != nil {
 		return err
 	}
 	if !paid {
 		return ErrNotPaid
+	}
+	if currency != Currency {
+		o.logger.Error("wrong currency",
+			zap.String("paid", currency), zap.String("expected", Currency),
+			zap.String("reference", reference))
+		return ErrWrongCurrency
 	}
 	if amount != order.Total {
 		o.logger.Error("wrong amount",
