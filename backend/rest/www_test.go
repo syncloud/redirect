@@ -401,6 +401,8 @@ type WwwOrdersStub struct{}
 
 func (s *WwwOrdersStub) Catalog() []product.Device { return nil }
 
+func (s *WwwOrdersStub) Shipping() int { return 1500 }
+
 func (s *WwwOrdersStub) Start(_ *product.Order, _ string) (string, error) { return "", nil }
 
 func (s *WwwOrdersStub) Complete(_ int64, _ string) error { return nil }

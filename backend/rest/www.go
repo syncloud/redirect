@@ -634,7 +634,12 @@ func (w *Www) notFoundHandler(resp http.ResponseWriter, r *http.Request) {
 
 func (w *Www) DeviceCatalog(_ http.ResponseWriter, _ *http.Request, _ model.User) (interface{}, error) {
 	w.metrics.Request("device_catalog")
-	return w.orders.Catalog(), nil
+	return model.DeviceCatalogResponse{
+		Devices:        w.orders.Catalog(),
+		Shipping:       w.orders.Shipping(),
+		Currency:       product.Currency,
+		PayPalClientId: w.paypal.Plans().ClientId,
+	}, nil
 }
 
 func (w *Www) DeviceOrder(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
@@ -664,6 +669,7 @@ func (w *Www) DeviceOrder(_ http.ResponseWriter, req *http.Request, user model.U
 	return model.DeviceOrderResponse{
 		Reference:         reference,
 		ProviderReference: order.ProviderReference,
+		Url:               order.Url,
 		Total:             order.Total,
 	}, nil
 }
@@ -684,6 +690,7 @@ func (w *Www) DeviceOrderComplete(_ http.ResponseWriter, req *http.Request, user
 
 type WwwOrders interface {
 	Catalog() []product.Device
+	Shipping() int
 	Start(order *product.Order, provider string) (string, error)
 	Complete(userId int64, reference string) error
 }

@@ -20,11 +20,11 @@ func NewStripe(secretKey, successUrl, cancelUrl string, logger *zap.Logger) *Str
 	return &Stripe{secretKey: secretKey, successUrl: successUrl, cancelUrl: cancelUrl, logger: logger}
 }
 
-func (s *Stripe) Start(order *product.Order, description string) (string, error) {
+func (s *Stripe) Start(order *product.Order, description string) (string, string, error) {
 	stripe.Key = s.secretKey
 	created, err := session.New(&stripe.CheckoutSessionParams{
 		Mode:              stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL:        stripe.String(s.successUrl),
+		SuccessURL:        stripe.String(s.successUrl + "?reference=" + order.Reference),
 		CancelURL:         stripe.String(s.cancelUrl),
 		CustomerEmail:     stripe.String(order.Email),
 		ClientReferenceID: stripe.String(order.Reference),
@@ -40,9 +40,9 @@ func (s *Stripe) Start(order *product.Order, description string) (string, error)
 		}},
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return created.ID, nil
+	return created.ID, created.URL, nil
 }
 
 func (s *Stripe) Paid(providerReference string) (bool, int, string, error) {

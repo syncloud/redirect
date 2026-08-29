@@ -25,10 +25,10 @@ func NewPayPal(clientId, secretId, url, successUrl, cancelUrl string, logger *za
 	return &PayPal{client: client, successUrl: successUrl, cancelUrl: cancelUrl, logger: logger}, nil
 }
 
-func (p *PayPal) Start(order *product.Order, description string) (string, error) {
+func (p *PayPal) Start(order *product.Order, description string) (string, string, error) {
 	ctx := context.Background()
 	if _, err := p.client.GetAccessToken(ctx); err != nil {
-		return "", err
+		return "", "", err
 	}
 	created, err := p.client.CreateOrder(ctx, paypal.OrderIntentCapture,
 		[]paypal.PurchaseUnitRequest{{
@@ -42,9 +42,9 @@ func (p *PayPal) Start(order *product.Order, description string) (string, error)
 		}}, nil,
 		&paypal.ApplicationContext{ReturnURL: p.successUrl, CancelURL: p.cancelUrl})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return created.ID, nil
+	return created.ID, "", nil
 }
 
 func (p *PayPal) Paid(providerReference string) (bool, int, string, error) {

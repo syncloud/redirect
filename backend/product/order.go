@@ -16,6 +16,7 @@ type Order struct {
 	Postcode          string
 	Country           string
 	Paid              bool
+	Url               string
 }
 
 func (o *Order) Missing() []string {

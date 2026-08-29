@@ -15,10 +15,10 @@ type recordingCheckout struct {
 	currency    string
 }
 
-func (r *recordingCheckout) Start(order *Order, description string) (string, error) {
+func (r *recordingCheckout) Start(order *Order, description string) (string, string, error) {
 	r.started = order
 	r.description = description
-	return "PROVIDER1", nil
+	return "PROVIDER1", "https://pay.example/PROVIDER1", nil
 }
 
 func (r *recordingCheckout) Paid(string) (bool, int, string, error) {

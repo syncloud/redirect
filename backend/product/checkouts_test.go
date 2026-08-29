@@ -7,8 +7,8 @@ import (
 
 type stubCheckout struct{ name string }
 
-func (s stubCheckout) Start(*Order, string) (string, error)   { return s.name, nil }
-func (s stubCheckout) Paid(string) (bool, int, string, error) { return true, 0, Currency, nil }
+func (s stubCheckout) Start(*Order, string) (string, string, error) { return s.name, "", nil }
+func (s stubCheckout) Paid(string) (bool, int, string, error)       { return true, 0, Currency, nil }
 
 func TestPicksTheProviderAsked(t *testing.T) {
 	checkouts := NewCheckouts(stubCheckout{"paypal"}, stubCheckout{"stripe"})
@@ -17,7 +17,7 @@ func TestPicksTheProviderAsked(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ref, _ := got.Start(nil, "")
+		ref, _, _ := got.Start(nil, "")
 		if ref != name {
 			t.Errorf("asked for %s got %s", name, ref)
 		}

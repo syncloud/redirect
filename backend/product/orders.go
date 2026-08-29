@@ -34,6 +34,10 @@ func (o *Orders) Catalog() []Device {
 	return o.catalog.Devices()
 }
 
+func (o *Orders) Shipping() int {
+	return o.catalog.Shipping()
+}
+
 func (o *Orders) Start(order *Order, provider string) (string, error) {
 	if missing := order.Missing(); len(missing) > 0 {
 		return "", fmt.Errorf("the address needs %v", missing)
@@ -61,13 +65,15 @@ func (o *Orders) Start(order *Order, provider string) (string, error) {
 	}
 	order.Id = id
 
-	providerReference, err := checkout.Start(order, fmt.Sprintf("%s, %s", device, option))
+	providerReference, url, err := checkout.Start(order, fmt.Sprintf("%s, %s", device, option))
 	if err != nil {
 		return "", err
 	}
 	if err := o.store.SetOrderProviderReference(id, providerReference); err != nil {
 		return "", err
 	}
+	order.ProviderReference = providerReference
+	order.Url = url
 	return order.Reference, nil
 }
 

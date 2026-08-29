@@ -27,6 +27,11 @@ const routes = [
     component: () => import('../views/PasswordForgot.vue')
   },
   {
+    path: '/device',
+    name: 'Device',
+    component: () => import('../views/Device.vue')
+  },
+  {
     path: '/account',
     name: 'Account',
     component: () => import('../views/Account.vue')

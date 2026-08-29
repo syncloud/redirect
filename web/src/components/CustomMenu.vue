@@ -27,6 +27,14 @@
         >Devices</router-link>
         <router-link
           v-if="loggedIn"
+          id="buy"
+          to="/device"
+          data-testid="nav-buy"
+          :class="{ active: activeTab === '/device' }"
+          @click="open = false"
+        >Buy</router-link>
+        <router-link
+          v-if="loggedIn"
           id="account"
           to="/account"
           data-testid="nav-account"

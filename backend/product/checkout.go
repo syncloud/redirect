@@ -1,7 +1,7 @@
 package product
 
 type Checkout interface {
-	Start(order *Order, description string) (string, error)
+	Start(order *Order, description string) (string, string, error)
 	Paid(providerReference string) (bool, int, string, error)
 }
 
