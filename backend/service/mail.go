@@ -98,7 +98,7 @@ func (m *Mail) SendDeviceOrder(order *product.Order, device, option string) erro
 		"device":    device,
 		"option":    option,
 		"total":     product.Money(order.Total),
-		"paid_with": order.PaidWith,
+		"paid_with": order.Provider,
 		"address":   order.Address,
 		"city":      order.City,
 		"postcode":  order.Postcode,

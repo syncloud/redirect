@@ -1,17 +1,20 @@
 package product
 
 type Order struct {
-	Email     string `json:"email"`
-	Device    string `json:"device"`
-	Option    string `json:"option"`
-	Name      string `json:"name"`
-	Address   string `json:"address"`
-	City      string `json:"city"`
-	Postcode  string `json:"postcode"`
-	Country   string `json:"country"`
-	Total     int    `json:"total"`
-	Reference string `json:"reference"`
-	PaidWith  string `json:"paid_with"`
+	Id        int64
+	UserId    int64
+	Email     string
+	Device    string
+	Option    string
+	Total     int
+	Provider  string
+	Reference string
+	Name      string
+	Address   string
+	City      string
+	Postcode  string
+	Country   string
+	Paid      bool
 }
 
 func (o *Order) Missing() []string {
