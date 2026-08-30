@@ -77,21 +77,29 @@
       </div>
 
       <div class="sc-card" data-testid="device-pay">
-        <h2 class="sc-h2">Pay</h2>
-        <button
-          class="sc-btn"
-          :disabled="incomplete"
-          data-testid="device-pay-stripe"
-          @click="payWithStripe"
-        >
-          Pay {{ money(total) }} by card
-        </button>
-        <div
-          id="device-paypal"
-          v-show="!incomplete"
-          class="sc-paypal"
-          data-testid="device-pay-paypal"
-        />
+        <h2 class="sc-h2">Pay {{ money(total) }}</h2>
+
+        <div class="pay-section-label">Pay with</div>
+        <div class="pay-methods">
+          <el-button
+            type="primary"
+            size="large"
+            class="pay-button"
+            :icon="CreditCard"
+            :disabled="incomplete"
+            data-testid="device-pay-stripe"
+            @click="payWithStripe"
+          >
+            Card
+          </el-button>
+
+          <div
+            id="device-paypal"
+            v-show="!incomplete"
+            class="pay-paypal"
+            data-testid="device-pay-paypal"
+          />
+        </div>
       </div>
     </template>
 
@@ -102,6 +110,8 @@
 <script>
 import axios from 'axios'
 import { loadScript } from '@paypal/paypal-js'
+import { CreditCard } from '@element-plus/icons-vue'
+import { markRaw } from 'vue'
 
 export default {
   name: 'DeviceView',
@@ -124,7 +134,8 @@ export default {
       reference: '',
       ordered: false,
       error: '',
-      paypalLoaded: false
+      paypalLoaded: false,
+      CreditCard: markRaw(CreditCard)
     }
   },
   computed: {
@@ -246,7 +257,28 @@ export default {
   font-size: 1.05rem;
 }
 
-.sc-paypal {
-  margin-top: 14px;
+.sc-card + .sc-card {
+  margin-top: 20px;
+}
+
+.pay-section-label {
+  font-weight: 600;
+  color: var(--sc-muted);
+  margin: 20px 0 8px;
+}
+
+.pay-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+}
+
+.pay-button {
+  width: 100%;
+}
+
+.pay-paypal {
+  min-height: 1px;
 }
 </style>

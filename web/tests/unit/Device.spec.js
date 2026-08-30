@@ -3,6 +3,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Device from '../../src/views/Device.vue'
+import { ElButton } from 'element-plus'
 
 const CATALOG = {
   data: {
@@ -28,7 +29,10 @@ function catalog (mock) {
 
 function mountDevice (query = {}, replace = jest.fn()) {
   return mount(Device, {
-    global: { mocks: { $route: { query }, $router: { replace } } }
+    global: {
+      components: { ElButton },
+      mocks: { $route: { query }, $router: { replace } }
+    }
   })
 }
 
@@ -38,6 +42,7 @@ async function fill (wrapper) {
   await wrapper.find('[data-testid="device-city"]').setValue('Town')
   await wrapper.find('[data-testid="device-postcode"]').setValue('X1')
   await wrapper.find('[data-testid="device-country"]').setValue('Germany')
+  await flushPromises()
 }
 
 test('adds shipping to whichever option is chosen', async () => {
