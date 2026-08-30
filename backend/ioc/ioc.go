@@ -167,7 +167,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	) (*product.Orders, error) {
 		stripeCheckout := payment.NewStripe(
 			config.StripeSecretKey(),
-			fmt.Sprintf("https://www.%s/device?reference={CHECKOUT_SESSION_ID}", config.Domain()),
+			fmt.Sprintf("https://www.%s/device", config.Domain()),
 			fmt.Sprintf("https://www.%s/device", config.Domain()),
 			logger)
 		paypalCheckout, err := payment.NewPayPal(
