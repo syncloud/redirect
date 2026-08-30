@@ -1,7 +1,7 @@
 <template>
   <div class="sc-page">
-    <div class="sc-card sc-prose">
-      <h1 class="sc-h1">Privacy Policy</h1>
+    <div class="sc-card sc-prose" data-testid="privacy-content">
+      <h1 class="sc-h1" data-testid="privacy-heading">Privacy Policy</h1>
 <div>
 
           This policy specifies what Syncloud does with your personal data.
