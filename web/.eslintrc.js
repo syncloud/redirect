@@ -1,5 +1,8 @@
 module.exports = {
   root: true,
+  parserOptions: {
+    ecmaVersion: 2022
+  },
   extends: [
     'plugin:vue/vue3-essential',
     '@vue/standard'
@@ -13,10 +16,17 @@ module.exports = {
     {
       files: [
         '**/__tests__/*.{j,t}s?(x)',
-        '**/tests/unit/**/*.spec.{j,t}s?(x)'
+        '**/tests/**/*.{j,t}s?(x)'
       ],
       env: {
-        jest: true
+        jest: true,
+        node: true
+      }
+    },
+    {
+      files: ['e2e/**/*.js', '*.config.js', '.eslintrc.js'],
+      env: {
+        node: true
       }
     }
   ]

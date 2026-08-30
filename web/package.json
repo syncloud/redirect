@@ -7,7 +7,7 @@
     "stub": "VITE_STUB=1 vite",
     "build": "vite build",
     "serve": "vite preview",
-    "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src e2e tests *.config.js",
     "test": "jest",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"

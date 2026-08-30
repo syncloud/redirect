@@ -1,14 +1,14 @@
 const { request, expect } = require('@playwright/test')
 const { apiBaseUrl } = require('./env')
 
-async function apiContext() {
+async function apiContext () {
   return await request.newContext({
     baseURL: apiBaseUrl(),
     ignoreHTTPSErrors: true
   })
 }
 
-async function acquireDomain(domainName, email, password) {
+async function acquireDomain (domainName, email, password) {
   const context = await apiContext()
   const response = await context.post('/domain/acquire_v2', {
     data: {
