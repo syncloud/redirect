@@ -43,10 +43,16 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	c := container.New()
 
+	config := utils.NewConfig()
+	config.Load(configPath, secretPath)
+	config.Merge(filepath.Join(filepath.Dir(secretPath), "payments.cfg"))
+
+	if url := config.StripeUrl(); url != "" {
+		stripesdk.SetBackend(stripesdk.APIBackend, stripesdk.GetBackendWithConfig(
+			stripesdk.APIBackend, &stripesdk.BackendConfig{URL: stripesdk.String(url)}))
+	}
+
 	err := c.Singleton(func() *utils.Config {
-		config := utils.NewConfig()
-		config.Load(configPath, secretPath)
-		config.Merge(filepath.Join(filepath.Dir(secretPath), "payments.cfg"))
 		return config
 	})
 	if err != nil {
@@ -208,10 +214,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		config *utils.Config,
 	) *subscription.Stripe {
-		if url := config.StripeUrl(); url != "" {
-			stripesdk.SetBackend(stripesdk.APIBackend, stripesdk.GetBackendWithConfig(
-				stripesdk.APIBackend, &stripesdk.BackendConfig{URL: stripesdk.String(url)}))
-		}
 		return subscription.NewStripe(
 			config.StripeSecretKey(),
 			config.StripePriceMonthlyId(),
