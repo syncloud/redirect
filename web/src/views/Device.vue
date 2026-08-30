@@ -124,6 +124,7 @@ export default {
       shipping: 0,
       currency: 'GBP',
       paypalClientId: '',
+      paypalSdkUrl: '',
       option: '',
       name: '',
       address: '',
@@ -177,6 +178,7 @@ export default {
           this.shipping = catalog.shipping
           this.currency = catalog.currency
           this.paypalClientId = catalog.paypal_client_id
+          this.paypalSdkUrl = catalog.paypal_sdk_url
           this.option = this.device.options[0].code
           this.loadPayPal()
         })
@@ -217,7 +219,11 @@ export default {
       if (this.paypalLoaded || !this.paypalClientId) {
         return
       }
-      loadScript({ clientId: this.paypalClientId, currency: this.currency })
+      const options = { clientId: this.paypalClientId, currency: this.currency }
+      if (this.paypalSdkUrl) {
+        options.sdkBaseUrl = this.paypalSdkUrl
+      }
+      loadScript(options)
         .then(paypal => {
           paypal.Buttons({
             createOrder: () => {

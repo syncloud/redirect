@@ -639,6 +639,7 @@ func (w *Www) DeviceCatalog(_ http.ResponseWriter, _ *http.Request, _ model.User
 		Shipping:       w.orders.Shipping(),
 		Currency:       product.Currency,
 		PayPalClientId: w.paypal.Plans().ClientId,
+		PayPalSdkUrl:   w.paypal.Plans().SdkUrl,
 	}, nil
 }
 

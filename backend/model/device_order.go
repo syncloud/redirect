@@ -5,6 +5,7 @@ type DeviceCatalogResponse struct {
 	Shipping       int         `json:"shipping"`
 	Currency       string      `json:"currency"`
 	PayPalClientId string      `json:"paypal_client_id"`
+	PayPalSdkUrl   string      `json:"paypal_sdk_url"`
 }
 
 type DeviceOrderRequest struct {

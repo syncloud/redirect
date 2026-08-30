@@ -267,6 +267,7 @@ export default {
       planMonthlyId: String,
       planAnnualId: String,
       clientId: String,
+      sdkUrl: '',
       paypalLoaded: Boolean,
       userLoaded: Boolean,
       deleteConfirmationVisible: false,
@@ -334,6 +335,7 @@ export default {
           this.planMaxAnnualId = response.data.data.plan_max_annual_id
           this.planMaxMonthlyId = response.data.data.plan_max_monthly_id
           this.clientId = response.data.data.client_id
+          this.sdkUrl = response.data.data.sdk_url
           this.stripeMaxEnabled = response.data.data.stripe_max_enabled
           this.paypalMaxEnabled = response.data.data.paypal_max_enabled
           if (!subscriptionId && !this.paypalLoaded) {
@@ -375,12 +377,16 @@ export default {
         .catch(this.onError)
     },
     enablePayPal: function (clientId) {
-      loadScript({
+      const options = {
         clientId: clientId,
         vault: true,
         intent: 'subscription',
         disableFunding: 'card'
-      })
+      }
+      if (this.sdkUrl) {
+        options.sdkBaseUrl = this.sdkUrl
+      }
+      loadScript(options)
         .then((paypal) => {
           paypal
             .Buttons({

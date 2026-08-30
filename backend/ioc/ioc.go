@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/golobby/container/v3"
+	stripesdk "github.com/stripe/stripe-go/v81"
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/clock"
 	"github.com/syncloud/redirect/db"
@@ -192,6 +193,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.PayPalClientId(),
 			config.PayPalSecretId(),
 			config.PayPalUrl(),
+			config.PayPalSdkUrl(),
 			config.PayPalPlanMonthlyId(),
 			config.PayPalPlanAnnualId(),
 			config.PayPalPlanMaxMonthlyId(),
@@ -206,6 +208,10 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		config *utils.Config,
 	) *subscription.Stripe {
+		if url := config.StripeUrl(); url != "" {
+			stripesdk.SetBackend(stripesdk.APIBackend, stripesdk.GetBackendWithConfig(
+				stripesdk.APIBackend, &stripesdk.BackendConfig{URL: stripesdk.String(url)}))
+		}
 		return subscription.NewStripe(
 			config.StripeSecretKey(),
 			config.StripePriceMonthlyId(),
