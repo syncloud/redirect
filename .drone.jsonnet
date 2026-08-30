@@ -158,6 +158,15 @@ local build(arch) = [{
             ],
         },
         {
+            name: "build payment-faker",
+            image: "golang:" + go,
+            commands: [
+                "cd payment-faker",
+                "go vet ./...",
+                "CGO_ENABLED=0 go build -o ../ci/sim/payment-faker .",
+            ]
+        },
+        {
             name: "build ses-faker",
             image: "golang:" + go,
             commands: [
@@ -178,11 +187,13 @@ local build(arch) = [{
                 access_key_id: { from_secret: "access_key_id" },
                 secret_access_key: { from_secret: "secret_access_key" },
                 hosted_zone_id: { from_secret: "hosted_zone_id" },
-                PAYPAL_URL: "https://api-m.sandbox.paypal.com",
+                PAYPAL_URL: "http://127.0.0.1:4581",
+                PAYPAL_SDK_URL: "https://payments.syncloud.test/paypal",
                 PAYPAL_PLAN_MONTHLY_ID: "1",
                 PAYPAL_PLAN_ANNUAL_ID: "2",
                 PAYPAL_CLIENT_ID: "3",
                 PAYPAL_SECRET_ID: "4",
+                STRIPE_URL: "http://127.0.0.1:4582",
                 STRIPE_SECRET_KEY: "sk_test_dummy",
                 STRIPE_PRICE_MONTHLY_ID: "price_dummy_monthly",
                 STRIPE_PRICE_ANNUAL_ID: "price_dummy_annual",

@@ -35,9 +35,11 @@ plan_max_annual_id = ${PAYPAL_PLAN_MAX_ANNUAL_ID:-}
 client_id = ${PAYPAL_CLIENT_ID:?PAYPAL_CLIENT_ID is required}
 secret_id = ${PAYPAL_SECRET_ID:?PAYPAL_SECRET_ID is required}
 url = ${PAYPAL_URL:?PAYPAL_URL is required}
+sdk_url = ${PAYPAL_SDK_URL:-}
 
 [stripe]
 secret_key = ${STRIPE_SECRET_KEY:?STRIPE_SECRET_KEY is required}
+url = ${STRIPE_URL:-}
 price_monthly_id = ${STRIPE_PRICE_MONTHLY_ID:?STRIPE_PRICE_MONTHLY_ID is required}
 price_annual_id = ${STRIPE_PRICE_ANNUAL_ID:?STRIPE_PRICE_ANNUAL_ID is required}
 price_max_monthly_id = ${STRIPE_PRICE_MAX_MONTHLY_ID:-}
