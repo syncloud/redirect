@@ -9,6 +9,15 @@ async function signedIn (page, prefix) {
   return email
 }
 
+async function goToBuy (page) {
+  const burger = page.getByTestId('menu-burger')
+  if (await burger.isVisible()) {
+    await burger.click()
+  }
+  await page.getByTestId('nav-buy').click()
+  await expect(page).toHaveURL(/\/device$/)
+}
+
 async function address (page) {
   await page.getByTestId('device-name').fill('Ada Lovelace')
   await page.getByTestId('device-address-line').fill('1 Analytical Street')
@@ -19,8 +28,7 @@ async function address (page) {
 
 test('the buy page prices the device from the catalogue', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-price')
-  await page.getByTestId('nav-buy').click()
-  await expect(page).toHaveURL(/\/device$/)
+  await goToBuy(page)
 
   await expect(page.getByTestId('device-choice')).toBeVisible()
   const cheapest = await page.getByTestId('device-total').textContent()
@@ -35,7 +43,7 @@ test('the buy page prices the device from the catalogue', async ({ page }, testI
 
 test('paying cannot start until the address is complete', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-address')
-  await page.getByTestId('nav-buy').click()
+  await goToBuy(page)
 
   await expect(page.getByTestId('device-pay-stripe')).toBeDisabled()
   await expect(page.getByTestId('device-incomplete')).toBeVisible()
@@ -53,7 +61,7 @@ test('the payment faker is reachable from the browser', async ({ page }) => {
 
 test('a card payment is taken and the order is confirmed', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-card')
-  await page.getByTestId('nav-buy').click()
+  await goToBuy(page)
   await address(page)
 
   const total = await page.getByTestId('device-total').textContent()
@@ -74,7 +82,7 @@ test('a card payment is taken and the order is confirmed', async ({ page }, test
 
 test('a paypal payment is taken and the order is confirmed', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-paypal')
-  await page.getByTestId('nav-buy').click()
+  await goToBuy(page)
   await address(page)
 
   await expect(page.getByTestId('paypal-faker-button')).toBeVisible()
