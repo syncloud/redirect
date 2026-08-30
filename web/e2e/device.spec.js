@@ -45,6 +45,12 @@ test('paying cannot start until the address is complete', async ({ page }, testI
   await shoot(page, testInfo, 'device-address')
 })
 
+test('the payment faker is reachable from the browser', async ({ page }) => {
+  const sdk = await page.request.get('https://payments.syncloud.test/paypal/sdk/js')
+  expect(sdk.status(), 'the paypal sdk script must be served').toBe(200)
+  expect(await sdk.text()).toContain('paypal-faker-button')
+})
+
 test('a card payment is taken and the order is confirmed', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-card')
   await page.getByTestId('nav-buy').click()

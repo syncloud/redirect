@@ -2,7 +2,32 @@ const base = require('@playwright/test')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const test = base.test.extend({})
+const test = base.test.extend({
+  page: async ({ page }, use, testInfo) => {
+    const noise = []
+    page.on('console', message => {
+      if (message.type() === 'error') {
+        noise.push(`console: ${message.text()}`)
+      }
+    })
+    page.on('pageerror', error => noise.push(`pageerror: ${error.message}`))
+    page.on('requestfailed', request => {
+      noise.push(`requestfailed: ${request.method()} ${request.url()} ${request.failure()?.errorText}`)
+    })
+    page.on('response', response => {
+      if (response.status() >= 400) {
+        noise.push(`response: ${response.status()} ${response.url()}`)
+      }
+    })
+
+    await use(page)
+
+    if (testInfo.status !== testInfo.expectedStatus && noise.length) {
+      await testInfo.attach('browser-problems', { body: noise.join('\n'), contentType: 'text/plain' })
+      console.log(`\n--- browser problems in "${testInfo.title}" ---\n${noise.join('\n')}\n`)
+    }
+  }
+})
 
 function shotDir (testInfo) {
   const root = process.env.PLAYWRIGHT_ARTIFACT_DIR ||
