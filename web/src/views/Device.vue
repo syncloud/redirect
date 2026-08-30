@@ -220,11 +220,20 @@ export default {
       loadScript({ clientId: this.paypalClientId, currency: this.currency })
         .then(paypal => {
           paypal.Buttons({
-            createOrder: () => this.order('paypal').then(response => {
-              this.reference = response.data.data.reference
-              return response.data.data.provider_reference
-            }),
-            onApprove: () => this.complete(this.reference).catch(this.onError)
+            createOrder: () => {
+              this.error = ''
+              return this.order('paypal')
+                .then(response => {
+                  this.reference = response.data.data.reference
+                  return response.data.data.provider_reference
+                })
+                .catch(error => {
+                  this.onError(error)
+                  throw error
+                })
+            },
+            onApprove: () => this.complete(this.reference).catch(this.onError),
+            onError: error => this.onError(error)
           }).render('#device-paypal')
           this.paypalLoaded = true
         })
