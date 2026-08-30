@@ -56,7 +56,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 16px calc(40px + var(--kb, 0px));
+  padding: 32px 16px 40px;
   font-family: var(--sc-font);
   color: var(--sc-ink);
 }
@@ -117,7 +117,10 @@ body {
 
 .sc-auth input[type="text"],
 .sc-auth input[type="email"],
-.sc-auth input[type="password"] {
+.sc-auth input[type="password"],
+.sc-form input[type="text"],
+.sc-form input[type="email"],
+.sc-form select {
   width: 100%;
   height: 48px;
   padding: 0 14px;
@@ -130,7 +133,9 @@ body {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.sc-auth input:focus {
+.sc-auth input:focus,
+.sc-form input:focus,
+.sc-form select:focus {
   outline: none;
   border-color: var(--sc-primary);
   box-shadow: 0 0 0 3px var(--sc-primary-soft);
@@ -218,7 +223,7 @@ body {
 
 @media (max-width: 600px) {
   .sc-auth {
-    padding: 20px 12px calc(28px + var(--kb, 0px));
+    padding: 20px 12px 28px;
   }
 
   .sc-auth-wordmark {

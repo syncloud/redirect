@@ -15,36 +15,63 @@
     </div>
 
     <template v-else>
-      <div class="sc-card" data-testid="device-choice">
+      <div class="sc-card sc-form" data-testid="device-choice">
         <h2 class="sc-h2">{{ device.name }}</h2>
-        <label class="sc-label" for="device-option">Storage</label>
-        <select
-          id="device-option"
-          v-model="option"
-          class="sc-input"
-          data-testid="device-option"
-        >
-          <option v-for="each in device.options" :key="each.code" :value="each.code">
-            {{ each.name }} — {{ money(device.price + each.extra) }}
-          </option>
-        </select>
 
-        <dl class="sc-total">
-          <dt>Device</dt><dd data-testid="device-price">{{ money(device.price + extra) }}</dd>
-          <dt>Shipping</dt><dd data-testid="device-shipping">{{ money(shipping) }}</dd>
-          <dt><strong>Total</strong></dt>
-          <dd><strong data-testid="device-total">{{ money(total) }}</strong></dd>
-        </dl>
+        <div class="sc-field">
+          <label for="device-option">Storage</label>
+          <select
+            id="device-option"
+            v-model="option"
+            data-testid="device-option"
+          >
+            <option v-for="each in device.options" :key="each.code" :value="each.code">
+              {{ each.name }} — {{ money(device.price + each.extra) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="sc-summary">
+          <div class="sc-summary-row">
+            <span>Device</span>
+            <span data-testid="device-price">{{ money(device.price + extra) }}</span>
+          </div>
+          <div class="sc-summary-row">
+            <span>Shipping</span>
+            <span data-testid="device-shipping">{{ money(shipping) }}</span>
+          </div>
+          <div class="sc-summary-row sc-summary-total">
+            <span>Total</span>
+            <span data-testid="device-total">{{ money(total) }}</span>
+          </div>
+        </div>
       </div>
 
-      <div class="sc-card" data-testid="device-address">
+      <div class="sc-card sc-form" data-testid="device-address">
         <h2 class="sc-h2">Ship it to</h2>
-        <input v-model="name" class="sc-input" placeholder="Full name" data-testid="device-name">
-        <input v-model="address" class="sc-input" placeholder="Address" data-testid="device-address-line">
-        <input v-model="city" class="sc-input" placeholder="City" data-testid="device-city">
-        <input v-model="postcode" class="sc-input" placeholder="Postcode" data-testid="device-postcode">
-        <input v-model="country" class="sc-input" placeholder="Country" data-testid="device-country">
-        <p v-if="incomplete" class="sc-muted" data-testid="device-incomplete">
+
+        <div class="sc-field">
+          <label for="device-name">Full name</label>
+          <input id="device-name" v-model="name" type="text" data-testid="device-name">
+        </div>
+        <div class="sc-field">
+          <label for="device-address-line">Address</label>
+          <input id="device-address-line" v-model="address" type="text" data-testid="device-address-line">
+        </div>
+        <div class="sc-field">
+          <label for="device-city">City</label>
+          <input id="device-city" v-model="city" type="text" data-testid="device-city">
+        </div>
+        <div class="sc-field">
+          <label for="device-postcode">Postcode</label>
+          <input id="device-postcode" v-model="postcode" type="text" data-testid="device-postcode">
+        </div>
+        <div class="sc-field">
+          <label for="device-country">Country</label>
+          <input id="device-country" v-model="country" type="text" data-testid="device-country">
+        </div>
+
+        <p v-if="incomplete" class="sc-help" data-testid="device-incomplete">
           We need the whole address before you can pay.
         </p>
       </div>
@@ -52,14 +79,19 @@
       <div class="sc-card" data-testid="device-pay">
         <h2 class="sc-h2">Pay</h2>
         <button
-          class="sc-btn sc-btn-primary"
+          class="sc-btn"
           :disabled="incomplete"
           data-testid="device-pay-stripe"
           @click="payWithStripe"
         >
           Pay {{ money(total) }} by card
         </button>
-        <div id="device-paypal" v-show="!incomplete" data-testid="device-pay-paypal"></div>
+        <div
+          id="device-paypal"
+          v-show="!incomplete"
+          class="sc-paypal"
+          data-testid="device-pay-paypal"
+        />
       </div>
     </template>
 
@@ -190,3 +222,31 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.sc-summary {
+  margin-top: 20px;
+  border-top: 1px solid var(--sc-border);
+  padding-top: 14px;
+}
+
+.sc-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  color: var(--sc-ink-2);
+}
+
+.sc-summary-total {
+  border-top: 1px solid var(--sc-border);
+  margin-top: 8px;
+  padding-top: 12px;
+  font-weight: 700;
+  color: var(--sc-ink);
+  font-size: 1.05rem;
+}
+
+.sc-paypal {
+  margin-top: 14px;
+}
+</style>
