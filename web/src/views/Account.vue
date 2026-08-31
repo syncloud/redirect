@@ -89,10 +89,16 @@
                   data-testid="stripe-subscribe"
                   v-show="tier === 'pro' || stripeMaxEnabled"
                   :icon="CreditCard"
+                  :disabled="paying"
+                  :loading="busy === 'stripe'"
                   @click="stripeCheckout"
                 >Card</el-button>
 
                 <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
+
+                <p v-if="busy" class="pay-busy" data-testid="account-pay-busy">
+                  {{ busy === 'paypal' ? 'Opening PayPal, this can take a few seconds.' : 'Opening the card checkout.' }}
+                </p>
 
                 <div class="pay-crypto" v-show="tier === 'pro'">
                   <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
@@ -278,6 +284,7 @@ export default {
       paypalMaxEnabled: false,
       planMaxMonthlyId: String,
       planMaxAnnualId: String,
+      busy: '',
       cryptoOpen: false,
       cryptoTransactionId: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
@@ -301,6 +308,9 @@ export default {
     }
   },
   computed: {
+    paying () {
+      return this.busy !== ''
+    },
     maxEnabled: function () {
       return this.stripeMaxEnabled || this.paypalMaxEnabled
     },
@@ -355,6 +365,7 @@ export default {
         .catch(this.onError)
     },
     stripeCheckout: function () {
+      this.busy = 'stripe'
       const annual = this.period === 'year'
       let plan
       if (this.tier === 'max') {
@@ -390,6 +401,15 @@ export default {
         .then((paypal) => {
           paypal
             .Buttons({
+              onClick: () => {
+                this.busy = 'paypal'
+              },
+              onCancel: () => {
+                this.busy = ''
+              },
+              onError: () => {
+                this.busy = ''
+              },
               createSubscription: (data, actions) => {
                 let planId
                 if (this.tier === 'max') {
@@ -445,6 +465,7 @@ export default {
         .catch(this.onError)
     },
     onError: function (err) {
+      this.busy = ''
       console.log(err)
       if (err.response.status === 401) {
         this.$router.push('/login')
@@ -532,6 +553,11 @@ export default {
 }
 .pay-button {
   width: 100%;
+}
+.pay-busy {
+  margin: 4px 0 0;
+  color: var(--el-text-color-secondary);
+  font-size: 0.9rem;
 }
 .pay-paypal {
   min-height: 1px;

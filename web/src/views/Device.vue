@@ -86,7 +86,8 @@
             size="large"
             class="pay-button"
             :icon="CreditCard"
-            :disabled="incomplete"
+            :disabled="incomplete || paying"
+            :loading="busy === 'stripe'"
             data-testid="device-pay-stripe"
             @click="payWithStripe"
           >
@@ -99,6 +100,14 @@
             class="pay-paypal"
             data-testid="device-pay-paypal"
           />
+
+          <p
+            v-if="busy"
+            class="pay-busy"
+            data-testid="device-pay-busy"
+          >
+            {{ busy === 'paypal' ? 'Opening PayPal, this can take a few seconds.' : 'Opening the card checkout.' }}
+          </p>
         </div>
       </div>
     </template>
@@ -135,6 +144,7 @@ export default {
       reference: '',
       ordered: false,
       error: '',
+      busy: '',
       paypalLoaded: false,
       CreditCard: markRaw(CreditCard)
     }
@@ -146,6 +156,9 @@ export default {
     },
     total () {
       return this.device.price + this.extra + this.shipping
+    },
+    paying () {
+      return this.busy !== ''
     },
     incomplete () {
       return [this.name, this.address, this.city, this.postcode, this.country]
@@ -166,6 +179,7 @@ export default {
       return `£${(pence / 100).toFixed(2)}`
     },
     onError (error) {
+      this.busy = ''
       this.error = error.response && error.response.data
         ? error.response.data.message
         : 'something went wrong'
@@ -209,6 +223,7 @@ export default {
     },
     payWithStripe () {
       this.error = ''
+      this.busy = 'stripe'
       this.order('stripe')
         .then(response => {
           window.location.href = response.data.data.url
@@ -231,8 +246,14 @@ export default {
         .then(paypal => {
           paypal.Buttons({
             style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44 },
-            createOrder: () => {
+            onClick: () => {
               this.error = ''
+              this.busy = 'paypal'
+            },
+            onCancel: () => {
+              this.busy = ''
+            },
+            createOrder: () => {
               return this.order('paypal')
                 .then(response => {
                   this.reference = response.data.data.reference
@@ -243,7 +264,9 @@ export default {
                   throw error
                 })
             },
-            onApprove: () => this.complete(this.reference).catch(this.onError),
+            onApprove: () => this.complete(this.reference)
+              .then(() => { this.busy = '' })
+              .catch(this.onError),
             onError: error => this.onError(error)
           }).render('#device-paypal')
           this.paypalLoaded = true
@@ -300,5 +323,11 @@ export default {
 
 .pay-paypal {
   min-height: 1px;
+}
+
+.pay-busy {
+  margin: 4px 0 0;
+  color: var(--sc-muted);
+  font-size: 0.9rem;
 }
 </style>
