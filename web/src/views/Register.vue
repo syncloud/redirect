@@ -40,6 +40,7 @@
 
 <script>
 import axios from 'axios'
+import { storedGclid } from '../attribution'
 
 function showError (component, error) {
   if ('parameters_messages' in error) {
@@ -80,7 +81,7 @@ export default {
     register: function (event) {
       this.isError = false
       const request = { email: this.email, password: this.password }
-      const gclid = this.$route.query.gclid
+      const gclid = this.$route.query.gclid || storedGclid()
       if (gclid) {
         request.gclid = gclid
       }

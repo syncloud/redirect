@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { captureGclid } from './attribution'
 import App from './App.vue'
 import router from './router'
 import { createPinia } from 'pinia'
@@ -11,6 +12,8 @@ async function start () {
   }
 
   const pinia = createPinia()
+
+  captureGclid()
 
   createApp(App)
     .use(pinia)
