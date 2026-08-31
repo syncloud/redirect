@@ -228,6 +228,13 @@ export default {
         .some(field => field.trim() === '')
     }
   },
+  watch: {
+    step (value) {
+      if (value === 'checkout') {
+        this.$nextTick(() => this.loadPayPal())
+      }
+    }
+  },
   mounted () {
     this.load()
     const returned = this.$route.query.reference
@@ -257,7 +264,6 @@ export default {
           this.paypalClientId = catalog.paypal_client_id
           this.paypalSdkUrl = catalog.paypal_sdk_url
           this.option = this.device.options[0].code
-          this.loadPayPal()
         })
         .catch(this.onError)
 
