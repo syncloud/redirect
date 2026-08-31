@@ -141,7 +141,7 @@ test('asks a signed out visitor to sign in rather than to pay', async () => {
   const wrapper = mountShop({}, jest.fn(), false)
   await flushPromises()
 
-  expect(wrapper.find('[data-testid="shop-signin-link"]').attributes('href')).toBe('/login')
+  expect(wrapper.find('[data-testid="shop-signin-link"]').attributes('href')).toBe('/login?next=/shop')
 })
 
 test('keeps checkout out of the way until the device is chosen', async () => {

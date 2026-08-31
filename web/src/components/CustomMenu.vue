@@ -1,7 +1,7 @@
 <template>
   <header class="sc-header">
     <div class="sc-header-inner">
-      <router-link class="sc-logo" to="/" data-testid="menu-brand">
+      <router-link class="sc-logo" :to="loggedIn ? '/' : '/shop'" data-testid="menu-brand">
         <img class="sc-logo-img" src="/logo.svg" alt="">
         <span class="sc-logo-name">SYNCLOUD</span>
       </router-link>
@@ -26,7 +26,6 @@
           @click="open = false"
         >Devices</router-link>
         <router-link
-          v-if="loggedIn"
           id="shop"
           to="/shop"
           data-testid="nav-shop"
@@ -42,6 +41,14 @@
           @click="open = false"
         >Account</router-link>
         <span v-if="loggedIn" class="sc-nav-email" data-testid="menu-email">{{ email }}</span>
+        <router-link
+          v-if="loggedIn === false"
+          id="login"
+          to="/login"
+          data-testid="nav-login"
+          :class="{ active: activeTab === '/login' }"
+          @click="open = false"
+        >Log in</router-link>
         <button
           v-if="loggedIn"
           id="logout"

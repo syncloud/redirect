@@ -53,8 +53,8 @@ const routes = [
   },
   {
     path: '/',
-    name: 'Devices',
-    component: () => import('../views/Devices.vue')
+    name: 'Home',
+    component: () => import('../views/Home.vue')
   }
 ]
 

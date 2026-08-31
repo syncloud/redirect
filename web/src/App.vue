@@ -26,6 +26,7 @@ const publicRoutes = [
   '/login',
   '/privacy',
   '/check-email',
+  '/',
   ''
 ]
 
@@ -64,7 +65,7 @@ export default {
           this.email = response.data.email
           this.loggedIn = true
           if (this.currentPath === '/login') {
-            this.$router.push('/')
+            this.$router.push(this.$route.query.next || '/')
           }
         })
         .catch(_ => {

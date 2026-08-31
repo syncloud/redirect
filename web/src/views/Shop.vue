@@ -79,7 +79,7 @@
         </el-button>
       </div>
 
-      <div v-if="!loggedIn && step === 'choose'" class="sc-card" data-testid="shop-signin">
+      <div v-if="loggedIn === false && step === 'choose'" class="sc-card" data-testid="shop-signin">
         <h2 class="sc-h2">Sign in to order</h2>
         <p>
           A device is tied to the account that owns it, so ordering needs one. It takes a
@@ -87,7 +87,7 @@
         </p>
         <router-link
           class="sc-btn"
-          to="/login"
+          to="/login?next=/shop"
           data-testid="shop-signin-link"
         >
           Sign in or create an account

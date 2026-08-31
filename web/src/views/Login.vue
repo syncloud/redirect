@@ -81,7 +81,7 @@ export default {
       axios.post('/api/user/login', { email: this.email, password: this.password })
         .then(_ => {
           this.checkUserSession()
-          this.$router.push('/')
+          this.$router.push(this.$route.query.next || '/')
         })
         .catch(err => {
           showError(this, err.response.data)
