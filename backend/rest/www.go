@@ -313,6 +313,11 @@ func (w *Www) WebUserDelete(resp http.ResponseWriter, r *http.Request, user mode
 		w.logger.Error("unable to delete domains for a user", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
+	err = w.orders.Redact(user.Id)
+	if err != nil {
+		w.logger.Error("unable to redact orders for a user", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
 	err = w.users.Delete(user.Id)
 	if err != nil {
 		w.logger.Error("unable to delete a user", zap.Error(err))
@@ -690,6 +695,7 @@ func (w *Www) DeviceOrderComplete(_ http.ResponseWriter, req *http.Request, user
 }
 
 type WwwOrders interface {
+	Redact(userId int64) error
 	Catalog() []product.Device
 	Shipping() int
 	Start(order *product.Order, provider string) (string, error)

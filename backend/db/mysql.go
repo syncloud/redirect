@@ -980,11 +980,12 @@ func (m *MySql) SetOrderProviderReference(id int64, providerReference string) er
 func (m *MySql) GetOrderByReference(reference string) (*product.Order, error) {
 	order := &product.Order{}
 	var providerReference sql.NullString
+	var userId sql.NullInt64
 	err := m.db.QueryRow(
 		"SELECT id, user_id, device, `option`, total, provider, reference, provider_reference, "+
 			"name, address, city, postcode, country, paid "+
 			"from device_order where reference = ?", reference).
-		Scan(&order.Id, &order.UserId, &order.Device, &order.Option, &order.Total,
+		Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
 			&order.Provider, &order.Reference, &providerReference,
 			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -994,6 +995,7 @@ func (m *MySql) GetOrderByReference(reference string) (*product.Order, error) {
 		return nil, err
 	}
 	order.ProviderReference = providerReference.String
+	order.UserId = userId.Int64
 	return order, nil
 }
 
@@ -1017,14 +1019,23 @@ func (m *MySql) GetUnpaidOrders(before time.Time) ([]*product.Order, error) {
 	for rows.Next() {
 		order := &product.Order{}
 		var providerReference sql.NullString
-		err := rows.Scan(&order.Id, &order.UserId, &order.Device, &order.Option, &order.Total,
+		var userId sql.NullInt64
+		err := rows.Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
 			&order.Provider, &order.Reference, &providerReference,
 			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid)
 		if err != nil {
 			return nil, err
 		}
 		order.ProviderReference = providerReference.String
+		order.UserId = userId.Int64
 		orders = append(orders, order)
 	}
 	return orders, rows.Err()
+}
+
+func (m *MySql) RedactOrders(userId int64) error {
+	_, err := m.db.Exec(
+		"UPDATE device_order set name = '', address = '', city = '', postcode = '' where user_id = ?",
+		userId)
+	return err
 }

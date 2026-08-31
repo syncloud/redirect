@@ -18,6 +18,7 @@ type Store interface {
 	SetOrderProviderReference(id int64, providerReference string) error
 	GetOrderByReference(reference string) (*Order, error)
 	MarkOrderPaid(id int64) error
+	RedactOrders(userId int64) error
 }
 
 type Orders struct {
@@ -127,6 +128,10 @@ func (o *Orders) Settle(order *Order) error {
 		return err
 	}
 	return o.mail.SendDeviceOrder(order, device, option)
+}
+
+func (o *Orders) Redact(userId int64) error {
+	return o.store.RedactOrders(userId)
 }
 
 func (o *Orders) Unpaid(before time.Time) ([]*Order, error) {

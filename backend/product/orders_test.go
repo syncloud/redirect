@@ -71,6 +71,15 @@ func (s *memoryStore) GetOrderByReference(reference string) (*Order, error) {
 	return s.orders[reference], nil
 }
 
+func (s *memoryStore) RedactOrders(userId int64) error {
+	for _, order := range s.orders {
+		if order.UserId == userId {
+			order.Name, order.Address, order.City, order.Postcode = "", "", "", ""
+		}
+	}
+	return nil
+}
+
 func (s *memoryStore) GetUnpaidOrders(before time.Time) ([]*Order, error) {
 	unpaid := []*Order{}
 	for _, order := range s.orders {
@@ -276,5 +285,36 @@ func TestCompleteRefusesAPaymentInAnotherCurrency(t *testing.T) {
 	}
 	if mail.sent != nil {
 		t.Fatal("support must not be told about a euro payment for a sterling price")
+	}
+}
+
+func TestRedactRemovesThePersonButKeepsTheSale(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: paidTotal}
+	store, mail := newStore(), &recordingMail{}
+	service, reference := started(t, checkout, store, mail)
+
+	if err := service.Redact(7); err != nil {
+		t.Fatal(err)
+	}
+
+	order := store.orders[reference]
+	if order.Name != "" || order.Address != "" || order.City != "" || order.Postcode != "" {
+		t.Fatalf("the person is still there: %+v", order)
+	}
+	if order.Country != "Germany" || order.Total != paidTotal || order.Reference != reference {
+		t.Fatalf("the sale was damaged: %+v", order)
+	}
+}
+
+func TestRedactLeavesOtherPeopleAlone(t *testing.T) {
+	checkout := &recordingCheckout{}
+	store, mail := newStore(), &recordingMail{}
+	service, reference := started(t, checkout, store, mail)
+
+	if err := service.Redact(8); err != nil {
+		t.Fatal(err)
+	}
+	if store.orders[reference].Name == "" {
+		t.Fatal("somebody else's order was redacted")
 	}
 }
