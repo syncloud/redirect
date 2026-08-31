@@ -188,3 +188,17 @@ test('every address field keeps a label that survives typing', async () => {
   await fill(wrapper)
   expect(wrapper.find('label[for="device-city"]').text()).toBe('City')
 })
+
+test('says what is in the box without pushing the choice off the screen', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+
+  const spec = wrapper.find('[data-testid="device-spec"]')
+  expect(spec.exists()).toBe(true)
+  expect(spec.element.open).toBe(false)
+  expect(spec.text()).toContain('Odroid HC4')
+  expect(spec.text()).toContain('second bay')
+})
