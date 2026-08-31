@@ -19,6 +19,6 @@ test('deleting an account does not leave a session that opens a new account with
   await activateLatestUser(page)
 
   await page.goto('/')
-  await expect(page.getByTestId('login-form')).toBeVisible()
+  await expect(page.getByTestId('home-intro')).toBeVisible()
   await expect(page.getByTestId('no-devices')).toHaveCount(0)
 })

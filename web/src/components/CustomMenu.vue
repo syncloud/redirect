@@ -87,6 +87,7 @@ export default {
       axios.post('/api/logout')
         .then(_ => {
           this.checkUserSession()
+          this.$router.push('/login')
         })
         .catch(err => {
           console.log(err)

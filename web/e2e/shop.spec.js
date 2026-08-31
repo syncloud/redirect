@@ -40,7 +40,7 @@ test('the shop is readable without an account', async ({ page }, testInfo) => {
   await expect(page.getByTestId('device-pay')).toHaveCount(0)
 
   await page.getByTestId('shop-signin-link').click()
-  await expect(page).toHaveURL(/\/login$/)
+  await expect(page).toHaveURL(/\/login\?next=\/shop$/)
 })
 
 test('the shop prices the device from the catalogue', async ({ page }, testInfo) => {
