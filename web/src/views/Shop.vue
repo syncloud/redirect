@@ -107,25 +107,62 @@
       <div v-if="loggedIn && step === 'checkout'" class="sc-card sc-form" data-testid="device-address">
         <h2 class="sc-h2">Ship it to</h2>
 
-        <div class="sc-field">
+        <div class="field">
+          <input
+            id="device-name"
+            v-model="name"
+            type="text"
+            placeholder=" "
+            autocomplete="name"
+            data-testid="device-name"
+          >
           <label for="device-name">Full name</label>
-          <input id="device-name" v-model="name" type="text" data-testid="device-name">
         </div>
-        <div class="sc-field">
+        <div class="field">
+          <input
+            id="device-address-line"
+            v-model="address"
+            type="text"
+            placeholder=" "
+            autocomplete="street-address"
+            data-testid="device-address-line"
+          >
           <label for="device-address-line">Address</label>
-          <input id="device-address-line" v-model="address" type="text" data-testid="device-address-line">
         </div>
-        <div class="sc-field">
-          <label for="device-city">City</label>
-          <input id="device-city" v-model="city" type="text" data-testid="device-city">
+        <div class="field-row">
+          <div class="field">
+            <input
+              id="device-city"
+              v-model="city"
+              type="text"
+              placeholder=" "
+              autocomplete="address-level2"
+              data-testid="device-city"
+            >
+            <label for="device-city">City</label>
+          </div>
+          <div class="field">
+            <input
+              id="device-postcode"
+              v-model="postcode"
+              type="text"
+              placeholder=" "
+              autocomplete="postal-code"
+              data-testid="device-postcode"
+            >
+            <label for="device-postcode">Postcode</label>
+          </div>
         </div>
-        <div class="sc-field">
-          <label for="device-postcode">Postcode</label>
-          <input id="device-postcode" v-model="postcode" type="text" data-testid="device-postcode">
-        </div>
-        <div class="sc-field">
+        <div class="field">
+          <input
+            id="device-country"
+            v-model="country"
+            type="text"
+            placeholder=" "
+            autocomplete="country-name"
+            data-testid="device-country"
+          >
           <label for="device-country">Country</label>
-          <input id="device-country" v-model="country" type="text" data-testid="device-country">
         </div>
 
         <p v-if="incomplete" class="sc-help" data-testid="device-incomplete">
@@ -380,6 +417,44 @@ export default {
   align-items: flex-start;
   gap: 22px;
   flex-wrap: wrap;
+}
+
+.field {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.field input {
+  padding-top: 20px !important;
+  padding-bottom: 4px !important;
+}
+
+.field label {
+  position: absolute;
+  left: 15px;
+  top: 14px;
+  color: var(--sc-muted);
+  font-size: 1rem;
+  pointer-events: none;
+  transition: top 0.12s ease, font-size 0.12s ease, color 0.12s ease;
+}
+
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label {
+  top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--sc-ink-2);
+}
+
+.field input:focus + label {
+  color: var(--sc-primary);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .continue {

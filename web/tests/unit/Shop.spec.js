@@ -162,3 +162,29 @@ test('keeps checkout out of the way until the device is chosen', async () => {
   await wrapper.find('[data-testid="shop-change"]').trigger('click')
   expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
 })
+
+test('every address field keeps a label that survives typing', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await proceed(wrapper)
+
+  for (const [id, text] of [
+    ['device-name', 'Full name'],
+    ['device-address-line', 'Address'],
+    ['device-city', 'City'],
+    ['device-postcode', 'Postcode'],
+    ['device-country', 'Country']
+  ]) {
+    const input = wrapper.find(`[data-testid="${id}"]`)
+    expect(input.exists()).toBe(true)
+    const label = wrapper.find(`label[for="${id}"]`)
+    expect(label.exists()).toBe(true)
+    expect(label.text()).toBe(text)
+  }
+
+  await fill(wrapper)
+  expect(wrapper.find('label[for="device-city"]').text()).toBe('City')
+})
