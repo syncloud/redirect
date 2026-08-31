@@ -20,6 +20,9 @@ window.paypal = {
           'width:100%%;height:44px;border-radius:8px;border:0;background:#ffc439;font-weight:700;cursor:pointer'
         button.addEventListener('click', function () {
           Promise.resolve()
+            .then(function () {
+              if (options.onClick) { return options.onClick({}, {}) }
+            })
             .then(function () { return options.createOrder() })
             .then(function (orderID) {
               return options.onApprove({ orderID: orderID })

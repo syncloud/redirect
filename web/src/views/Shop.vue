@@ -380,6 +380,8 @@ export default {
               this.busy = ''
             },
             createOrder: () => {
+              this.error = ''
+              this.busy = 'paypal'
               return this.order('paypal')
                 .then(response => {
                   this.reference = response.data.data.reference

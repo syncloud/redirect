@@ -3,7 +3,10 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Shop from '../../src/views/Shop.vue'
+import { loadScript } from '@paypal/paypal-js'
 import { ElButton } from 'element-plus'
+
+jest.mock('@paypal/paypal-js')
 
 const CATALOG = {
   data: {
@@ -201,4 +204,41 @@ test('says what is in the box without pushing the choice off the screen', async 
   expect(spec.element.open).toBe(false)
   expect(spec.text()).toContain('Odroid HC4')
   expect(spec.text()).toContain('second bay')
+})
+
+test('pressing PayPal says something is happening', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/device/catalog').reply(200, {
+    data: { ...CATALOG.data, paypal_client_id: 'test-client-id' }
+  })
+  mock.onGet('/api/user').reply(200, { data: { email: 'a@b.c' } })
+  mock.onPost('/api/device/order').reply(200,
+    { data: { reference: 'OURREF', provider_reference: 'PP1' } })
+
+  let buttons
+  loadScript.mockResolvedValue({
+    Buttons: options => { buttons = options; return { render: () => {} } }
+  })
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await proceed(wrapper)
+  await fill(wrapper)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="device-pay-busy"]').exists()).toBe(false)
+
+  await buttons.onClick({}, {})
+  await flushPromises()
+  expect(wrapper.find('[data-testid="device-pay-busy"]').text()).toContain('Opening PayPal')
+
+  wrapper.vm.busy = ''
+  await flushPromises()
+  buttons.createOrder()
+  await flushPromises()
+  expect(wrapper.find('[data-testid="device-pay-busy"]').text()).toContain('Opening PayPal')
+
+  await buttons.onCancel()
+  await flushPromises()
+  expect(wrapper.find('[data-testid="device-pay-busy"]').exists()).toBe(false)
 })
