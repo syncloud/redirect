@@ -176,7 +176,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan/subscribe/crypto", w.Secured(HandleUser(w.SubscribeCrypto))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe/checkout", w.Secured(HandleUser(w.StripeCheckout))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe", w.Secured(HandleUser(w.SubscribeStripe))).Methods("POST")
-	r.HandleFunc("/device/catalog", w.Secured(HandleUser(w.DeviceCatalog))).Methods("GET")
+	r.HandleFunc("/device/catalog", Handle(w.DeviceCatalog)).Methods("GET")
 	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrder))).Methods("POST")
 	r.HandleFunc("/device/order/complete", w.Secured(HandleUser(w.DeviceOrderComplete))).Methods("POST")
 	r.HandleFunc("/domain", w.Secured(HandleUser(w.DomainDelete))).Methods("DELETE")
@@ -632,7 +632,7 @@ func (w *Www) notFoundHandler(resp http.ResponseWriter, r *http.Request) {
 	http.NotFound(resp, r)
 }
 
-func (w *Www) DeviceCatalog(_ http.ResponseWriter, _ *http.Request, _ model.User) (interface{}, error) {
+func (w *Www) DeviceCatalog(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
 	w.metrics.Request("device_catalog")
 	return model.DeviceCatalogResponse{
 		Devices:        w.orders.Catalog(),

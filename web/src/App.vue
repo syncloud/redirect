@@ -1,7 +1,7 @@
 <template>
   <CustomMenu v-if="!bare" v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
         v-bind:email="email"/>
-  <router-view v-bind:checkUserSession="checkUserSession"/>
+  <router-view v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"/>
 </template>
 <script>
 import axios from 'axios'
@@ -17,6 +17,7 @@ const bareRoutes = [
 ]
 
 const publicRoutes = [
+  '/shop',
   '/register',
   '/activate',
   '/forgot',

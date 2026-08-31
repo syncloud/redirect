@@ -27,10 +27,13 @@ function catalog (mock) {
   mock.onGet('/api/user').reply(200, { data: { email: 'a@b.c' } })
 }
 
-function mountShop (query = {}, replace = jest.fn()) {
+const RouterLinkStub = { props: ['to'], template: '<a :href="to"><slot /></a>' }
+
+function mountShop (query = {}, replace = jest.fn(), loggedIn = true) {
   return mount(Shop, {
+    props: { loggedIn },
     global: {
-      components: { ElButton },
+      components: { ElButton, RouterLink: RouterLinkStub },
       mocks: { $route: { query }, $router: { replace } }
     }
   })
@@ -107,4 +110,29 @@ test('confirms the order when the buyer is sent back', async () => {
   expect(completed).toEqual({ reference: 'OURREF' })
   expect(wrapper.find('[data-testid="device-ordered"]').exists()).toBe(true)
   expect(wrapper.find('[data-testid="device-reference"]').text()).toContain('OURREF')
+})
+
+test('shows the product to a visitor who is not signed in', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="device-choice"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£244.00')
+
+  expect(wrapper.find('[data-testid="shop-signin"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="device-pay"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
+})
+
+test('asks a signed out visitor to sign in rather than to pay', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="shop-signin-link"]').attributes('href')).toBe('/login')
 })

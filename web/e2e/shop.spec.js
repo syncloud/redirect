@@ -26,6 +26,21 @@ async function address (page) {
   await page.getByTestId('device-country').fill('United Kingdom')
 }
 
+test('the shop is readable without an account', async ({ page }, testInfo) => {
+  await page.goto('/shop')
+
+  await expect(page.getByTestId('device-choice')).toBeVisible()
+  await expect(page.getByTestId('device-photo')).toBeVisible()
+  await expect(page.getByTestId('device-total')).toContainText('£')
+  await shoot(page, testInfo, 'shop-signed-out')
+
+  await expect(page.getByTestId('shop-signin')).toBeVisible()
+  await expect(page.getByTestId('device-pay')).toHaveCount(0)
+
+  await page.getByTestId('shop-signin-link').click()
+  await expect(page).toHaveURL(/\/login$/)
+})
+
 test('the shop prices the device from the catalogue', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-price')
   await goToShop(page)

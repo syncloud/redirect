@@ -68,7 +68,22 @@
         </div>
       </div>
 
-      <div class="sc-card sc-form" data-testid="device-address">
+      <div v-if="!loggedIn" class="sc-card" data-testid="shop-signin">
+        <h2 class="sc-h2">Sign in to order</h2>
+        <p>
+          A device is tied to the account that owns it, so ordering needs one. It takes a
+          moment and the same account runs the device afterwards.
+        </p>
+        <router-link
+          class="sc-btn"
+          to="/login"
+          data-testid="shop-signin-link"
+        >
+          Sign in or create an account
+        </router-link>
+      </div>
+
+      <div v-if="loggedIn" class="sc-card sc-form" data-testid="device-address">
         <h2 class="sc-h2">Ship it to</h2>
 
         <div class="sc-field">
@@ -97,7 +112,7 @@
         </p>
       </div>
 
-      <div class="sc-card" data-testid="device-pay">
+      <div v-if="loggedIn" class="sc-card" data-testid="device-pay">
         <h2 class="sc-h2">Pay {{ money(total) }}</h2>
 
         <div class="pay-section-label">Pay with</div>
@@ -146,7 +161,8 @@ import { markRaw } from 'vue'
 export default {
   name: 'DeviceView',
   props: {
-    checkUserSession: Function
+    checkUserSession: Function,
+    loggedIn: Boolean
   },
   data () {
     return {
@@ -223,9 +239,11 @@ export default {
         })
         .catch(this.onError)
 
-      axios.get('/api/user')
-        .then(response => { this.email = response.data.data.email })
-        .catch(this.onError)
+      if (this.loggedIn) {
+        axios.get('/api/user')
+          .then(response => { this.email = response.data.data.email })
+          .catch(() => {})
+      }
     },
     order (provider) {
       return axios.post('/api/device/order', {
