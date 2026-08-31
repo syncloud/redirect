@@ -30,11 +30,29 @@
             <p class="product-from">from {{ money(device.price + shipping) }}</p>
             <ul class="product-points">
               <li>Assembled and tested, with the system already written to the disk</li>
-              <li>Your files, mail, photos, passwords and notes, on hardware you own</li>
+              <li>Two drive bays, so a second disk can be added later</li>
               <li>Arrives on this account, domain name and certificate ready</li>
             </ul>
           </div>
         </div>
+
+        <details class="spec" data-testid="device-spec">
+          <summary>What is in the box</summary>
+          <ul>
+            <li>Odroid HC4 board in its case</li>
+            <li>Boot memory, an SD card with Syncloud already written</li>
+            <li>The SSD you choose below, in the first bay</li>
+            <li>Power cable and ethernet cable</li>
+          </ul>
+          <p>
+            The second bay is empty. Put a disk in it whenever you like and turn it on from
+            Settings; nothing has to be decided now.
+          </p>
+          <p>
+            It suits one household running apps for family or friends, or a small business
+            sharing things between colleagues and customers.
+          </p>
+        </details>
 
         <h3 class="option-title">Storage</h3>
         <div class="options" data-testid="device-options">
@@ -512,6 +530,29 @@ export default {
   padding-left: 18px;
   color: var(--sc-ink-2);
   line-height: 1.7;
+}
+
+.spec {
+  margin-top: 20px;
+  border-top: 1px solid var(--sc-border);
+  padding-top: 14px;
+  color: var(--sc-ink-2);
+}
+
+.spec summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--sc-ink);
+}
+
+.spec ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  line-height: 1.7;
+}
+
+.spec p {
+  margin: 12px 0 0;
 }
 
 .option-title {

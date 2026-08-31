@@ -166,6 +166,24 @@ local build(arch) = [{
             ],
         },
         {
+            name: "paypal-faker",
+            image: "golang:" + go,
+            detach: true,
+            commands: [
+                "cd paypal-faker",
+                "go run . --address :4581",
+            ]
+        },
+        {
+            name: "stripe-faker",
+            image: "golang:" + go,
+            detach: true,
+            commands: [
+                "cd stripe-faker",
+                "go run . --address :4582 --url https://payments.syncloud.test/stripe",
+            ]
+        },
+        {
             name: "deploy test",
             image: "debian:bookworm-slim",
             environment: {
@@ -328,22 +346,6 @@ local build(arch) = [{
         }
     ],
     services: [
-        {
-            name: "paypal-faker",
-            image: "golang:" + go,
-            commands: [
-                "cd paypal-faker",
-                "go run . --address :4581",
-            ]
-        },
-        {
-            name: "stripe-faker",
-            image: "golang:" + go,
-            commands: [
-                "cd stripe-faker",
-                "go run . --address :4582 --url https://payments.syncloud.test/stripe",
-            ]
-        },
         {
             name: "mail",
             image: "mailhog/mailhog:v1.0.0",
