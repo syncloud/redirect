@@ -1,6 +1,9 @@
 package main
 
-import "sync"
+import (
+	"strconv"
+	"sync"
+)
 
 type Order struct {
 	Id       string
@@ -19,11 +22,11 @@ func NewOrders() *Orders {
 	return &Orders{orders: map[string]*Order{}}
 }
 
-func (o *Orders) Add(prefix, currency, value string) *Order {
+func (o *Orders) Add(currency, value string) *Order {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	o.next++
-	order := &Order{Id: prefix + itoa(o.next), Currency: currency, Value: value}
+	order := &Order{Id: "PAYPALORDER" + strconv.Itoa(o.next), Currency: currency, Value: value}
 	o.orders[order.Id] = order
 	return order
 }
@@ -42,16 +45,4 @@ func (o *Orders) Capture(id string) *Order {
 		order.Captured = true
 	}
 	return order
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	digits := ""
-	for n > 0 {
-		digits = string(rune('0'+n%10)) + digits
-		n /= 10
-	}
-	return digits
 }

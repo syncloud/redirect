@@ -42,7 +42,6 @@ for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 docker rm -f pebble 2>/dev/null || true
 pkill -f /usr/local/bin/dns-faker 2>/dev/null || true
 pkill -f /usr/local/bin/ses-faker 2>/dev/null || true
-pkill -f /usr/local/bin/payment-faker 2>/dev/null || true
 pkill -f /usr/local/bin/device-faker 2>/dev/null || true
 pkill -f /usr/local/bin/frpc 2>/dev/null || true
 
@@ -50,24 +49,15 @@ install -m 0755 "$STAGE/sim/dns-faker" /usr/local/bin/dns-faker
 ( /usr/local/bin/dns-faker </dev/null >/var/log/dns-faker.log 2>&1 & )
 for i in $(seq 1 30); do curl -sf http://localhost:4566/health >/dev/null 2>&1 && break; sleep 1; done
 
-install -m 0755 "$STAGE/sim/payment-faker" /usr/local/bin/payment-faker
-( /usr/local/bin/payment-faker \
-    --paypal 127.0.0.1:4581 \
-    --stripe 127.0.0.1:4582 \
-    --stripe-url "https://payments.$SYNCLOUD_DOMAIN/stripe" \
-    </dev/null >/var/log/payment-faker.log 2>&1 & )
-for i in $(seq 1 30); do curl -sf http://127.0.0.1:4581/sdk/js >/dev/null 2>&1 && break; sleep 1; done
-curl -sf http://127.0.0.1:4581/sdk/js >/dev/null
-
 install -d /etc/caddy/conf.d
 cat > /etc/caddy/conf.d/payment-faker.caddy <<FAKER
 payments.$SYNCLOUD_DOMAIN {
 	import syncloud_tls
 	handle_path /paypal/* {
-		reverse_proxy 127.0.0.1:4581
+		reverse_proxy paypal-faker:4581
 	}
 	handle_path /stripe/* {
-		reverse_proxy 127.0.0.1:4582
+		reverse_proxy stripe-faker:4582
 	}
 }
 FAKER

@@ -22,7 +22,7 @@ func (p *PayPal) Handler() http.Handler {
 	mux.HandleFunc("/v2/checkout/orders", p.create)
 	mux.HandleFunc("/v2/checkout/orders/", p.order)
 	mux.HandleFunc("/v1/billing/subscriptions/", p.subscription)
-	return logging("paypal", mux)
+	return logging(mux)
 }
 
 func (p *PayPal) token(w http.ResponseWriter, _ *http.Request) {
@@ -49,7 +49,7 @@ func (p *PayPal) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	unit := body.PurchaseUnits[0].Amount
-	order := p.orders.Add("PAYPALORDER", unit.CurrencyCode, unit.Value)
+	order := p.orders.Add(unit.CurrencyCode, unit.Value)
 	write(w, map[string]any{
 		"id":     order.Id,
 		"status": "CREATED",
@@ -110,9 +110,9 @@ func write(w http.ResponseWriter, body any) {
 	}
 }
 
-func logging(name string, next http.Handler) http.Handler {
+func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %s", name, r.Method, r.URL.Path)
+		log.Printf("paypal %s %s", r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }
