@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
-import Device from '../../src/views/Device.vue'
+import Shop from '../../src/views/Shop.vue'
 import { ElButton } from 'element-plus'
 
 const CATALOG = {
@@ -27,8 +27,8 @@ function catalog (mock) {
   mock.onGet('/api/user').reply(200, { data: { email: 'a@b.c' } })
 }
 
-function mountDevice (query = {}, replace = jest.fn()) {
-  return mount(Device, {
+function mountShop (query = {}, replace = jest.fn()) {
+  return mount(Shop, {
     global: {
       components: { ElButton },
       mocks: { $route: { query }, $router: { replace } }
@@ -49,11 +49,11 @@ test('adds shipping to whichever option is chosen', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)
 
-  const wrapper = mountDevice()
+  const wrapper = mountShop()
   await flushPromises()
   expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£244.00')
 
-  await wrapper.find('[data-testid="device-option"]').setValue('2tx2')
+  await wrapper.find('[data-testid="device-option-2tx2"]').trigger('click')
   expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£674.00')
 })
 
@@ -61,7 +61,7 @@ test('will not let you pay before the address is complete', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)
 
-  const wrapper = mountDevice()
+  const wrapper = mountShop()
   await flushPromises()
   expect(wrapper.find('[data-testid="device-pay-stripe"]').attributes('disabled')).toBeDefined()
 
@@ -80,7 +80,7 @@ test('never tells the server what the order costs', async () => {
   delete window.location
   window.location = { href: '' }
 
-  const wrapper = mountDevice()
+  const wrapper = mountShop()
   await flushPromises()
   await fill(wrapper)
   await wrapper.find('[data-testid="device-pay-stripe"]').trigger('click')
@@ -101,7 +101,7 @@ test('confirms the order when the buyer is sent back', async () => {
     return [200, { data: 'ordered' }]
   })
 
-  const wrapper = mountDevice({ reference: 'OURREF' })
+  const wrapper = mountShop({ reference: 'OURREF' })
   await flushPromises()
 
   expect(completed).toEqual({ reference: 'OURREF' })

@@ -9,13 +9,13 @@ async function signedIn (page, prefix) {
   return email
 }
 
-async function goToBuy (page) {
+async function goToShop (page) {
   const burger = page.getByTestId('menu-burger')
   if (await burger.isVisible()) {
     await burger.click()
   }
-  await page.getByTestId('nav-buy').click()
-  await expect(page).toHaveURL(/\/device$/)
+  await page.getByTestId('nav-shop').click()
+  await expect(page).toHaveURL(/\/shop$/)
 }
 
 async function address (page) {
@@ -26,15 +26,16 @@ async function address (page) {
   await page.getByTestId('device-country').fill('United Kingdom')
 }
 
-test('the buy page prices the device from the catalogue', async ({ page }, testInfo) => {
+test('the shop prices the device from the catalogue', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-price')
-  await goToBuy(page)
+  await goToShop(page)
 
   await expect(page.getByTestId('device-choice')).toBeVisible()
+  await expect(page.getByTestId('device-photo')).toBeVisible()
   const cheapest = await page.getByTestId('device-total').textContent()
   await shoot(page, testInfo, 'device-choice')
 
-  await page.getByTestId('device-option').selectOption({ index: 1 })
+  await page.getByTestId('device-option-2tx2').click()
   const dearer = await page.getByTestId('device-total').textContent()
 
   expect(cheapest).not.toBe(dearer)
@@ -43,7 +44,7 @@ test('the buy page prices the device from the catalogue', async ({ page }, testI
 
 test('paying cannot start until the address is complete', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-address')
-  await goToBuy(page)
+  await goToShop(page)
 
   await expect(page.getByTestId('device-pay-stripe')).toBeDisabled()
   await expect(page.getByTestId('device-incomplete')).toBeVisible()
@@ -61,7 +62,7 @@ test('the payment faker is reachable from the browser', async ({ page }) => {
 
 test('a card payment is taken and the order is confirmed', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-card')
-  await goToBuy(page)
+  await goToShop(page)
   await address(page)
 
   const total = await page.getByTestId('device-total').textContent()
@@ -82,7 +83,7 @@ test('a card payment is taken and the order is confirmed', async ({ page }, test
 
 test('a paypal payment is taken and the order is confirmed', async ({ page }, testInfo) => {
   await signedIn(page, 'buy-paypal')
-  await goToBuy(page)
+  await goToShop(page)
   await address(page)
 
   await expect(page.getByTestId('paypal-faker-button')).toBeVisible()

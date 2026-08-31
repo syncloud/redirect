@@ -1,9 +1,9 @@
 <template>
   <div class="sc-page">
-    <h1 class="sc-h1">Buy a device</h1>
+    <h1 class="sc-h1">Shop</h1>
     <p class="sc-lead">
-      A Syncloud device, assembled and ready, with the image already written. It arrives
-      linked to this account, so there is nothing else to sign up for.
+      A Syncloud device, assembled and ready to plug in. It arrives on this account, so
+      there is nothing else to sign up for.
     </p>
 
     <div v-if="ordered" class="sc-card" data-testid="device-ordered">
@@ -15,29 +15,50 @@
     </div>
 
     <template v-else>
-      <div class="sc-card sc-form" data-testid="device-choice">
-        <h2 class="sc-h2">{{ device.name }}</h2>
-
-        <div class="sc-field">
-          <label for="device-option">Storage</label>
-          <select
-            id="device-option"
-            v-model="option"
-            data-testid="device-option"
+      <div class="sc-card" data-testid="device-choice">
+        <div class="product-head">
+          <img
+            class="product-photo"
+            src="/assets/syncloud-h4.jpg"
+            :alt="device.name"
+            width="180"
+            height="180"
+            data-testid="device-photo"
           >
-            <option v-for="each in device.options" :key="each.code" :value="each.code">
-              {{ each.name }} — {{ money(device.price + each.extra) }}
-            </option>
-          </select>
+          <div>
+            <h2 class="sc-h2 product-name">{{ device.name }}</h2>
+            <p class="product-from">from {{ money(device.price + shipping) }}</p>
+            <ul class="product-points">
+              <li>Assembled and tested, with the system already written to the disk</li>
+              <li>Your files, mail, photos, passwords and notes, on hardware you own</li>
+              <li>Arrives on this account, domain name and certificate ready</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 class="option-title">Storage</h3>
+        <div class="options" data-testid="device-options">
+          <button
+            v-for="each in device.options"
+            :key="each.code"
+            type="button"
+            class="option"
+            :class="{ 'option-on': option === each.code }"
+            :data-testid="`device-option-${each.code}`"
+            @click="option = each.code"
+          >
+            <span class="option-name">{{ each.name }}</span>
+            <span class="option-extra">{{ each.extra ? `+ ${money(each.extra)}` : 'included' }}</span>
+          </button>
         </div>
 
         <div class="sc-summary">
           <div class="sc-summary-row">
-            <span>Device</span>
+            <span>{{ device.name }}, {{ optionName }}</span>
             <span data-testid="device-price">{{ money(device.price + extra) }}</span>
           </div>
           <div class="sc-summary-row">
-            <span>Shipping</span>
+            <span>Delivery</span>
             <span data-testid="device-shipping">{{ money(shipping) }}</span>
           </div>
           <div class="sc-summary-row sc-summary-total">
@@ -150,6 +171,10 @@ export default {
     }
   },
   computed: {
+    optionName () {
+      const chosen = this.device.options.find(each => each.code === this.option)
+      return chosen ? chosen.name : ''
+    },
     extra () {
       const chosen = this.device.options.find(each => each.code === this.option)
       return chosen ? chosen.extra : 0
@@ -302,6 +327,86 @@ export default {
 
 .sc-card + .sc-card {
   margin-top: 20px;
+}
+
+.product-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.product-photo {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  border-radius: var(--sc-control-radius);
+  background: var(--sc-field-bg);
+  flex: none;
+}
+
+.product-name {
+  margin: 0;
+}
+
+.product-from {
+  margin: 2px 0 0;
+  color: var(--sc-muted);
+  font-size: 0.95rem;
+}
+
+.product-points {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--sc-ink-2);
+  line-height: 1.7;
+}
+
+.option-title {
+  margin: 24px 0 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--sc-ink-2);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-control-radius);
+  background: var(--sc-surface);
+  color: var(--sc-ink);
+  font-family: var(--sc-font);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.option:hover {
+  border-color: var(--sc-primary);
+}
+
+.option-on {
+  border-color: var(--sc-primary);
+  box-shadow: 0 0 0 2px var(--sc-primary-soft);
+}
+
+.option-name {
+  font-weight: 600;
+}
+
+.option-extra {
+  color: var(--sc-muted);
+  font-size: 0.85rem;
 }
 
 .pay-section-label {
