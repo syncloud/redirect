@@ -3,6 +3,7 @@ package product
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -68,6 +69,16 @@ func (s *memoryStore) only() *Order {
 
 func (s *memoryStore) GetOrderByReference(reference string) (*Order, error) {
 	return s.orders[reference], nil
+}
+
+func (s *memoryStore) GetUnpaidOrders(before time.Time) ([]*Order, error) {
+	unpaid := []*Order{}
+	for _, order := range s.orders {
+		if !order.Paid && order.ProviderReference != "" {
+			unpaid = append(unpaid, order)
+		}
+	}
+	return unpaid, nil
 }
 
 func (s *memoryStore) MarkOrderPaid(id int64) error {

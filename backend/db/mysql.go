@@ -1001,3 +1001,30 @@ func (m *MySql) MarkOrderPaid(id int64) error {
 	_, err := m.db.Exec("UPDATE device_order set paid = 1 where id = ?", id)
 	return err
 }
+
+func (m *MySql) GetUnpaidOrders(before time.Time) ([]*product.Order, error) {
+	rows, err := m.db.Query(
+		"SELECT id, user_id, device, `option`, total, provider, reference, provider_reference, "+
+			"name, address, city, postcode, country, paid "+
+			"from device_order where paid = 0 and provider_reference is not null "+
+			"and created_at < ? order by id", before)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	orders := []*product.Order{}
+	for rows.Next() {
+		order := &product.Order{}
+		var providerReference sql.NullString
+		err := rows.Scan(&order.Id, &order.UserId, &order.Device, &order.Option, &order.Total,
+			&order.Provider, &order.Reference, &providerReference,
+			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid)
+		if err != nil {
+			return nil, err
+		}
+		order.ProviderReference = providerReference.String
+		orders = append(orders, order)
+	}
+	return orders, rows.Err()
+}

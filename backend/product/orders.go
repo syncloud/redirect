@@ -2,6 +2,7 @@ package product
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -13,6 +14,7 @@ type Mail interface {
 
 type Store interface {
 	InsertOrder(order *Order) (int64, error)
+	GetUnpaidOrders(before time.Time) ([]*Order, error)
 	SetOrderProviderReference(id int64, providerReference string) error
 	GetOrderByReference(reference string) (*Order, error)
 	MarkOrderPaid(id int64) error
@@ -85,6 +87,10 @@ func (o *Orders) Complete(userId int64, reference string) error {
 	if order == nil || order.UserId != userId {
 		return ErrNoOrder
 	}
+	return o.Settle(order)
+}
+
+func (o *Orders) Settle(order *Order) error {
 	if order.Paid {
 		return nil
 	}
@@ -103,13 +109,13 @@ func (o *Orders) Complete(userId int64, reference string) error {
 	if currency != Currency {
 		o.logger.Error("wrong currency",
 			zap.String("paid", currency), zap.String("expected", Currency),
-			zap.String("reference", reference))
+			zap.String("reference", order.Reference))
 		return ErrWrongCurrency
 	}
 	if amount != order.Total {
 		o.logger.Error("wrong amount",
 			zap.Int("paid", amount), zap.Int("expected", order.Total),
-			zap.String("reference", reference))
+			zap.String("reference", order.Reference))
 		return ErrWrongAmount
 	}
 
@@ -121,6 +127,10 @@ func (o *Orders) Complete(userId int64, reference string) error {
 		return err
 	}
 	return o.mail.SendDeviceOrder(order, device, option)
+}
+
+func (o *Orders) Unpaid(before time.Time) ([]*Order, error) {
+	return o.store.GetUnpaidOrders(before)
 }
 
 func (o *Orders) describe(deviceCode, optionCode string) (string, string, error) {

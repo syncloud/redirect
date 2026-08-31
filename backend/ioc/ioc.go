@@ -180,13 +180,21 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		if err != nil {
 			return nil, err
 		}
-		return product.NewOrders(
+		orders := product.NewOrders(
 			product.NewCatalog(product.Devices(), product.Shipping),
 			product.NewCheckouts(paypalCheckout, stripeCheckout),
 			database,
 			mailService,
 			logger,
-		), nil
+		)
+		return orders, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(orders *product.Orders) *product.Reconciler {
+		return product.NewReconciler(orders, 10*time.Minute, 2*time.Minute, logger)
 	})
 	if err != nil {
 		return nil, err
