@@ -219,13 +219,18 @@ export default {
       if (this.paypalLoaded || !this.paypalClientId) {
         return
       }
-      const options = { clientId: this.paypalClientId, currency: this.currency }
+      const options = {
+        clientId: this.paypalClientId,
+        currency: this.currency,
+        disableFunding: 'card,paylater'
+      }
       if (this.paypalSdkUrl) {
         options.sdkBaseUrl = this.paypalSdkUrl
       }
       loadScript(options)
         .then(paypal => {
           paypal.Buttons({
+            style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44 },
             createOrder: () => {
               this.error = ''
               return this.order('paypal')
