@@ -19,6 +19,8 @@ async function goToShop (page) {
 }
 
 async function address (page) {
+  await page.getByTestId('shop-continue').click()
+  await expect(page.getByTestId('shop-chosen')).toBeVisible()
   await page.getByTestId('device-name').fill('Ada Lovelace')
   await page.getByTestId('device-address-line').fill('1 Analytical Street')
   await page.getByTestId('device-city').fill('London')
@@ -61,8 +63,10 @@ test('paying cannot start until the address is complete', async ({ page }, testI
   await signedIn(page, 'buy-address')
   await goToShop(page)
 
+  await page.getByTestId('shop-continue').click()
   await expect(page.getByTestId('device-pay-stripe')).toBeDisabled()
   await expect(page.getByTestId('device-incomplete')).toBeVisible()
+  await page.getByTestId('shop-change').click()
 
   await address(page)
   await expect(page.getByTestId('device-pay-stripe')).toBeEnabled()

@@ -15,7 +15,7 @@
     </div>
 
     <template v-else>
-      <div class="sc-card" data-testid="device-choice">
+      <div v-show="step === 'choose'" class="sc-card" data-testid="device-choice">
         <div class="product-head">
           <img
             class="product-photo"
@@ -66,9 +66,20 @@
             <span data-testid="device-total">{{ money(total) }}</span>
           </div>
         </div>
+
+        <el-button
+          v-if="loggedIn"
+          type="primary"
+          size="large"
+          class="continue"
+          data-testid="shop-continue"
+          @click="step = 'checkout'"
+        >
+          Continue
+        </el-button>
       </div>
 
-      <div v-if="!loggedIn" class="sc-card" data-testid="shop-signin">
+      <div v-if="!loggedIn && step === 'choose'" class="sc-card" data-testid="shop-signin">
         <h2 class="sc-h2">Sign in to order</h2>
         <p>
           A device is tied to the account that owns it, so ordering needs one. It takes a
@@ -83,7 +94,17 @@
         </router-link>
       </div>
 
-      <div v-if="loggedIn" class="sc-card sc-form" data-testid="device-address">
+      <div v-if="loggedIn && step === 'checkout'" class="sc-card chosen" data-testid="shop-chosen">
+        <div>
+          <span class="chosen-name">{{ device.name }}, {{ optionName }}</span>
+          <span class="chosen-total">{{ money(total) }}</span>
+        </div>
+        <button type="button" class="chosen-change" data-testid="shop-change" @click="step = 'choose'">
+          Change
+        </button>
+      </div>
+
+      <div v-if="loggedIn && step === 'checkout'" class="sc-card sc-form" data-testid="device-address">
         <h2 class="sc-h2">Ship it to</h2>
 
         <div class="sc-field">
@@ -112,7 +133,7 @@
         </p>
       </div>
 
-      <div v-if="loggedIn" class="sc-card" data-testid="device-pay">
+      <div v-if="loggedIn && step === 'checkout'" class="sc-card" data-testid="device-pay">
         <h2 class="sc-h2">Pay {{ money(total) }}</h2>
 
         <div class="pay-section-label">Pay with</div>
@@ -182,6 +203,7 @@ export default {
       ordered: false,
       error: '',
       busy: '',
+      step: 'choose',
       paypalLoaded: false,
       CreditCard: markRaw(CreditCard)
     }
@@ -354,6 +376,37 @@ export default {
   flex-wrap: wrap;
 }
 
+.continue {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chosen-name {
+  font-weight: 600;
+}
+
+.chosen-total {
+  margin-left: 10px;
+  color: var(--sc-muted);
+}
+
+.chosen-change {
+  border: 0;
+  background: none;
+  color: var(--sc-primary);
+  font-family: var(--sc-font);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0;
+}
+
 .product-photo {
   width: 180px;
   height: 180px;
@@ -425,6 +478,25 @@ export default {
 .option-extra {
   color: var(--sc-muted);
   font-size: 0.85rem;
+}
+
+@media (max-width: 560px) {
+  .product-head {
+    gap: 14px;
+  }
+
+  .product-photo {
+    width: 96px;
+    height: 96px;
+  }
+
+  .product-points {
+    display: none;
+  }
+
+  .options {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .pay-section-label {

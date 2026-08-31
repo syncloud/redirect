@@ -39,6 +39,11 @@ function mountShop (query = {}, replace = jest.fn(), loggedIn = true) {
   })
 }
 
+async function proceed (wrapper) {
+  await wrapper.find('[data-testid="shop-continue"]').trigger('click')
+  await flushPromises()
+}
+
 async function fill (wrapper) {
   await wrapper.find('[data-testid="device-name"]').setValue('A B')
   await wrapper.find('[data-testid="device-address-line"]').setValue('1 Road')
@@ -66,6 +71,7 @@ test('will not let you pay before the address is complete', async () => {
 
   const wrapper = mountShop()
   await flushPromises()
+  await proceed(wrapper)
   expect(wrapper.find('[data-testid="device-pay-stripe"]').attributes('disabled')).toBeDefined()
 
   await fill(wrapper)
@@ -85,6 +91,7 @@ test('never tells the server what the order costs', async () => {
 
   const wrapper = mountShop()
   await flushPromises()
+  await proceed(wrapper)
   await fill(wrapper)
   await wrapper.find('[data-testid="device-pay-stripe"]').trigger('click')
   await flushPromises()
@@ -135,4 +142,23 @@ test('asks a signed out visitor to sign in rather than to pay', async () => {
   await flushPromises()
 
   expect(wrapper.find('[data-testid="shop-signin-link"]').attributes('href')).toBe('/login')
+})
+
+test('keeps checkout out of the way until the device is chosen', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="device-pay"]').exists()).toBe(false)
+
+  await proceed(wrapper)
+
+  expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="shop-chosen"]').text()).toContain('£244.00')
+
+  await wrapper.find('[data-testid="shop-change"]').trigger('click')
+  expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
 })
