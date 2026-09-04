@@ -36,8 +36,26 @@
           </div>
         </div>
 
+        <ul class="highlights" data-testid="device-highlights">
+          <li v-for="spec in headline" :key="spec.name">
+            <span class="highlight-value">{{ spec.value }}</span>
+            <span class="highlight-name">{{ spec.name }}</span>
+          </li>
+        </ul>
+
         <details class="spec" data-testid="device-spec">
-          <summary>What is in the box</summary>
+          <summary>Full specification and what is in the box</summary>
+
+          <table class="spec-table" data-testid="device-spec-table">
+            <tbody>
+              <tr v-for="spec in device.specs" :key="spec.name">
+                <th scope="row">{{ spec.name }}</th>
+                <td>{{ spec.value }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4 class="spec-heading">In the box</h4>
           <ul>
             <li>Odroid HC4 board in its case</li>
             <li>Boot memory, an SD card with Syncloud already written</li>
@@ -244,7 +262,7 @@ export default {
   },
   data () {
     return {
-      device: { name: '', price: 0, options: [] },
+      device: { name: '', price: 0, specs: [], options: [] },
       shipping: 0,
       currency: 'GBP',
       paypalClientId: '',
@@ -266,6 +284,9 @@ export default {
     }
   },
   computed: {
+    headline () {
+      return this.device.specs.slice(0, 4)
+    },
     optionName () {
       const chosen = this.device.options.find(each => each.code === this.option)
       return chosen ? chosen.name : ''
@@ -534,6 +555,69 @@ export default {
   padding-left: 18px;
   color: var(--sc-ink-2);
   line-height: 1.7;
+}
+
+.highlights {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.highlights li {
+  border: 1px solid var(--sc-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.highlight-value {
+  display: block;
+  font-weight: 600;
+  color: var(--sc-ink);
+  font-size: 0.95rem;
+}
+
+.highlight-name {
+  display: block;
+  margin-top: 2px;
+  color: var(--sc-muted);
+  font-size: 0.8rem;
+}
+
+.spec-table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.spec-table th,
+.spec-table td {
+  border-bottom: 1px solid var(--sc-border);
+  padding: 8px 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.spec-table th {
+  width: 45%;
+  font-weight: 500;
+  color: var(--sc-muted);
+}
+
+.spec-heading {
+  margin: 18px 0 0;
+  font-size: 0.95rem;
+  color: var(--sc-ink);
+}
+
+@media (max-width: 640px) {
+  .highlights {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .spec {

@@ -14,6 +14,13 @@ const CATALOG = {
       code: 'h4',
       name: 'Syncloud H4',
       price: 22900,
+      specs: [
+        { name: 'CPU', value: 'Amlogic S905X3, Cortex-A55' },
+        { name: 'RAM', value: '4 GB DDR4' },
+        { name: 'Drive bays', value: '2 x SATA, 3.5 or 2.5 inch' },
+        { name: 'Ethernet', value: '1 Gb' },
+        { name: 'USB', value: 'USB 2.0 x 1' }
+      ],
       options: [
         { code: '120', name: '120 GB SSD', extra: 0 },
         { code: '2tx2', name: '2 TB SSD x 2', extra: 43000 }
@@ -241,4 +248,20 @@ test('pressing PayPal says something is happening', async () => {
   await buttons.onCancel()
   await flushPromises()
   expect(wrapper.find('[data-testid="device-pay-busy"]').exists()).toBe(false)
+})
+
+test('shows the headline specs without opening anything', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+
+  const highlights = wrapper.find('[data-testid="device-highlights"]')
+  expect(highlights.text()).toContain('Amlogic S905X3')
+  expect(highlights.text()).toContain('4 GB DDR4')
+  expect(highlights.text()).not.toContain('USB 2.0')
+
+  const table = wrapper.find('[data-testid="device-spec-table"]')
+  expect(table.text()).toContain('USB 2.0 x 1')
 })
