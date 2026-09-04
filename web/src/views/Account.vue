@@ -94,11 +94,13 @@
                   @click="stripeCheckout"
                 >Card</el-button>
 
-                <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
+                <div class="pay-paypal-wrap">
+                  <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
 
-                <p v-if="busy" class="pay-busy" data-testid="account-pay-busy">
-                  {{ busy === 'paypal' ? 'Opening PayPal, this can take a few seconds.' : 'Opening the card checkout.' }}
-                </p>
+                  <div v-if="busy === 'paypal'" class="pay-overlay" data-testid="account-pay-busy">
+                    <span class="pay-spinner" aria-label="Opening PayPal"/>
+                  </div>
+                </div>
 
                 <div class="pay-crypto" v-show="tier === 'pro'">
                   <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
@@ -554,10 +556,35 @@ export default {
 .pay-button {
   width: 100%;
 }
-.pay-busy {
-  margin: 4px 0 0;
-  color: var(--el-text-color-secondary);
-  font-size: 0.9rem;
+.pay-paypal-wrap {
+  position: relative;
+}
+.pay-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.pay-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-top-color: var(--el-color-primary);
+  border-radius: 50%;
+  animation: pay-spin 0.7s linear infinite;
+}
+@keyframes pay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pay-spinner {
+    animation-duration: 2.4s;
+  }
 }
 .pay-paypal {
   min-height: 1px;

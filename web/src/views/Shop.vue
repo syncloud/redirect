@@ -206,20 +206,22 @@
             Card
           </el-button>
 
-          <div
-            id="device-paypal"
-            v-show="!incomplete"
-            class="pay-paypal"
-            data-testid="device-pay-paypal"
-          />
+          <div class="pay-paypal-wrap">
+            <div
+              id="device-paypal"
+              v-show="!incomplete"
+              class="pay-paypal"
+              data-testid="device-pay-paypal"
+            />
 
-          <p
-            v-if="busy"
-            class="pay-busy"
-            data-testid="device-pay-busy"
-          >
-            {{ busy === 'paypal' ? 'Opening PayPal, this can take a few seconds.' : 'Opening the card checkout.' }}
-          </p>
+            <div
+              v-if="busy === 'paypal'"
+              class="pay-overlay"
+              data-testid="device-pay-busy"
+            >
+              <span class="pay-spinner" aria-label="Opening PayPal"/>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -644,9 +646,38 @@ export default {
   min-height: 1px;
 }
 
-.pay-busy {
-  margin: 4px 0 0;
-  color: var(--sc-muted);
-  font-size: 0.9rem;
+.pay-paypal-wrap {
+  position: relative;
+}
+
+.pay-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.pay-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-top-color: var(--sc-accent, #0070ba);
+  border-radius: 50%;
+  animation: pay-spin 0.7s linear infinite;
+}
+
+@keyframes pay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pay-spinner {
+    animation-duration: 2.4s;
+  }
 }
 </style>
