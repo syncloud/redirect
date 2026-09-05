@@ -1,13 +1,16 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { ssh, scpFrom } from './helpers/ssh'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
 
 const REMOTE_TMP = '/tmp/syncloud/ui'
 
 export default async function () {
   if (!process.env.CI) return
 
-  const out = path.join(__dirname, '..', 'test-results', 'logs')
+  const out = path.join(here, '..', 'test-results', 'logs')
   fs.mkdirSync(out, { recursive: true })
 
   ssh(`rm -rf ${REMOTE_TMP} && mkdir -p ${REMOTE_TMP}`, { throw: false })

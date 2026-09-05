@@ -1,6 +1,9 @@
 import base from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
 
 const test = base.test.extend({
   page: async ({ page }, use, testInfo) => {
@@ -31,7 +34,7 @@ const test = base.test.extend({
 
 function shotDir (testInfo) {
   const root = process.env.PLAYWRIGHT_ARTIFACT_DIR ||
-    path.join(__dirname, '..', 'test-results')
+    path.join(here, '..', 'test-results')
   return path.join(root, `screenshots-${testInfo.project.name}`)
 }
 
