@@ -20,6 +20,9 @@ type Store interface {
 	GetOrderByReference(reference string) (*Order, error)
 	MarkOrderPaid(id int64) error
 	RedactOrders(userId int64) error
+	GetOrdersByUser(userId int64) ([]*Order, error)
+	GetAllOrders() ([]*Order, error)
+	SetOrderStatus(id int64, status string) error
 }
 
 type Orders struct {
@@ -50,7 +53,7 @@ func (o *Orders) Start(order *Order, provider string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	device, option, err := o.describe(order.Device, order.Option)
+	device, option, err := o.Describe(order.Device, order.Option)
 	if err != nil {
 		return "", err
 	}
@@ -124,7 +127,7 @@ func (o *Orders) Settle(order *Order) error {
 	if err := o.store.MarkOrderPaid(order.Id); err != nil {
 		return err
 	}
-	device, option, err := o.describe(order.Device, order.Option)
+	device, option, err := o.Describe(order.Device, order.Option)
 	if err != nil {
 		return err
 	}
@@ -147,7 +150,7 @@ func (o *Orders) Unpaid(before time.Time) ([]*Order, error) {
 	return o.store.GetUnpaidOrders(before)
 }
 
-func (o *Orders) describe(deviceCode, optionCode string) (string, string, error) {
+func (o *Orders) Describe(deviceCode, optionCode string) (string, string, error) {
 	for _, device := range o.catalog.Devices() {
 		if device.Code != deviceCode {
 			continue
@@ -159,4 +162,37 @@ func (o *Orders) describe(deviceCode, optionCode string) (string, string, error)
 		}
 	}
 	return "", "", fmt.Errorf("no %s with %s", deviceCode, optionCode)
+}
+
+var Statuses = []string{"ordered", "sent"}
+
+func ValidStatus(status string) bool {
+	for _, each := range Statuses {
+		if each == status {
+			return true
+		}
+	}
+	return false
+}
+
+func (o *Orders) Mine(userId int64) ([]*Order, error) {
+	return o.store.GetOrdersByUser(userId)
+}
+
+func (o *Orders) All() ([]*Order, error) {
+	return o.store.GetAllOrders()
+}
+
+func (o *Orders) SetStatus(reference string, status string) error {
+	if !ValidStatus(status) {
+		return fmt.Errorf("%w: %s", ErrBadStatus, status)
+	}
+	order, err := o.store.GetOrderByReference(reference)
+	if err != nil {
+		return err
+	}
+	if order == nil {
+		return ErrNoOrder
+	}
+	return o.store.SetOrderStatus(order.Id, status)
 }

@@ -1,5 +1,7 @@
 package product
 
+import "time"
+
 type Order struct {
 	Id                int64
 	UserId            int64
@@ -16,6 +18,8 @@ type Order struct {
 	Postcode          string
 	Country           string
 	Paid              bool
+	Status            string
+	CreatedAt         time.Time
 	Url               string
 }
 

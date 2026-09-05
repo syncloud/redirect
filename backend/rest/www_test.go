@@ -408,3 +408,13 @@ func (s *WwwOrdersStub) Redact(_ int64) error { return nil }
 func (s *WwwOrdersStub) Start(_ *product.Order, _ string) (string, error) { return "", nil }
 
 func (s *WwwOrdersStub) Complete(_ int64, _ string) error { return nil }
+
+func (s *WwwOrdersStub) Mine(_ int64) ([]*product.Order, error) { return nil, nil }
+
+func (s *WwwOrdersStub) All() ([]*product.Order, error) { return nil, nil }
+
+func (s *WwwOrdersStub) SetStatus(_ string, _ string) error { return nil }
+
+func (s *WwwOrdersStub) Describe(device, option string) (string, string, error) {
+	return device, option, nil
+}

@@ -79,6 +79,33 @@ func (s *memoryStore) GetOrderByReference(reference string) (*Order, error) {
 	return s.orders[reference], nil
 }
 
+func (s *memoryStore) GetOrdersByUser(userId int64) ([]*Order, error) {
+	found := []*Order{}
+	for _, order := range s.byId {
+		if order.UserId == userId && order.Paid {
+			found = append(found, order)
+		}
+	}
+	return found, nil
+}
+
+func (s *memoryStore) GetAllOrders() ([]*Order, error) {
+	found := []*Order{}
+	for _, order := range s.byId {
+		if order.Paid {
+			found = append(found, order)
+		}
+	}
+	return found, nil
+}
+
+func (s *memoryStore) SetOrderStatus(id int64, status string) error {
+	if order, ok := s.byId[id]; ok {
+		order.Status = status
+	}
+	return nil
+}
+
 func (s *memoryStore) RedactOrders(userId int64) error {
 	for _, order := range s.orders {
 		if order.UserId == userId {
@@ -100,6 +127,9 @@ func (s *memoryStore) GetUnpaidOrders(before time.Time) ([]*Order, error) {
 
 func (s *memoryStore) MarkOrderPaid(id int64) error {
 	s.paid = append(s.paid, id)
+	if order, ok := s.byId[id]; ok {
+		order.Paid = true
+	}
 	return nil
 }
 
@@ -377,5 +407,71 @@ func TestOrders_Settle_WithoutAnAccountStillTellsSupport(t *testing.T) {
 	}
 	if mail.confirmed != nil {
 		t.Fatal("confirmed to an order with no account")
+	}
+}
+
+func TestOrders_Mine_OnlyReturnsTheAccountsOwnOrders(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
+	store := newStore()
+	o := orders(checkout, store, &recordingMail{})
+
+	mine := &Order{UserId: 7, Email: "a@b.c", Device: "h4", Option: "1t",
+		Name: "A", Address: "1", City: "T", Postcode: "P", Country: "C"}
+	theirs := &Order{UserId: 9, Email: "x@y.z", Device: "h4", Option: "1t",
+		Name: "B", Address: "2", City: "T", Postcode: "P", Country: "C"}
+	for _, order := range []*Order{mine, theirs} {
+		if _, err := o.Start(order, "stripe"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := o.Complete(7, mine.Reference); err != nil {
+		t.Fatal(err)
+	}
+	if err := o.Complete(9, theirs.Reference); err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := o.Mine(7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(found) != 1 {
+		t.Fatalf("account 7 sees %d orders", len(found))
+	}
+	if found[0].UserId != 7 {
+		t.Fatalf("account 7 was shown an order belonging to %d", found[0].UserId)
+	}
+
+	all, err := o.All()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("an admin sees %d of 2 orders", len(all))
+	}
+}
+
+func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
+	store := newStore()
+	o := orders(checkout, store, &recordingMail{})
+
+	order := &Order{UserId: 7, Email: "a@b.c", Device: "h4", Option: "1t",
+		Name: "A", Address: "1", City: "T", Postcode: "P", Country: "C"}
+	if _, err := o.Start(order, "stripe"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := o.SetStatus(order.Reference, "shipped-ish"); !errors.Is(err, ErrBadStatus) {
+		t.Fatalf("want ErrBadStatus got %v", err)
+	}
+	if err := o.SetStatus(order.Reference, "sent"); err != nil {
+		t.Fatal(err)
+	}
+	if store.byId[order.Id].Status != "sent" {
+		t.Fatalf("status is %q", store.byId[order.Id].Status)
+	}
+	if err := o.SetStatus("no-such-reference", "sent"); !errors.Is(err, ErrNoOrder) {
+		t.Fatalf("want ErrNoOrder got %v", err)
 	}
 }

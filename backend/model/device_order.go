@@ -29,3 +29,23 @@ type DeviceOrderResponse struct {
 type DeviceOrderCompleteRequest struct {
 	Reference string `json:"reference"`
 }
+
+type DeviceOrderStatusRequest struct {
+	Reference string `json:"reference"`
+	Status    string `json:"status"`
+}
+
+type DeviceOrderView struct {
+	Reference string `json:"reference"`
+	Device    string `json:"device"`
+	Option    string `json:"option"`
+	Total     string `json:"total"`
+	Status    string `json:"status"`
+	Ordered   string `json:"ordered"`
+	Email     string `json:"email,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Address   string `json:"address,omitempty"`
+	City      string `json:"city,omitempty"`
+	Postcode  string `json:"postcode,omitempty"`
+	Country   string `json:"country,omitempty"`
+}
