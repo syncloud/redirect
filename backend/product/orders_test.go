@@ -31,8 +31,9 @@ func (r *recordingCheckout) Paid(string) (bool, int, string, error) {
 }
 
 type recordingMail struct {
-	sent      *Order
-	confirmed *Order
+	sent          *Order
+	confirmed     *Order
+	statusChanges []string
 }
 
 func (m *recordingMail) SendDeviceOrder(order *Order, device, option string) error {
@@ -42,6 +43,11 @@ func (m *recordingMail) SendDeviceOrder(order *Order, device, option string) err
 
 func (m *recordingMail) SendDeviceOrderCustomer(order *Order, device, option string) error {
 	m.confirmed = order
+	return nil
+}
+
+func (m *recordingMail) SendDeviceOrderStatus(order *Order, device, option, message string) error {
+	m.statusChanges = append(m.statusChanges, order.Status)
 	return nil
 }
 
@@ -454,7 +460,8 @@ func TestOrders_Mine_OnlyReturnsTheAccountsOwnOrders(t *testing.T) {
 func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
 	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
 	store := newStore()
-	o := orders(checkout, store, &recordingMail{})
+	mail := &recordingMail{}
+	o := orders(checkout, store, mail)
 
 	order := &Order{UserId: 7, Email: "a@b.c", Device: "h4", Option: "1t",
 		Name: "A", Address: "1", City: "T", Postcode: "P", Country: "C"}
@@ -470,6 +477,15 @@ func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
 	}
 	if store.byId[order.Id].Status != "sent" {
 		t.Fatalf("status is %q", store.byId[order.Id].Status)
+	}
+	if len(mail.statusChanges) != 1 {
+		t.Fatalf("status change sent %d mails", len(mail.statusChanges))
+	}
+	if err := o.SetStatus(order.Reference, "sent"); err != nil {
+		t.Fatal(err)
+	}
+	if len(mail.statusChanges) != 1 {
+		t.Fatalf("setting the same status again sent %d mails", len(mail.statusChanges))
 	}
 	if err := o.SetStatus("no-such-reference", "sent"); !errors.Is(err, ErrNoOrder) {
 		t.Fatalf("want ErrNoOrder got %v", err)

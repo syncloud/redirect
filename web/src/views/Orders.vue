@@ -49,15 +49,15 @@
             </thead>
             <tbody>
               <tr v-for="order in all" :key="order.reference" :data-testid="`admin-order-${order.reference}`">
-                <td>{{ order.ordered }}</td>
-                <td>{{ order.email }}</td>
-                <td>{{ order.device }}, {{ order.option }}</td>
-                <td>
-                  {{ order.name }}<br>
+                <td data-label="Ordered">{{ order.ordered }}</td>
+                <td data-label="Account">{{ order.email }}</td>
+                <td data-label="Item">{{ order.device }}, {{ order.option }}</td>
+                <td data-label="Ship to" class="cell-stacked">
+                  <span>{{ order.name }}</span>
                   <span class="sc-muted">{{ order.address }}, {{ order.city }} {{ order.postcode }}, {{ order.country }}</span>
                 </td>
-                <td>{{ order.total }}</td>
-                <td>
+                <td data-label="Total">{{ order.total }}</td>
+                <td data-label="Status">
                   <select
                     class="admin-status"
                     :value="order.status"
@@ -215,6 +215,60 @@ export default {
   font-weight: 600;
   color: var(--sc-muted);
   white-space: nowrap;
+}
+
+.cell-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@media (max-width: 640px) {
+  .admin-table,
+  .admin-table tbody,
+  .admin-table tr,
+  .admin-table td {
+    display: block;
+  }
+
+  .admin-table thead {
+    display: none;
+  }
+
+  .admin-table tr {
+    border: 1px solid var(--sc-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  .admin-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 14px;
+    border-bottom: 0;
+    padding: 5px 0;
+    text-align: right;
+  }
+
+  .admin-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--sc-muted);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .admin-table td.cell-stacked {
+    display: block;
+    text-align: left;
+  }
+
+  .admin-table td.cell-stacked::before {
+    display: block;
+    margin-bottom: 2px;
+  }
 }
 
 .admin-status {

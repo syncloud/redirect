@@ -133,3 +133,20 @@ test('a signed out visitor is sent to log in', async () => {
 
   expect(push).toHaveBeenCalledWith('/login?next=/orders')
 })
+
+test('every admin cell carries the label the mobile card view shows', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/user').reply(200, { data: { email: 'me@example.com', admin: true } })
+  mock.onGet('/api/device/orders').reply(200, { data: MINE })
+  mock.onGet('/api/device/orders/all').reply(200, { data: ALL })
+
+  const wrapper = mountOrders()
+  await flushPromises()
+
+  const headers = wrapper.findAll('[data-testid="orders-admin-table"] thead th')
+    .map(th => th.text())
+  const labels = wrapper.findAll('[data-testid="admin-order-ref-1"] td')
+    .map(td => td.attributes('data-label'))
+
+  expect(labels).toEqual(headers)
+})

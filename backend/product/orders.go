@@ -11,6 +11,7 @@ import (
 type Mail interface {
 	SendDeviceOrder(order *Order, device, option string) error
 	SendDeviceOrderCustomer(order *Order, device, option string) error
+	SendDeviceOrderStatus(order *Order, device, option, message string) error
 }
 
 type Store interface {
@@ -166,6 +167,11 @@ func (o *Orders) Describe(deviceCode, optionCode string) (string, string, error)
 
 var Statuses = []string{"ordered", "sent"}
 
+var statusMessages = map[string]string{
+	"ordered": "We have your order and are getting it ready.",
+	"sent":    "Your device is on its way.",
+}
+
 func ValidStatus(status string) bool {
 	for _, each := range Statuses {
 		if each == status {
@@ -194,5 +200,16 @@ func (o *Orders) SetStatus(reference string, status string) error {
 	if order == nil {
 		return ErrNoOrder
 	}
-	return o.store.SetOrderStatus(order.Id, status)
+	if order.Status == status {
+		return nil
+	}
+	if err := o.store.SetOrderStatus(order.Id, status); err != nil {
+		return err
+	}
+	order.Status = status
+	device, option, err := o.Describe(order.Device, order.Option)
+	if err != nil {
+		return err
+	}
+	return o.mail.SendDeviceOrderStatus(order, device, option, statusMessages[status])
 }
