@@ -41,3 +41,9 @@ func (o *Order) Missing() []string {
 	}
 	return missing
 }
+
+type OrderEvent struct {
+	Status    string
+	Comment   string
+	CreatedAt time.Time
+}

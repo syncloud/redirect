@@ -24,6 +24,8 @@ type Store interface {
 	GetOrdersByUser(userId int64) ([]*Order, error)
 	GetAllOrders() ([]*Order, error)
 	SetOrderStatus(id int64, status string) error
+	InsertOrderEvent(orderId int64, status string, comment string) error
+	GetOrderEvents(orderId int64) ([]*OrderEvent, error)
 }
 
 type Orders struct {
@@ -132,6 +134,9 @@ func (o *Orders) Settle(order *Order) error {
 	if err != nil {
 		return err
 	}
+	if err := o.store.InsertOrderEvent(order.Id, order.Status, ""); err != nil {
+		return err
+	}
 	if err := o.mail.SendDeviceOrder(order, device, option); err != nil {
 		return err
 	}
@@ -189,7 +194,7 @@ func (o *Orders) All() ([]*Order, error) {
 	return o.store.GetAllOrders()
 }
 
-func (o *Orders) SetStatus(reference string, status string) error {
+func (o *Orders) SetStatus(reference string, status string, comment string) error {
 	if !ValidStatus(status) {
 		return fmt.Errorf("%w: %s", ErrBadStatus, status)
 	}
@@ -200,10 +205,13 @@ func (o *Orders) SetStatus(reference string, status string) error {
 	if order == nil {
 		return ErrNoOrder
 	}
-	if order.Status == status {
+	if order.Status == status && comment == "" {
 		return nil
 	}
 	if err := o.store.SetOrderStatus(order.Id, status); err != nil {
+		return err
+	}
+	if err := o.store.InsertOrderEvent(order.Id, status, comment); err != nil {
 		return err
 	}
 	order.Status = status
@@ -211,5 +219,24 @@ func (o *Orders) SetStatus(reference string, status string) error {
 	if err != nil {
 		return err
 	}
-	return o.mail.SendDeviceOrderStatus(order, device, option, statusMessages[status])
+	message := statusMessages[status]
+	if comment != "" {
+		message = message + "\n\n" + comment
+	}
+	return o.mail.SendDeviceOrderStatus(order, device, option, message)
+}
+
+func (o *Orders) Detail(reference string, userId int64, admin bool) (*Order, []*OrderEvent, error) {
+	order, err := o.store.GetOrderByReference(reference)
+	if err != nil {
+		return nil, nil, err
+	}
+	if order == nil || (!admin && order.UserId != userId) {
+		return nil, nil, ErrNoOrder
+	}
+	events, err := o.store.GetOrderEvents(order.Id)
+	if err != nil {
+		return nil, nil, err
+	}
+	return order, events, nil
 }

@@ -413,7 +413,11 @@ func (s *WwwOrdersStub) Mine(_ int64) ([]*product.Order, error) { return nil, ni
 
 func (s *WwwOrdersStub) All() ([]*product.Order, error) { return nil, nil }
 
-func (s *WwwOrdersStub) SetStatus(_ string, _ string) error { return nil }
+func (s *WwwOrdersStub) SetStatus(_ string, _ string, _ string) error { return nil }
+
+func (s *WwwOrdersStub) Detail(_ string, _ int64, _ bool) (*product.Order, []*product.OrderEvent, error) {
+	return &product.Order{}, nil, nil
+}
 
 func (s *WwwOrdersStub) Describe(device, option string) (string, string, error) {
 	return device, option, nil

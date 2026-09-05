@@ -41,6 +41,14 @@
           @click="open = false"
         >Orders</router-link>
         <router-link
+          v-if="loggedIn && admin"
+          id="admin-orders"
+          to="/admin/orders"
+          data-testid="nav-admin-orders"
+          :class="{ active: activeTab === '/admin/orders' }"
+          @click="open = false"
+        >All orders</router-link>
+        <router-link
           v-if="loggedIn"
           id="account"
           to="/account"
@@ -83,6 +91,7 @@ export default {
   props: {
     activeTab: String,
     email: String,
+    admin: Boolean,
     loggedIn: Boolean,
     checkUserSession: Function
   },

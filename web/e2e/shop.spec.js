@@ -161,9 +161,42 @@ test('a buyer is refused the admin order endpoints', async ({ page }) => {
   expect(all.status(), 'listing every order must be admin only').toBe(403)
 
   const status = await page.request.post('/api/device/order/status', {
-    data: { reference: 'anything', status: 'sent' }
+    data: { reference: 'anything', status: 'sent', comment: 'nope' }
   })
   expect(status.status(), 'changing a status must be admin only').toBe(403)
+})
+
+test('a buyer is offered no admin menu and cannot open the admin page', async ({ page }) => {
+  await signedIn(page, 'buy-nomenu')
+
+  const burger = page.getByTestId('menu-burger')
+  if (await burger.isVisible()) {
+    await burger.click()
+  }
+  await expect(page.getByTestId('nav-orders')).toBeVisible()
+  await expect(page.getByTestId('nav-admin-orders'),
+    'a buyer must not be offered the admin screen').toHaveCount(0)
+
+  await page.goto('/admin/orders')
+  await expect(page, 'typing the admin url must not show it').toHaveURL(/\/orders$/)
+  await expect(page.getByTestId('orders-admin-table')).toHaveCount(0)
+})
+
+test('a buyer cannot open an order that is not theirs', async ({ page }) => {
+  const other = await signedIn(page, 'buy-other')
+  await goToShop(page)
+  await address(page)
+  await page.getByTestId('device-pay-stripe').click()
+  await expect(page.getByTestId('faker-pay')).toBeVisible()
+  await page.getByTestId('faker-pay').click()
+  await expect(page.getByTestId('device-ordered')).toBeVisible()
+  const reference = (await page.getByTestId('device-reference').textContent())
+    .replace('Reference ', '').trim()
+  expect(other).toContain('buy-other')
+
+  await signedIn(page, 'buy-nosy')
+  const stolen = await page.request.get(`/api/device/order?reference=${reference}`)
+  expect(stolen.status(), 'another account must not read this order').not.toBe(200)
 })
 
 test('the orders page needs an account', async ({ page }) => {

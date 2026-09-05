@@ -1013,6 +1013,33 @@ func (m *MySql) GetAllOrders() ([]*product.Order, error) {
 	return m.selectOrders("where o.paid = 1 order by o.id desc")
 }
 
+func (m *MySql) InsertOrderEvent(orderId int64, status string, comment string) error {
+	_, err := m.db.Exec(
+		"INSERT INTO device_order_event (order_id, status, comment) values (?, ?, ?)",
+		orderId, status, comment)
+	return err
+}
+
+func (m *MySql) GetOrderEvents(orderId int64) ([]*product.OrderEvent, error) {
+	rows, err := m.db.Query(
+		"SELECT status, comment, created_at from device_order_event "+
+			"where order_id = ? order by id", orderId)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	events := []*product.OrderEvent{}
+	for rows.Next() {
+		event := &product.OrderEvent{}
+		if err := rows.Scan(&event.Status, &event.Comment, &event.CreatedAt); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
 func (m *MySql) SetOrderStatus(id int64, status string) error {
 	_, err := m.db.Exec("UPDATE device_order set status = ? where id = ?", status, id)
 	return err

@@ -37,6 +37,16 @@ const routes = [
     component: () => import('../views/Orders.vue')
   },
   {
+    path: '/orders/:reference',
+    name: 'OrderDetail',
+    component: () => import('../views/OrderDetail.vue')
+  },
+  {
+    path: '/admin/orders',
+    name: 'AdminOrders',
+    component: () => import('../views/AdminOrders.vue')
+  },
+  {
     path: '/account',
     name: 'Account',
     component: () => import('../views/Account.vue')

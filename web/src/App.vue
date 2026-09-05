@@ -1,7 +1,7 @@
 <template>
   <CustomMenu v-if="!bare" v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
-        v-bind:email="email"/>
-  <router-view v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"/>
+        v-bind:email="email" v-bind:admin="admin"/>
+  <router-view v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn" v-bind:admin="admin"/>
 </template>
 <script>
 import axios from 'axios'
@@ -39,7 +39,8 @@ export default {
     return {
       currentPath: '',
       loggedIn: undefined,
-      email: ''
+      email: '',
+      admin: false
     }
   },
   computed: {
@@ -62,7 +63,8 @@ export default {
     checkUserSession: function () {
       axios.get('/api/user')
         .then(response => {
-          this.email = response.data.email
+          this.email = response.data.data.email
+          this.admin = response.data.data.admin === true
           this.loggedIn = true
           if (this.currentPath === '/login') {
             this.$router.push(this.$route.query.next || '/')
@@ -70,6 +72,7 @@ export default {
         })
         .catch(_ => {
           this.email = ''
+          this.admin = false
           this.loggedIn = false
           if (!publicRoutes.includes(this.currentPath)) {
             // console.log('redirect to login from ' + this.currentPath)

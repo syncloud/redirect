@@ -180,6 +180,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrder))).Methods("POST")
 	r.HandleFunc("/device/order/complete", w.Secured(HandleUser(w.DeviceOrderComplete))).Methods("POST")
 	r.HandleFunc("/device/orders", w.Secured(HandleUser(w.DeviceOrders))).Methods("GET")
+	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrderDetail))).Methods("GET")
 	r.HandleFunc("/device/orders/all", w.SecuredAdmin(HandleUser(w.DeviceOrdersAll))).Methods("GET")
 	r.HandleFunc("/device/order/status", w.SecuredAdmin(HandleUser(w.DeviceOrderStatus))).Methods("POST")
 	r.HandleFunc("/domain", w.Secured(HandleUser(w.DomainDelete))).Methods("DELETE")
@@ -297,6 +298,26 @@ func (w *Www) Secured(handle func(_ http.ResponseWriter, r *http.Request, user m
 	}
 }
 
+func (w *Www) DeviceOrderDetail(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("device_order_detail")
+	reference := req.URL.Query().Get("reference")
+	order, events, err := w.orders.Detail(reference, user.Id, user.Admin)
+	if err != nil {
+		w.logger.Error("unable to read the order", zap.Error(err))
+		return nil, err
+	}
+	views := w.orderViews([]*product.Order{order}, user.Admin)
+	history := []model.DeviceOrderEventView{}
+	for _, event := range events {
+		history = append(history, model.DeviceOrderEventView{
+			Status:  event.Status,
+			Comment: event.Comment,
+			At:      event.CreatedAt.Format("2006-01-02 15:04"),
+		})
+	}
+	return model.DeviceOrderDetailView{Order: views[0], History: history}, nil
+}
+
 func (w *Www) orderViews(orders []*product.Order, withAccount bool) []model.DeviceOrderView {
 	views := []model.DeviceOrderView{}
 	for _, order := range orders {
@@ -364,7 +385,7 @@ func (w *Www) DeviceOrderStatus(_ http.ResponseWriter, req *http.Request, _ mode
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	if err := w.orders.SetStatus(request.Reference, request.Status); err != nil {
+	if err := w.orders.SetStatus(request.Reference, request.Status, request.Comment); err != nil {
 		w.logger.Error("unable to set the order status", zap.Error(err))
 		return nil, err
 	}
@@ -779,6 +800,7 @@ type WwwOrders interface {
 	Complete(userId int64, reference string) error
 	Mine(userId int64) ([]*product.Order, error)
 	All() ([]*product.Order, error)
-	SetStatus(reference string, status string) error
+	SetStatus(reference string, status string, comment string) error
+	Detail(reference string, userId int64, admin bool) (*product.Order, []*product.OrderEvent, error)
 	Describe(deviceCode, optionCode string) (string, string, error)
 }

@@ -33,6 +33,13 @@ type DeviceOrderCompleteRequest struct {
 type DeviceOrderStatusRequest struct {
 	Reference string `json:"reference"`
 	Status    string `json:"status"`
+	Comment   string `json:"comment"`
+}
+
+type DeviceOrderEventView struct {
+	Status  string `json:"status"`
+	Comment string `json:"comment,omitempty"`
+	At      string `json:"at"`
 }
 
 type DeviceOrderView struct {
@@ -48,4 +55,9 @@ type DeviceOrderView struct {
 	City      string `json:"city,omitempty"`
 	Postcode  string `json:"postcode,omitempty"`
 	Country   string `json:"country,omitempty"`
+}
+
+type DeviceOrderDetailView struct {
+	Order   DeviceOrderView        `json:"order"`
+	History []DeviceOrderEventView `json:"history"`
 }

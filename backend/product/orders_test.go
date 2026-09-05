@@ -55,6 +55,7 @@ type memoryStore struct {
 	orders map[string]*Order
 	byId   map[int64]*Order
 	paid   []int64
+	events []*OrderEvent
 }
 
 func newStore() *memoryStore {
@@ -103,6 +104,15 @@ func (s *memoryStore) GetAllOrders() ([]*Order, error) {
 		}
 	}
 	return found, nil
+}
+
+func (s *memoryStore) InsertOrderEvent(orderId int64, status string, comment string) error {
+	s.events = append(s.events, &OrderEvent{Status: status, Comment: comment})
+	return nil
+}
+
+func (s *memoryStore) GetOrderEvents(_ int64) ([]*OrderEvent, error) {
+	return s.events, nil
 }
 
 func (s *memoryStore) SetOrderStatus(id int64, status string) error {
@@ -469,10 +479,10 @@ func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := o.SetStatus(order.Reference, "shipped-ish"); !errors.Is(err, ErrBadStatus) {
+	if err := o.SetStatus(order.Reference, "shipped-ish", ""); !errors.Is(err, ErrBadStatus) {
 		t.Fatalf("want ErrBadStatus got %v", err)
 	}
-	if err := o.SetStatus(order.Reference, "sent"); err != nil {
+	if err := o.SetStatus(order.Reference, "sent", ""); err != nil {
 		t.Fatal(err)
 	}
 	if store.byId[order.Id].Status != "sent" {
@@ -481,13 +491,13 @@ func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
 	if len(mail.statusChanges) != 1 {
 		t.Fatalf("status change sent %d mails", len(mail.statusChanges))
 	}
-	if err := o.SetStatus(order.Reference, "sent"); err != nil {
+	if err := o.SetStatus(order.Reference, "sent", ""); err != nil {
 		t.Fatal(err)
 	}
 	if len(mail.statusChanges) != 1 {
 		t.Fatalf("setting the same status again sent %d mails", len(mail.statusChanges))
 	}
-	if err := o.SetStatus("no-such-reference", "sent"); !errors.Is(err, ErrNoOrder) {
+	if err := o.SetStatus("no-such-reference", "sent", ""); !errors.Is(err, ErrNoOrder) {
 		t.Fatalf("want ErrNoOrder got %v", err)
 	}
 }

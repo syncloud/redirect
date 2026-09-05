@@ -201,6 +201,18 @@ export function mock () {
       this.post('/api/device/order/complete', function (_schema, _request) {
         return new Response(200, {}, { message: 'OK' })
       })
+      this.get('/api/device/order', function (_schema, request) {
+        const order = state.orders.find(each => each.reference === request.queryParams.reference)
+        return new Response(200, {}, {
+          data: {
+            order,
+            history: [
+              { status: 'ordered', at: '2026-09-05 10:12' },
+              { status: 'sent', at: '2026-09-06 09:30', comment: 'Posted first class, tracking to follow.' }
+            ]
+          }
+        })
+      })
       this.get('/api/device/orders', function (_schema, _request) {
         return new Response(200, {}, { data: state.orders.filter(order => order.mine) })
       })
