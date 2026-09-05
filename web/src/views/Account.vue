@@ -3,7 +3,10 @@
   <div class="sc-page">
     <div id="has_domains">
       <h1 class="sc-h1" data-testid="account-title">Account</h1>
-      <p class="sc-lead">Your subscription and account settings.</p>
+      <p class="sc-lead">
+        Signed in as <strong data-testid="account-email">{{ email }}</strong>. Your subscription
+        and account settings.
+      </p>
       <el-row :gutter="20">
         <el-col :xs="24" :md="12">
           <el-card class="account-card" shadow="never">
@@ -270,6 +273,7 @@ export default {
   data () {
     return {
       notificationEnabled: Boolean,
+      email: '',
       subscriptionId: String,
       domainGroups: Array,
       planMonthlyId: String,
@@ -333,6 +337,7 @@ export default {
       axios.get('/api/user')
         .then(response => {
           this.notificationEnabled = response.data.data.notification_enabled
+          this.email = response.data.data.email
           this.subscriptionId = response.data.data.subscription_id
           this.userLoaded = true
           this.loadPlan(this.subscriptionId)

@@ -2,10 +2,12 @@ import { test, expect } from './fixtures'
 import { registerActivateAndLogin } from './helpers/user'
 
 test('user can toggle notifications, subscribe with crypto, and cancel subscription', async ({ page }) => {
-  await registerActivateAndLogin(page, 'account')
+  const { email } = await registerActivateAndLogin(page, 'account')
   await page.goto('/account')
 
   await expect(page.getByTestId('account-title')).toBeVisible()
+  await expect(page.getByTestId('account-email'),
+    'the page must say which account is signed in').toHaveText(email)
 
   const checkbox = page.locator('#chk_email')
   const initialValue = await checkbox.isChecked()
