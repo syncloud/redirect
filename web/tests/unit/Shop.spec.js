@@ -271,3 +271,29 @@ test('keeps the full specification behind the expander', async () => {
   expect(table.text()).toContain('USB 2.0 x 1')
   expect(wrapper.find('[data-testid="device-spec"]').element.open).toBeFalsy()
 })
+
+test('shows progress while the PayPal button itself is loading', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/device/catalog').reply(200, {
+    data: { ...CATALOG.data, paypal_client_id: 'test-client-id' }
+  })
+  mock.onGet('/api/user').reply(200, { data: { email: 'a@b.c' } })
+
+  let finishRender
+  loadScript.mockResolvedValue({
+    Buttons: () => ({ render: () => new Promise(resolve => { finishRender = resolve }) })
+  })
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await proceed(wrapper)
+  await fill(wrapper)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="device-paypal-loading"]').exists()).toBe(true)
+
+  finishRender()
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="device-paypal-loading"]').exists()).toBe(false)
+})

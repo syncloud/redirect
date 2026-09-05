@@ -247,6 +247,14 @@
             />
 
             <div
+              v-if="paypalLoading"
+              class="pay-overlay"
+              data-testid="device-paypal-loading"
+            >
+              <span class="pay-spinner" aria-label="Loading PayPal"/>
+            </div>
+
+            <div
               v-if="busy === 'paypal'"
               class="pay-overlay"
               data-testid="device-pay-busy"
@@ -294,6 +302,7 @@ export default {
       busy: '',
       step: 'choose',
       paypalLoaded: false,
+      paypalLoading: false,
       CreditCard: markRaw(CreditCard)
     }
   },
@@ -396,9 +405,10 @@ export default {
         .catch(this.onError)
     },
     loadPayPal () {
-      if (this.paypalLoaded || !this.paypalClientId) {
+      if (this.paypalLoaded || this.paypalLoading || !this.paypalClientId) {
         return
       }
+      this.paypalLoading = true
       const options = {
         clientId: this.paypalClientId,
         currency: this.currency,
@@ -409,7 +419,7 @@ export default {
       }
       loadScript(options)
         .then(paypal => {
-          paypal.Buttons({
+          return paypal.Buttons({
             style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44, borderRadius: 0 },
             onClick: () => {
               this.error = ''
@@ -436,9 +446,15 @@ export default {
               .catch(this.onError),
             onError: error => this.onError(error)
           }).render('#device-paypal')
-          this.paypalLoaded = true
         })
-        .catch(error => console.error('failed to load the PayPal JS SDK script', error))
+        .then(() => {
+          this.paypalLoaded = true
+          this.paypalLoading = false
+        })
+        .catch(error => {
+          this.paypalLoading = false
+          console.error('failed to load the PayPal JS SDK script', error)
+        })
     }
   }
 }
