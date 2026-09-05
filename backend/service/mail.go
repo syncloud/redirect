@@ -27,6 +27,7 @@ type Mail struct {
 	relayLimitWarningPath       string
 	mailRelayLimitWarningPath   string
 	deviceOrderPath             string
+	deviceOrderCustomerPath     string
 	from                        string
 	subjectPrefix               string
 	deviceErrorTo               string
@@ -60,6 +61,7 @@ func NewMail(smtp *smtp.Smtp,
 		relayLimitWarningPath:       mailPath + "/relay_limit_warning.txt",
 		mailRelayLimitWarningPath:   mailPath + "/mail_relay_limit_warning.txt",
 		deviceOrderPath:             mailPath + "/device_order.txt",
+		deviceOrderCustomerPath:     mailPath + "/device_order_customer.txt",
 		from:                        from,
 		deviceErrorTo:               deviceErrorTo,
 		mainDomain:                  mainDomain,
@@ -89,6 +91,21 @@ func (m *Mail) SendPlanSubscribed(to string) error {
 	return m.SendNotification(m.planSubscribeTemplatePath, map[string]string{
 		"domain": m.mainDomain,
 	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendDeviceOrderCustomer(order *product.Order, device, option string) error {
+	return m.SendNotification(m.deviceOrderCustomerPath, map[string]string{
+		"reference": order.Reference,
+		"name":      order.Name,
+		"device":    device,
+		"option":    option,
+		"total":     product.Money(order.Total),
+		"paid_with": order.Provider,
+		"address":   order.Address,
+		"city":      order.City,
+		"postcode":  order.Postcode,
+		"country":   order.Country,
+	}, order.Email)
 }
 
 func (m *Mail) SendDeviceOrder(order *product.Order, device, option string) error {

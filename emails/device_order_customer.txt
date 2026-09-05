@@ -1,0 +1,15 @@
+Subject: your Syncloud order {reference}
+
+Thank you for your order.
+
+{device} with {option}, {total} GBP, paid with {paid_with}.
+
+We will ship it to:
+
+{name}
+{address}
+{city} {postcode}
+{country}
+
+We will email you again when it is on its way. If anything above is wrong,
+reply to this email and we will sort it out.

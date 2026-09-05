@@ -981,13 +981,16 @@ func (m *MySql) GetOrderByReference(reference string) (*product.Order, error) {
 	order := &product.Order{}
 	var providerReference sql.NullString
 	var userId sql.NullInt64
+	var email sql.NullString
 	err := m.db.QueryRow(
-		"SELECT id, user_id, device, `option`, total, provider, reference, provider_reference, "+
-			"name, address, city, postcode, country, paid "+
-			"from device_order where reference = ?", reference).
+		"SELECT o.id, o.user_id, o.device, o.`option`, o.total, o.provider, o.reference, "+
+			"o.provider_reference, o.name, o.address, o.city, o.postcode, o.country, o.paid, u.email "+
+			"from device_order o left join user u on u.id = o.user_id "+
+			"where o.reference = ?", reference).
 		Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
 			&order.Provider, &order.Reference, &providerReference,
-			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid)
+			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid,
+			&email)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -996,6 +999,7 @@ func (m *MySql) GetOrderByReference(reference string) (*product.Order, error) {
 	}
 	order.ProviderReference = providerReference.String
 	order.UserId = userId.Int64
+	order.Email = email.String
 	return order, nil
 }
 
@@ -1006,10 +1010,11 @@ func (m *MySql) MarkOrderPaid(id int64) error {
 
 func (m *MySql) GetUnpaidOrders(before time.Time) ([]*product.Order, error) {
 	rows, err := m.db.Query(
-		"SELECT id, user_id, device, `option`, total, provider, reference, provider_reference, "+
-			"name, address, city, postcode, country, paid "+
-			"from device_order where paid = 0 and provider_reference is not null "+
-			"and created_at < ? order by id", before)
+		"SELECT o.id, o.user_id, o.device, o.`option`, o.total, o.provider, o.reference, "+
+			"o.provider_reference, o.name, o.address, o.city, o.postcode, o.country, o.paid, u.email "+
+			"from device_order o left join user u on u.id = o.user_id "+
+			"where o.paid = 0 and o.provider_reference is not null "+
+			"and o.created_at < ? order by o.id", before)
 	if err != nil {
 		return nil, err
 	}
@@ -1020,14 +1025,17 @@ func (m *MySql) GetUnpaidOrders(before time.Time) ([]*product.Order, error) {
 		order := &product.Order{}
 		var providerReference sql.NullString
 		var userId sql.NullInt64
+		var email sql.NullString
 		err := rows.Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
 			&order.Provider, &order.Reference, &providerReference,
-			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid)
+			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid,
+			&email)
 		if err != nil {
 			return nil, err
 		}
 		order.ProviderReference = providerReference.String
 		order.UserId = userId.Int64
+		order.Email = email.String
 		orders = append(orders, order)
 	}
 	return orders, rows.Err()

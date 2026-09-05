@@ -30,10 +30,18 @@ func (r *recordingCheckout) Paid(string) (bool, int, string, error) {
 	return r.paid, r.amount, currency, nil
 }
 
-type recordingMail struct{ sent *Order }
+type recordingMail struct {
+	sent      *Order
+	confirmed *Order
+}
 
 func (m *recordingMail) SendDeviceOrder(order *Order, device, option string) error {
 	m.sent = order
+	return nil
+}
+
+func (m *recordingMail) SendDeviceOrderCustomer(order *Order, device, option string) error {
+	m.confirmed = order
 	return nil
 }
 
@@ -316,5 +324,58 @@ func TestRedactLeavesOtherPeopleAlone(t *testing.T) {
 	}
 	if store.orders[reference].Name == "" {
 		t.Fatal("somebody else's order was redacted")
+	}
+}
+
+func TestOrders_Settle_ConfirmsToTheAccountThatOrdered(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
+	store := newStore()
+	mail := &recordingMail{}
+	o := orders(checkout, store, mail)
+
+	order := &Order{
+		UserId: 7, Email: "buyer@example.com", Device: "h4", Option: "1t",
+		Name: "A B", Address: "1 Road", City: "Town", Postcode: "X1", Country: "Germany",
+	}
+	if _, err := o.Start(order, "stripe"); err != nil {
+		t.Fatal(err)
+	}
+	if err := o.Complete(7, order.Reference); err != nil {
+		t.Fatal(err)
+	}
+
+	if mail.sent.Email != "buyer@example.com" {
+		t.Fatalf("support mail account %q", mail.sent.Email)
+	}
+	if mail.confirmed == nil {
+		t.Fatal("the buyer was not told the order was taken")
+	}
+	if mail.confirmed.Email != "buyer@example.com" {
+		t.Fatalf("confirmed to %q", mail.confirmed.Email)
+	}
+}
+
+func TestOrders_Settle_WithoutAnAccountStillTellsSupport(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
+	store := newStore()
+	mail := &recordingMail{}
+	o := orders(checkout, store, mail)
+
+	order := &Order{
+		UserId: 7, Device: "h4", Option: "1t",
+		Name: "A B", Address: "1 Road", City: "Town", Postcode: "X1", Country: "Germany",
+	}
+	if _, err := o.Start(order, "stripe"); err != nil {
+		t.Fatal(err)
+	}
+	if err := o.Complete(7, order.Reference); err != nil {
+		t.Fatal(err)
+	}
+
+	if mail.sent == nil {
+		t.Fatal("support was not told")
+	}
+	if mail.confirmed != nil {
+		t.Fatal("confirmed to an order with no account")
 	}
 }

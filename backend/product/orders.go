@@ -10,6 +10,7 @@ import (
 
 type Mail interface {
 	SendDeviceOrder(order *Order, device, option string) error
+	SendDeviceOrderCustomer(order *Order, device, option string) error
 }
 
 type Store interface {
@@ -127,7 +128,15 @@ func (o *Orders) Settle(order *Order) error {
 	if err != nil {
 		return err
 	}
-	return o.mail.SendDeviceOrder(order, device, option)
+	if err := o.mail.SendDeviceOrder(order, device, option); err != nil {
+		return err
+	}
+	if order.Email == "" {
+		o.logger.Error("order has no account to confirm to",
+			zap.String("reference", order.Reference))
+		return nil
+	}
+	return o.mail.SendDeviceOrderCustomer(order, device, option)
 }
 
 func (o *Orders) Redact(userId int64) error {
