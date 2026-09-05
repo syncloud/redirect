@@ -1,10 +1,10 @@
-const fs = require('node:fs')
-const path = require('node:path')
-const { ssh, scpFrom } = require('./helpers/ssh')
+import fs from 'node:fs'
+import path from 'node:path'
+import { ssh, scpFrom } from './helpers/ssh'
 
 const REMOTE_TMP = '/tmp/syncloud/ui'
 
-module.exports = async function () {
+export default async function () {
   if (!process.env.CI) return
 
   const out = path.join(__dirname, '..', 'test-results', 'logs')

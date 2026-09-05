@@ -1,5 +1,5 @@
-const { expect } = require('@playwright/test')
-const { clearEmails, waitForActivateUrl } = require('./mailhog')
+import { expect } from '@playwright/test'
+import { clearEmails, waitForActivateUrl } from './mailhog'
 
 function uniqueEmail (prefix = 'playwright') {
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 100000)}`
@@ -37,7 +37,7 @@ async function registerActivateAndLogin (page, prefix = 'playwright', password =
   return { email, password }
 }
 
-module.exports = {
+export {
   uniqueEmail,
   registerUser,
   activateLatestUser,

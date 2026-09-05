@@ -1,13 +1,14 @@
 {
   "name": "syncloud",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "vite",
     "stub": "VITE_STUB=1 vite",
     "build": "vite build",
     "serve": "vite preview",
-    "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src e2e tests *.config.js",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src e2e tests *.config.js *.config.cjs .eslintrc.cjs",
     "test": "jest",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"

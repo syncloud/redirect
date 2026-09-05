@@ -10,7 +10,7 @@ module.exports = {
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-    'vue/multi-word-component-names': 'off',
+    'vue/multi-word-component-names': 'off'
   },
   overrides: [
     {
@@ -24,7 +24,7 @@ module.exports = {
       }
     },
     {
-      files: ['e2e/**/*.js', '*.config.js', '.eslintrc.js'],
+      files: ['e2e/**/*.js', '*.config.js', '*.config.cjs', '.eslintrc.cjs'],
       env: {
         node: true
       }

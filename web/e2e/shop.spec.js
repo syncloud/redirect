@@ -1,5 +1,5 @@
-const { test, expect, shoot } = require('./fixtures')
-const { uniqueEmail, registerUser, activateLatestUser, loginUser } = require('./helpers/user')
+import { test, expect, shoot } from './fixtures'
+import { uniqueEmail, registerUser, activateLatestUser, loginUser } from './helpers/user'
 
 async function signedIn (page, prefix) {
   const email = uniqueEmail(prefix)

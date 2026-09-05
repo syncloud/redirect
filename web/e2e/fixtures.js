@@ -1,6 +1,6 @@
-const base = require('@playwright/test')
-const fs = require('node:fs')
-const path = require('node:path')
+import base from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
 
 const test = base.test.extend({
   page: async ({ page }, use, testInfo) => {
@@ -50,8 +50,10 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 })
 
-module.exports = {
+const expect = base.expect
+
+export {
   test,
-  expect: base.expect,
+  expect,
   shoot
 }

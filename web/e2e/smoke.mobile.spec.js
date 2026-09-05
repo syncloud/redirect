@@ -1,4 +1,4 @@
-const { test, expect, shoot } = require('./fixtures')
+import { test, expect, shoot } from './fixtures'
 
 test('mobile visitor with no account is given somewhere to go', async ({ page }, testInfo) => {
   await page.goto('/')

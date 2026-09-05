@@ -1,7 +1,7 @@
-const { test, expect } = require('./fixtures')
-const { acquireDomain } = require('./helpers/api')
-const { domain } = require('./helpers/env')
-const { registerActivateAndLogin } = require('./helpers/user')
+import { test, expect } from './fixtures'
+import { acquireDomain } from './helpers/api'
+import { domain } from './helpers/env'
+import { registerActivateAndLogin } from './helpers/user'
 
 test('user can view and deactivate a device domain', async ({ page }) => {
   const { email, password } = await registerActivateAndLogin(page, 'devices')

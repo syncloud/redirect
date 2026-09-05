@@ -1,5 +1,5 @@
-const { request, expect } = require('@playwright/test')
-const { apiBaseUrl } = require('./env')
+import { request, expect } from '@playwright/test'
+import { apiBaseUrl } from './env'
 
 async function apiContext () {
   return await request.newContext({
@@ -27,6 +27,6 @@ async function acquireDomain (domainName, email, password) {
   return payload.data.update_token
 }
 
-module.exports = {
+export {
   acquireDomain
 }

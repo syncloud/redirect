@@ -1,5 +1,5 @@
-const { test, expect, shoot } = require('./fixtures')
-const { uniqueEmail, registerUser, activateLatestUser } = require('./helpers/user')
+import { test, expect, shoot } from './fixtures'
+import { uniqueEmail, registerUser, activateLatestUser } from './helpers/user'
 
 test('the register page offers a way to create an account', async ({ page }, testInfo) => {
   await page.goto('/register')

@@ -58,7 +58,7 @@ async function waitForResetUrl () {
   return await waitForMessage(extractResetUrl)
 }
 
-module.exports = {
+export {
   clearEmails,
   waitForActivateUrl,
   waitForResetUrl

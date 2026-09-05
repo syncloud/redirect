@@ -1,6 +1,6 @@
-const { test, expect } = require('./fixtures')
-const { uniqueEmail } = require('./helpers/user')
-const { clearEmails } = require('./helpers/mailhog')
+import { test, expect } from './fixtures'
+import { uniqueEmail } from './helpers/user'
+import { clearEmails } from './helpers/mailhog'
 
 async function submitRegistration (page, path) {
   await clearEmails()

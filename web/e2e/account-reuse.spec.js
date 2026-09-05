@@ -1,5 +1,5 @@
-const { test, expect } = require('./fixtures')
-const { uniqueEmail, registerUser, activateLatestUser, loginUser } = require('./helpers/user')
+import { test, expect } from './fixtures'
+import { uniqueEmail, registerUser, activateLatestUser, loginUser } from './helpers/user'
 
 test('deleting an account does not leave a session that opens a new account with the same email', async ({ page }) => {
   const email = uniqueEmail('reuse')

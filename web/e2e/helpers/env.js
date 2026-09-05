@@ -8,7 +8,7 @@ function apiBaseUrl () {
   return `https://api.${domain}`
 }
 
-module.exports = {
+export {
   domain,
   webBaseUrl,
   apiBaseUrl
