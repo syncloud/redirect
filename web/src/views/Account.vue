@@ -89,10 +89,18 @@
                   data-testid="stripe-subscribe"
                   v-show="tier === 'pro' || stripeMaxEnabled"
                   :icon="CreditCard"
+                  :disabled="paying"
+                  :loading="busy === 'stripe'"
                   @click="stripeCheckout"
                 >Card</el-button>
 
-                <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
+                <div class="pay-paypal-wrap">
+                  <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
+
+                  <div v-if="busy === 'paypal'" class="pay-overlay" data-testid="account-pay-busy">
+                    <span class="pay-spinner" aria-label="Opening PayPal"/>
+                  </div>
+                </div>
 
                 <div class="pay-crypto" v-show="tier === 'pro'">
                   <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
@@ -267,6 +275,7 @@ export default {
       planMonthlyId: String,
       planAnnualId: String,
       clientId: String,
+      sdkUrl: '',
       paypalLoaded: Boolean,
       userLoaded: Boolean,
       deleteConfirmationVisible: false,
@@ -277,6 +286,7 @@ export default {
       paypalMaxEnabled: false,
       planMaxMonthlyId: String,
       planMaxAnnualId: String,
+      busy: '',
       cryptoOpen: false,
       cryptoTransactionId: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
@@ -300,6 +310,9 @@ export default {
     }
   },
   computed: {
+    paying () {
+      return this.busy !== ''
+    },
     maxEnabled: function () {
       return this.stripeMaxEnabled || this.paypalMaxEnabled
     },
@@ -334,6 +347,7 @@ export default {
           this.planMaxAnnualId = response.data.data.plan_max_annual_id
           this.planMaxMonthlyId = response.data.data.plan_max_monthly_id
           this.clientId = response.data.data.client_id
+          this.sdkUrl = response.data.data.sdk_url
           this.stripeMaxEnabled = response.data.data.stripe_max_enabled
           this.paypalMaxEnabled = response.data.data.paypal_max_enabled
           if (!subscriptionId && !this.paypalLoaded) {
@@ -353,6 +367,7 @@ export default {
         .catch(this.onError)
     },
     stripeCheckout: function () {
+      this.busy = 'stripe'
       const annual = this.period === 'year'
       let plan
       if (this.tier === 'max') {
@@ -375,15 +390,28 @@ export default {
         .catch(this.onError)
     },
     enablePayPal: function (clientId) {
-      loadScript({
+      const options = {
         clientId: clientId,
         vault: true,
         intent: 'subscription',
         disableFunding: 'card'
-      })
+      }
+      if (this.sdkUrl) {
+        options.sdkBaseUrl = this.sdkUrl
+      }
+      loadScript(options)
         .then((paypal) => {
           paypal
             .Buttons({
+              onClick: () => {
+                this.busy = 'paypal'
+              },
+              onCancel: () => {
+                this.busy = ''
+              },
+              onError: () => {
+                this.busy = ''
+              },
               createSubscription: (data, actions) => {
                 let planId
                 if (this.tier === 'max') {
@@ -439,6 +467,7 @@ export default {
         .catch(this.onError)
     },
     onError: function (err) {
+      this.busy = ''
       console.log(err)
       if (err.response.status === 401) {
         this.$router.push('/login')
@@ -526,6 +555,37 @@ export default {
 }
 .pay-button {
   width: 100%;
+}
+.pay-paypal-wrap {
+  position: relative;
+}
+.pay-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-bg-color) 78%, transparent);
+}
+.pay-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-top-color: var(--el-color-primary);
+  border-radius: 50%;
+  animation: pay-spin 0.7s linear infinite;
+}
+@keyframes pay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pay-spinner {
+    animation-duration: 2.4s;
+  }
 }
 .pay-paypal {
   min-height: 1px;

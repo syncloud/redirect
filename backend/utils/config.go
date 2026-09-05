@@ -449,6 +449,16 @@ func (config *Config) PayPalSecretId() string {
 	return result
 }
 
+func (config *Config) PayPalSdkUrl() string {
+	result, _ := config.parser.Get("paypal", "sdk_url")
+	return result
+}
+
+func (config *Config) StripeUrl() string {
+	result, _ := config.parser.Get("stripe", "url")
+	return result
+}
+
 func (config *Config) StripeSecretKey() string {
 	result, err := config.parser.Get("stripe", "secret_key")
 	if err != nil {

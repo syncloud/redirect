@@ -9,15 +9,15 @@
         <div class="sc-alert" id="error" :class="{ invisible: !isError }">{{ error }}</div>
       </div>
 
-      <div id="group-email" class="sc-field">
+      <div id="group-email" class="sc-field sc-field-float">
+        <input id="email" data-testid="login-email" type="text" placeholder=" " required="" v-model="email">
         <label for="email">Email</label>
-        <input id="email" data-testid="login-email" type="text" placeholder="user@mail.com" required="" v-model="email">
         <span id="help-email" class="sc-help">{{ emailError }}</span>
       </div>
 
-      <div id="group-password" class="sc-field">
+      <div id="group-password" class="sc-field sc-field-float">
+        <input id="password" data-testid="login-password" type="password" placeholder=" " required="" v-model="password">
         <label for="password">Password</label>
-        <input id="password" data-testid="login-password" type="password" required="" v-model="password">
         <span id="help-password" class="sc-help">{{ passwordError }}</span>
       </div>
 
@@ -81,7 +81,7 @@ export default {
       axios.post('/api/user/login', { email: this.email, password: this.password })
         .then(_ => {
           this.checkUserSession()
-          this.$router.push('/')
+          this.$router.push(this.$route.query.next || '/')
         })
         .catch(err => {
           showError(this, err.response.data)

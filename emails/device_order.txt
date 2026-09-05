@@ -1,0 +1,14 @@
+Subject: device order {reference}
+
+{name} ordered a {device} with {option}.
+
+Paid {total} GBP with {paid_with}.
+
+Ship to:
+
+{name}
+{address}
+{city} {postcode}
+{country}
+
+Account: {email}

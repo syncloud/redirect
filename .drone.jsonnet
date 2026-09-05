@@ -166,6 +166,24 @@ local build(arch) = [{
             ],
         },
         {
+            name: "paypal-faker",
+            image: "golang:" + go,
+            detach: true,
+            commands: [
+                "cd paypal-faker",
+                "go run . --address :4581",
+            ]
+        },
+        {
+            name: "stripe-faker",
+            image: "golang:" + go,
+            detach: true,
+            commands: [
+                "cd stripe-faker",
+                "go run . --address :4582 --url https://payments.syncloud.test/stripe",
+            ]
+        },
+        {
             name: "deploy test",
             image: "debian:bookworm-slim",
             environment: {
@@ -178,11 +196,13 @@ local build(arch) = [{
                 access_key_id: { from_secret: "access_key_id" },
                 secret_access_key: { from_secret: "secret_access_key" },
                 hosted_zone_id: { from_secret: "hosted_zone_id" },
-                PAYPAL_URL: "https://api-m.sandbox.paypal.com",
+                PAYPAL_URL: "http://paypal-faker:4581",
+                PAYPAL_SDK_URL: "https://payments.syncloud.test/paypal/sdk/js",
                 PAYPAL_PLAN_MONTHLY_ID: "1",
                 PAYPAL_PLAN_ANNUAL_ID: "2",
                 PAYPAL_CLIENT_ID: "3",
                 PAYPAL_SECRET_ID: "4",
+                STRIPE_URL: "http://stripe-faker:4582",
                 STRIPE_SECRET_KEY: "sk_test_dummy",
                 STRIPE_PRICE_MONTHLY_ID: "price_dummy_monthly",
                 STRIPE_PRICE_ANNUAL_ID: "price_dummy_annual",
@@ -200,7 +220,7 @@ local build(arch) = [{
         },
         {
             name: "test-api",
-            image: "python:3.9-slim-bullseye",
+            image: "python:3.9-slim-bookworm",
             environment: {
                 access_key_id: {
                   from_secret: "access_key_id"
@@ -213,7 +233,7 @@ local build(arch) = [{
                 },
             },
             commands: [
-                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client openssl",
+                "apt-get update && apt-get install -y sshpass openssh-client openssl",
                 "pip install -r test/requirements.txt",
                 "cd test",
                 "py.test -x -vv -s test.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"

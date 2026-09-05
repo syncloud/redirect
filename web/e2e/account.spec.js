@@ -1,5 +1,5 @@
-const { test, expect } = require('./fixtures')
-const { registerActivateAndLogin } = require('./helpers/user')
+import { test, expect } from './fixtures'
+import { registerActivateAndLogin } from './helpers/user'
 
 test('user can toggle notifications, subscribe with crypto, and cancel subscription', async ({ page }) => {
   await registerActivateAndLogin(page, 'account')

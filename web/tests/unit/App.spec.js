@@ -6,7 +6,7 @@ import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import { h } from 'vue'
 
-test('index to login (not logged in)', async () => {
+test('index stays public (not logged in)', async () => {
   const mockRouter = { push: jest.fn() }
 
   const mock = new MockAdapter(axios)
@@ -25,12 +25,33 @@ test('index to login (not logged in)', async () => {
       },
       mocks: {
         // $route: { path: '/' },
+        $route: { query: {} },
         $router: mockRouter
       }
     }
   })
 
   wrapper.vm.$options.watch.$route.call(wrapper.vm, { path: '/' }, {})
+  await flushPromises()
+  expect(mockRouter.push).not.toHaveBeenCalled()
+})
+
+test('a page that needs an account still sends you to login', async () => {
+  const mockRouter = { push: jest.fn() }
+
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/user').reply(400, { })
+
+  const wrapper = mount(App, {
+    global: {
+      plugins: [createPinia()],
+      components: { RouterView: { render () { return h('div') } } },
+      stubs: { CustomMenu: true },
+      mocks: { $router: mockRouter }
+    }
+  })
+
+  wrapper.vm.$options.watch.$route.call(wrapper.vm, { path: '/account' }, {})
   await flushPromises()
   expect(mockRouter.push).toHaveBeenCalledWith('/login')
 })
@@ -60,7 +81,7 @@ test('index stay (logged in)', async () => {
         CustomMenu: true
       },
       mocks: {
-        $route: { path: '/' },
+        $route: { path: '/', query: {} },
         $router: mockRouter
       }
     }
@@ -96,6 +117,7 @@ test('login to index (logged in)', async () => {
       },
       mocks: {
         // $route: { path: '/login' },
+        $route: { query: {} },
         $router: mockRouter
       }
     }

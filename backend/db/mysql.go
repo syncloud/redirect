@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/product"
 	"go.uber.org/zap"
 	"log"
 	"strings"
@@ -95,14 +96,15 @@ func (m *MySql) selectUserByField(field string, value interface{}) (*model.User,
 			"plan, "+
 			"registered_at, "+
 			"status_at, "+
-			"status "+
+			"status, "+
+			"admin "+
 			"FROM user "+
 			"WHERE "+field+" = ?", value)
 
 	user := &model.User{}
 	err := row.Scan(&user.Id, &user.Email, &user.PasswordHash, &user.Active, &user.UpdateToken,
 		&user.NotificationEnabled, &user.Timestamp, &user.SubscriptionId, &user.SubscriptionType, &user.Plan, &user.RegisteredAt,
-		&user.StatusAt, &user.Status)
+		&user.StatusAt, &user.Status, &user.Admin)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -954,4 +956,141 @@ where d.id is null
 and u.active = true
 and timestampdiff(day, u.timestamp, now()) > 60
 `)
+}
+
+func (m *MySql) InsertOrder(order *product.Order) (int64, error) {
+	res, err := m.db.Exec(
+		"INSERT into device_order ("+
+			"user_id, device, `option`, total, provider, reference, "+
+			"name, address, city, postcode, country"+
+			") values (?,?,?,?,?,?,?,?,?,?,?)",
+		order.UserId, order.Device, order.Option, order.Total, order.Provider, order.Reference,
+		order.Name, order.Address, order.City, order.Postcode, order.Country)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (m *MySql) SetOrderProviderReference(id int64, providerReference string) error {
+	_, err := m.db.Exec(
+		"UPDATE device_order set provider_reference = ? where id = ?", providerReference, id)
+	return err
+}
+
+func (m *MySql) GetOrderByReference(reference string) (*product.Order, error) {
+	order := &product.Order{}
+	var providerReference sql.NullString
+	var userId sql.NullInt64
+	var email sql.NullString
+	err := m.db.QueryRow(
+		"SELECT o.id, o.user_id, o.device, o.`option`, o.total, o.provider, o.reference, "+
+			"o.provider_reference, o.name, o.address, o.city, o.postcode, o.country, o.paid, u.email "+
+			"from device_order o left join user u on u.id = o.user_id "+
+			"where o.reference = ?", reference).
+		Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
+			&order.Provider, &order.Reference, &providerReference,
+			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid,
+			&email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	order.ProviderReference = providerReference.String
+	order.UserId = userId.Int64
+	order.Email = email.String
+	return order, nil
+}
+
+func (m *MySql) GetOrdersByUser(userId int64) ([]*product.Order, error) {
+	return m.selectOrders(
+		"where o.user_id = ? and o.paid = 1 order by o.id desc", userId)
+}
+
+func (m *MySql) GetAllOrders() ([]*product.Order, error) {
+	return m.selectOrders("where o.paid = 1 order by o.id desc")
+}
+
+func (m *MySql) SetOrderStatus(id int64, status string) error {
+	_, err := m.db.Exec("UPDATE device_order set status = ? where id = ?", status, id)
+	return err
+}
+
+func (m *MySql) selectOrders(where string, args ...interface{}) ([]*product.Order, error) {
+	rows, err := m.db.Query(
+		"SELECT o.id, o.user_id, o.device, o.`option`, o.total, o.provider, o.reference, "+
+			"o.provider_reference, o.name, o.address, o.city, o.postcode, o.country, o.paid, "+
+			"o.status, o.created_at, u.email "+
+			"from device_order o left join user u on u.id = o.user_id "+where, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	orders := []*product.Order{}
+	for rows.Next() {
+		order := &product.Order{}
+		var providerReference sql.NullString
+		var userId sql.NullInt64
+		var email sql.NullString
+		err := rows.Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
+			&order.Provider, &order.Reference, &providerReference,
+			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid,
+			&order.Status, &order.CreatedAt, &email)
+		if err != nil {
+			return nil, err
+		}
+		order.ProviderReference = providerReference.String
+		order.UserId = userId.Int64
+		order.Email = email.String
+		orders = append(orders, order)
+	}
+	return orders, rows.Err()
+}
+
+func (m *MySql) MarkOrderPaid(id int64) error {
+	_, err := m.db.Exec("UPDATE device_order set paid = 1 where id = ?", id)
+	return err
+}
+
+func (m *MySql) GetUnpaidOrders(before time.Time) ([]*product.Order, error) {
+	rows, err := m.db.Query(
+		"SELECT o.id, o.user_id, o.device, o.`option`, o.total, o.provider, o.reference, "+
+			"o.provider_reference, o.name, o.address, o.city, o.postcode, o.country, o.paid, u.email "+
+			"from device_order o left join user u on u.id = o.user_id "+
+			"where o.paid = 0 and o.provider_reference is not null "+
+			"and o.created_at < ? order by o.id", before)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	orders := []*product.Order{}
+	for rows.Next() {
+		order := &product.Order{}
+		var providerReference sql.NullString
+		var userId sql.NullInt64
+		var email sql.NullString
+		err := rows.Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
+			&order.Provider, &order.Reference, &providerReference,
+			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid,
+			&email)
+		if err != nil {
+			return nil, err
+		}
+		order.ProviderReference = providerReference.String
+		order.UserId = userId.Int64
+		order.Email = email.String
+		orders = append(orders, order)
+	}
+	return orders, rows.Err()
+}
+
+func (m *MySql) RedactOrders(userId int64) error {
+	_, err := m.db.Exec(
+		"UPDATE device_order set name = '', address = '', city = '', postcode = '' where user_id = ?",
+		userId)
+	return err
 }

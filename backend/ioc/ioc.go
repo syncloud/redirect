@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/golobby/container/v3"
+	stripesdk "github.com/stripe/stripe-go/v81"
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/clock"
 	"github.com/syncloud/redirect/db"
@@ -19,7 +20,9 @@ import (
 	"github.com/syncloud/redirect/mail/inbound"
 	"github.com/syncloud/redirect/mail/outbound"
 	"github.com/syncloud/redirect/metrics"
+	"github.com/syncloud/redirect/payment"
 	"github.com/syncloud/redirect/probe"
+	"github.com/syncloud/redirect/product"
 	"github.com/syncloud/redirect/relay"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
@@ -40,10 +43,16 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 
 	c := container.New()
 
+	config := utils.NewConfig()
+	config.Load(configPath, secretPath)
+	config.Merge(filepath.Join(filepath.Dir(secretPath), "payments.cfg"))
+
+	if url := config.StripeUrl(); url != "" {
+		stripesdk.SetBackend(stripesdk.APIBackend, stripesdk.GetBackendWithConfig(
+			stripesdk.APIBackend, &stripesdk.BackendConfig{URL: stripesdk.String(url)}))
+	}
+
 	err := c.Singleton(func() *utils.Config {
-		config := utils.NewConfig()
-		config.Load(configPath, secretPath)
-		config.Merge(filepath.Join(filepath.Dir(secretPath), "payments.cfg"))
 		return config
 	})
 	if err != nil {
@@ -152,12 +161,53 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(
+		database *db.MySql,
+		mailService *service.Mail,
+		config *utils.Config,
+	) (*product.Orders, error) {
+		stripeCheckout := payment.NewStripe(
+			config.StripeSecretKey(),
+			fmt.Sprintf("https://www.%s/shop", config.Domain()),
+			fmt.Sprintf("https://www.%s/shop", config.Domain()),
+			logger)
+		paypalCheckout, err := payment.NewPayPal(
+			config.PayPalClientId(),
+			config.PayPalSecretId(),
+			config.PayPalUrl(),
+			fmt.Sprintf("https://www.%s/shop", config.Domain()),
+			fmt.Sprintf("https://www.%s/shop", config.Domain()),
+			logger)
+		if err != nil {
+			return nil, err
+		}
+		orders := product.NewOrders(
+			product.NewCatalog(product.Devices(), product.Shipping),
+			product.NewCheckouts(paypalCheckout, stripeCheckout),
+			database,
+			mailService,
+			logger,
+		)
+		return orders, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(orders *product.Orders) *product.Reconciler {
+		return product.NewReconciler(orders, 10*time.Minute, 2*time.Minute, logger)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(
 		config *utils.Config,
 	) (*subscription.PayPal, error) {
 		return subscription.New(
 			config.PayPalClientId(),
 			config.PayPalSecretId(),
 			config.PayPalUrl(),
+			config.PayPalSdkUrl(),
 			config.PayPalPlanMonthlyId(),
 			config.PayPalPlanAnnualId(),
 			config.PayPalPlanMaxMonthlyId(),
@@ -528,6 +578,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		actions *service.Actions,
 		stripe *subscription.Stripe,
 		paypal *subscription.PayPal,
+		orders *product.Orders,
 		usage *relay.Usage,
 		mailUsage *outbound.AccountUsage,
 		metrics *metrics.Metrics,
@@ -545,6 +596,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			actions,
 			mailService,
 			stripe,
+			orders,
 			usage,
 			mailUsage,
 			paypal,

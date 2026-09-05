@@ -3,8 +3,8 @@ import { createServer, Model, Response } from 'miragejs'
 let state = {
   loggedIn: true,
   credentials: {
-    user: '11',
-    password: '2'
+    user: 'test@example.com',
+    password: 'test'
   },
   user: {
     data: {
@@ -69,6 +69,9 @@ let state = {
 }
 
 export function mock () {
+  console.info(
+    `stub mode: sign in with ${state.credentials.user} / ${state.credentials.password}`
+  )
   createServer({
     models: {
       author: Model
@@ -121,6 +124,49 @@ export function mock () {
         } else {
           return new Response(401, {}, {})
         }
+      })
+      this.get('/api/device/catalog', function (_schema, _request) {
+        return new Response(200, {}, {
+          data: {
+            devices: [{
+              code: 'h4',
+              name: 'Syncloud H4',
+              board: 'odroid-hc4',
+              price: 22900,
+              specs: [
+                { name: 'CPU', value: 'Amlogic S905X3, Cortex-A55' },
+                { name: 'RAM', value: '4 GB DDR4' },
+                { name: 'Drive bays', value: '2 x SATA, 3.5 or 2.5 inch' },
+                { name: 'Ethernet', value: '1 Gb' },
+                { name: 'CPU cores', value: '4' },
+                { name: 'CPU frequency', value: '1.8 GHz' },
+                { name: 'Boot media', value: 'Micro SD card, included' },
+                { name: 'USB', value: 'USB 2.0 x 1' },
+                { name: 'Video', value: 'HDMI 2.0, 4K at 60 Hz' },
+                { name: 'Size', value: '84 x 90.5 x 25 mm' }
+              ],
+              options: [
+                { code: '120', name: '120 GB SSD', extra: 0 },
+                { code: '120x2', name: '120 GB SSD x 2', extra: 3000 },
+                { code: '1t', name: '1 TB SSD', extra: 8000 },
+                { code: '1tx2', name: '1 TB SSD x 2', extra: 18000 },
+                { code: '2t', name: '2 TB SSD', extra: 20000 },
+                { code: '2tx2', name: '2 TB SSD x 2', extra: 43000 }
+              ]
+            }],
+            shipping: 1500,
+            currency: 'GBP',
+            paypal_client_id: import.meta.env.VITE_PAYPAL_CLIENT_ID || 'test'
+          }
+        })
+      })
+      this.post('/api/device/order', function (_schema, _request) {
+        return new Response(200, {}, {
+          data: { reference: 'stub-reference', provider_reference: 'stub-provider-reference' }
+        })
+      }, { timing: 1500 })
+      this.post('/api/device/order/complete', function (_schema, _request) {
+        return new Response(200, {}, { message: 'OK' })
       })
       this.get('/api/domains', function (_schema, request) {
         return new Response(200, {}, state.domains)

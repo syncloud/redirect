@@ -1,12 +1,11 @@
 <template>
   <CustomMenu v-if="!bare" v-bind:activeTab="currentPath" v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"
         v-bind:email="email"/>
-  <router-view v-bind:checkUserSession="checkUserSession"/>
+  <router-view v-bind:checkUserSession="checkUserSession" v-bind:loggedIn="loggedIn"/>
 </template>
 <script>
 import axios from 'axios'
 import CustomMenu from './components/CustomMenu.vue'
-import { startKeyboardTracking } from './keyboard'
 
 const bareRoutes = [
   '/login',
@@ -18,6 +17,7 @@ const bareRoutes = [
 ]
 
 const publicRoutes = [
+  '/shop',
   '/register',
   '/activate',
   '/forgot',
@@ -26,6 +26,7 @@ const publicRoutes = [
   '/login',
   '/privacy',
   '/check-email',
+  '/',
   ''
 ]
 
@@ -47,12 +48,8 @@ export default {
     }
   },
   mounted () {
-    this.stopKeyboardTracking = startKeyboardTracking()
   },
   beforeUnmount () {
-    if (this.stopKeyboardTracking) {
-      this.stopKeyboardTracking()
-    }
   },
   watch: {
     $route (to, from) {
@@ -68,7 +65,7 @@ export default {
           this.email = response.data.email
           this.loggedIn = true
           if (this.currentPath === '/login') {
-            this.$router.push('/')
+            this.$router.push(this.$route.query.next || '/')
           }
         })
         .catch(_ => {

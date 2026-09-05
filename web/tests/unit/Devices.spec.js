@@ -3,7 +3,6 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import flushPromises from 'flush-promises'
 import Devices from '../../src/views/Devices.vue'
-import { ElButton, ElDialog } from 'element-plus'
 
 test('Show devices', async () => {
   const mock = new MockAdapter(axios)
