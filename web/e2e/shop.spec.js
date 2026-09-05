@@ -1,5 +1,6 @@
 import { test, expect, shoot } from './fixtures'
 import { uniqueEmail, registerUser, activateLatestUser, loginUser } from './helpers/user'
+import { waitForEmailTo } from './helpers/mailhog'
 
 async function signedIn (page, prefix) {
   const email = uniqueEmail(prefix)
@@ -83,7 +84,7 @@ test('the payment faker is reachable from the browser', async ({ page }) => {
 })
 
 test('a card payment is taken and the order is confirmed', async ({ page }, testInfo) => {
-  await signedIn(page, 'buy-card')
+  const buyer = await signedIn(page, 'buy-card')
   await goToShop(page)
   await address(page)
 
@@ -101,6 +102,21 @@ test('a card payment is taken and the order is confirmed', async ({ page }, test
   await shoot(page, testInfo, 'device-ordered')
 
   expect(total).toMatch(/^£\d+\.\d\d$/)
+
+  const reference = await page.getByTestId('device-reference').textContent()
+  const number = reference.replace('Reference ', '').trim()
+
+  const confirmation = await waitForEmailTo(buyer)
+  expect(confirmation.subject, 'the buyer is told their reference').toContain(number)
+  expect(confirmation.body).toContain('Syncloud H4')
+  expect(confirmation.body).toContain('Ada Lovelace')
+  expect(confirmation.body).toContain('1 Analytical Street')
+  expect(confirmation.body).toContain(total.replace('£', ''))
+
+  const support = await waitForEmailTo('support@syncloud.it')
+  expect(support.subject).toContain(number)
+  expect(support.body, 'support must see which account ordered').toContain(`Account: ${buyer}`)
+  expect(support.body).toContain('Ada Lovelace')
 })
 
 test('a paypal payment is taken and the order is confirmed', async ({ page }, testInfo) => {
