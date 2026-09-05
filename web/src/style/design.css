@@ -740,3 +740,65 @@ body {
     min-height: 0;
   }
 }
+
+@media (max-width: 640px) {
+  .sc-auth {
+    padding-top: 14px;
+  }
+
+  .sc-auth-wordmark {
+    margin-top: 0;
+    margin-bottom: 14px;
+  }
+
+  .sc-auth-card {
+    padding: 24px 20px 26px;
+  }
+
+  .sc-auth-logo {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+  }
+}
+
+.sc-auth .sc-field-float,
+.sc-form .sc-field-float {
+  position: relative;
+}
+
+.sc-auth .sc-field-float input,
+.sc-form .sc-field-float input {
+  height: 56px;
+  padding: 22px 14px 6px;
+}
+
+.sc-auth .sc-field-float label,
+.sc-form .sc-field-float label {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--sc-muted);
+  pointer-events: none;
+  transition: top 0.12s ease, font-size 0.12s ease, color 0.12s ease, transform 0.12s ease;
+}
+
+.sc-auth .sc-field-float input:focus + label,
+.sc-auth .sc-field-float input:not(:placeholder-shown) + label,
+.sc-form .sc-field-float input:focus + label,
+.sc-form .sc-field-float input:not(:placeholder-shown) + label {
+  top: 8px;
+  transform: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--sc-ink-2);
+}
+
+.sc-auth .sc-field-float input:focus + label,
+.sc-form .sc-field-float input:focus + label {
+  color: var(--sc-primary);
+}
