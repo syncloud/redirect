@@ -34,6 +34,14 @@
         >Shop</router-link>
         <router-link
           v-if="loggedIn"
+          id="orders"
+          to="/orders"
+          data-testid="nav-orders"
+          :class="{ active: activeTab === '/orders' }"
+          @click="open = false"
+        >Orders</router-link>
+        <router-link
+          v-if="loggedIn"
           id="account"
           to="/account"
           data-testid="nav-account"

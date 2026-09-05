@@ -2,6 +2,38 @@ import { createServer, Model, Response } from 'miragejs'
 
 let state = {
   loggedIn: true,
+  orders: [
+    {
+      reference: 'a1b2c3d4-0000-0000-0000-000000000001',
+      device: 'Syncloud H4',
+      option: '1 TB SSD',
+      total: '£322.00',
+      status: 'ordered',
+      ordered: '2026-09-05',
+      mine: true,
+      email: 'test@example.com',
+      name: 'Ada Lovelace',
+      address: '1 Analytical Street',
+      city: 'London',
+      postcode: 'E1 6AN',
+      country: 'United Kingdom'
+    },
+    {
+      reference: 'a1b2c3d4-0000-0000-0000-000000000002',
+      device: 'Syncloud H4',
+      option: '120 GB SSD',
+      total: '£244.00',
+      status: 'sent',
+      ordered: '2026-08-30',
+      mine: false,
+      email: 'someone@example.com',
+      name: 'Grace Hopper',
+      address: '2 Compiler Road',
+      city: 'Manchester',
+      postcode: 'M1 2AB',
+      country: 'United Kingdom'
+    }
+  ],
   credentials: {
     user: 'test@example.com',
     password: 'test'
@@ -10,6 +42,7 @@ let state = {
     data: {
       active: true,
       email: 'test@example.com',
+      admin: true,
       notification_enabled: true,
       update_token: '0a',
       subscription_id: undefined
@@ -166,6 +199,20 @@ export function mock () {
         })
       }, { timing: 1500 })
       this.post('/api/device/order/complete', function (_schema, _request) {
+        return new Response(200, {}, { message: 'OK' })
+      })
+      this.get('/api/device/orders', function (_schema, _request) {
+        return new Response(200, {}, { data: state.orders.filter(order => order.mine) })
+      })
+      this.get('/api/device/orders/all', function (_schema, _request) {
+        return new Response(200, {}, { data: state.orders })
+      })
+      this.post('/api/device/order/status', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        const order = state.orders.find(each => each.reference === attrs.reference)
+        if (order) {
+          order.status = attrs.status
+        }
         return new Response(200, {}, { message: 'OK' })
       })
       this.get('/api/domains', function (_schema, request) {

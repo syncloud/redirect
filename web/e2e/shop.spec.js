@@ -131,3 +131,42 @@ test('a paypal payment is taken and the order is confirmed', async ({ page }, te
   await expect(page.getByTestId('device-ordered')).toBeVisible()
   await expect(page.getByTestId('device-reference')).toContainText('Reference')
 })
+
+test('a buyer sees the order they just paid for', async ({ page }, testInfo) => {
+  await signedIn(page, 'buy-orders')
+  await goToShop(page)
+  await address(page)
+
+  await page.getByTestId('device-pay-stripe').click()
+  await expect(page.getByTestId('faker-pay')).toBeVisible()
+  await page.getByTestId('faker-pay').click()
+  await expect(page.getByTestId('device-ordered')).toBeVisible()
+
+  const burger = page.getByTestId('menu-burger')
+  if (await burger.isVisible()) {
+    await burger.click()
+  }
+  await page.getByTestId('nav-orders').click()
+  await expect(page).toHaveURL(/\/orders$/)
+
+  await expect(page.getByTestId('order')).toHaveCount(1)
+  await expect(page.getByTestId('order-status')).toHaveText('Ordered')
+  await shoot(page, testInfo, 'orders')
+})
+
+test('a buyer is refused the admin order endpoints', async ({ page }) => {
+  await signedIn(page, 'buy-noadmin')
+
+  const all = await page.request.get('/api/device/orders/all')
+  expect(all.status(), 'listing every order must be admin only').toBe(403)
+
+  const status = await page.request.post('/api/device/order/status', {
+    data: { reference: 'anything', status: 'sent' }
+  })
+  expect(status.status(), 'changing a status must be admin only').toBe(403)
+})
+
+test('the orders page needs an account', async ({ page }) => {
+  await page.goto('/orders')
+  await expect(page).toHaveURL(/\/login/)
+})
