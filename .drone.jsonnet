@@ -220,7 +220,7 @@ local build(arch) = [{
         },
         {
             name: "test-api",
-            image: "python:3.9-slim-bullseye",
+            image: "python:3.9-slim-bookworm",
             environment: {
                 access_key_id: {
                   from_secret: "access_key_id"

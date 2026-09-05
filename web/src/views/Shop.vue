@@ -223,7 +223,6 @@
       <div v-if="loggedIn && step === 'pay'" class="sc-card" data-testid="device-pay">
         <h2 class="sc-h2">Pay {{ money(total) }}</h2>
 
-        <div class="pay-section-label">Pay with</div>
         <div class="pay-methods">
           <el-button
             type="primary"
@@ -710,12 +709,6 @@ export default {
   .options {
     grid-template-columns: repeat(2, 1fr);
   }
-}
-
-.pay-section-label {
-  font-weight: 600;
-  color: var(--sc-muted);
-  margin: 20px 0 8px;
 }
 
 .pay-methods {
