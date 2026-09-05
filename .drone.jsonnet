@@ -233,7 +233,7 @@ local build(arch) = [{
                 },
             },
             commands: [
-                "apt-get update && apt-get install -y sshpass openssh-client default-mysql-client openssl",
+                "apt-get update && apt-get install -y sshpass openssh-client openssl",
                 "pip install -r test/requirements.txt",
                 "cd test",
                 "py.test -x -vv -s test.py --domain=syncloud.test --device-host=www.syncloud.test --build-number=${DRONE_BUILD_NUMBER}"
