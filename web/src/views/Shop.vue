@@ -102,7 +102,7 @@
           size="large"
           class="continue"
           data-testid="shop-continue"
-          @click="step = 'checkout'"
+          @click="step = 'address'"
         >
           Continue
         </el-button>
@@ -123,7 +123,7 @@
         </router-link>
       </div>
 
-      <div v-if="loggedIn && step === 'checkout'" class="sc-card chosen" data-testid="shop-chosen">
+      <div v-if="loggedIn && step !== 'choose'" class="sc-card chosen" data-testid="shop-chosen">
         <div>
           <span class="chosen-name">{{ device.name }}, {{ optionName }}</span>
           <span class="chosen-total">{{ money(total) }}</span>
@@ -133,7 +133,17 @@
         </button>
       </div>
 
-      <div v-if="loggedIn && step === 'checkout'" class="sc-card sc-form" data-testid="device-address">
+      <div v-if="loggedIn && step === 'pay'" class="sc-card chosen" data-testid="shop-address-chosen">
+        <div>
+          <span class="chosen-name">{{ name }}</span>
+          <span class="chosen-total chosen-address">{{ addressLine }}</span>
+        </div>
+        <button type="button" class="chosen-change" data-testid="shop-address-change" @click="step = 'address'">
+          Change
+        </button>
+      </div>
+
+      <div v-if="loggedIn && step === 'address'" class="sc-card sc-form" data-testid="device-address">
         <h2 class="sc-h2">Ship it to</h2>
 
         <div class="field">
@@ -197,9 +207,20 @@
         <p v-if="incomplete" class="sc-help" data-testid="device-incomplete">
           We need the whole address before you can pay.
         </p>
+
+        <el-button
+          type="primary"
+          size="large"
+          class="continue"
+          :disabled="incomplete"
+          data-testid="shop-address-continue"
+          @click="step = 'pay'"
+        >
+          Continue
+        </el-button>
       </div>
 
-      <div v-if="loggedIn && step === 'checkout'" class="sc-card" data-testid="device-pay">
+      <div v-if="loggedIn && step === 'pay'" class="sc-card" data-testid="device-pay">
         <h2 class="sc-h2">Pay {{ money(total) }}</h2>
 
         <div class="pay-section-label">Pay with</div>
@@ -277,6 +298,11 @@ export default {
     }
   },
   computed: {
+    addressLine () {
+      return [this.address, this.city, this.postcode, this.country]
+        .filter(part => part !== '')
+        .join(', ')
+    },
     optionName () {
       const chosen = this.device.options.find(each => each.code === this.option)
       return chosen ? chosen.name : ''
@@ -298,7 +324,7 @@ export default {
   },
   watch: {
     step (value) {
-      if (value === 'checkout') {
+      if (value === 'pay') {
         this.$nextTick(() => this.loadPayPal())
       }
     }
@@ -509,6 +535,13 @@ export default {
 .chosen-total {
   margin-left: 10px;
   color: var(--sc-muted);
+}
+
+.chosen-address {
+  display: block;
+  font-weight: 400;
+  color: var(--sc-muted);
+  font-size: 0.9rem;
 }
 
 .chosen-change {

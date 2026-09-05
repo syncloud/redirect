@@ -54,12 +54,18 @@ async function proceed (wrapper) {
   await flushPromises()
 }
 
-async function fill (wrapper) {
+async function fillAddress (wrapper) {
   await wrapper.find('[data-testid="device-name"]').setValue('A B')
   await wrapper.find('[data-testid="device-address-line"]').setValue('1 Road')
   await wrapper.find('[data-testid="device-city"]').setValue('Town')
   await wrapper.find('[data-testid="device-postcode"]').setValue('X1')
   await wrapper.find('[data-testid="device-country"]').setValue('Germany')
+  await flushPromises()
+}
+
+async function fill (wrapper) {
+  await fillAddress(wrapper)
+  await wrapper.find('[data-testid="shop-address-continue"]').trigger('click')
   await flushPromises()
 }
 
@@ -82,7 +88,8 @@ test('will not let you pay before the address is complete', async () => {
   const wrapper = mountShop()
   await flushPromises()
   await proceed(wrapper)
-  expect(wrapper.find('[data-testid="device-pay-stripe"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('[data-testid="device-pay"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="shop-address-continue"]').attributes('disabled')).toBeDefined()
 
   await fill(wrapper)
   expect(wrapper.find('[data-testid="device-pay-stripe"]').attributes('disabled')).toBeUndefined()
@@ -195,7 +202,7 @@ test('every address field keeps a label that survives typing', async () => {
     expect(label.text()).toBe(text)
   }
 
-  await fill(wrapper)
+  await fillAddress(wrapper)
   expect(wrapper.find('label[for="device-city"]').text()).toBe('City')
 })
 

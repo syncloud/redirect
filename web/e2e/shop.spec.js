@@ -26,6 +26,8 @@ async function address (page) {
   await page.getByTestId('device-city').fill('London')
   await page.getByTestId('device-postcode').fill('E1 6AN')
   await page.getByTestId('device-country').fill('United Kingdom')
+  await page.getByTestId('shop-address-continue').click()
+  await expect(page.getByTestId('shop-address-chosen')).toBeVisible()
 }
 
 test('the shop is readable without an account', async ({ page }, testInfo) => {
@@ -64,7 +66,8 @@ test('paying cannot start until the address is complete', async ({ page }, testI
   await goToShop(page)
 
   await page.getByTestId('shop-continue').click()
-  await expect(page.getByTestId('device-pay-stripe')).toBeDisabled()
+  await expect(page.getByTestId('device-pay')).toHaveCount(0)
+  await expect(page.getByTestId('shop-address-continue')).toBeDisabled()
   await expect(page.getByTestId('device-incomplete')).toBeVisible()
   await page.getByTestId('shop-change').click()
 
