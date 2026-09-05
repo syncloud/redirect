@@ -562,11 +562,12 @@ export default {
 .pay-overlay {
   position: absolute;
   inset: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--el-bg-color) 78%, transparent);
 }
 .pay-spinner {
   width: 22px;

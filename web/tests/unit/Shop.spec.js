@@ -250,18 +250,17 @@ test('pressing PayPal says something is happening', async () => {
   expect(wrapper.find('[data-testid="device-pay-busy"]').exists()).toBe(false)
 })
 
-test('shows the headline specs without opening anything', async () => {
+test('keeps the full specification behind the expander', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)
 
   const wrapper = mountShop()
   await flushPromises()
 
-  const highlights = wrapper.find('[data-testid="device-highlights"]')
-  expect(highlights.text()).toContain('Amlogic S905X3')
-  expect(highlights.text()).toContain('4 GB DDR4')
-  expect(highlights.text()).not.toContain('USB 2.0')
+  expect(wrapper.find('[data-testid="device-highlights"]').exists()).toBe(false)
 
   const table = wrapper.find('[data-testid="device-spec-table"]')
+  expect(table.text()).toContain('Amlogic S905X3')
   expect(table.text()).toContain('USB 2.0 x 1')
+  expect(wrapper.find('[data-testid="device-spec"]').element.open).toBeFalsy()
 })

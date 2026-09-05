@@ -36,15 +36,8 @@
           </div>
         </div>
 
-        <ul class="highlights" data-testid="device-highlights">
-          <li v-for="spec in headline" :key="spec.name">
-            <span class="highlight-value">{{ spec.value }}</span>
-            <span class="highlight-name">{{ spec.name }}</span>
-          </li>
-        </ul>
-
         <details class="spec" data-testid="device-spec">
-          <summary>Full specification and what is in the box</summary>
+          <summary>More details</summary>
 
           <table class="spec-table" data-testid="device-spec-table">
             <tbody>
@@ -284,9 +277,6 @@ export default {
     }
   },
   computed: {
-    headline () {
-      return this.device.specs.slice(0, 4)
-    },
     optionName () {
       const chosen = this.device.options.find(each => each.code === this.option)
       return chosen ? chosen.name : ''
@@ -394,7 +384,7 @@ export default {
       loadScript(options)
         .then(paypal => {
           paypal.Buttons({
-            style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44 },
+            style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44, borderRadius: 0 },
             onClick: () => {
               this.error = ''
               this.busy = 'paypal'
@@ -557,36 +547,6 @@ export default {
   line-height: 1.7;
 }
 
-.highlights {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin: 18px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.highlights li {
-  border: 1px solid var(--sc-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  text-align: center;
-}
-
-.highlight-value {
-  display: block;
-  font-weight: 600;
-  color: var(--sc-ink);
-  font-size: 0.95rem;
-}
-
-.highlight-name {
-  display: block;
-  margin-top: 2px;
-  color: var(--sc-muted);
-  font-size: 0.8rem;
-}
-
 .spec-table {
   width: 100%;
   margin-top: 12px;
@@ -612,12 +572,6 @@ export default {
   margin: 18px 0 0;
   font-size: 0.95rem;
   color: var(--sc-ink);
-}
-
-@media (max-width: 640px) {
-  .highlights {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 .spec {
@@ -727,7 +681,9 @@ export default {
 }
 
 .pay-paypal {
-  min-height: 1px;
+  height: 44px;
+  border-radius: var(--el-border-radius-base, 4px);
+  overflow: hidden;
 }
 
 .pay-paypal-wrap {
@@ -737,11 +693,12 @@ export default {
 .pay-overlay {
   position: absolute;
   inset: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: var(--el-border-radius-base, 4px);
+  background: color-mix(in srgb, var(--sc-surface) 78%, transparent);
 }
 
 .pay-spinner {
