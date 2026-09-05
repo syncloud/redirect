@@ -178,6 +178,7 @@ docker run -d \
     --restart=unless-stopped \
     --network=host \
     -v "$REDIRECT_DIR/rspamd/local.d:/etc/rspamd/local.d:ro" \
+    -v rspamd-data:/var/lib/rspamd \
     "$RSPAMD_IMAGE"
 
 NODE_EXPORTER_IMAGE=prom/node-exporter:v1.8.2
