@@ -61,9 +61,15 @@ func (r *Reconciler) Run() {
 			r.logger.Info("order paid after all",
 				zap.Int64("order", order.Id),
 				zap.String("provider", order.Provider))
-		case errors.Is(err, ErrNotPaid):
+		default:
+			paidButUnsettled := !errors.Is(err, ErrNotPaid)
+			if paidButUnsettled {
+				r.logger.Error("cannot settle an order",
+					zap.Int64("order", order.Id), zap.Error(err))
+			}
 			if order.CreatedAt.After(giveUpBefore) {
-				r.logger.Info("order still not paid", zap.Int64("order", order.Id))
+				r.logger.Info("order not settled yet, still trying",
+					zap.Int64("order", order.Id))
 				continue
 			}
 			if err := r.orders.Abandon(order); err != nil {
@@ -71,10 +77,10 @@ func (r *Reconciler) Run() {
 					zap.Int64("order", order.Id), zap.Error(err))
 				continue
 			}
-			r.logger.Info("order abandoned, it was never paid", zap.Int64("order", order.Id))
-		default:
-			r.logger.Error("cannot settle an order",
-				zap.Int64("order", order.Id), zap.Error(err))
+			r.logger.Info("order abandoned", zap.Int64("order", order.Id))
+			if !paidButUnsettled {
+				continue
+			}
 			if err := r.orders.Stuck(order, err.Error()); err != nil {
 				r.logger.Error("cannot report a stuck order",
 					zap.Int64("order", order.Id), zap.Error(err))

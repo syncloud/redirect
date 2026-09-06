@@ -119,17 +119,34 @@ func TestKeepsWaitingOnAnOrderThatIsStillFresh(t *testing.T) {
 	}
 }
 
-func TestTellsSupportWhenAnOrderCannotBeSettled(t *testing.T) {
+func TestDoesNotMailAboutTheSameOrderEveryPass(t *testing.T) {
+	now := time.Unix(1000000, 0)
 	stub := &settlerStub{
-		unpaid:   []*Order{{Id: 7}},
-		failWith: errors.New("provider said yes but the database said no"),
+		unpaid:   []*Order{{Id: 7, CreatedAt: now.Add(-1 * time.Hour)}},
+		failWith: errors.New("the provider says that order does not exist"),
+	}
+	r := reconciler(stub)
+	r.Run()
+	r.Run()
+	r.Run()
+
+	if len(stub.stuck) != 0 {
+		t.Fatalf("mailed %d times about an order still inside its window", len(stub.stuck))
+	}
+}
+
+func TestGivesUpOnAnOrderTheProviderKeepsRejecting(t *testing.T) {
+	now := time.Unix(1000000, 0)
+	stub := &settlerStub{
+		unpaid:   []*Order{{Id: 7, CreatedAt: now.Add(-48 * time.Hour)}},
+		failWith: errors.New("the provider says that order does not exist"),
 	}
 	reconciler(stub).Run()
 
+	if len(stub.abandoned) != 1 {
+		t.Fatalf("an erroring order was left to be polled forever, abandoned %v", stub.abandoned)
+	}
 	if len(stub.stuck) != 1 {
 		t.Fatalf("support was told %d times", len(stub.stuck))
-	}
-	if len(stub.abandoned) != 0 {
-		t.Fatal("a stuck order must not be quietly abandoned")
 	}
 }
