@@ -10,6 +10,15 @@ async function signedIn (page, prefix) {
   return email
 }
 
+async function signOut (page) {
+  const burger = page.getByTestId('menu-burger')
+  if (await burger.isVisible()) {
+    await burger.click()
+  }
+  await page.getByTestId('nav-logout').click()
+  await expect(page).toHaveURL(/\/login/)
+}
+
 async function goToShop (page) {
   const burger = page.getByTestId('menu-burger')
   if (await burger.isVisible()) {
@@ -194,6 +203,10 @@ test('a buyer cannot open an order that is not theirs', async ({ page }) => {
     .replace('Reference ', '').trim()
   expect(other).toContain('buy-other')
 
+  const owner = await page.request.get(`/api/device/order?reference=${reference}`)
+  expect(owner.status(), 'the account that ordered can read it').toBe(200)
+
+  await signOut(page)
   await signedIn(page, 'buy-nosy')
   const stolen = await page.request.get(`/api/device/order?reference=${reference}`)
   expect(stolen.status(), 'another account must not read this order').not.toBe(200)
