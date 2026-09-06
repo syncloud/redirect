@@ -21,17 +21,77 @@ let state = {
     {
       number: 2,
       device: 'Syncloud H4',
+      option: '2 TB SSD x 2',
+      total: '£687.00',
+      status: 'sent',
+      ordered: '2026-08-22',
+      mine: true,
+      email: 'test@example.com',
+      name: 'Ada Lovelace',
+      address: 'Flat 4, Somerset House, 12 Strand',
+      city: 'London',
+      postcode: 'WC2R 1LA',
+      country: 'United Kingdom'
+    },
+    {
+      number: 3,
+      device: 'Syncloud H4',
       option: '120 GB SSD',
       total: '£244.00',
       status: 'sent',
-      ordered: '2026-08-30',
+      ordered: '2026-07-14',
+      mine: true,
+      email: 'test@example.com',
+      name: 'Ada Lovelace',
+      address: '1 Analytical Street',
+      city: 'London',
+      postcode: 'E1 6AN',
+      country: 'United Kingdom'
+    },
+    {
+      number: 4,
+      device: 'Syncloud H4',
+      option: '1 TB SSD x 2',
+      total: '£422.00',
+      status: 'ordered',
+      ordered: '2026-09-06',
       mine: false,
-      email: 'someone@example.com',
+      email: 'grace.hopper@navy.example.com',
       name: 'Grace Hopper',
       address: '2 Compiler Road',
       city: 'Manchester',
       postcode: 'M1 2AB',
       country: 'United Kingdom'
+    },
+    {
+      number: 5,
+      device: 'Syncloud H4',
+      option: '120 GB SSD x 2',
+      total: '£274.00',
+      status: 'sent',
+      ordered: '2026-09-02',
+      mine: false,
+      email: 'a-rather-long-address@some-long-domain.example.org',
+      name: 'Karl-Friedrich von Habsburg-Lothringen',
+      address: 'Bundesallee 187, Aufgang C, 3. Stock',
+      city: 'Berlin-Wilmersdorf',
+      postcode: '10717',
+      country: 'Germany'
+    },
+    {
+      number: 6,
+      device: 'Syncloud H4',
+      option: '2 TB SSD',
+      total: '£444.00',
+      status: 'ordered',
+      ordered: '2026-08-28',
+      mine: false,
+      email: 'k.tanaka@example.jp',
+      name: 'Kenji Tanaka',
+      address: '3-2-1 Nishi-Shinjuku',
+      city: 'Tokyo',
+      postcode: '160-0023',
+      country: 'Japan'
     }
   ],
   credentials: {
@@ -203,15 +263,15 @@ export function mock () {
       })
       this.get('/api/device/order', function (_schema, request) {
         const order = state.orders.find(each => String(each.number) === request.queryParams.number)
-        return new Response(200, {}, {
-          data: {
-            order,
-            history: [
-              { status: 'ordered', at: '2026-09-05 10:12' },
-              { status: 'sent', at: '2026-09-06 09:30', comment: 'Posted first class, tracking to follow.' }
-            ]
-          }
-        })
+        const history = [{ status: 'ordered', at: `${order.ordered} 10:12` }]
+        if (order.status === 'sent') {
+          history.push({
+            status: 'sent',
+            at: `${order.ordered} 16:40`,
+            comment: 'Posted first class. Tracking number to follow in a separate email.'
+          })
+        }
+        return new Response(200, {}, { data: { order, history } })
       })
       this.get('/api/device/orders', function (_schema, _request) {
         return new Response(200, {}, { data: state.orders.filter(order => order.mine) })
