@@ -1,4 +1,4 @@
-const { execFileSync } = require('node:child_process')
+import { execFileSync } from 'node:child_process'
 
 const deviceHost = process.env.PLAYWRIGHT_DEVICE_HOST ?? 'www.syncloud.test'
 const sshUser = process.env.PLAYWRIGHT_SSH_USER ?? 'root'
@@ -31,4 +31,4 @@ function scpFrom (remote, local, opts = {}) {
   }
 }
 
-module.exports = { ssh, scpFrom, deviceHost, sshUser, sshPassword }
+export { ssh, scpFrom, deviceHost, sshUser, sshPassword }

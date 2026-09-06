@@ -3,10 +3,12 @@ package service
 import (
 	"fmt"
 	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/product"
 	"github.com/syncloud/redirect/smtp"
 	"go.uber.org/zap"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -25,6 +27,10 @@ type Mail struct {
 	accountRemovedPath          string
 	relayLimitWarningPath       string
 	mailRelayLimitWarningPath   string
+	deviceOrderPath             string
+	deviceOrderCustomerPath     string
+	deviceOrderStatusPath       string
+	deviceOrderStuckPath        string
 	from                        string
 	subjectPrefix               string
 	deviceErrorTo               string
@@ -57,6 +63,10 @@ func NewMail(smtp *smtp.Smtp,
 		accountRemovedPath:          mailPath + "/account_removed.txt",
 		relayLimitWarningPath:       mailPath + "/relay_limit_warning.txt",
 		mailRelayLimitWarningPath:   mailPath + "/mail_relay_limit_warning.txt",
+		deviceOrderPath:             mailPath + "/device_order.txt",
+		deviceOrderCustomerPath:     mailPath + "/device_order_customer.txt",
+		deviceOrderStatusPath:       mailPath + "/device_order_status.txt",
+		deviceOrderStuckPath:        mailPath + "/device_order_stuck.txt",
 		from:                        from,
 		deviceErrorTo:               deviceErrorTo,
 		mainDomain:                  mainDomain,
@@ -86,6 +96,61 @@ func (m *Mail) SendPlanSubscribed(to string) error {
 	return m.SendNotification(m.planSubscribeTemplatePath, map[string]string{
 		"domain": m.mainDomain,
 	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendDeviceOrderStuck(order *product.Order, reason string) error {
+	return m.SendNotification(m.deviceOrderStuckPath, map[string]string{
+		"number":             strconv.FormatInt(order.Id, 10),
+		"reason":             reason,
+		"provider":           order.Provider,
+		"provider_reference": order.ProviderReference,
+	}, m.deviceErrorTo)
+}
+
+func (m *Mail) SendDeviceOrderStatus(order *product.Order, device, option, message string) error {
+	to := []string{m.deviceErrorTo}
+	if order.Email != "" {
+		to = append([]string{order.Email}, to...)
+	}
+	return m.SendNotification(m.deviceOrderStatusPath, map[string]string{
+		"number":  strconv.FormatInt(order.Id, 10),
+		"device":  device,
+		"option":  option,
+		"status":  order.Status,
+		"ordered": order.CreatedAt.Format("2006-01-02"),
+		"message": message,
+	}, to...)
+}
+
+func (m *Mail) SendDeviceOrderCustomer(order *product.Order, device, option string) error {
+	return m.SendNotification(m.deviceOrderCustomerPath, map[string]string{
+		"number":    strconv.FormatInt(order.Id, 10),
+		"name":      order.Name,
+		"device":    device,
+		"option":    option,
+		"total":     product.Money(order.Total),
+		"paid_with": order.Provider,
+		"address":   order.Address,
+		"city":      order.City,
+		"postcode":  order.Postcode,
+		"country":   order.Country,
+	}, order.Email)
+}
+
+func (m *Mail) SendDeviceOrder(order *product.Order, device, option string) error {
+	return m.SendNotification(m.deviceOrderPath, map[string]string{
+		"number":    strconv.FormatInt(order.Id, 10),
+		"name":      order.Name,
+		"device":    device,
+		"option":    option,
+		"total":     product.Money(order.Total),
+		"paid_with": order.Provider,
+		"address":   order.Address,
+		"city":      order.City,
+		"postcode":  order.Postcode,
+		"country":   order.Country,
+		"email":     order.Email,
+	}, m.deviceErrorTo, m.from)
 }
 
 func (m *Mail) SendRelayLimitWarning(to string, usedBytes int64, limitBytes int64) error {

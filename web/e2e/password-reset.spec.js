@@ -1,6 +1,6 @@
-const { test, expect } = require('./fixtures')
-const { waitForResetUrl } = require('./helpers/mailhog')
-const { registerActivateAndLogin } = require('./helpers/user')
+import { test, expect } from './fixtures'
+import { waitForResetUrl } from './helpers/mailhog'
+import { registerActivateAndLogin } from './helpers/user'
 
 async function fillStable (locator, value) {
   await expect(async () => {

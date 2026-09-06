@@ -1,5 +1,5 @@
-const { test, expect } = require('./fixtures')
-const { uniqueEmail, registerUser, activateLatestUser, loginUser } = require('./helpers/user')
+import { test, expect } from './fixtures'
+import { uniqueEmail, registerUser, activateLatestUser, loginUser } from './helpers/user'
 
 test('user can register, activate, and log in', async ({ page }) => {
   const email = uniqueEmail('auth')

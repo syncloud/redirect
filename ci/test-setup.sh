@@ -49,6 +49,19 @@ install -m 0755 "$STAGE/sim/dns-faker" /usr/local/bin/dns-faker
 ( /usr/local/bin/dns-faker </dev/null >/var/log/dns-faker.log 2>&1 & )
 for i in $(seq 1 30); do curl -sf http://localhost:4566/health >/dev/null 2>&1 && break; sleep 1; done
 
+install -d /etc/caddy/conf.d
+cat > /etc/caddy/conf.d/payment-faker.caddy <<FAKER
+payments.$SYNCLOUD_DOMAIN {
+	import syncloud_tls
+	handle_path /paypal/* {
+		reverse_proxy paypal-faker:4581
+	}
+	handle_path /stripe/* {
+		reverse_proxy stripe-faker:4582
+	}
+}
+FAKER
+
 install -m 0755 "$STAGE/sim/ses-faker" /usr/local/bin/ses-faker
 ( /usr/local/bin/ses-faker </dev/null >/var/log/ses-faker.log 2>&1 & )
 for i in $(seq 1 30); do curl -sf http://localhost:4579/faker/messages >/dev/null 2>&1 && break; sleep 1; done

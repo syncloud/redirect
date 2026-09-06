@@ -1,0 +1,73 @@
+package model
+
+type DeviceCatalogResponse struct {
+	Devices        interface{} `json:"devices"`
+	Shipping       int         `json:"shipping"`
+	Currency       string      `json:"currency"`
+	PayPalClientId string      `json:"paypal_client_id"`
+	PayPalSdkUrl   string      `json:"paypal_sdk_url"`
+}
+
+type DeviceOrderRequest struct {
+	Device   string `json:"device"`
+	Option   string `json:"option"`
+	Provider string `json:"provider"`
+	Name     string `json:"name"`
+	Address  string `json:"address"`
+	City     string `json:"city"`
+	Postcode string `json:"postcode"`
+	Country  string `json:"country"`
+}
+
+type DeviceOrderResponse struct {
+	Number            int64  `json:"number"`
+	Reference         string `json:"reference"`
+	ProviderReference string `json:"provider_reference"`
+	Url               string `json:"url"`
+	Total             int    `json:"total"`
+}
+
+type DeviceOrderCompleteRequest struct {
+	Reference string `json:"reference"`
+}
+
+type DeviceOrderStatusRequest struct {
+	Number  int64  `json:"number"`
+	Status  string `json:"status"`
+	Comment string `json:"comment"`
+}
+
+type DeviceOrderEventView struct {
+	Status  string `json:"status"`
+	Comment string `json:"comment,omitempty"`
+	At      string `json:"at"`
+}
+
+type DeviceOrderView struct {
+	Number   int64  `json:"number"`
+	Device   string `json:"device"`
+	Option   string `json:"option"`
+	Total    string `json:"total"`
+	Status   string `json:"status"`
+	Ordered  string `json:"ordered"`
+	Email    string `json:"email,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Address  string `json:"address,omitempty"`
+	City     string `json:"city,omitempty"`
+	Postcode string `json:"postcode,omitempty"`
+	Country  string `json:"country,omitempty"`
+}
+
+type DeviceOrderDetailView struct {
+	Order   DeviceOrderView        `json:"order"`
+	History []DeviceOrderEventView `json:"history"`
+}
+
+type DeviceOrderCompleteResponse struct {
+	Number int64 `json:"number"`
+}
+
+type DeviceOrderRetryRequest struct {
+	Number   int64  `json:"number"`
+	Provider string `json:"provider"`
+}

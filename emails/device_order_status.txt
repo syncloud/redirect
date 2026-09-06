@@ -1,0 +1,7 @@
+Subject: your Syncloud order {number} is {status}
+
+{device} with {option}, ordered on {ordered}.
+
+{message}
+
+Order number {number}. If you have a question about it, reply to this email.
