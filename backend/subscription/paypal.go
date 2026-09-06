@@ -10,6 +10,7 @@ import (
 type PayPal struct {
 	client           *paypal.Client
 	clientId         string
+	sdkUrl           string
 	planMonthlyId    string
 	planAnnualId     string
 	planMaxMonthlyId string
@@ -17,7 +18,7 @@ type PayPal struct {
 	logger           *zap.Logger
 }
 
-func New(clientID, secretID, url, planMonthlyId, planAnnualId, planMaxMonthlyId, planMaxAnnualId string, logger *zap.Logger) (*PayPal, error) {
+func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMonthlyId, planMaxAnnualId string, logger *zap.Logger) (*PayPal, error) {
 	c, err := paypal.NewClient(clientID, secretID, url)
 	if err != nil {
 		return nil, err
@@ -25,6 +26,7 @@ func New(clientID, secretID, url, planMonthlyId, planAnnualId, planMaxMonthlyId,
 	return &PayPal{
 		client:           c,
 		clientId:         clientID,
+		sdkUrl:           sdkUrl,
 		planMonthlyId:    planMonthlyId,
 		planAnnualId:     planAnnualId,
 		planMaxMonthlyId: planMaxMonthlyId,
@@ -51,6 +53,7 @@ func (p *PayPal) Plans() model.PlanResponse {
 		PlanMaxMonthlyId: p.planMaxMonthlyId,
 		PlanMaxAnnualId:  p.planMaxAnnualId,
 		ClientId:         p.clientId,
+		SdkUrl:           p.sdkUrl,
 		PayPalMaxEnabled: p.MaxEnabled(),
 	}
 }

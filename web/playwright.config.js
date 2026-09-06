@@ -1,11 +1,11 @@
-const { defineConfig, devices } = require('@playwright/test')
+import { defineConfig, devices } from '@playwright/test'
 
 const domain = process.env.PLAYWRIGHT_DOMAIN || 'syncloud.test'
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: './e2e',
   outputDir: 'test-results',
-  globalTeardown: require.resolve('./e2e/global-teardown.js'),
+  globalTeardown: './e2e/global-teardown.js',
   timeout: 60 * 1000,
   expect: {
     timeout: 10 * 1000

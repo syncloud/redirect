@@ -8,6 +8,7 @@ import (
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
+	"github.com/syncloud/redirect/product"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -151,6 +152,7 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwOrdersStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -193,6 +195,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwOrdersStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -250,6 +253,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwOrdersStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -293,6 +297,7 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwOrdersStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -340,6 +345,7 @@ func sessionWww() *Www {
 		&WwwActionsStub{},
 		&WwwMailStub{},
 		&WwwStripeStub{},
+		&WwwOrdersStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -389,4 +395,36 @@ func TestSessionCarryingAUserIdIsAccepted(t *testing.T) {
 	user, err := www.getSessionUser(req)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(42), user.Id)
+}
+
+type WwwOrdersStub struct{}
+
+func (s *WwwOrdersStub) Catalog() []product.Device { return nil }
+
+func (s *WwwOrdersStub) Shipping() int { return 1500 }
+
+func (s *WwwOrdersStub) Redact(_ int64) error { return nil }
+
+func (s *WwwOrdersStub) Start(_ *product.Order, _ string) (string, error) { return "", nil }
+
+func (s *WwwOrdersStub) Complete(_ int64, _ string) (int64, error) { return 1, nil }
+
+func (s *WwwOrdersStub) Mine(_ int64) ([]*product.Order, error) { return nil, nil }
+
+func (s *WwwOrdersStub) All() ([]*product.Order, error) { return nil, nil }
+
+func (s *WwwOrdersStub) SetStatus(_ int64, _ string, _ string) error { return nil }
+
+func (s *WwwOrdersStub) Detail(_ int64, _ int64, _ bool) (*product.Order, []*product.OrderEvent, error) {
+	return &product.Order{}, nil, nil
+}
+
+func (s *WwwOrdersStub) Unfinished(_ int64) ([]*product.Order, error) { return nil, nil }
+
+func (s *WwwOrdersStub) Retry(_ int64, _ int64, _ string) (*product.Order, error) {
+	return &product.Order{}, nil
+}
+
+func (s *WwwOrdersStub) Describe(device, option string) (string, string, error) {
+	return device, option, nil
 }

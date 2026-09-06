@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 PROJECT=$1
 
@@ -11,7 +11,7 @@ apt-get update && apt-get install -y default-mysql-client sshpass openssh-client
 ${DIR}/recreatedb
 
 IP=$(getent hosts www.syncloud.test | awk '{print $1}')
-echo "$IP syncloud.test api.syncloud.test auth.syncloud.test" >> /etc/hosts
+echo "$IP syncloud.test api.syncloud.test auth.syncloud.test payments.syncloud.test" >> /etc/hosts
 
 cd ${DIR}/../web
 bash ${DIR}/npm.sh ci
@@ -27,5 +27,7 @@ for dir in web/test-results/*/; do
     [[ -f ${dir}failure-full-page.png ]] && cp ${dir}failure-full-page.png ${OUT}/${name}.png
 done
 cp -r web/test-results/logs ${OUT}/logs
+[[ -d web/test-results/screenshots-${PROJECT} ]] && \
+    cp -r web/test-results/screenshots-${PROJECT} ${OUT}/screenshots
 
 exit $EXIT_CODE

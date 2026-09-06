@@ -8,6 +8,7 @@ import (
 	"github.com/syncloud/redirect/ioc"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
+	"github.com/syncloud/redirect/product"
 	"github.com/syncloud/redirect/rest"
 	"github.com/syncloud/redirect/service"
 	"github.com/syncloud/redirect/utils"
@@ -33,11 +34,13 @@ func main() {
 				metricsCollector *metrics.Metrics,
 				dbGauges *metrics.DbGauges,
 				config *utils.Config,
+				reconciler *product.Reconciler,
 			) error {
 				metricsServer := metrics.NewServer(config.GetWwwMetricsAddr(), log.Default(), metricsCollector, dbGauges)
 				services := []service.Startable{
 					database,
 					metricsServer,
+					reconciler,
 					www,
 				}
 				for _, s := range services {

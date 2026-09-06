@@ -33,7 +33,7 @@ test('Login success', async () => {
           RouterLink: RouterLinkStub
         },
         mocks: {
-          $route: { path: '/login' },
+          $route: { path: '/login', query: {} },
           $router: mockRouter
         }
       }
@@ -81,7 +81,7 @@ test('Login failed', async () => {
           RouterLink: RouterLinkStub
         },
         mocks: {
-          $route: { path: '/login' },
+          $route: { path: '/login', query: {} },
           $router: mockRouter
         }
       }

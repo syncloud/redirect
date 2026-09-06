@@ -1,5 +1,5 @@
-const { test, expect } = require('./fixtures')
-const { registerActivateAndLogin } = require('./helpers/user')
+import { test, expect } from './fixtures'
+import { registerActivateAndLogin } from './helpers/user'
 
 test('mobile user moves between login and register without a menu', async ({ page }) => {
   await page.goto('/login')

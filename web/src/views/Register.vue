@@ -10,15 +10,15 @@
         <div class="sc-alert" :class="{ invisible: !isError }">{{ error }}</div>
       </div>
 
-      <div id="group-email" class="sc-field">
+      <div id="group-email" class="sc-field sc-field-float">
+        <input id="register_email" data-testid="register-email" name="email" type="text" placeholder=" " required="" v-model="email">
         <label for="register_email">Email</label>
-        <input id="register_email" data-testid="register-email" name="email" type="text" placeholder="user@mail.com" required="" v-model="email">
         <span id="help-email" class="sc-help">{{ emailError }}</span>
       </div>
 
-      <div id="group-password" class="sc-field">
+      <div id="group-password" class="sc-field sc-field-float">
+        <input id="register_password" data-testid="register-password" name="password" type="password" placeholder=" " required="" v-model="password">
         <label for="register_password">Password</label>
-        <input id="register_password" data-testid="register-password" name="password" type="password" required="" v-model="password">
         <span id="help-password" class="sc-help">{{ passwordError }}</span>
       </div>
 
@@ -40,6 +40,7 @@
 
 <script>
 import axios from 'axios'
+import { storedGclid } from '../attribution'
 
 function showError (component, error) {
   if ('parameters_messages' in error) {
@@ -80,7 +81,7 @@ export default {
     register: function (event) {
       this.isError = false
       const request = { email: this.email, password: this.password }
-      const gclid = this.$route.query.gclid
+      const gclid = this.$route.query.gclid || storedGclid()
       if (gclid) {
         request.gclid = gclid
       }

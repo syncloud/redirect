@@ -24,6 +24,7 @@ type User struct {
 	Active              bool      `json:"active,omitempty"`
 	UpdateToken         string    `json:"update_token,omitempty"`
 	NotificationEnabled bool      `json:"notification_enabled"`
+	Admin               bool      `json:"admin"`
 	Timestamp           time.Time `json:"timestamp,omitempty"`
 	SubscriptionId      *string   `json:"subscription_id,omitempty"`
 	SubscriptionType    *int      `json:"subscription_type,omitempty"`

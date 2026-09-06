@@ -27,6 +27,26 @@ const routes = [
     component: () => import('../views/PasswordForgot.vue')
   },
   {
+    path: '/shop',
+    name: 'Shop',
+    component: () => import('../views/Shop.vue')
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('../views/Orders.vue')
+  },
+  {
+    path: '/orders/:number',
+    name: 'OrderDetail',
+    component: () => import('../views/OrderDetail.vue')
+  },
+  {
+    path: '/admin/orders',
+    name: 'AdminOrders',
+    component: () => import('../views/AdminOrders.vue')
+  },
+  {
     path: '/account',
     name: 'Account',
     component: () => import('../views/Account.vue')
@@ -48,8 +68,8 @@ const routes = [
   },
   {
     path: '/',
-    name: 'Devices',
-    component: () => import('../views/Devices.vue')
+    name: 'Home',
+    component: () => import('../views/Home.vue')
   }
 ]
 

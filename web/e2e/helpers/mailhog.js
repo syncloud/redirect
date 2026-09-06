@@ -1,4 +1,4 @@
-async function check(response, message) {
+async function check (response, message) {
   if (!response.ok) {
     throw new Error(`${message}: ${response.status} ${await response.text()}`)
   }
@@ -17,13 +17,13 @@ async function fetchMessages () {
   return await response.json()
 }
 
-function bodyFromMessage(message) {
+function bodyFromMessage (message) {
   return message.Content.Body
     .replace(/=\r\n/g, '')
     .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
 }
 
-async function waitForMessage(extract, timeoutMs = 30000, pollMs = 250) {
+async function waitForMessage (extract, timeoutMs = 30000, pollMs = 250) {
   const deadline = Date.now() + timeoutMs
   for (;;) {
     const messages = await fetchMessages()
@@ -40,26 +40,58 @@ async function waitForMessage(extract, timeoutMs = 30000, pollMs = 250) {
   }
 }
 
-function extractActivateUrl(body) {
+function recipientsOf (message) {
+  return (message.To || []).map(to => `${to.Mailbox}@${to.Domain}`)
+}
+
+function subjectOf (message) {
+  return ((message.Content.Headers || {}).Subject || [''])[0]
+}
+
+function asEmail (message) {
+  return {
+    to: recipientsOf(message),
+    subject: subjectOf(message),
+    body: bodyFromMessage(message)
+  }
+}
+
+async function waitForEmailTo (address, timeoutMs = 30000, pollMs = 250) {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    const found = (await fetchMessages()).map(asEmail)
+      .find(email => email.to.includes(address))
+    if (found) {
+      return found
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(`Timed out after ${timeoutMs}ms waiting for an email to ${address}`)
+    }
+    await new Promise(resolve => setTimeout(resolve, pollMs))
+  }
+}
+
+function extractActivateUrl (body) {
   const match = body.match(/activate your account: (https:\/\/.*)\r/)
   return match ? match[1] : null
 }
 
-function extractResetUrl(body) {
+function extractResetUrl (body) {
   const match = body.match(/reset your password: (https:\/\/.*)\r/)
   return match ? match[1] : null
 }
 
-async function waitForActivateUrl() {
+async function waitForActivateUrl () {
   return await waitForMessage(extractActivateUrl)
 }
 
-async function waitForResetUrl() {
+async function waitForResetUrl () {
   return await waitForMessage(extractResetUrl)
 }
 
-module.exports = {
+export {
   clearEmails,
   waitForActivateUrl,
-  waitForResetUrl
+  waitForResetUrl,
+  waitForEmailTo
 }

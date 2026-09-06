@@ -1,0 +1,20 @@
+create table `device_order` (
+    `id` int not null auto_increment,
+    `user_id` int not null,
+    `device` varchar(32) not null,
+    `option` varchar(32) not null,
+    `total` int not null,
+    `provider` varchar(16) not null,
+    `reference` varchar(128) not null,
+    `name` varchar(100) not null,
+    `address` varchar(255) not null,
+    `city` varchar(100) not null,
+    `postcode` varchar(32) not null,
+    `country` varchar(100) not null,
+    `paid` tinyint(1) not null default 0,
+    `created_at` timestamp not null default current_timestamp,
+    primary key (`id`),
+    unique key `reference` (`reference`),
+    key `user_id` (`user_id`),
+    constraint `device_order_user` foreign key (`user_id`) references `user` (`id`) on delete cascade
+) engine=InnoDB default charset=utf8mb4;
