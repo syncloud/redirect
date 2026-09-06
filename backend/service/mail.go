@@ -30,6 +30,7 @@ type Mail struct {
 	deviceOrderPath             string
 	deviceOrderCustomerPath     string
 	deviceOrderStatusPath       string
+	deviceOrderStuckPath        string
 	from                        string
 	subjectPrefix               string
 	deviceErrorTo               string
@@ -65,6 +66,7 @@ func NewMail(smtp *smtp.Smtp,
 		deviceOrderPath:             mailPath + "/device_order.txt",
 		deviceOrderCustomerPath:     mailPath + "/device_order_customer.txt",
 		deviceOrderStatusPath:       mailPath + "/device_order_status.txt",
+		deviceOrderStuckPath:        mailPath + "/device_order_stuck.txt",
 		from:                        from,
 		deviceErrorTo:               deviceErrorTo,
 		mainDomain:                  mainDomain,
@@ -94,6 +96,15 @@ func (m *Mail) SendPlanSubscribed(to string) error {
 	return m.SendNotification(m.planSubscribeTemplatePath, map[string]string{
 		"domain": m.mainDomain,
 	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendDeviceOrderStuck(order *product.Order, reason string) error {
+	return m.SendNotification(m.deviceOrderStuckPath, map[string]string{
+		"number":             strconv.FormatInt(order.Id, 10),
+		"reason":             reason,
+		"provider":           order.Provider,
+		"provider_reference": order.ProviderReference,
+	}, m.deviceErrorTo)
 }
 
 func (m *Mail) SendDeviceOrderStatus(order *product.Order, device, option, message string) error {

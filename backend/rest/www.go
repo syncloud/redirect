@@ -182,6 +182,8 @@ func (w *Www) Start() error {
 	r.HandleFunc("/device/order/complete", w.Secured(HandleUser(w.DeviceOrderComplete))).Methods("POST")
 	r.HandleFunc("/device/orders", w.Secured(HandleUser(w.DeviceOrders))).Methods("GET")
 	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrderDetail))).Methods("GET")
+	r.HandleFunc("/device/orders/unfinished", w.Secured(HandleUser(w.DeviceOrdersUnfinished))).Methods("GET")
+	r.HandleFunc("/device/order/retry", w.Secured(HandleUser(w.DeviceOrderRetry))).Methods("POST")
 	r.HandleFunc("/device/orders/all", w.SecuredAdmin(HandleUser(w.DeviceOrdersAll))).Methods("GET")
 	r.HandleFunc("/device/order/status", w.SecuredAdmin(HandleUser(w.DeviceOrderStatus))).Methods("POST")
 	r.HandleFunc("/domain", w.Secured(HandleUser(w.DomainDelete))).Methods("DELETE")
@@ -297,6 +299,37 @@ func (w *Www) Secured(handle func(_ http.ResponseWriter, r *http.Request, user m
 		}
 		handle(resp, r, *user)
 	}
+}
+
+func (w *Www) DeviceOrdersUnfinished(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("device_orders_unfinished")
+	orders, err := w.orders.Unfinished(user.Id)
+	if err != nil {
+		w.logger.Error("unable to list unfinished orders", zap.Error(err))
+		return nil, err
+	}
+	return w.orderViews(orders, false), nil
+}
+
+func (w *Www) DeviceOrderRetry(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("device_order_retry")
+	request := model.DeviceOrderRetryRequest{}
+	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+		w.logger.Error("unable to parse", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	order, err := w.orders.Retry(user.Id, request.Number, request.Provider)
+	if err != nil {
+		w.logger.Error("unable to retry the order", zap.Error(err))
+		return nil, err
+	}
+	return model.DeviceOrderResponse{
+		Number:            order.Id,
+		Reference:         order.Reference,
+		ProviderReference: order.ProviderReference,
+		Url:               order.Url,
+		Total:             order.Total,
+	}, nil
 }
 
 func (w *Www) DeviceOrderDetail(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
@@ -808,5 +841,7 @@ type WwwOrders interface {
 	All() ([]*product.Order, error)
 	SetStatus(id int64, status string, comment string) error
 	Detail(id int64, userId int64, admin bool) (*product.Order, []*product.OrderEvent, error)
+	Unfinished(userId int64) ([]*product.Order, error)
+	Retry(userId int64, id int64, provider string) (*product.Order, error)
 	Describe(deviceCode, optionCode string) (string, string, error)
 }

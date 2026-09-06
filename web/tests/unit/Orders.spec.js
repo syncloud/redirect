@@ -27,6 +27,7 @@ function mountOrders (push = jest.fn()) {
 test('a buyer sees their own orders and no admin table', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/device/orders').reply(200, { data: MINE })
+  mock.onGet('/api/device/orders/unfinished').reply(200, { data: [] })
 
   const wrapper = mountOrders()
   await flushPromises()
@@ -40,6 +41,7 @@ test('a buyer sees their own orders and no admin table', async () => {
 test('a buyer with nothing ordered is pointed at the shop', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/device/orders').reply(200, { data: [] })
+  mock.onGet('/api/device/orders/unfinished').reply(200, { data: [] })
 
   const wrapper = mountOrders()
   await flushPromises()
@@ -63,6 +65,7 @@ test('the buyer page never asks for every order', async () => {
   const mock = new MockAdapter(axios)
   let askedForAll = false
   mock.onGet('/api/device/orders').reply(200, { data: MINE })
+  mock.onGet('/api/device/orders/unfinished').reply(200, { data: [] })
   mock.onGet('/api/device/orders/all').reply(() => {
     askedForAll = true
     return [200, { data: [] }]
@@ -72,4 +75,21 @@ test('the buyer page never asks for every order', async () => {
   await flushPromises()
 
   expect(askedForAll).toBe(false)
+})
+
+test('an unpaid order is offered back to the buyer to finish', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/device/orders').reply(200, { data: [] })
+  mock.onGet('/api/device/orders/unfinished').reply(200, {
+    data: [{ number: 9, device: 'Syncloud H4', option: '1 TB SSD', total: '£322.00' }]
+  })
+
+  const wrapper = mountOrders()
+  await flushPromises()
+
+  const finish = wrapper.findAllComponents(RouterLinkStub)
+    .find(link => link.attributes('data-testid') === 'order-finish-9')
+  expect(finish).toBeTruthy()
+  expect(finish.props().to).toBe('/shop?order=9')
+  expect(wrapper.find('[data-testid="orders-empty"]').exists()).toBe(false)
 })

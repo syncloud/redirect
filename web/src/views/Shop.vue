@@ -297,6 +297,7 @@ export default {
       email: '',
       reference: '',
       number: 0,
+      resuming: 0,
       ordered: false,
       error: '',
       busy: '',
@@ -345,6 +346,11 @@ export default {
       this.complete(returned)
         .then(_ => this.$router.replace({ query: {} }))
         .catch(this.onError)
+      return
+    }
+    const resume = this.$route.query.order
+    if (resume) {
+      this.resume(Number(resume))
     }
   },
   methods: {
@@ -377,6 +383,12 @@ export default {
       }
     },
     order (provider) {
+      if (this.resuming) {
+        return axios.post('/api/device/order/retry', {
+          number: this.resuming,
+          provider: provider
+        })
+      }
       return axios.post('/api/device/order', {
         device: this.device.code,
         option: this.option,
@@ -387,6 +399,20 @@ export default {
         postcode: this.postcode,
         country: this.country
       })
+    },
+    resume (number) {
+      axios.get('/api/device/order', { params: { number: number } })
+        .then(response => {
+          const order = response.data.data.order
+          this.resuming = number
+          this.name = order.name
+          this.address = order.address
+          this.city = order.city
+          this.postcode = order.postcode
+          this.country = order.country
+          this.step = 'address'
+        })
+        .catch(this.onError)
     },
     complete (reference) {
       return axios.post('/api/device/order/complete', { reference: reference })

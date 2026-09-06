@@ -1,0 +1,10 @@
+Subject: order {number} could not be settled
+
+The payment provider was asked about order {number} and we could not finish it.
+
+{reason}
+
+Provider {provider}, their reference {provider_reference}.
+
+This needs looking at by hand: the buyer may have been charged for an order we
+have not recorded as paid.

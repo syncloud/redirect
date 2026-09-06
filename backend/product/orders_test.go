@@ -34,6 +34,7 @@ type recordingMail struct {
 	sent          *Order
 	confirmed     *Order
 	statusChanges []string
+	stuck         []string
 }
 
 func (m *recordingMail) SendDeviceOrder(order *Order, device, option string) error {
@@ -48,6 +49,11 @@ func (m *recordingMail) SendDeviceOrderCustomer(order *Order, device, option str
 
 func (m *recordingMail) SendDeviceOrderStatus(order *Order, device, option, message string) error {
 	m.statusChanges = append(m.statusChanges, order.Status)
+	return nil
+}
+
+func (m *recordingMail) SendDeviceOrderStuck(order *Order, reason string) error {
+	m.stuck = append(m.stuck, reason)
 	return nil
 }
 
@@ -84,6 +90,31 @@ func (s *memoryStore) only() *Order {
 
 func (s *memoryStore) GetOrderByReference(reference string) (*Order, error) {
 	return s.orders[reference], nil
+}
+
+func (s *memoryStore) MarkOrderAbandoned(id int64) error {
+	if order, ok := s.byId[id]; ok {
+		order.Abandoned = true
+	}
+	return nil
+}
+
+func (s *memoryStore) SetOrderProvider(id int64, provider string, providerReference string) error {
+	if order, ok := s.byId[id]; ok {
+		order.Provider = provider
+		order.ProviderReference = providerReference
+	}
+	return nil
+}
+
+func (s *memoryStore) GetUnfinishedOrders(userId int64) ([]*Order, error) {
+	found := []*Order{}
+	for _, order := range s.byId {
+		if order.UserId == userId && !order.Paid && !order.Abandoned {
+			found = append(found, order)
+		}
+	}
+	return found, nil
 }
 
 func (s *memoryStore) GetOrderById(id int64) (*Order, error) {

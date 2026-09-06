@@ -66,3 +66,8 @@ type DeviceOrderDetailView struct {
 type DeviceOrderCompleteResponse struct {
 	Number int64 `json:"number"`
 }
+
+type DeviceOrderRetryRequest struct {
+	Number   int64  `json:"number"`
+	Provider string `json:"provider"`
+}

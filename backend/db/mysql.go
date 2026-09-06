@@ -1051,6 +1051,23 @@ func (m *MySql) GetOrderEvents(orderId int64) ([]*product.OrderEvent, error) {
 	return events, rows.Err()
 }
 
+func (m *MySql) SetOrderProvider(id int64, provider string, providerReference string) error {
+	_, err := m.db.Exec(
+		"UPDATE device_order set provider = ?, provider_reference = ? where id = ?",
+		provider, providerReference, id)
+	return err
+}
+
+func (m *MySql) MarkOrderAbandoned(id int64) error {
+	_, err := m.db.Exec("UPDATE device_order set abandoned = 1 where id = ?", id)
+	return err
+}
+
+func (m *MySql) GetUnfinishedOrders(userId int64) ([]*product.Order, error) {
+	return m.selectOrders(
+		"where o.user_id = ? and o.paid = 0 and o.abandoned = 0 order by o.id desc", userId)
+}
+
 func (m *MySql) SetOrderStatus(id int64, status string) error {
 	_, err := m.db.Exec("UPDATE device_order set status = ? where id = ?", status, id)
 	return err
@@ -1060,7 +1077,7 @@ func (m *MySql) selectOrders(where string, args ...interface{}) ([]*product.Orde
 	rows, err := m.db.Query(
 		"SELECT o.id, o.user_id, o.device, o.`option`, o.total, o.provider, o.reference, "+
 			"o.provider_reference, o.name, o.address, o.city, o.postcode, o.country, o.paid, "+
-			"o.status, o.created_at, u.email "+
+			"o.status, o.abandoned, o.created_at, u.email "+
 			"from device_order o left join user u on u.id = o.user_id "+where, args...)
 	if err != nil {
 		return nil, err
@@ -1076,7 +1093,7 @@ func (m *MySql) selectOrders(where string, args ...interface{}) ([]*product.Orde
 		err := rows.Scan(&order.Id, &userId, &order.Device, &order.Option, &order.Total,
 			&order.Provider, &order.Reference, &providerReference,
 			&order.Name, &order.Address, &order.City, &order.Postcode, &order.Country, &order.Paid,
-			&order.Status, &order.CreatedAt, &email)
+			&order.Status, &order.Abandoned, &order.CreatedAt, &email)
 		if err != nil {
 			return nil, err
 		}
@@ -1098,7 +1115,7 @@ func (m *MySql) GetUnpaidOrders(before time.Time) ([]*product.Order, error) {
 		"SELECT o.id, o.user_id, o.device, o.`option`, o.total, o.provider, o.reference, "+
 			"o.provider_reference, o.name, o.address, o.city, o.postcode, o.country, o.paid, u.email "+
 			"from device_order o left join user u on u.id = o.user_id "+
-			"where o.paid = 0 and o.provider_reference is not null "+
+			"where o.paid = 0 and o.abandoned = 0 and o.provider_reference is not null "+
 			"and o.created_at < ? order by o.id", before)
 	if err != nil {
 		return nil, err

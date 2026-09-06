@@ -194,7 +194,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	}
 
 	err = c.Singleton(func(orders *product.Orders) *product.Reconciler {
-		return product.NewReconciler(orders, 10*time.Minute, 2*time.Minute, logger)
+		return product.NewReconciler(orders, 10*time.Minute, 2*time.Minute, 24*time.Hour, logger)
 	})
 	if err != nil {
 		return nil, err

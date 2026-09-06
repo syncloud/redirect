@@ -2,6 +2,16 @@ import { createServer, Model, Response } from 'miragejs'
 
 let state = {
   loggedIn: true,
+  unfinished: [
+    {
+      number: 7,
+      device: 'Syncloud H4',
+      option: '1 TB SSD',
+      total: '£322.00',
+      status: 'ordered',
+      ordered: '2026-09-06'
+    }
+  ],
   orders: [
     {
       number: 1,
@@ -290,6 +300,20 @@ export function mock () {
           })
         }
         return new Response(200, {}, { data: { order, history } })
+      })
+      this.get('/api/device/orders/unfinished', function (_schema, _request) {
+        return new Response(200, {}, { data: state.unfinished })
+      })
+      this.post('/api/device/order/retry', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        return new Response(200, {}, {
+          data: {
+            number: attrs.number,
+            reference: 'stub-reference',
+            provider_reference: 'stub-provider-reference',
+            url: '/shop?reference=stub-reference'
+          }
+        })
       })
       this.get('/api/device/orders', function (_schema, _request) {
         return new Response(200, {}, { data: state.orders.filter(order => order.mine) })

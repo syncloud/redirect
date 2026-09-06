@@ -419,6 +419,12 @@ func (s *WwwOrdersStub) Detail(_ int64, _ int64, _ bool) (*product.Order, []*pro
 	return &product.Order{}, nil, nil
 }
 
+func (s *WwwOrdersStub) Unfinished(_ int64) ([]*product.Order, error) { return nil, nil }
+
+func (s *WwwOrdersStub) Retry(_ int64, _ int64, _ string) (*product.Order, error) {
+	return &product.Order{}, nil
+}
+
 func (s *WwwOrdersStub) Describe(device, option string) (string, string, error) {
 	return device, option, nil
 }

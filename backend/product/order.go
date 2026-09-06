@@ -18,6 +18,7 @@ type Order struct {
 	Postcode          string
 	Country           string
 	Paid              bool
+	Abandoned         bool
 	Status            string
 	CreatedAt         time.Time
 	Url               string

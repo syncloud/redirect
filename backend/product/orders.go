@@ -12,6 +12,7 @@ type Mail interface {
 	SendDeviceOrder(order *Order, device, option string) error
 	SendDeviceOrderCustomer(order *Order, device, option string) error
 	SendDeviceOrderStatus(order *Order, device, option, message string) error
+	SendDeviceOrderStuck(order *Order, reason string) error
 }
 
 type Store interface {
@@ -25,6 +26,9 @@ type Store interface {
 	GetOrdersByUser(userId int64) ([]*Order, error)
 	GetAllOrders() ([]*Order, error)
 	SetOrderStatus(id int64, status string) error
+	MarkOrderAbandoned(id int64) error
+	SetOrderProvider(id int64, provider string, providerReference string) error
+	GetUnfinishedOrders(userId int64) ([]*Order, error)
 	InsertOrderEvent(orderId int64, status string, comment string) error
 	GetOrderEvents(orderId int64) ([]*OrderEvent, error)
 }
@@ -240,4 +244,51 @@ func (o *Orders) Detail(id int64, userId int64, admin bool) (*Order, []*OrderEve
 		return nil, nil, err
 	}
 	return order, events, nil
+}
+
+func (o *Orders) Unfinished(userId int64) ([]*Order, error) {
+	return o.store.GetUnfinishedOrders(userId)
+}
+
+func (o *Orders) Abandon(order *Order) error {
+	return o.store.MarkOrderAbandoned(order.Id)
+}
+
+func (o *Orders) Stuck(order *Order, reason string) error {
+	return o.mail.SendDeviceOrderStuck(order, reason)
+}
+
+func (o *Orders) Retry(userId int64, id int64, provider string) (*Order, error) {
+	order, err := o.store.GetOrderById(id)
+	if err != nil {
+		return nil, err
+	}
+	if order == nil || order.UserId != userId {
+		return nil, ErrNoOrder
+	}
+	if order.Paid {
+		return nil, ErrAlreadyPaid
+	}
+	if order.Abandoned {
+		return nil, ErrAbandoned
+	}
+	checkout, err := o.checkouts.Get(provider)
+	if err != nil {
+		return nil, err
+	}
+	device, option, err := o.Describe(order.Device, order.Option)
+	if err != nil {
+		return nil, err
+	}
+	order.Provider = provider
+	providerReference, url, err := checkout.Start(order, fmt.Sprintf("%s, %s", device, option))
+	if err != nil {
+		return nil, err
+	}
+	if err := o.store.SetOrderProvider(order.Id, provider, providerReference); err != nil {
+		return nil, err
+	}
+	order.ProviderReference = providerReference
+	order.Url = url
+	return order, nil
 }

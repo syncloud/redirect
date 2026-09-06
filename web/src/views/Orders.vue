@@ -5,10 +5,28 @@
     <div v-if="loading" class="sc-card" data-testid="orders-loading">Loading your orders.</div>
 
     <template v-else>
-      <div v-if="mine.length === 0" class="sc-card" data-testid="orders-empty">
+      <div v-if="mine.length === 0 && unfinished.length === 0" class="sc-card" data-testid="orders-empty">
         <p>You have not ordered anything yet.</p>
         <router-link class="sc-btn" to="/shop" data-testid="orders-shop-link">Visit the shop</router-link>
       </div>
+
+      <template v-if="unfinished.length > 0">
+        <div class="sc-card unfinished" data-testid="orders-unfinished">
+          <p>
+            You started {{ unfinished.length === 1 ? 'an order' : 'these orders' }} but the
+            payment was never completed. Nothing has been charged.
+          </p>
+          <router-link
+            v-for="order in unfinished"
+            :key="order.number"
+            :to="`/shop?order=${order.number}`"
+            class="sc-btn unfinished-link"
+            :data-testid="`order-finish-${order.number}`"
+          >
+            Finish order {{ order.number }} &middot; {{ order.total }}
+          </router-link>
+        </div>
+      </template>
 
       <OrderCard v-for="order in mine" :key="order.number" :order="order"/>
 
@@ -28,6 +46,7 @@ export default {
   data () {
     return {
       mine: [],
+      unfinished: [],
       loading: true,
       error: ''
     }
@@ -40,6 +59,10 @@ export default {
       axios.get('/api/device/orders')
         .then(response => {
           this.mine = response.data.data
+          return axios.get('/api/device/orders/unfinished')
+        })
+        .then(response => {
+          this.unfinished = response.data.data
           this.loading = false
         })
         .catch(this.onError)
@@ -59,4 +82,22 @@ export default {
 </script>
 
 <style scoped>
+.unfinished {
+  margin-bottom: 12px;
+  border-color: var(--sc-primary);
+}
+
+.unfinished p {
+  margin: 0 0 12px;
+}
+
+.unfinished-link {
+  display: block;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.unfinished-link:last-child {
+  margin-bottom: 0;
+}
 </style>
