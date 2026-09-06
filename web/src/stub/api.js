@@ -263,8 +263,26 @@ export function mock () {
       })
       this.get('/api/device/order', function (_schema, request) {
         const order = state.orders.find(each => String(each.number) === request.queryParams.number)
-        const history = [{ status: 'ordered', at: `${order.ordered} 10:12` }]
+        const history = [
+          { status: 'ordered', at: `${order.ordered} 09:14` },
+          {
+            status: 'ordered',
+            at: `${order.ordered} 11:02`,
+            comment: 'Payment cleared. Queued for building.'
+          },
+          {
+            status: 'ordered',
+            at: `${order.ordered} 15:47`,
+            comment: 'Waiting on the drives for this one, the supplier says Thursday. ' +
+              'Nothing needed from you, we will email again when it goes out.'
+          }
+        ]
         if (order.status === 'sent') {
+          history.push({
+            status: 'ordered',
+            at: `${order.ordered} 08:30`,
+            comment: 'Built and tested overnight, system written to the disk.'
+          })
           history.push({
             status: 'sent',
             at: `${order.ordered} 16:40`,
