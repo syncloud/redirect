@@ -387,6 +387,12 @@ body {
   padding: 28px 20px 48px;
 }
 
+@media (max-width: 767px) {
+  .sc-page {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .sc-h1 {
   font-size: 1.6rem;
   font-weight: 700;
