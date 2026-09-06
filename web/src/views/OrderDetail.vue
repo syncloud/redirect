@@ -243,13 +243,15 @@ export default {
 
 .status-row {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
 }
 
 .status-row #order-new-status {
   flex: 1 1 auto;
   min-width: 0;
+  height: var(--el-component-size-large, 40px);
+  padding: 0 14px;
 }
 
 .status-row .el-button {
