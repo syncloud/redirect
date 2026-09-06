@@ -10,27 +10,7 @@
         <router-link class="sc-btn" to="/shop" data-testid="orders-shop-link">Visit the shop</router-link>
       </div>
 
-      <router-link
-        v-for="order in mine"
-        :key="order.number"
-        :to="`/orders/${order.number}`"
-        class="sc-card order"
-        data-testid="order"
-      >
-        <div class="order-head">
-          <span class="order-name">{{ order.device }}, {{ order.option }}</span>
-          <span class="order-status" :class="`status-${order.status}`" data-testid="order-status">
-            {{ statusLabel(order.status) }}
-          </span>
-        </div>
-        <div class="order-line">
-          <span>{{ order.ordered }}</span>
-          <span data-testid="order-total">{{ order.total }}</span>
-        </div>
-        <p class="sc-muted order-reference" data-testid="order-reference">
-          Order {{ order.number }}
-        </p>
-      </router-link>
+      <OrderCard v-for="order in mine" :key="order.number" :order="order"/>
 
     </template>
 
@@ -40,10 +20,11 @@
 
 <script>
 import axios from 'axios'
-import { STATUS_LABELS } from '../data/orderStatus'
+import OrderCard from '../components/OrderCard.vue'
 
 export default {
   name: 'Orders',
+  components: { OrderCard },
   data () {
     return {
       mine: [],
@@ -55,9 +36,6 @@ export default {
     this.load()
   },
   methods: {
-    statusLabel (status) {
-      return STATUS_LABELS[status] || status
-    },
     load () {
       axios.get('/api/device/orders')
         .then(response => {
@@ -81,51 +59,4 @@ export default {
 </script>
 
 <style scoped>
-.order {
-  display: block;
-  margin-bottom: 12px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.order:hover {
-  border-color: var(--sc-primary);
-}
-
-.order-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.order-name {
-  font-weight: 600;
-}
-
-.order-status {
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: var(--sc-surface-2);
-  color: var(--sc-ink-2);
-}
-
-.status-sent {
-  background: var(--sc-primary);
-  color: #fff;
-}
-
-.order-line {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-
-.order-reference {
-  margin: 6px 0 0;
-  font-size: 0.85rem;
-}
-
 </style>

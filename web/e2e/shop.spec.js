@@ -188,7 +188,8 @@ test('a buyer is offered no admin menu and cannot open the admin page', async ({
 
   await page.goto('/admin/orders')
   await expect(page, 'typing the admin url must not show it').toHaveURL(/\/orders$/)
-  await expect(page.getByTestId('orders-admin-table')).toHaveCount(0)
+  await expect(page.getByTestId('order-account'),
+    'no card may show whose account an order belongs to').toHaveCount(0)
 })
 
 test('a buyer cannot open an order that is not theirs', async ({ page }) => {

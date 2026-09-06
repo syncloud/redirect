@@ -53,23 +53,22 @@ test('an admin sees every order with who ordered it', async () => {
   const wrapper = mountAdmin()
   await flushPromises()
 
-  const table = wrapper.find('[data-testid="orders-admin-table"]')
-  expect(table.text()).toContain('me@example.com')
-  expect(table.text()).toContain('other@example.com')
-  expect(table.text()).toContain('2 Road')
+  const cards = wrapper.findAll('[data-testid="order"]')
+  expect(cards).toHaveLength(2)
+  expect(cards[0].text()).toContain('me@example.com')
+  expect(cards[1].text()).toContain('other@example.com')
+  expect(cards[1].text()).toContain('2 Road')
 })
 
-test('every admin cell carries the label the mobile card view shows', async () => {
+test('every order card opens that order', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/device/orders/all').reply(200, { data: ALL })
 
   const wrapper = mountAdmin()
   await flushPromises()
 
-  const headers = wrapper.findAll('[data-testid="orders-admin-table"] thead th').map(th => th.text())
-  const labels = wrapper.findAll('[data-testid="admin-order-1"] td').map(td => td.attributes('data-label'))
-
-  expect(labels).toEqual(headers)
+  const links = wrapper.findAllComponents(RouterLinkStub).map(link => link.props().to)
+  expect(links).toEqual(['/orders/1', '/orders/2'])
 })
 
 test('a non admin refused by the server is sent back to their own orders', async () => {

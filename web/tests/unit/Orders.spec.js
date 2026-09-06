@@ -34,7 +34,7 @@ test('a buyer sees their own orders and no admin table', async () => {
   expect(wrapper.findAll('[data-testid="order"]')).toHaveLength(1)
   expect(wrapper.find('[data-testid="order-total"]').text()).toBe('£322.00')
   expect(wrapper.find('[data-testid="order-status"]').text()).toBe('Ordered')
-  expect(wrapper.find('[data-testid="orders-admin-table"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="order-account"]').exists()).toBe(false)
 })
 
 test('a buyer with nothing ordered is pointed at the shop', async () => {
