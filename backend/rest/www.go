@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -300,8 +301,11 @@ func (w *Www) Secured(handle func(_ http.ResponseWriter, r *http.Request, user m
 
 func (w *Www) DeviceOrderDetail(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
 	w.metrics.Request("device_order_detail")
-	reference := req.URL.Query().Get("reference")
-	order, events, err := w.orders.Detail(reference, user.Id, user.Admin)
+	number, err := strconv.ParseInt(req.URL.Query().Get("number"), 10, 64)
+	if err != nil {
+		return nil, product.ErrNoOrder
+	}
+	order, events, err := w.orders.Detail(number, user.Id, user.Admin)
 	if err != nil {
 		w.logger.Error("unable to read the order", zap.Error(err))
 		return nil, err
@@ -326,12 +330,12 @@ func (w *Www) orderViews(orders []*product.Order, withAccount bool) []model.Devi
 			device, option = order.Device, order.Option
 		}
 		view := model.DeviceOrderView{
-			Reference: order.Reference,
-			Device:    device,
-			Option:    option,
-			Total:     product.Money(order.Total),
-			Status:    order.Status,
-			Ordered:   order.CreatedAt.Format("2006-01-02"),
+			Number:  order.Id,
+			Device:  device,
+			Option:  option,
+			Total:   product.Money(order.Total),
+			Status:  order.Status,
+			Ordered: order.CreatedAt.Format("2006-01-02"),
 		}
 		if withAccount {
 			view.Email = order.Email
@@ -385,7 +389,7 @@ func (w *Www) DeviceOrderStatus(_ http.ResponseWriter, req *http.Request, _ mode
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	if err := w.orders.SetStatus(request.Reference, request.Status, request.Comment); err != nil {
+	if err := w.orders.SetStatus(request.Number, request.Status, request.Comment); err != nil {
 		w.logger.Error("unable to set the order status", zap.Error(err))
 		return nil, err
 	}
@@ -771,6 +775,7 @@ func (w *Www) DeviceOrder(_ http.ResponseWriter, req *http.Request, user model.U
 		return nil, err
 	}
 	return model.DeviceOrderResponse{
+		Number:            order.Id,
 		Reference:         reference,
 		ProviderReference: order.ProviderReference,
 		Url:               order.Url,
@@ -785,11 +790,12 @@ func (w *Www) DeviceOrderComplete(_ http.ResponseWriter, req *http.Request, user
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	if err := w.orders.Complete(user.Id, request.Reference); err != nil {
+	number, err := w.orders.Complete(user.Id, request.Reference)
+	if err != nil {
 		w.logger.Error("unable to complete the order", zap.Error(err))
 		return nil, err
 	}
-	return "ordered", nil
+	return model.DeviceOrderCompleteResponse{Number: number}, nil
 }
 
 type WwwOrders interface {
@@ -797,10 +803,10 @@ type WwwOrders interface {
 	Catalog() []product.Device
 	Shipping() int
 	Start(order *product.Order, provider string) (string, error)
-	Complete(userId int64, reference string) error
+	Complete(userId int64, reference string) (int64, error)
 	Mine(userId int64) ([]*product.Order, error)
 	All() ([]*product.Order, error)
-	SetStatus(reference string, status string, comment string) error
-	Detail(reference string, userId int64, admin bool) (*product.Order, []*product.OrderEvent, error)
+	SetStatus(id int64, status string, comment string) error
+	Detail(id int64, userId int64, admin bool) (*product.Order, []*product.OrderEvent, error)
 	Describe(deviceCode, optionCode string) (string, string, error)
 }

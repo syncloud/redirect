@@ -8,7 +8,7 @@ jest.setTimeout(30000)
 
 const ALL = [
   {
-    reference: 'ref-1',
+    number: 1,
     device: 'Syncloud H4',
     option: '1 TB SSD',
     total: '£322.00',
@@ -22,7 +22,7 @@ const ALL = [
     country: 'UK'
   },
   {
-    reference: 'ref-2',
+    number: 2,
     device: 'Syncloud H4',
     option: '120 GB SSD',
     total: '£244.00',
@@ -67,7 +67,7 @@ test('every admin cell carries the label the mobile card view shows', async () =
   await flushPromises()
 
   const headers = wrapper.findAll('[data-testid="orders-admin-table"] thead th').map(th => th.text())
-  const labels = wrapper.findAll('[data-testid="admin-order-ref-1"] td').map(td => td.attributes('data-label'))
+  const labels = wrapper.findAll('[data-testid="admin-order-1"] td').map(td => td.attributes('data-label'))
 
   expect(labels).toEqual(headers)
 })

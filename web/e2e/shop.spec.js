@@ -107,16 +107,16 @@ test('a card payment is taken and the order is confirmed', async ({ page }, test
   await page.getByTestId('faker-pay').click()
 
   await expect(page.getByTestId('device-ordered')).toBeVisible()
-  await expect(page.getByTestId('device-reference')).toContainText('Reference')
+  await expect(page.getByTestId('device-reference')).toContainText('Order')
   await shoot(page, testInfo, 'device-ordered')
 
   expect(total).toMatch(/^£\d+\.\d\d$/)
 
-  const reference = await page.getByTestId('device-reference').textContent()
-  const number = reference.replace('Reference ', '').trim()
+  const number = (await page.getByTestId('device-reference').textContent())
+    .replace('Order ', '').trim()
 
   const confirmation = await waitForEmailTo(buyer)
-  expect(confirmation.subject, 'the buyer is told their reference').toContain(number)
+  expect(confirmation.subject, 'the buyer is told their order number').toContain(number)
   expect(confirmation.body).toContain('Syncloud H4')
   expect(confirmation.body).toContain('Ada Lovelace')
   expect(confirmation.body).toContain('1 Analytical Street')
@@ -138,7 +138,7 @@ test('a paypal payment is taken and the order is confirmed', async ({ page }, te
   await page.getByTestId('paypal-faker-button').click()
 
   await expect(page.getByTestId('device-ordered')).toBeVisible()
-  await expect(page.getByTestId('device-reference')).toContainText('Reference')
+  await expect(page.getByTestId('device-reference')).toContainText('Order')
 })
 
 test('a buyer sees the order they just paid for', async ({ page }, testInfo) => {
@@ -170,7 +170,7 @@ test('a buyer is refused the admin order endpoints', async ({ page }) => {
   expect(all.status(), 'listing every order must be admin only').toBe(403)
 
   const status = await page.request.post('/api/device/order/status', {
-    data: { reference: 'anything', status: 'sent', comment: 'nope' }
+    data: { number: 999999, status: 'sent', comment: 'nope' }
   })
   expect(status.status(), 'changing a status must be admin only').toBe(403)
 })
@@ -199,16 +199,16 @@ test('a buyer cannot open an order that is not theirs', async ({ page }) => {
   await expect(page.getByTestId('faker-pay')).toBeVisible()
   await page.getByTestId('faker-pay').click()
   await expect(page.getByTestId('device-ordered')).toBeVisible()
-  const reference = (await page.getByTestId('device-reference').textContent())
-    .replace('Reference ', '').trim()
+  const number = (await page.getByTestId('device-reference').textContent())
+    .replace('Order ', '').trim()
   expect(other).toContain('buy-other')
 
-  const owner = await page.request.get(`/api/device/order?reference=${reference}`)
+  const owner = await page.request.get(`/api/device/order?number=${number}`)
   expect(owner.status(), 'the account that ordered can read it').toBe(200)
 
   await signOut(page)
   await signedIn(page, 'buy-nosy')
-  const stolen = await page.request.get(`/api/device/order?reference=${reference}`)
+  const stolen = await page.request.get(`/api/device/order?number=${number}`)
   expect(stolen.status(), 'another account must not read this order').not.toBe(200)
 })
 

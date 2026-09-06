@@ -11,7 +11,7 @@
       <p>
         Your order is paid and we have it. We will email you at {{ email }} when it ships.
       </p>
-      <p class="sc-muted" data-testid="device-reference">Reference {{ reference }}</p>
+      <p class="sc-muted" data-testid="device-reference">Order {{ number }}</p>
     </div>
 
     <template v-else>
@@ -296,6 +296,7 @@ export default {
       country: '',
       email: '',
       reference: '',
+      number: 0,
       ordered: false,
       error: '',
       busy: '',
@@ -389,8 +390,8 @@ export default {
     },
     complete (reference) {
       return axios.post('/api/device/order/complete', { reference: reference })
-        .then(_ => {
-          this.reference = reference
+        .then(response => {
+          this.number = response.data.data.number
           this.ordered = true
         })
     },
@@ -433,6 +434,7 @@ export default {
               return this.order('paypal')
                 .then(response => {
                   this.reference = response.data.data.reference
+                  this.number = response.data.data.number
                   return response.data.data.provider_reference
                 })
                 .catch(error => {

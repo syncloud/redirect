@@ -7,7 +7,7 @@ import Orders from '../../src/views/Orders.vue'
 jest.setTimeout(30000)
 
 const MINE = [{
-  reference: 'ref-1',
+  number: 1,
   device: 'Syncloud H4',
   option: '1 TB SSD',
   total: '£322.00',

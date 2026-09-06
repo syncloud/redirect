@@ -12,8 +12,8 @@
 
       <router-link
         v-for="order in mine"
-        :key="order.reference"
-        :to="`/orders/${order.reference}`"
+        :key="order.number"
+        :to="`/orders/${order.number}`"
         class="sc-card order"
         data-testid="order"
       >
@@ -28,7 +28,7 @@
           <span data-testid="order-total">{{ order.total }}</span>
         </div>
         <p class="sc-muted order-reference" data-testid="order-reference">
-          Reference {{ order.reference }}
+          Order {{ order.number }}
         </p>
       </router-link>
 

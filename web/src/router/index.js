@@ -37,7 +37,7 @@ const routes = [
     component: () => import('../views/Orders.vue')
   },
   {
-    path: '/orders/:reference',
+    path: '/orders/:number',
     name: 'OrderDetail',
     component: () => import('../views/OrderDetail.vue')
   },

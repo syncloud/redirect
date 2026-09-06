@@ -1004,6 +1004,17 @@ func (m *MySql) GetOrderByReference(reference string) (*product.Order, error) {
 	return order, nil
 }
 
+func (m *MySql) GetOrderById(id int64) (*product.Order, error) {
+	orders, err := m.selectOrders("where o.id = ?", id)
+	if err != nil {
+		return nil, err
+	}
+	if len(orders) == 0 {
+		return nil, nil
+	}
+	return orders[0], nil
+}
+
 func (m *MySql) GetOrdersByUser(userId int64) ([]*product.Order, error) {
 	return m.selectOrders(
 		"where o.user_id = ? and o.paid = 1 order by o.id desc", userId)

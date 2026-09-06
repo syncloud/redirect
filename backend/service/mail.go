@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -101,18 +102,18 @@ func (m *Mail) SendDeviceOrderStatus(order *product.Order, device, option, messa
 		to = append([]string{order.Email}, to...)
 	}
 	return m.SendNotification(m.deviceOrderStatusPath, map[string]string{
-		"reference": order.Reference,
-		"device":    device,
-		"option":    option,
-		"status":    order.Status,
-		"ordered":   order.CreatedAt.Format("2006-01-02"),
-		"message":   message,
+		"number":  strconv.FormatInt(order.Id, 10),
+		"device":  device,
+		"option":  option,
+		"status":  order.Status,
+		"ordered": order.CreatedAt.Format("2006-01-02"),
+		"message": message,
 	}, to...)
 }
 
 func (m *Mail) SendDeviceOrderCustomer(order *product.Order, device, option string) error {
 	return m.SendNotification(m.deviceOrderCustomerPath, map[string]string{
-		"reference": order.Reference,
+		"number":    strconv.FormatInt(order.Id, 10),
 		"name":      order.Name,
 		"device":    device,
 		"option":    option,
@@ -127,7 +128,7 @@ func (m *Mail) SendDeviceOrderCustomer(order *product.Order, device, option stri
 
 func (m *Mail) SendDeviceOrder(order *product.Order, device, option string) error {
 	return m.SendNotification(m.deviceOrderPath, map[string]string{
-		"reference": order.Reference,
+		"number":    strconv.FormatInt(order.Id, 10),
 		"name":      order.Name,
 		"device":    device,
 		"option":    option,

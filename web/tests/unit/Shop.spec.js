@@ -125,7 +125,7 @@ test('confirms the order when the buyer is sent back', async () => {
   let completed
   mock.onPost('/api/device/order/complete').reply(config => {
     completed = JSON.parse(config.data)
-    return [200, { data: 'ordered' }]
+    return [200, { data: { number: 42 } }]
   })
 
   const wrapper = mountShop({ reference: 'OURREF' })
@@ -133,7 +133,7 @@ test('confirms the order when the buyer is sent back', async () => {
 
   expect(completed).toEqual({ reference: 'OURREF' })
   expect(wrapper.find('[data-testid="device-ordered"]').exists()).toBe(true)
-  expect(wrapper.find('[data-testid="device-reference"]').text()).toContain('OURREF')
+  expect(wrapper.find('[data-testid="device-reference"]').text()).toBe('Order 42')
 })
 
 test('shows the product to a visitor who is not signed in', async () => {
@@ -227,7 +227,7 @@ test('pressing PayPal says something is happening', async () => {
   })
   mock.onGet('/api/user').reply(200, { data: { email: 'a@b.c' } })
   mock.onPost('/api/device/order').reply(200,
-    { data: { reference: 'OURREF', provider_reference: 'PP1' } })
+    { data: { number: 7, reference: 'OURREF', provider_reference: 'PP1' } })
 
   let buttons
   loadScript.mockResolvedValue({

@@ -17,7 +17,7 @@
           <span data-testid="order-total">{{ order.total }}</span>
         </div>
         <p class="sc-muted order-reference" data-testid="order-reference">
-          Reference {{ order.reference }}
+          Order {{ order.number }}
         </p>
         <p v-if="order.name" class="order-ship" data-testid="order-ship">
           {{ order.name }}, {{ order.address }}, {{ order.city }} {{ order.postcode }}, {{ order.country }}
@@ -100,11 +100,11 @@ export default {
     statusLabel (status) {
       return STATUS_LABELS[status] || status
     },
-    reference () {
-      return this.$route.params.reference
+    number () {
+      return this.$route.params.number
     },
     load () {
-      axios.get('/api/device/order', { params: { reference: this.reference() } })
+      axios.get('/api/device/order', { params: { number: this.number() } })
         .then(response => {
           this.order = response.data.data.order
           this.history = response.data.data.history
@@ -117,7 +117,7 @@ export default {
       this.error = ''
       this.saving = true
       axios.post('/api/device/order/status', {
-        reference: this.reference(),
+        number: Number(this.number()),
         status: this.status,
         comment: this.comment
       })
@@ -135,7 +135,7 @@ export default {
       this.loading = false
       const status = error.response && error.response.status
       if (status === 401) {
-        this.$router.push(`/login?next=/orders/${this.reference()}`)
+        this.$router.push(`/login?next=/orders/${this.number()}`)
         return
       }
       this.error = error.response && error.response.data && error.response.data.message

@@ -23,7 +23,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="order in orders" :key="order.reference" :data-testid="`admin-order-${order.reference}`">
+            <tr v-for="order in orders" :key="order.number" :data-testid="`admin-order-${order.number}`">
               <td data-label="Ordered">{{ order.ordered }}</td>
               <td data-label="Account">{{ order.email }}</td>
               <td data-label="Item">{{ order.device }}, {{ order.option }}</td>
@@ -34,8 +34,8 @@
               <td data-label="Total">{{ order.total }}</td>
               <td data-label="Status">
                 <router-link
-                  :to="`/orders/${order.reference}`"
-                  :data-testid="`admin-open-${order.reference}`"
+                  :to="`/orders/${order.number}`"
+                  :data-testid="`admin-open-${order.number}`"
                 >{{ statusLabel(order.status) }}</router-link>
               </td>
             </tr>

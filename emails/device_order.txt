@@ -1,4 +1,4 @@
-Subject: device order {reference}
+Subject: device order {number}
 
 {name} ordered a {device} with {option}.
 

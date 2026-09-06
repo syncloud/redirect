@@ -20,6 +20,7 @@ type DeviceOrderRequest struct {
 }
 
 type DeviceOrderResponse struct {
+	Number            int64  `json:"number"`
 	Reference         string `json:"reference"`
 	ProviderReference string `json:"provider_reference"`
 	Url               string `json:"url"`
@@ -31,9 +32,9 @@ type DeviceOrderCompleteRequest struct {
 }
 
 type DeviceOrderStatusRequest struct {
-	Reference string `json:"reference"`
-	Status    string `json:"status"`
-	Comment   string `json:"comment"`
+	Number  int64  `json:"number"`
+	Status  string `json:"status"`
+	Comment string `json:"comment"`
 }
 
 type DeviceOrderEventView struct {
@@ -43,21 +44,25 @@ type DeviceOrderEventView struct {
 }
 
 type DeviceOrderView struct {
-	Reference string `json:"reference"`
-	Device    string `json:"device"`
-	Option    string `json:"option"`
-	Total     string `json:"total"`
-	Status    string `json:"status"`
-	Ordered   string `json:"ordered"`
-	Email     string `json:"email,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Address   string `json:"address,omitempty"`
-	City      string `json:"city,omitempty"`
-	Postcode  string `json:"postcode,omitempty"`
-	Country   string `json:"country,omitempty"`
+	Number   int64  `json:"number"`
+	Device   string `json:"device"`
+	Option   string `json:"option"`
+	Total    string `json:"total"`
+	Status   string `json:"status"`
+	Ordered  string `json:"ordered"`
+	Email    string `json:"email,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Address  string `json:"address,omitempty"`
+	City     string `json:"city,omitempty"`
+	Postcode string `json:"postcode,omitempty"`
+	Country  string `json:"country,omitempty"`
 }
 
 type DeviceOrderDetailView struct {
 	Order   DeviceOrderView        `json:"order"`
 	History []DeviceOrderEventView `json:"history"`
+}
+
+type DeviceOrderCompleteResponse struct {
+	Number int64 `json:"number"`
 }

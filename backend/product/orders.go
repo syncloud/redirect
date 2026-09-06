@@ -19,6 +19,7 @@ type Store interface {
 	GetUnpaidOrders(before time.Time) ([]*Order, error)
 	SetOrderProviderReference(id int64, providerReference string) error
 	GetOrderByReference(reference string) (*Order, error)
+	GetOrderById(id int64) (*Order, error)
 	MarkOrderPaid(id int64) error
 	RedactOrders(userId int64) error
 	GetOrdersByUser(userId int64) ([]*Order, error)
@@ -87,15 +88,15 @@ func (o *Orders) Start(order *Order, provider string) (string, error) {
 	return order.Reference, nil
 }
 
-func (o *Orders) Complete(userId int64, reference string) error {
+func (o *Orders) Complete(userId int64, reference string) (int64, error) {
 	order, err := o.store.GetOrderByReference(reference)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if order == nil || order.UserId != userId {
-		return ErrNoOrder
+		return 0, ErrNoOrder
 	}
-	return o.Settle(order)
+	return order.Id, o.Settle(order)
 }
 
 func (o *Orders) Settle(order *Order) error {
@@ -194,11 +195,11 @@ func (o *Orders) All() ([]*Order, error) {
 	return o.store.GetAllOrders()
 }
 
-func (o *Orders) SetStatus(reference string, status string, comment string) error {
+func (o *Orders) SetStatus(id int64, status string, comment string) error {
 	if !ValidStatus(status) {
 		return fmt.Errorf("%w: %s", ErrBadStatus, status)
 	}
-	order, err := o.store.GetOrderByReference(reference)
+	order, err := o.store.GetOrderById(id)
 	if err != nil {
 		return err
 	}
@@ -226,8 +227,8 @@ func (o *Orders) SetStatus(reference string, status string, comment string) erro
 	return o.mail.SendDeviceOrderStatus(order, device, option, message)
 }
 
-func (o *Orders) Detail(reference string, userId int64, admin bool) (*Order, []*OrderEvent, error) {
-	order, err := o.store.GetOrderByReference(reference)
+func (o *Orders) Detail(id int64, userId int64, admin bool) (*Order, []*OrderEvent, error) {
+	order, err := o.store.GetOrderById(id)
 	if err != nil {
 		return nil, nil, err
 	}

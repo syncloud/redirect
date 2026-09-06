@@ -4,7 +4,7 @@ let state = {
   loggedIn: true,
   orders: [
     {
-      reference: 'a1b2c3d4-0000-0000-0000-000000000001',
+      number: 1,
       device: 'Syncloud H4',
       option: '1 TB SSD',
       total: '£322.00',
@@ -19,7 +19,7 @@ let state = {
       country: 'United Kingdom'
     },
     {
-      reference: 'a1b2c3d4-0000-0000-0000-000000000002',
+      number: 2,
       device: 'Syncloud H4',
       option: '120 GB SSD',
       total: '£244.00',
@@ -199,10 +199,10 @@ export function mock () {
         })
       }, { timing: 1500 })
       this.post('/api/device/order/complete', function (_schema, _request) {
-        return new Response(200, {}, { message: 'OK' })
+        return new Response(200, {}, { data: { number: 1 } })
       })
       this.get('/api/device/order', function (_schema, request) {
-        const order = state.orders.find(each => each.reference === request.queryParams.reference)
+        const order = state.orders.find(each => String(each.number) === request.queryParams.number)
         return new Response(200, {}, {
           data: {
             order,
@@ -221,7 +221,7 @@ export function mock () {
       })
       this.post('/api/device/order/status', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
-        const order = state.orders.find(each => each.reference === attrs.reference)
+        const order = state.orders.find(each => each.number === attrs.number)
         if (order) {
           order.status = attrs.status
         }

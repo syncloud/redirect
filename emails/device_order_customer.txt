@@ -1,4 +1,4 @@
-Subject: your Syncloud order {reference}
+Subject: your Syncloud order {number}
 
 Thank you for your order.
 

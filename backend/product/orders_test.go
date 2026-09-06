@@ -86,6 +86,10 @@ func (s *memoryStore) GetOrderByReference(reference string) (*Order, error) {
 	return s.orders[reference], nil
 }
 
+func (s *memoryStore) GetOrderById(id int64) (*Order, error) {
+	return s.byId[id], nil
+}
+
 func (s *memoryStore) GetOrdersByUser(userId int64) ([]*Order, error) {
 	found := []*Order{}
 	for _, order := range s.byId {
@@ -233,7 +237,7 @@ func TestCompleteTellsSupportOncePaid(t *testing.T) {
 	store, mail := newStore(), &recordingMail{}
 
 	service, reference := started(t, checkout, store, mail)
-	if err := service.Complete(7, reference); err != nil {
+	if _, err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
 	if mail.sent == nil {
@@ -252,7 +256,7 @@ func TestCompleteReadsTheOrderFromTheDatabaseNotTheCaller(t *testing.T) {
 	store, mail := newStore(), &recordingMail{}
 	service, reference := started(t, checkout, store, mail)
 
-	if err := service.Complete(7, reference); err != nil {
+	if _, err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
 	if mail.sent.Device != "h4" || mail.sent.Option != "1t" || mail.sent.Total != paidTotal {
@@ -265,7 +269,7 @@ func TestCompleteRefusesAnotherAccountsOrder(t *testing.T) {
 	store, mail := newStore(), &recordingMail{}
 
 	service, reference := started(t, checkout, store, mail)
-	err := service.Complete(8, reference)
+	_, err := service.Complete(8, reference)
 	if !errors.Is(err, ErrNoOrder) {
 		t.Fatalf("want ErrNoOrder got %v", err)
 	}
@@ -275,7 +279,7 @@ func TestCompleteRefusesAnotherAccountsOrder(t *testing.T) {
 }
 
 func TestCompleteRefusesAReferenceWeNeverIssued(t *testing.T) {
-	err := orders(&recordingCheckout{paid: true}, newStore(), &recordingMail{}).Complete(7, "MADEUP")
+	_, err := orders(&recordingCheckout{paid: true}, newStore(), &recordingMail{}).Complete(7, "MADEUP")
 	if !errors.Is(err, ErrNoOrder) {
 		t.Fatalf("want ErrNoOrder got %v", err)
 	}
@@ -286,7 +290,7 @@ func TestCompleteRefusesWhenNothingWasPaid(t *testing.T) {
 	store, mail := newStore(), &recordingMail{}
 
 	service, reference := started(t, checkout, store, mail)
-	err := service.Complete(7, reference)
+	_, err := service.Complete(7, reference)
 	if !errors.Is(err, ErrNotPaid) {
 		t.Fatalf("want ErrNotPaid got %v", err)
 	}
@@ -300,7 +304,7 @@ func TestCompleteRefusesWhenTheAmountIsShort(t *testing.T) {
 	store, mail := newStore(), &recordingMail{}
 
 	service, reference := started(t, checkout, store, mail)
-	err := service.Complete(7, reference)
+	_, err := service.Complete(7, reference)
 	if !errors.Is(err, ErrWrongAmount) {
 		t.Fatalf("want ErrWrongAmount got %v", err)
 	}
@@ -314,13 +318,13 @@ func TestCompleteIsIdempotent(t *testing.T) {
 	store, mail := newStore(), &recordingMail{}
 	service, reference := started(t, checkout, store, mail)
 
-	if err := service.Complete(7, reference); err != nil {
+	if _, err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
 	store.only().Paid = true
 	mail.sent = nil
 
-	if err := service.Complete(7, reference); err != nil {
+	if _, err := service.Complete(7, reference); err != nil {
 		t.Fatal(err)
 	}
 	if mail.sent != nil {
@@ -333,7 +337,7 @@ func TestCompleteRefusesAPaymentInAnotherCurrency(t *testing.T) {
 	store, mail := newStore(), &recordingMail{}
 
 	service, reference := started(t, checkout, store, mail)
-	err := service.Complete(7, reference)
+	_, err := service.Complete(7, reference)
 	if !errors.Is(err, ErrWrongCurrency) {
 		t.Fatalf("want ErrWrongCurrency got %v", err)
 	}
@@ -386,7 +390,7 @@ func TestOrders_Settle_ConfirmsToTheAccountThatOrdered(t *testing.T) {
 	if _, err := o.Start(order, "stripe"); err != nil {
 		t.Fatal(err)
 	}
-	if err := o.Complete(7, order.Reference); err != nil {
+	if _, err := o.Complete(7, order.Reference); err != nil {
 		t.Fatal(err)
 	}
 
@@ -414,7 +418,7 @@ func TestOrders_Settle_WithoutAnAccountStillTellsSupport(t *testing.T) {
 	if _, err := o.Start(order, "stripe"); err != nil {
 		t.Fatal(err)
 	}
-	if err := o.Complete(7, order.Reference); err != nil {
+	if _, err := o.Complete(7, order.Reference); err != nil {
 		t.Fatal(err)
 	}
 
@@ -440,10 +444,10 @@ func TestOrders_Mine_OnlyReturnsTheAccountsOwnOrders(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := o.Complete(7, mine.Reference); err != nil {
+	if _, err := o.Complete(7, mine.Reference); err != nil {
 		t.Fatal(err)
 	}
-	if err := o.Complete(9, theirs.Reference); err != nil {
+	if _, err := o.Complete(9, theirs.Reference); err != nil {
 		t.Fatal(err)
 	}
 
@@ -479,10 +483,10 @@ func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := o.SetStatus(order.Reference, "shipped-ish", ""); !errors.Is(err, ErrBadStatus) {
+	if err := o.SetStatus(order.Id, "shipped-ish", ""); !errors.Is(err, ErrBadStatus) {
 		t.Fatalf("want ErrBadStatus got %v", err)
 	}
-	if err := o.SetStatus(order.Reference, "sent", ""); err != nil {
+	if err := o.SetStatus(order.Id, "sent", ""); err != nil {
 		t.Fatal(err)
 	}
 	if store.byId[order.Id].Status != "sent" {
@@ -491,13 +495,13 @@ func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
 	if len(mail.statusChanges) != 1 {
 		t.Fatalf("status change sent %d mails", len(mail.statusChanges))
 	}
-	if err := o.SetStatus(order.Reference, "sent", ""); err != nil {
+	if err := o.SetStatus(order.Id, "sent", ""); err != nil {
 		t.Fatal(err)
 	}
 	if len(mail.statusChanges) != 1 {
 		t.Fatalf("setting the same status again sent %d mails", len(mail.statusChanges))
 	}
-	if err := o.SetStatus("no-such-reference", "sent", ""); !errors.Is(err, ErrNoOrder) {
+	if err := o.SetStatus(9999, "sent", ""); !errors.Is(err, ErrNoOrder) {
 		t.Fatalf("want ErrNoOrder got %v", err)
 	}
 }
