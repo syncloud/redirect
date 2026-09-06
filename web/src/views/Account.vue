@@ -4,8 +4,7 @@
     <div id="has_domains">
       <h1 class="sc-h1" data-testid="account-title">Account</h1>
       <p class="sc-lead">
-        Signed in as <strong data-testid="account-email">{{ email }}</strong>. Your subscription
-        and account settings.
+        Signed in as <strong data-testid="account-email">{{ email }}</strong>
       </p>
       <el-row :gutter="20">
         <el-col :xs="24" :md="12">
