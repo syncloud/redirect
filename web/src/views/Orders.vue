@@ -11,21 +11,18 @@
       </div>
 
       <template v-if="unfinished.length > 0">
-        <div class="sc-card unfinished" data-testid="orders-unfinished">
-          <p>
-            You started {{ unfinished.length === 1 ? 'an order' : 'these orders' }} but the
-            payment was never completed. Nothing has been charged.
-          </p>
-          <router-link
-            v-for="order in unfinished"
-            :key="order.number"
-            :to="`/shop?order=${order.number}`"
-            class="sc-btn unfinished-link"
-            :data-testid="`order-finish-${order.number}`"
-          >
-            Finish order {{ order.number }} &middot; {{ order.total }}
-          </router-link>
-        </div>
+        <p class="unfinished-note" data-testid="orders-unfinished">
+          You started {{ unfinished.length === 1 ? 'an order' : 'these orders' }} but never
+          finished paying. Nothing has been charged. Tap to pick it up where you left off.
+        </p>
+        <OrderCard
+          v-for="order in unfinished"
+          :key="`unfinished-${order.number}`"
+          :order="order"
+          :to="`/shop?order=${order.number}`"
+          badge="Not paid"
+          :data-testid="`order-finish-${order.number}`"
+        />
       </template>
 
       <OrderCard v-for="order in mine" :key="order.number" :order="order"/>
@@ -82,22 +79,8 @@ export default {
 </script>
 
 <style scoped>
-.unfinished {
-  margin-bottom: 12px;
-  border-color: var(--sc-primary);
-}
-
-.unfinished p {
+.unfinished-note {
   margin: 0 0 12px;
-}
-
-.unfinished-link {
-  display: block;
-  margin-bottom: 8px;
-  text-align: center;
-}
-
-.unfinished-link:last-child {
-  margin-bottom: 0;
+  color: var(--sc-ink-2);
 }
 </style>

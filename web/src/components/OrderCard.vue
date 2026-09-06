@@ -1,13 +1,13 @@
 <template>
   <router-link
-    :to="`/orders/${order.number}`"
+    :to="to || `/orders/${order.number}`"
     class="sc-card order"
     data-testid="order"
   >
     <div class="order-head">
       <span class="order-name">{{ order.device }}, {{ order.option }}</span>
-      <span class="order-status" :class="`status-${order.status}`" data-testid="order-status">
-        {{ statusLabel(order.status) }}
+      <span class="order-status" :class="badge ? 'status-todo' : `status-${order.status}`" data-testid="order-status">
+        {{ badge || statusLabel(order.status) }}
       </span>
     </div>
 
@@ -39,7 +39,15 @@ export default {
       type: Object,
       required: true
     },
-    account: Boolean
+    account: Boolean,
+    to: {
+      type: String,
+      default: ''
+    },
+    badge: {
+      type: String,
+      default: ''
+    }
   },
   methods: {
     statusLabel (status) {
@@ -85,6 +93,11 @@ export default {
 .status-sent {
   background: var(--sc-primary);
   color: #fff;
+}
+
+.status-todo {
+  background: var(--sc-warn-bg, #fdf2d0);
+  color: var(--sc-warn-ink, #7a5a00);
 }
 
 .order-line {

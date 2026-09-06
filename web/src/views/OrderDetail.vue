@@ -248,8 +248,13 @@ export default {
 }
 
 .status-row #order-new-status {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.status-row .el-button {
+  flex: 0 0 auto;
+  margin: 0;
 }
 
 #order-comment,

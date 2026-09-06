@@ -88,8 +88,8 @@ test('an unpaid order is offered back to the buyer to finish', async () => {
   await flushPromises()
 
   const finish = wrapper.findAllComponents(RouterLinkStub)
-    .find(link => link.attributes('data-testid') === 'order-finish-9')
+    .find(link => link.props().to === '/shop?order=9')
   expect(finish).toBeTruthy()
-  expect(finish.props().to).toBe('/shop?order=9')
+  expect(finish.text()).toContain('Not paid')
   expect(wrapper.find('[data-testid="orders-empty"]').exists()).toBe(false)
 })
