@@ -80,17 +80,6 @@ if crontab -l 2>/dev/null | grep -q certbot; then
     crontab -l 2>/dev/null | grep -v certbot | crontab -
 fi
 
-# php-fpm backs the opencart shop; pending migration of the shop to a redirect page
-if ! dpkg -s php-fpm >/dev/null 2>&1; then
-    apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends php-fpm php-cli php-mysql php-gd php-curl php-mbstring php-xml php-zip
-fi
-POOL=$(ls /etc/php/*/fpm/pool.d/www.conf 2>/dev/null | head -1)
-if [ -n "$POOL" ]; then
-    sed -i 's#^listen = .*#listen = 127.0.0.1:9000#' "$POOL"
-    systemctl restart "php$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')-fpm" 2>/dev/null \
-        || systemctl restart 'php*-fpm.service' 2>/dev/null || true
-fi
-
 install -d /etc/caddy /etc/caddy/conf.d
 install -m 0644 "$STAGE/common/caddy/Caddyfile" /etc/caddy/Caddyfile
 for f in "$STAGE"/common/caddy/conf.d/*.caddy; do
