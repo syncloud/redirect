@@ -139,27 +139,15 @@ func (w WwwRelayStub) Enabled(_ int64) (bool, error) {
 type WwwPayPalStub struct {
 }
 
-func (w WwwPayPalStub) PlanId(_ string) (string, error) {
-	return "", nil
-}
-
-func (w WwwPayPalStub) Tier(_ string) string {
-	return model.PlanPro
-}
-
 func (w WwwPayPalStub) Plans() model.PlanResponse {
 	return model.PlanResponse{}
 }
 
-func (w WwwPayPalStub) Period(_ string) string {
-	return model.PeriodMonth
+func (w WwwPayPalStub) PlanInfo(_ string) (string, string, error) {
+	return model.PeriodMonth, model.PlanPro, nil
 }
 
-func (w WwwPayPalStub) AnnualPlanId(_ string) string {
-	return ""
-}
-
-func (w WwwPayPalStub) Revise(_ string, _ string) (string, error) {
+func (w WwwPayPalStub) SwitchToAnnual(_ string) (string, error) {
 	return "", nil
 }
 

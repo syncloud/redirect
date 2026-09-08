@@ -71,12 +71,9 @@ type WwwMailRelay interface {
 }
 
 type WwwPayPal interface {
-	PlanId(subscriptionId string) (string, error)
-	Tier(planId string) string
 	Plans() model.PlanResponse
-	Period(planId string) string
-	AnnualPlanId(planId string) string
-	Revise(subscriptionId string, planId string) (string, error)
+	PlanInfo(subscriptionId string) (string, string, error)
+	SwitchToAnnual(subscriptionId string) (string, error)
 }
 
 const writeTimeout = 30 * time.Second
@@ -556,11 +553,7 @@ func (w *Www) Subscription(_ http.ResponseWriter, _ *http.Request, user model.Us
 
 func (w *Www) currentPlan(user model.User) (string, string, error) {
 	if user.IsPayPal() {
-		planId, err := w.paypal.PlanId(*user.SubscriptionId)
-		if err != nil {
-			return "", "", err
-		}
-		return w.paypal.Period(planId), w.paypal.Tier(planId), nil
+		return w.paypal.PlanInfo(*user.SubscriptionId)
 	}
 	if user.IsStripe() {
 		return w.stripe.PlanInfo(*user.SubscriptionId)
@@ -573,32 +566,21 @@ func (w *Www) PlanSwitch(_ http.ResponseWriter, _ *http.Request, user model.User
 	if !user.IsSubscribed() {
 		return nil, errors.New("no active subscription")
 	}
-	if user.IsPayPal() {
-		planId, err := w.paypal.PlanId(*user.SubscriptionId)
-		if err != nil {
-			w.logger.Error("unable to read paypal plan", zap.Error(err))
-			return nil, errors.New("invalid request")
-		}
-		annualPlanId := w.paypal.AnnualPlanId(planId)
-		if annualPlanId == planId {
-			return nil, errors.New("subscription is already annual")
-		}
-		url, err := w.paypal.Revise(*user.SubscriptionId, annualPlanId)
-		if err != nil {
-			w.logger.Error("unable to revise paypal subscription", zap.Error(err))
-			return nil, errors.New("invalid request")
-		}
-		return model.SwitchResponse{Url: url}, nil
+	var url string
+	var err error
+	switch {
+	case user.IsPayPal():
+		url, err = w.paypal.SwitchToAnnual(*user.SubscriptionId)
+	case user.IsStripe():
+		url, err = w.stripe.Switch(*user.SubscriptionId)
+	default:
+		return nil, errors.New("this subscription cannot be switched, please contact support")
 	}
-	if user.IsStripe() {
-		url, err := w.stripe.Switch(*user.SubscriptionId)
-		if err != nil {
-			w.logger.Error("unable to switch stripe subscription", zap.Error(err))
-			return nil, errors.New("invalid request")
-		}
-		return model.SwitchResponse{Url: url}, nil
+	if err != nil {
+		w.logger.Error("unable to switch subscription", zap.Error(err))
+		return nil, errors.New("invalid request")
 	}
-	return nil, errors.New("this subscription cannot be switched, please contact support")
+	return model.SwitchResponse{Url: url}, nil
 }
 
 func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
@@ -624,12 +606,12 @@ func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	planId, err := w.paypal.PlanId(request.SubscriptionId)
+	_, tier, err := w.paypal.PlanInfo(request.SubscriptionId)
 	if err != nil {
 		w.logger.Error("unable to confirm paypal subscription", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	err = w.users.Subscribe(user, request.SubscriptionId, model.SubscriptionTypePayPal, w.paypal.Tier(planId))
+	err = w.users.Subscribe(user, request.SubscriptionId, model.SubscriptionTypePayPal, tier)
 	if err != nil {
 		w.logger.Error("unable to subscribe a user", zap.Error(err))
 		return nil, errors.New("invalid request")

@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"fmt"
 	"github.com/plutov/paypal/v4"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
@@ -37,6 +38,26 @@ func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMo
 		cancelUrl:        cancelUrl,
 		logger:           logger,
 	}, nil
+}
+
+func (p *PayPal) PlanInfo(subscriptionId string) (string, string, error) {
+	planId, err := p.PlanId(subscriptionId)
+	if err != nil {
+		return "", "", err
+	}
+	return p.Period(planId), p.Tier(planId), nil
+}
+
+func (p *PayPal) SwitchToAnnual(subscriptionId string) (string, error) {
+	planId, err := p.PlanId(subscriptionId)
+	if err != nil {
+		return "", err
+	}
+	annualPlanId := p.AnnualPlanId(planId)
+	if annualPlanId == planId {
+		return "", fmt.Errorf("subscription is already annual")
+	}
+	return p.Revise(subscriptionId, annualPlanId)
 }
 
 func (p *PayPal) Period(planId string) string {
