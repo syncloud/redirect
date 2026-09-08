@@ -1,8 +1,24 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+
+function stubPaypalSdk () {
+  const file = fileURLToPath(new URL('./src/stub/paypal-sdk.js', import.meta.url))
+  return {
+    name: 'stub-paypal-sdk',
+    apply: 'serve',
+    configureServer (server) {
+      server.middlewares.use('/stub/paypal-sdk.js', (_req, res) => {
+        res.setHeader('Content-Type', 'application/javascript')
+        res.end(readFileSync(file, 'utf-8'))
+      })
+    }
+  }
+}
 
 export default defineConfig(({ command, mode, ssrBuild }) => {
   return {
@@ -13,7 +29,8 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       Components({
         resolvers: [ElementPlusResolver()]
       }),
-      vue()
+      vue(),
+      stubPaypalSdk()
     ],
     server: {
       proxy: {

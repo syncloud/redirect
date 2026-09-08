@@ -212,6 +212,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.PayPalPlanAnnualId(),
 			config.PayPalPlanMaxMonthlyId(),
 			config.PayPalPlanMaxAnnualId(),
+			config.PayPalReturnUrl(),
+			config.AccountUrl(),
 			logger,
 		)
 	})

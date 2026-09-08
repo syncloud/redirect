@@ -11,5 +11,5 @@ func main() {
 	flag.Parse()
 
 	log.Printf("paypal faker on %s", *address)
-	log.Fatal(http.ListenAndServe(*address, NewPayPal(NewOrders()).Handler()))
+	log.Fatal(http.ListenAndServe(*address, NewPayPal(NewOrders(), NewSubscriptions()).Handler()))
 }

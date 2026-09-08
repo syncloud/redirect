@@ -54,6 +54,8 @@ type WwwStripe interface {
 	CreateCheckout(plan string) (string, error)
 	GetCheckoutSubscription(sessionId string) (string, string, error)
 	MaxEnabled() bool
+	PlanInfo(subscriptionId string) (string, string, error)
+	Switch(subscriptionId string) (string, error)
 }
 
 type WwwRelay interface {
@@ -69,9 +71,9 @@ type WwwMailRelay interface {
 }
 
 type WwwPayPal interface {
-	PlanId(subscriptionId string) (string, error)
-	Tier(planId string) string
 	Plans() model.PlanResponse
+	PlanInfo(subscriptionId string) (string, string, error)
+	SwitchToAnnual(subscriptionId string) (string, error)
 }
 
 const writeTimeout = 30 * time.Second
@@ -177,6 +179,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan/subscribe/crypto", w.Secured(HandleUser(w.SubscribeCrypto))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe/checkout", w.Secured(HandleUser(w.StripeCheckout))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe", w.Secured(HandleUser(w.SubscribeStripe))).Methods("POST")
+	r.HandleFunc("/plan/switch", w.Secured(HandleUser(w.PlanSwitch))).Methods("POST")
 	r.HandleFunc("/device/catalog", Handle(w.DeviceCatalog)).Methods("GET")
 	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrder))).Methods("POST")
 	r.HandleFunc("/device/order/complete", w.Secured(HandleUser(w.DeviceOrderComplete))).Methods("POST")
@@ -532,11 +535,52 @@ func (w *Www) WebDomainCheckNameServers(_ http.ResponseWriter, req *http.Request
 	return result, nil
 }
 
-func (w *Www) Subscription(http.ResponseWriter, *http.Request, model.User) (interface{}, error) {
+func (w *Www) Subscription(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
 	w.metrics.Request("subscription")
 	plans := w.paypal.Plans()
 	plans.StripeMaxEnabled = w.stripe.MaxEnabled()
+	if user.IsSubscribed() {
+		period, tier, err := w.currentPlan(user)
+		if err != nil {
+			w.logger.Error("unable to get current billing plan", zap.Error(err))
+		} else {
+			plans.CurrentPeriod = period
+			plans.CurrentTier = tier
+		}
+	}
 	return plans, nil
+}
+
+func (w *Www) currentPlan(user model.User) (string, string, error) {
+	if user.IsPayPal() {
+		return w.paypal.PlanInfo(*user.SubscriptionId)
+	}
+	if user.IsStripe() {
+		return w.stripe.PlanInfo(*user.SubscriptionId)
+	}
+	return "", "", nil
+}
+
+func (w *Www) PlanSwitch(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("plan_switch")
+	if !user.IsSubscribed() {
+		return nil, errors.New("no active subscription")
+	}
+	var url string
+	var err error
+	switch {
+	case user.IsPayPal():
+		url, err = w.paypal.SwitchToAnnual(*user.SubscriptionId)
+	case user.IsStripe():
+		url, err = w.stripe.Switch(*user.SubscriptionId)
+	default:
+		return nil, errors.New("this subscription cannot be switched, please contact support")
+	}
+	if err != nil {
+		w.logger.Error("unable to switch subscription", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	return model.SwitchResponse{Url: url}, nil
 }
 
 func (w *Www) Unsubscribe(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {
@@ -562,12 +606,12 @@ func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	planId, err := w.paypal.PlanId(request.SubscriptionId)
+	_, tier, err := w.paypal.PlanInfo(request.SubscriptionId)
 	if err != nil {
 		w.logger.Error("unable to confirm paypal subscription", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	err = w.users.Subscribe(user, request.SubscriptionId, model.SubscriptionTypePayPal, w.paypal.Tier(planId))
+	err = w.users.Subscribe(user, request.SubscriptionId, model.SubscriptionTypePayPal, tier)
 	if err != nil {
 		w.logger.Error("unable to subscribe a user", zap.Error(err))
 		return nil, errors.New("invalid request")
