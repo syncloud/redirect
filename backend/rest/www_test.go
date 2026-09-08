@@ -113,8 +113,8 @@ func (w WwwStripeStub) MaxEnabled() bool {
 	return false
 }
 
-func (w WwwStripeStub) Period(_ string) (string, error) {
-	return model.PeriodMonth, nil
+func (w WwwStripeStub) PlanInfo(_ string) (string, string, error) {
+	return model.PeriodMonth, model.PlanPro, nil
 }
 
 func (w WwwStripeStub) Switch(_ string) (string, error) {

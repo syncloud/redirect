@@ -10,4 +10,5 @@ type PlanResponse struct {
 	StripeMaxEnabled bool   `json:"stripe_max_enabled"`
 	PayPalMaxEnabled bool   `json:"paypal_max_enabled"`
 	CurrentPeriod    string `json:"current_period,omitempty"`
+	CurrentTier      string `json:"current_tier,omitempty"`
 }

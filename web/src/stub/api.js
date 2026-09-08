@@ -116,7 +116,8 @@ let state = {
       notification_enabled: true,
       update_token: '0a',
       subscription_id: undefined,
-      subscription_period: undefined
+      subscription_period: undefined,
+      subscription_tier: undefined
     }
   },
   plan: {
@@ -170,6 +171,22 @@ let state = {
         ]
       }
     ]
+  }
+}
+
+function paypalPlanInfo (subscriptionId) {
+  const planId = String(subscriptionId).split('~')[1] || ''
+  const p = state.plan.data
+  if (planId === p.plan_annual_id) return { tier: 'pro', period: 'year' }
+  if (planId === p.plan_max_monthly_id) return { tier: 'max', period: 'month' }
+  if (planId === p.plan_max_annual_id) return { tier: 'max', period: 'year' }
+  return { tier: 'pro', period: 'month' }
+}
+
+function stripePlanInfo (plan) {
+  return {
+    tier: plan && plan.indexOf('max') !== -1 ? 'max' : 'pro',
+    period: plan && plan.indexOf('annual') !== -1 ? 'year' : 'month'
   }
 }
 
@@ -391,6 +408,7 @@ export function mock () {
         const data = Object.assign({}, state.plan.data)
         if (state.user.data.subscription_id !== undefined) {
           data.current_period = state.user.data.subscription_period
+          data.current_tier = state.user.data.subscription_tier
         }
         return new Response(200, {}, { data: data })
       })
@@ -407,25 +425,29 @@ export function mock () {
       })
       this.post('/api/plan/subscribe/paypal', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
+        const info = paypalPlanInfo(attrs.subscription_id)
         state.user.data.subscription_id = attrs.subscription_id
-        state.user.data.subscription_period = 'month'
+        state.user.data.subscription_period = info.period
+        state.user.data.subscription_tier = info.tier
         return new Response(200, {}, {})
       })
       this.post('/api/plan/subscribe/crypto', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
         state.user.data.subscription_id = attrs.subscription_id
         state.user.data.subscription_period = 'year'
+        state.user.data.subscription_tier = 'pro'
         return new Response(200, {}, {})
       })
       this.post('/api/plan/subscribe/stripe/checkout', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
-        const period = attrs.plan && attrs.plan.indexOf('annual') !== -1 ? 'year' : 'month'
-        return new Response(200, {}, { data: { url: '/account?stripe_session_id=stub-' + period } })
+        return new Response(200, {}, { data: { url: '/account?stripe_session_id=stub-' + (attrs.plan || 'monthly') } })
       })
       this.post('/api/plan/subscribe/stripe', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
+        const info = stripePlanInfo(String(attrs.subscription_id).replace('stub-', ''))
         state.user.data.subscription_id = 'sub_stub'
-        state.user.data.subscription_period = attrs.subscription_id === 'stub-year' ? 'year' : 'month'
+        state.user.data.subscription_period = info.period
+        state.user.data.subscription_tier = info.tier
         return new Response(200, {}, {})
       })
       this.post('/api/plan/switch', function (_schema, _request) {

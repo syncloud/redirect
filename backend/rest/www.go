@@ -54,7 +54,7 @@ type WwwStripe interface {
 	CreateCheckout(plan string) (string, error)
 	GetCheckoutSubscription(sessionId string) (string, string, error)
 	MaxEnabled() bool
-	Period(subscriptionId string) (string, error)
+	PlanInfo(subscriptionId string) (string, string, error)
 	Switch(subscriptionId string) (string, error)
 }
 
@@ -543,28 +543,29 @@ func (w *Www) Subscription(_ http.ResponseWriter, _ *http.Request, user model.Us
 	plans := w.paypal.Plans()
 	plans.StripeMaxEnabled = w.stripe.MaxEnabled()
 	if user.IsSubscribed() {
-		period, err := w.currentPeriod(user)
+		period, tier, err := w.currentPlan(user)
 		if err != nil {
-			w.logger.Error("unable to get current billing period", zap.Error(err))
+			w.logger.Error("unable to get current billing plan", zap.Error(err))
 		} else {
 			plans.CurrentPeriod = period
+			plans.CurrentTier = tier
 		}
 	}
 	return plans, nil
 }
 
-func (w *Www) currentPeriod(user model.User) (string, error) {
+func (w *Www) currentPlan(user model.User) (string, string, error) {
 	if user.IsPayPal() {
 		planId, err := w.paypal.PlanId(*user.SubscriptionId)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
-		return w.paypal.Period(planId), nil
+		return w.paypal.Period(planId), w.paypal.Tier(planId), nil
 	}
 	if user.IsStripe() {
-		return w.stripe.Period(*user.SubscriptionId)
+		return w.stripe.PlanInfo(*user.SubscriptionId)
 	}
-	return "", nil
+	return "", "", nil
 }
 
 func (w *Www) PlanSwitch(_ http.ResponseWriter, _ *http.Request, user model.User) (interface{}, error) {

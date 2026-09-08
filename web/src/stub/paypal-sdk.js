@@ -13,8 +13,9 @@
           if (config.onClick) config.onClick()
           var actions = {
             subscription: {
-              create: function () {
-                return Promise.resolve('I-STUBPAYPAL' + Date.now())
+              create: function (payload) {
+                var planId = (payload && payload.plan_id) || ''
+                return Promise.resolve('PAYPALSUB~' + planId + '~' + Date.now())
               }
             }
           }

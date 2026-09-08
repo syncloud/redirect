@@ -454,6 +454,14 @@ func (config *Config) PayPalSdkUrl() string {
 	return result
 }
 
+func (config *Config) AccountUrl() string {
+	return fmt.Sprintf("https://www.%s/account", config.Domain())
+}
+
+func (config *Config) PayPalReturnUrl() string {
+	return fmt.Sprintf("%s?paypal_switch=done", config.AccountUrl())
+}
+
 func (config *Config) StripeUrl() string {
 	result, _ := config.parser.Get("stripe", "url")
 	return result

@@ -126,17 +126,22 @@ func (s *Stripe) GetCheckoutSubscription(sessionId string) (string, string, erro
 	return checkoutSession.Subscription.ID, plan, nil
 }
 
-func (s *Stripe) Period(id string) (string, error) {
+func (s *Stripe) PlanInfo(id string) (string, string, error) {
 	stripe.Key = s.secretKey
 	sub, err := stripesub.Get(id, nil)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	if len(sub.Items.Data) > 0 && sub.Items.Data[0].Price != nil && sub.Items.Data[0].Price.Recurring != nil &&
-		sub.Items.Data[0].Price.Recurring.Interval == stripe.PriceRecurringIntervalYear {
-		return model.PeriodYear, nil
+	period := model.PeriodMonth
+	tier := model.PlanPro
+	if len(sub.Items.Data) > 0 && sub.Items.Data[0].Price != nil {
+		price := sub.Items.Data[0].Price
+		if price.Recurring != nil && price.Recurring.Interval == stripe.PriceRecurringIntervalYear {
+			period = model.PeriodYear
+		}
+		tier = s.tierForPrice(price.ID)
 	}
-	return model.PeriodMonth, nil
+	return period, tier, nil
 }
 
 func (s *Stripe) Switch(id string) (string, error) {

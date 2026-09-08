@@ -39,7 +39,7 @@
               <div class="billing-row">
                 <span>
                   Billing:
-                  <strong data-testid="billing-current">{{ subscriptionPeriod === 'year' ? '£60 / year' : '£5 / month' }}</strong>
+                  <strong data-testid="billing-current">{{ currentPriceText }}</strong>
                 </span>
                 <el-button
                   v-if="subscriptionPeriod === 'month'"
@@ -266,8 +266,8 @@
     <template v-slot:title>Switch to annual billing</template>
     <template v-slot:text>
       <div>
-        You will move from £5 / month to £60 / year. Your subscription stays active
-        and your device keeps working — nothing is cancelled and there is no interruption.
+        You will move from {{ monthlyPriceText }} to {{ annualPriceText }}. Your subscription
+        stays active and your device keeps working — nothing is cancelled and there is no interruption.
       </div>
       <br>
       <div>Continue?</div>
@@ -309,6 +309,11 @@ export default {
       email: '',
       subscriptionId: String,
       subscriptionPeriod: '',
+      subscriptionTier: '',
+      tierPrices: {
+        pro: { month: '£5 / month', year: '£60 / year' },
+        max: { month: '£15 / month', year: '£180 / year' }
+      },
       domainGroups: Array,
       planMonthlyId: String,
       planAnnualId: String,
@@ -363,6 +368,18 @@ export default {
     },
     maxPrice: function () {
       return this.period === 'year' ? '£180 / year' : '£15 / month'
+    },
+    currentTierKey: function () {
+      return this.subscriptionTier === 'max' ? 'max' : 'pro'
+    },
+    currentPriceText: function () {
+      return this.tierPrices[this.currentTierKey][this.subscriptionPeriod === 'year' ? 'year' : 'month']
+    },
+    monthlyPriceText: function () {
+      return this.tierPrices[this.currentTierKey].month
+    },
+    annualPriceText: function () {
+      return this.tierPrices[this.currentTierKey].year
     }
   },
   methods: {
@@ -395,6 +412,7 @@ export default {
           this.stripeMaxEnabled = response.data.data.stripe_max_enabled
           this.paypalMaxEnabled = response.data.data.paypal_max_enabled
           this.subscriptionPeriod = response.data.data.current_period
+          this.subscriptionTier = response.data.data.current_tier
           if (!subscriptionId && !this.paypalLoaded) {
             this.enablePayPal(this.clientId)
           }
