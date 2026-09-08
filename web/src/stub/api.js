@@ -115,7 +115,8 @@ let state = {
       admin: true,
       notification_enabled: true,
       update_token: '0a',
-      subscription_id: undefined
+      subscription_id: undefined,
+      subscription_period: undefined
     }
   },
   plan: {
@@ -125,6 +126,7 @@ let state = {
       plan_max_annual_id: 'P-939294240R421883FNJSH54A', // paypal sandbox plan id (Max Annual)
       plan_max_monthly_id: 'P-1MN84195617128020NJSH3JI', // paypal sandbox plan id (Max Monthly)
       client_id: 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN', // paypal sandbox client id
+      sdk_url: '/stub/paypal-sdk.js',
       stripe_max_enabled: true,
       paypal_max_enabled: true
     }
@@ -386,7 +388,11 @@ export function mock () {
         }
       })
       this.get('/api/plan', function (_schema, request) {
-        return new Response(200, {}, state.plan)
+        const data = Object.assign({}, state.plan.data)
+        if (state.user.data.subscription_id !== undefined) {
+          data.current_period = state.user.data.subscription_period
+        }
+        return new Response(200, {}, { data: data })
       })
       this.post('/api/user/set_password', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
@@ -402,12 +408,29 @@ export function mock () {
       this.post('/api/plan/subscribe/paypal', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
         state.user.data.subscription_id = attrs.subscription_id
+        state.user.data.subscription_period = 'month'
         return new Response(200, {}, {})
       })
       this.post('/api/plan/subscribe/crypto', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
         state.user.data.subscription_id = attrs.subscription_id
+        state.user.data.subscription_period = 'year'
         return new Response(200, {}, {})
+      })
+      this.post('/api/plan/subscribe/stripe/checkout', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        const period = attrs.plan && attrs.plan.indexOf('annual') !== -1 ? 'year' : 'month'
+        return new Response(200, {}, { data: { url: '/account?stripe_session_id=stub-' + period } })
+      })
+      this.post('/api/plan/subscribe/stripe', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        state.user.data.subscription_id = 'sub_stub'
+        state.user.data.subscription_period = attrs.subscription_id === 'stub-year' ? 'year' : 'month'
+        return new Response(200, {}, {})
+      })
+      this.post('/api/plan/switch', function (_schema, _request) {
+        state.user.data.subscription_period = 'year'
+        return new Response(200, {}, { data: {} })
       })
       this.delete('/api/plan', function (_schema, _request) {
         state.user.data.subscription_id = undefined

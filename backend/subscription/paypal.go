@@ -15,10 +15,12 @@ type PayPal struct {
 	planAnnualId     string
 	planMaxMonthlyId string
 	planMaxAnnualId  string
+	returnUrl        string
+	cancelUrl        string
 	logger           *zap.Logger
 }
 
-func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMonthlyId, planMaxAnnualId string, logger *zap.Logger) (*PayPal, error) {
+func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMonthlyId, planMaxAnnualId, returnUrl, cancelUrl string, logger *zap.Logger) (*PayPal, error) {
 	c, err := paypal.NewClient(clientID, secretID, url)
 	if err != nil {
 		return nil, err
@@ -31,8 +33,47 @@ func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMo
 		planAnnualId:     planAnnualId,
 		planMaxMonthlyId: planMaxMonthlyId,
 		planMaxAnnualId:  planMaxAnnualId,
+		returnUrl:        returnUrl,
+		cancelUrl:        cancelUrl,
 		logger:           logger,
 	}, nil
+}
+
+func (p *PayPal) Period(planId string) string {
+	if planId == p.planAnnualId || planId == p.planMaxAnnualId {
+		return model.PeriodYear
+	}
+	return model.PeriodMonth
+}
+
+func (p *PayPal) AnnualPlanId(planId string) string {
+	if planId == p.planMaxMonthlyId || planId == p.planMaxAnnualId {
+		return p.planMaxAnnualId
+	}
+	return p.planAnnualId
+}
+
+func (p *PayPal) Revise(subscriptionId string, planId string) (string, error) {
+	_, err := p.client.GetAccessToken(context.Background())
+	if err != nil {
+		return "", err
+	}
+	response, err := p.client.ReviseSubscription(context.Background(), subscriptionId, paypal.SubscriptionBase{
+		PlanID: planId,
+		ApplicationContext: &paypal.ApplicationContext{
+			ReturnURL: p.returnUrl,
+			CancelURL: p.cancelUrl,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	for _, link := range response.Links {
+		if link.Rel == "approve" {
+			return link.Href, nil
+		}
+	}
+	return "", nil
 }
 
 func (p *PayPal) MaxEnabled() bool {

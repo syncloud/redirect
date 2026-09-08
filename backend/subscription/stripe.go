@@ -126,6 +126,49 @@ func (s *Stripe) GetCheckoutSubscription(sessionId string) (string, string, erro
 	return checkoutSession.Subscription.ID, plan, nil
 }
 
+func (s *Stripe) Period(id string) (string, error) {
+	stripe.Key = s.secretKey
+	sub, err := stripesub.Get(id, nil)
+	if err != nil {
+		return "", err
+	}
+	if len(sub.Items.Data) > 0 && sub.Items.Data[0].Price != nil && sub.Items.Data[0].Price.Recurring != nil &&
+		sub.Items.Data[0].Price.Recurring.Interval == stripe.PriceRecurringIntervalYear {
+		return model.PeriodYear, nil
+	}
+	return model.PeriodMonth, nil
+}
+
+func (s *Stripe) Switch(id string) (string, error) {
+	stripe.Key = s.secretKey
+	sub, err := stripesub.Get(id, nil)
+	if err != nil {
+		return "", err
+	}
+	if len(sub.Items.Data) == 0 || sub.Items.Data[0].Price == nil {
+		return "", fmt.Errorf("stripe subscription has no item")
+	}
+	item := sub.Items.Data[0]
+	annualPriceId := s.priceAnnualId
+	if s.tierForPrice(item.Price.ID) == model.PlanMax {
+		annualPriceId = s.priceMaxAnnualId
+	}
+	if item.Price.ID == annualPriceId {
+		return "", fmt.Errorf("stripe subscription is already annual")
+	}
+	params := &stripe.SubscriptionParams{
+		Items: []*stripe.SubscriptionItemsParams{
+			{
+				ID:    stripe.String(item.ID),
+				Price: stripe.String(annualPriceId),
+			},
+		},
+		ProrationBehavior: stripe.String("create_prorations"),
+	}
+	_, err = stripesub.Update(id, params)
+	return "", err
+}
+
 func (s *Stripe) Unsubscribe(id string) error {
 	stripe.Key = s.secretKey
 	_, err := stripesub.Cancel(id, nil)

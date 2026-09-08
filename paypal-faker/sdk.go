@@ -6,6 +6,11 @@ import (
 )
 
 const sdk = `
+function fakerCreateSubscription (payload) {
+  var planId = (payload && payload.plan_id) || ''
+  return Promise.resolve('PAYPALSUB~' + planId + '~' + Date.now())
+}
+
 window.paypal = {
   Buttons: function (options) {
     return {
@@ -23,9 +28,16 @@ window.paypal = {
             .then(function () {
               if (options.onClick) { return options.onClick({}, {}) }
             })
-            .then(function () { return options.createOrder() })
-            .then(function (orderID) {
-              return options.onApprove({ orderID: orderID })
+            .then(function () {
+              if (options.createSubscription) {
+                var actions = { subscription: { create: fakerCreateSubscription } }
+                return options.createSubscription({}, actions).then(function (subscriptionID) {
+                  return options.onApprove({ subscriptionID: subscriptionID })
+                })
+              }
+              return options.createOrder().then(function (orderID) {
+                return options.onApprove({ orderID: orderID })
+              })
             })
             .catch(function (error) {
               if (options.onError) { options.onError(error) }

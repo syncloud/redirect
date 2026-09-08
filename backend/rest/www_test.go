@@ -113,6 +113,14 @@ func (w WwwStripeStub) MaxEnabled() bool {
 	return false
 }
 
+func (w WwwStripeStub) Period(_ string) (string, error) {
+	return model.PeriodMonth, nil
+}
+
+func (w WwwStripeStub) Switch(_ string) (string, error) {
+	return "", nil
+}
+
 type WwwRelayStub struct {
 }
 
@@ -141,6 +149,18 @@ func (w WwwPayPalStub) Tier(_ string) string {
 
 func (w WwwPayPalStub) Plans() model.PlanResponse {
 	return model.PlanResponse{}
+}
+
+func (w WwwPayPalStub) Period(_ string) string {
+	return model.PeriodMonth
+}
+
+func (w WwwPayPalStub) AnnualPlanId(_ string) string {
+	return ""
+}
+
+func (w WwwPayPalStub) Revise(_ string, _ string) (string, error) {
+	return "", nil
 }
 
 func TestLogin_CreateSession(t *testing.T) {

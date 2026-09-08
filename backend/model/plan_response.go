@@ -9,4 +9,5 @@ type PlanResponse struct {
 	SdkUrl           string `json:"sdk_url,omitempty"`
 	StripeMaxEnabled bool   `json:"stripe_max_enabled"`
 	PayPalMaxEnabled bool   `json:"paypal_max_enabled"`
+	CurrentPeriod    string `json:"current_period,omitempty"`
 }

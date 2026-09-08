@@ -29,10 +29,29 @@
             <div v-if="userLoaded && subscriptionId !== undefined">
               Your subscription includes:
               <ul>
-                <li>Automatic IP DNS updates</li>
-                <li>Automatic mail DNS records</li>
-                <li>Email support for your device</li>
+                <li>Personal domain (example.com)</li>
+                <li>Automatic IP &amp; mail DNS</li>
+                <li>10 GB relay traffic / month</li>
+                <li>Mail relay</li>
+                <li>Email support</li>
               </ul>
+
+              <div class="billing-row">
+                <span>
+                  Billing:
+                  <strong data-testid="billing-current">{{ subscriptionPeriod === 'year' ? '£60 / year' : '£5 / month' }}</strong>
+                </span>
+                <el-button
+                  v-if="subscriptionPeriod === 'month'"
+                  type="primary"
+                  plain
+                  size="small"
+                  id="switch_annual"
+                  data-testid="switch-annual"
+                  :loading="busy === 'switch'"
+                  @click="switchToAnnual"
+                >Switch to annual</el-button>
+              </div>
             </div>
 
             <div v-show="userLoaded && subscriptionId === undefined">
@@ -56,6 +75,7 @@
                   </div>
                   <ul class="plan-features">
                     <li>10 GB relay traffic / month</li>
+                    <li>Mail relay</li>
                     <li>Personal domain (example.com)</li>
                     <li>Automatic IP &amp; mail DNS</li>
                     <li>Email support</li>
@@ -74,6 +94,7 @@
                   </div>
                   <ul class="plan-features">
                     <li>100 GB relay traffic / month</li>
+                    <li>Mail relay</li>
                     <li>Personal domain (example.com)</li>
                     <li>Automatic IP &amp; mail DNS</li>
                     <li>Email support</li>
@@ -240,6 +261,19 @@
     </template>
   </CustomDialog>
 
+  <CustomDialog :visible="switchConfirmationVisible" @cancel="switchConfirmationVisible = false"
+          id="switch_confirmation" @confirm="switchToAnnualConfirm">
+    <template v-slot:title>Switch to annual billing</template>
+    <template v-slot:text>
+      <div>
+        You will move from £5 / month to £60 / year. Your subscription stays active
+        and your device keeps working — nothing is cancelled and there is no interruption.
+      </div>
+      <br>
+      <div>Continue?</div>
+    </template>
+  </CustomDialog>
+
   <CustomDialog :visible="cancelConfirmationVisible" @cancel="cancelConfirmationVisible = false"
           id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
     <template v-slot:title>Cancel subscription</template>
@@ -274,6 +308,7 @@ export default {
       notificationEnabled: Boolean,
       email: '',
       subscriptionId: String,
+      subscriptionPeriod: '',
       domainGroups: Array,
       planMonthlyId: String,
       planAnnualId: String,
@@ -283,6 +318,7 @@ export default {
       userLoaded: Boolean,
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
+      switchConfirmationVisible: false,
       period: 'month',
       tier: 'pro',
       stripeMaxEnabled: false,
@@ -309,6 +345,9 @@ export default {
     if (sessionId) {
       this.confirmStripe(sessionId)
     } else {
+      if (this.$route && this.$route.query && this.$route.query.paypal_switch) {
+        this.$router.replace({ query: {} })
+      }
       this.reload()
     }
   },
@@ -333,6 +372,7 @@ export default {
       setTimeout(() => { this.copied = false }, 2000)
     },
     reload: function () {
+      this.busy = ''
       axios.get('/api/user')
         .then(response => {
           this.notificationEnabled = response.data.data.notification_enabled
@@ -354,6 +394,7 @@ export default {
           this.sdkUrl = response.data.data.sdk_url
           this.stripeMaxEnabled = response.data.data.stripe_max_enabled
           this.paypalMaxEnabled = response.data.data.paypal_max_enabled
+          this.subscriptionPeriod = response.data.data.current_period
           if (!subscriptionId && !this.paypalLoaded) {
             this.enablePayPal(this.clientId)
           }
@@ -407,6 +448,7 @@ export default {
         .then((paypal) => {
           paypal
             .Buttons({
+              style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44, borderRadius: 0 },
               onClick: () => {
                 this.busy = 'paypal'
               },
@@ -445,6 +487,23 @@ export default {
       axios.post('/api/notification/' + action)
         .then(_ => {
           this.reload()
+        })
+        .catch(this.onError)
+    },
+    switchToAnnual: function () {
+      this.switchConfirmationVisible = true
+    },
+    switchToAnnualConfirm: function () {
+      this.switchConfirmationVisible = false
+      this.busy = 'switch'
+      axios.post('/api/plan/switch')
+        .then(response => {
+          const url = response.data.data.url
+          if (url) {
+            window.location.href = url
+          } else {
+            this.reload()
+          }
         })
         .catch(this.onError)
     },
@@ -494,6 +553,19 @@ export default {
 .trial-note {
   color: var(--el-text-color-secondary);
   font-size: 14px;
+}
+.billing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--el-border-color);
+}
+.billing-row #switch_annual {
+  margin-left: auto;
 }
 .card-actions {
   display: flex;
@@ -570,7 +642,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--el-border-radius-base, 4px);
   background: color-mix(in srgb, var(--el-bg-color) 78%, transparent);
 }
 .pay-spinner {
@@ -592,6 +664,9 @@ export default {
   }
 }
 .pay-paypal {
+  height: 44px;
+  border-radius: var(--el-border-radius-base, 4px);
+  overflow: hidden;
   min-height: 1px;
 }
 .pay-crypto {

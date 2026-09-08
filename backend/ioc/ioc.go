@@ -212,6 +212,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.PayPalPlanAnnualId(),
 			config.PayPalPlanMaxMonthlyId(),
 			config.PayPalPlanMaxAnnualId(),
+			fmt.Sprintf("https://www.%s/account?paypal_switch=done", config.Domain()),
+			fmt.Sprintf("https://www.%s/account", config.Domain()),
 			logger,
 		)
 	})
