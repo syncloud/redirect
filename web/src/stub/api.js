@@ -115,7 +115,9 @@ let state = {
       admin: true,
       notification_enabled: true,
       update_token: '0a',
-      subscription_id: undefined
+      subscription_id: undefined,
+      subscription_period: undefined,
+      subscription_tier: undefined
     }
   },
   plan: {
@@ -125,6 +127,7 @@ let state = {
       plan_max_annual_id: 'P-939294240R421883FNJSH54A', // paypal sandbox plan id (Max Annual)
       plan_max_monthly_id: 'P-1MN84195617128020NJSH3JI', // paypal sandbox plan id (Max Monthly)
       client_id: 'AbuA_mUz0LOkG36bf3fYl59N8xXSQU8M6Zufpq-z07fNLG4XEM01SXGGJRAEXZpN2ejsl45S4VrA9qLN', // paypal sandbox client id
+      sdk_url: '/stub/paypal-sdk.js',
       stripe_max_enabled: true,
       paypal_max_enabled: true
     }
@@ -168,6 +171,22 @@ let state = {
         ]
       }
     ]
+  }
+}
+
+function paypalPlanInfo (subscriptionId) {
+  const planId = String(subscriptionId).split('~')[1] || ''
+  const p = state.plan.data
+  if (planId === p.plan_annual_id) return { tier: 'pro', period: 'year' }
+  if (planId === p.plan_max_monthly_id) return { tier: 'max', period: 'month' }
+  if (planId === p.plan_max_annual_id) return { tier: 'max', period: 'year' }
+  return { tier: 'pro', period: 'month' }
+}
+
+function stripePlanInfo (plan) {
+  return {
+    tier: plan && plan.indexOf('max') !== -1 ? 'max' : 'pro',
+    period: plan && plan.indexOf('annual') !== -1 ? 'year' : 'month'
   }
 }
 
@@ -386,7 +405,12 @@ export function mock () {
         }
       })
       this.get('/api/plan', function (_schema, request) {
-        return new Response(200, {}, state.plan)
+        const data = Object.assign({}, state.plan.data)
+        if (state.user.data.subscription_id !== undefined) {
+          data.current_period = state.user.data.subscription_period
+          data.current_tier = state.user.data.subscription_tier
+        }
+        return new Response(200, {}, { data: data })
       })
       this.post('/api/user/set_password', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
@@ -401,13 +425,34 @@ export function mock () {
       })
       this.post('/api/plan/subscribe/paypal', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
+        const info = paypalPlanInfo(attrs.subscription_id)
         state.user.data.subscription_id = attrs.subscription_id
+        state.user.data.subscription_period = info.period
+        state.user.data.subscription_tier = info.tier
         return new Response(200, {}, {})
       })
       this.post('/api/plan/subscribe/crypto', function (_schema, request) {
         const attrs = JSON.parse(request.requestBody)
         state.user.data.subscription_id = attrs.subscription_id
+        state.user.data.subscription_period = 'year'
+        state.user.data.subscription_tier = 'pro'
         return new Response(200, {}, {})
+      })
+      this.post('/api/plan/subscribe/stripe/checkout', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        return new Response(200, {}, { data: { url: '/account?stripe_session_id=stub-' + (attrs.plan || 'monthly') } })
+      })
+      this.post('/api/plan/subscribe/stripe', function (_schema, request) {
+        const attrs = JSON.parse(request.requestBody)
+        const info = stripePlanInfo(String(attrs.subscription_id).replace('stub-', ''))
+        state.user.data.subscription_id = 'sub_stub'
+        state.user.data.subscription_period = info.period
+        state.user.data.subscription_tier = info.tier
+        return new Response(200, {}, {})
+      })
+      this.post('/api/plan/switch', function (_schema, _request) {
+        state.user.data.subscription_period = 'year'
+        return new Response(200, {}, { data: {} })
       })
       this.delete('/api/plan', function (_schema, _request) {
         state.user.data.subscription_id = undefined

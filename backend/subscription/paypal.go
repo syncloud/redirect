@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"fmt"
 	"github.com/plutov/paypal/v4"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
@@ -15,10 +16,12 @@ type PayPal struct {
 	planAnnualId     string
 	planMaxMonthlyId string
 	planMaxAnnualId  string
+	returnUrl        string
+	cancelUrl        string
 	logger           *zap.Logger
 }
 
-func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMonthlyId, planMaxAnnualId string, logger *zap.Logger) (*PayPal, error) {
+func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMonthlyId, planMaxAnnualId, returnUrl, cancelUrl string, logger *zap.Logger) (*PayPal, error) {
 	c, err := paypal.NewClient(clientID, secretID, url)
 	if err != nil {
 		return nil, err
@@ -31,8 +34,67 @@ func New(clientID, secretID, url, sdkUrl, planMonthlyId, planAnnualId, planMaxMo
 		planAnnualId:     planAnnualId,
 		planMaxMonthlyId: planMaxMonthlyId,
 		planMaxAnnualId:  planMaxAnnualId,
+		returnUrl:        returnUrl,
+		cancelUrl:        cancelUrl,
 		logger:           logger,
 	}, nil
+}
+
+func (p *PayPal) PlanInfo(subscriptionId string) (string, string, error) {
+	planId, err := p.PlanId(subscriptionId)
+	if err != nil {
+		return "", "", err
+	}
+	return p.Period(planId), p.Tier(planId), nil
+}
+
+func (p *PayPal) SwitchToAnnual(subscriptionId string) (string, error) {
+	planId, err := p.PlanId(subscriptionId)
+	if err != nil {
+		return "", err
+	}
+	annualPlanId := p.AnnualPlanId(planId)
+	if annualPlanId == planId {
+		return "", fmt.Errorf("subscription is already annual")
+	}
+	return p.Revise(subscriptionId, annualPlanId)
+}
+
+func (p *PayPal) Period(planId string) string {
+	if planId == p.planAnnualId || planId == p.planMaxAnnualId {
+		return model.PeriodYear
+	}
+	return model.PeriodMonth
+}
+
+func (p *PayPal) AnnualPlanId(planId string) string {
+	if planId == p.planMaxMonthlyId || planId == p.planMaxAnnualId {
+		return p.planMaxAnnualId
+	}
+	return p.planAnnualId
+}
+
+func (p *PayPal) Revise(subscriptionId string, planId string) (string, error) {
+	_, err := p.client.GetAccessToken(context.Background())
+	if err != nil {
+		return "", err
+	}
+	response, err := p.client.ReviseSubscription(context.Background(), subscriptionId, paypal.SubscriptionBase{
+		PlanID: planId,
+		ApplicationContext: &paypal.ApplicationContext{
+			ReturnURL: p.returnUrl,
+			CancelURL: p.cancelUrl,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	for _, link := range response.Links {
+		if link.Rel == "approve" {
+			return link.Href, nil
+		}
+	}
+	return "", nil
 }
 
 func (p *PayPal) MaxEnabled() bool {

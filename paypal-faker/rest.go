@@ -8,11 +8,12 @@ import (
 )
 
 type PayPal struct {
-	orders *Orders
+	orders        *Orders
+	subscriptions *Subscriptions
 }
 
-func NewPayPal(orders *Orders) *PayPal {
-	return &PayPal{orders: orders}
+func NewPayPal(orders *Orders, subscriptions *Subscriptions) *PayPal {
+	return &PayPal{orders: orders, subscriptions: subscriptions}
 }
 
 func (p *PayPal) Handler() http.Handler {
@@ -95,10 +96,31 @@ func (p *PayPal) subscription(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	if action == "revise" {
+		var body struct {
+			PlanID             string `json:"plan_id"`
+			ApplicationContext struct {
+				ReturnURL string `json:"return_url"`
+			} `json:"application_context"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "no plan", http.StatusBadRequest)
+			return
+		}
+		p.subscriptions.Revise(id, body.PlanID)
+		write(w, map[string]any{
+			"id":     id,
+			"status": "ACTIVE",
+			"links": []map[string]string{
+				{"rel": "approve", "href": body.ApplicationContext.ReturnURL, "method": "GET"},
+			},
+		})
+		return
+	}
 	write(w, map[string]any{
 		"id":          id,
 		"status":      "ACTIVE",
-		"plan_id":     "P-FAKERPLAN",
+		"plan_id":     p.subscriptions.PlanId(id),
 		"create_time": "2026-01-01T00:00:00Z",
 	})
 }

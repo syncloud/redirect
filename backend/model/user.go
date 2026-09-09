@@ -15,6 +15,9 @@ const (
 
 	PlanPro = "pro"
 	PlanMax = "max"
+
+	PeriodMonth = "month"
+	PeriodYear  = "year"
 )
 
 type User struct {

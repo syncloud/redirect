@@ -276,6 +276,84 @@ test('Crypto Subscribe', async () => {
   wrapper.unmount()
 })
 
+function mountSubscribed (planData) {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/user').reply(200, {
+    data: {
+      active: true,
+      email: 'test@example.com',
+      notification_enabled: true,
+      update_token: '0a',
+      subscription_id: 'I-SUB'
+    }
+  })
+  mock.onGet('/api/plan').reply(200, { data: Object.assign({ client_id: '2' }, planData) })
+  return { mock }
+}
+
+const subscribedStubs = {
+  attachTo: document.body,
+  props: { checkUserSession: jest.fn() },
+  global: {
+    components: { RouterLink: RouterLinkStub },
+    stubs: {
+      CustomDialog: { template: '<button :id="id" />', props: { id: String } },
+      'el-col': ElCol,
+      'el-row': ElRow,
+      'el-radio-button': ElRadioButton,
+      'el-radio-group': ElRadioGroup,
+      'el-button': ElButton,
+      'el-image': ElImage,
+      'el-input': ElInput,
+      'el-icon': ElIcon,
+      'el-switch': ElSwitch,
+      'el-card': ElCard,
+      'el-tag': ElTag
+    }
+  }
+}
+
+test('Max monthly subscriber sees max price and switch option', async () => {
+  mountSubscribed({ current_period: 'month', current_tier: 'max' })
+  const wrapper = mount(Account, subscribedStubs)
+  await flushPromises()
+  expect(wrapper.find('[data-testid="billing-current"]').text()).toBe('£15 / month')
+  expect(wrapper.find('[data-testid="switch-annual"]').exists()).toBe(true)
+  wrapper.unmount()
+})
+
+test('Max annual subscriber sees max annual price and no switch option', async () => {
+  mountSubscribed({ current_period: 'year', current_tier: 'max' })
+  const wrapper = mount(Account, subscribedStubs)
+  await flushPromises()
+  expect(wrapper.find('[data-testid="billing-current"]').text()).toBe('£180 / year')
+  expect(wrapper.find('[data-testid="switch-annual"]').exists()).toBe(false)
+  wrapper.unmount()
+})
+
+test('Switch to annual redirects to the approval url', async () => {
+  const { mock } = mountSubscribed({ current_period: 'month', current_tier: 'pro' })
+  let switched = false
+  mock.onPost('/api/plan/switch').reply(function (_) {
+    switched = true
+    return [200, { data: { url: 'https://paypal.test/approve' } }]
+  })
+  const originalLocation = window.location
+  Object.defineProperty(window, 'location', { configurable: true, writable: true, value: { href: '' } })
+
+  const wrapper = mount(Account, subscribedStubs)
+  await flushPromises()
+  await wrapper.find('#switch_annual').trigger('click')
+  await wrapper.find('#switch_confirmation').trigger('confirm')
+  await flushPromises()
+
+  expect(switched).toBe(true)
+  expect(window.location.href).toBe('https://paypal.test/approve')
+
+  Object.defineProperty(window, 'location', { configurable: true, writable: true, value: originalLocation })
+  wrapper.unmount()
+})
+
 test('Stripe Checkout', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/user').reply(200,
