@@ -148,10 +148,10 @@ func (s *Stripe) Switch(id string) (string, error) {
 	stripe.Key = s.secretKey
 	sub, err := stripesub.Get(id, nil)
 	if err != nil {
-		return "", err
+		return "", serviceError(err)
 	}
 	if len(sub.Items.Data) == 0 || sub.Items.Data[0].Price == nil {
-		return "", fmt.Errorf("stripe subscription has no item")
+		return "", model.NewServiceError("This subscription cannot be switched.")
 	}
 	item := sub.Items.Data[0]
 	annualPriceId := s.priceAnnualId
@@ -159,7 +159,7 @@ func (s *Stripe) Switch(id string) (string, error) {
 		annualPriceId = s.priceMaxAnnualId
 	}
 	if item.Price.ID == annualPriceId {
-		return "", fmt.Errorf("stripe subscription is already annual")
+		return "", model.NewServiceError("This subscription is already annual.")
 	}
 	params := &stripe.SubscriptionParams{
 		Items: []*stripe.SubscriptionItemsParams{
@@ -170,8 +170,10 @@ func (s *Stripe) Switch(id string) (string, error) {
 		},
 		ProrationBehavior: stripe.String("create_prorations"),
 	}
-	_, err = stripesub.Update(id, params)
-	return "", err
+	if _, err := stripesub.Update(id, params); err != nil {
+		return "", serviceError(err)
+	}
+	return "", nil
 }
 
 func (s *Stripe) Unsubscribe(id string) error {
