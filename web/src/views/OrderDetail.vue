@@ -1,8 +1,8 @@
 <template>
   <div class="sc-page">
-    <h1 class="sc-h1">Order</h1>
+    <h1 class="sc-h1">{{ $t('orderDetail.title') }}</h1>
 
-    <div v-if="loading" class="sc-card" data-testid="order-loading">Loading the order.</div>
+    <div v-if="loading" class="sc-card" data-testid="order-loading">{{ $t('orderDetail.loading') }}</div>
 
     <template v-else-if="order">
       <div class="sc-card" data-testid="order-summary">
@@ -13,11 +13,11 @@
           </span>
         </div>
         <div class="order-line">
-          <span>Ordered {{ order.ordered }}</span>
+          <span>{{ $t('orderDetail.ordered', { date: order.ordered }) }}</span>
           <span data-testid="order-total">{{ order.total }}</span>
         </div>
         <p class="sc-muted order-reference" data-testid="order-reference">
-          Order {{ order.number }}
+          {{ $t('orderDetail.orderNumber', { n: order.number }) }}
         </p>
         <p v-if="order.name" class="order-ship" data-testid="order-ship">
           {{ order.name }}, {{ order.address }}, {{ order.city }} {{ order.postcode }}, {{ order.country }}
@@ -25,7 +25,7 @@
       </div>
 
       <p v-if="history.length === 0" class="sc-muted" data-testid="order-history">
-        Nothing has happened yet.
+        {{ $t('orderDetail.noHistory') }}
       </p>
       <ol v-else class="history" data-testid="order-history">
         <li
@@ -52,7 +52,7 @@
             id="order-comment"
             v-model="comment"
             rows="3"
-            placeholder="Anything the buyer should know, included in the email"
+            :placeholder="$t('orderDetail.commentPlaceholder')"
             data-testid="order-comment"
           />
         </div>
@@ -67,7 +67,7 @@
             data-testid="order-save-status"
             @click="save"
           >
-            Save
+            {{ $t('orderDetail.save') }}
           </el-button>
         </div>
       </div>
@@ -145,7 +145,7 @@ export default {
       }
       this.error = error.response && error.response.data && error.response.data.message
         ? error.response.data.message
-        : 'Something went wrong.'
+        : this.$t('orderDetail.somethingWentWrong')
     }
   }
 }

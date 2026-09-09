@@ -2,43 +2,43 @@
 
   <div class="sc-page">
     <div id="has_domains">
-      <h1 class="sc-h1" data-testid="account-title">Account</h1>
+      <h1 class="sc-h1" data-testid="account-title">{{ $t('account.title') }}</h1>
       <p class="sc-lead">
-        Signed in as <strong data-testid="account-email">{{ email }}</strong>
+        {{ $t('account.signedInAs') }} <strong data-testid="account-email">{{ email }}</strong>
       </p>
       <el-row :gutter="20">
         <el-col :xs="24" :md="12">
           <el-card class="account-card" shadow="never">
             <template #header>
               <div class="card-header">
-                <span>Subscription</span>
+                <span>{{ $t('account.subscription') }}</span>
                 <el-tag
                   id="subscription_active"
                   type="success"
                   size="large"
                   v-if="userLoaded && subscriptionId !== undefined"
-                >Active</el-tag>
+                >{{ $t('account.active') }}</el-tag>
                 <span
                   id="subscription_inactive"
                   class="trial-note"
                   v-if="userLoaded && subscriptionId === undefined"
-                >You have 30 days to subscribe</span>
+                >{{ $t('account.trialNote') }}</span>
               </div>
             </template>
 
             <div v-if="userLoaded && subscriptionId !== undefined">
-              Your subscription includes:
+              {{ $t('account.subscriptionIncludes') }}
               <ul>
-                <li>Personal domain (example.com)</li>
-                <li>Automatic IP &amp; mail DNS</li>
-                <li>10 GB relay traffic / month</li>
-                <li>Mail relay</li>
-                <li>Email support</li>
+                <li>{{ $t('account.domain') }}</li>
+                <li>{{ $t('account.autoDns') }}</li>
+                <li>{{ $t('account.relay10gb') }}</li>
+                <li>{{ $t('account.mailRelay') }}</li>
+                <li>{{ $t('account.emailSupport') }}</li>
               </ul>
 
               <div class="billing-row">
                 <span>
-                  Billing:
+                  {{ $t('account.billing') }}
                   <strong data-testid="billing-current">{{ currentPriceText }}</strong>
                 </span>
                 <el-button
@@ -50,19 +50,19 @@
                   data-testid="switch-annual"
                   :loading="busy === 'switch'"
                   @click="switchToAnnual"
-                >Switch to annual</el-button>
+                >{{ $t('account.switchToAnnual') }}</el-button>
               </div>
               <div v-if="switchError" class="switch-error" data-testid="switch-error">{{ switchError }}</div>
             </div>
 
             <div v-show="userLoaded && subscriptionId === undefined">
-              <div class="pay-section-label">Billing</div>
+              <div class="pay-section-label">{{ $t('account.billingLabel') }}</div>
               <el-radio-group v-if="userLoaded" v-model="period" size="large">
-                <el-radio-button label="month" data-testid="billing-month">Monthly</el-radio-button>
-                <el-radio-button label="year" data-testid="billing-year">Annual</el-radio-button>
+                <el-radio-button label="month" data-testid="billing-month">{{ $t('account.monthly') }}</el-radio-button>
+                <el-radio-button label="year" data-testid="billing-year">{{ $t('account.annual') }}</el-radio-button>
               </el-radio-group>
 
-              <div class="pay-section-label">Plan</div>
+              <div class="pay-section-label">{{ $t('account.planLabel') }}</div>
               <div class="plan-grid">
                 <div
                   class="plan-card"
@@ -71,15 +71,15 @@
                   @click="tier = 'pro'"
                 >
                   <div class="plan-head">
-                    <span class="plan-name">Pro</span>
+                    <span class="plan-name">{{ $t('account.proName') }}</span>
                     <span class="plan-price">{{ proPrice }}</span>
                   </div>
                   <ul class="plan-features">
-                    <li>10 GB relay traffic / month</li>
-                    <li>Mail relay</li>
-                    <li>Personal domain (example.com)</li>
-                    <li>Automatic IP &amp; mail DNS</li>
-                    <li>Email support</li>
+                    <li>{{ $t('account.relay10gb') }}</li>
+                    <li>{{ $t('account.mailRelay') }}</li>
+                    <li>{{ $t('account.domain') }}</li>
+                    <li>{{ $t('account.autoDns') }}</li>
+                    <li>{{ $t('account.emailSupport') }}</li>
                   </ul>
                 </div>
                 <div
@@ -90,20 +90,20 @@
                   @click="tier = 'max'"
                 >
                   <div class="plan-head">
-                    <span class="plan-name">Max</span>
+                    <span class="plan-name">{{ $t('account.maxName') }}</span>
                     <span class="plan-price">{{ maxPrice }}</span>
                   </div>
                   <ul class="plan-features">
-                    <li>100 GB relay traffic / month</li>
-                    <li>Mail relay</li>
-                    <li>Personal domain (example.com)</li>
-                    <li>Automatic IP &amp; mail DNS</li>
-                    <li>Email support</li>
+                    <li>{{ $t('account.relay100gb') }}</li>
+                    <li>{{ $t('account.mailRelay') }}</li>
+                    <li>{{ $t('account.domain') }}</li>
+                    <li>{{ $t('account.autoDns') }}</li>
+                    <li>{{ $t('account.emailSupport') }}</li>
                   </ul>
                 </div>
               </div>
 
-              <div class="pay-section-label">Pay with</div>
+              <div class="pay-section-label">{{ $t('account.payWith') }}</div>
               <div class="pay-methods">
                 <el-button
                   type="primary"
@@ -116,31 +116,31 @@
                   :disabled="paying"
                   :loading="busy === 'stripe'"
                   @click="stripeCheckout"
-                >Card</el-button>
+                >{{ $t('account.card') }}</el-button>
 
                 <div class="pay-paypal-wrap">
                   <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
 
                   <div v-if="busy === 'paypal'" class="pay-overlay" data-testid="account-pay-busy">
-                    <span class="pay-spinner" aria-label="Opening PayPal"/>
+                    <span class="pay-spinner" :aria-label="$t('account.openingPaypal')"/>
                   </div>
                 </div>
 
                 <div class="pay-crypto" v-show="tier === 'pro'">
                   <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
-                    Or pay with crypto (0.05 ETH / year)
+                    {{ $t('account.payCrypto') }}
                   </el-button>
                   <div v-show="cryptoOpen" class="crypto-details">
                     <el-row class="crypto-row" style="border-top: 1px solid var(--el-border-color); padding-top: 5px">
                       <el-col :span="16" style="border-bottom: 1px solid var(--el-border-color); padding-bottom: 5px">
-                        Amount (Ethereum)
+                        {{ $t('account.cryptoAmount') }}
                       </el-col>
                       <el-col :span="8" style="text-align: right; border-bottom: 4px solid #409EFF; padding-bottom: 5px">
-                        0.05 ETH
+                        {{ $t('account.cryptoEthAmount') }}
                       </el-col>
                     </el-row>
                     <el-row class="crypto-row">
-                      <el-col :span="24">Please send to address:</el-col>
+                      <el-col :span="24">{{ $t('account.cryptoSendTo') }}</el-col>
                     </el-row>
                     <el-row class="crypto-row">
                       <el-col :span="24" style="text-align: center">
@@ -153,7 +153,7 @@
                     </el-row>
                     <el-row class="crypto-row" style="padding-top: 2px">
                       <el-col :span="24">
-                        or Scan the QR code
+                        {{ $t('account.cryptoScanQr') }}
                       </el-col>
                     </el-row>
                     <el-row class="crypto-row">
@@ -165,7 +165,7 @@
                     </el-row>
                     <el-row class="crypto-row">
                       <el-col>
-                        Enter transaction ID:
+                        {{ $t('account.cryptoEnterTxId') }}
                       </el-col>
                     </el-row>
                     <el-row class="crypto-row">
@@ -181,7 +181,7 @@
                           :disabled="cryptoTransactionId.length<10"
                           id="crypto_subscribe_btn"
                         >
-                          Subscribe
+                          {{ $t('account.subscribe') }}
                         </el-button>
                       </el-col>
                     </el-row>
@@ -192,20 +192,20 @@
 
             <div v-if="userLoaded && subscriptionId !== undefined">
               <div style="padding-top: 10px">
-                Using your own domain name:
+                {{ $t('account.usingYourDomain') }}
               </div>
               <ol>
                 <li>
-                  Copy the name servers listed for your
-                  <router-link to="/">domain</router-link>
+                  {{ $t('account.copyNameServers') }}
+                  <router-link to="/">{{ $t('account.domainLink') }}</router-link>
                 </li>
                 <li>
-                  Set those name servers at your domain registrar
+                  {{ $t('account.setNameServers') }}
                 </li>
               </ol>
 
               <div style="text-align: right">
-                <el-button type="danger" id="cancel" :icon="Close" @click="cancelSubscription">Cancel</el-button>
+                <el-button type="danger" id="cancel" :icon="Close" @click="cancelSubscription">{{ $t('account.cancel') }}</el-button>
               </div>
             </div>
           </el-card>
@@ -215,7 +215,7 @@
           <el-card class="account-card" shadow="never">
             <template #header>
               <div class="card-header">
-                <span>Email notifications</span>
+                <span>{{ $t('account.emailNotifications') }}</span>
               </div>
             </template>
             <div class="card-actions">
@@ -223,9 +223,9 @@
                 id="chk_email"
                 data-testid="notification-toggle"
                 v-model="notificationEnabled"
-                active-text="Send me notifications"
+                :active-text="$t('account.sendNotifications')"
               />
-              <el-button type="primary" id="save" :icon="Check" @click="notificationSave">Save</el-button>
+              <el-button type="primary" id="save" :icon="Check" @click="notificationSave">{{ $t('account.save') }}</el-button>
             </div>
           </el-card>
         </el-col>
@@ -234,13 +234,13 @@
           <el-card class="account-card danger-card" shadow="never">
             <template #header>
               <div class="card-header">
-                <span>Danger Zone</span>
+                <span>{{ $t('account.dangerZone') }}</span>
               </div>
             </template>
-            <h4>Delete this account</h4>
+            <h4>{{ $t('account.deleteThisAccount') }}</h4>
             <div class="card-actions">
-              <span>Delete your account all domains and personal data.</span>
-              <el-button type="danger" id="delete" data-testid="account-delete" :icon="Delete" @click="accountDelete">Delete</el-button>
+              <span>{{ $t('account.deleteDescription') }}</span>
+              <el-button type="danger" id="delete" data-testid="account-delete" :icon="Delete" @click="accountDelete">{{ $t('account.delete') }}</el-button>
             </div>
           </el-card>
         </el-col>
@@ -251,39 +251,36 @@
 
   <CustomDialog :visible="deleteConfirmationVisible" @cancel="deleteConfirmationVisible = false"
           id="delete_confirmation" @confirm="accountDeleteConfirm">
-    <template v-slot:title>Delete Account</template>
+    <template v-slot:title>{{ $t('account.deleteAccountTitle') }}</template>
     <template v-slot:text>
-      <div>Once you delete your account, there's no going back. All devices you have will be deactivated and domains
-        will
-        be released. Proceed with caution!
+      <div>{{ $t('account.deleteConfirmBody') }}
       </div>
       <br>
-      <div>Are you sure?</div>
+      <div>{{ $t('account.areYouSure') }}</div>
     </template>
   </CustomDialog>
 
   <CustomDialog :visible="switchConfirmationVisible" @cancel="switchConfirmationVisible = false"
           id="switch_confirmation" @confirm="switchToAnnualConfirm">
-    <template v-slot:title>Switch to annual billing</template>
+    <template v-slot:title>{{ $t('account.switchTitle') }}</template>
     <template v-slot:text>
       <div>
-        You will move from {{ monthlyPriceText }} to {{ annualPriceText }}. Your subscription
-        stays active and your device keeps working — nothing is cancelled and there is no interruption.
+        {{ $t('account.switchBody', { from: monthlyPriceText, to: annualPriceText }) }}
       </div>
       <br>
-      <div>Continue?</div>
+      <div>{{ $t('account.continueQuestion') }}</div>
     </template>
   </CustomDialog>
 
   <CustomDialog :visible="cancelConfirmationVisible" @cancel="cancelConfirmationVisible = false"
           id="cancel_confirmation" @confirm="cancelSubscriptionConfirm">
-    <template v-slot:title>Cancel subscription</template>
+    <template v-slot:title>{{ $t('account.cancelTitle') }}</template>
     <template v-slot:text>
       <div>
-        You are about to cancel your subscription
+        {{ $t('account.cancelBody') }}
       </div>
       <br>
-      <div>Are you sure?</div>
+      <div>{{ $t('account.areYouSure') }}</div>
     </template>
   </CustomDialog>
 
@@ -533,7 +530,7 @@ export default {
             return
           }
           this.switchError = (err.response && err.response.data && err.response.data.message) ||
-            'Could not switch your subscription. Please try again.'
+            this.$t('account.switchFailed')
         })
     },
     cancelSubscription: function () {

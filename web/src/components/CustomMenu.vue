@@ -3,20 +3,10 @@
     <div class="sc-header-inner">
       <router-link class="sc-logo" :to="loggedIn ? '/' : '/shop'" data-testid="menu-brand">
         <img class="sc-logo-img" src="/logo.svg" alt="">
-        <span class="sc-logo-name">SYNCLOUD</span>
+        <span class="sc-logo-name">Syncloud</span>
       </router-link>
 
-      <button
-        class="sc-burger"
-        type="button"
-        aria-label="menu"
-        data-testid="menu-burger"
-        @click="open = !open"
-      >
-        <span></span><span></span><span></span>
-      </button>
-
-      <nav class="sc-nav" :class="{ open }" data-testid="menu-nav">
+      <nav class="sc-nav" :class="{ open }" data-testid="menu-nav" @click="open = false">
         <router-link
           v-if="loggedIn"
           id="devices"
@@ -24,14 +14,14 @@
           data-testid="nav-devices"
           :class="{ active: activeTab === '/' }"
           @click="open = false"
-        >Devices</router-link>
+        >{{ $t('menu.devices') }}</router-link>
         <router-link
           id="shop"
           to="/shop"
           data-testid="nav-shop"
           :class="{ active: activeTab === '/shop' }"
           @click="open = false"
-        >Shop</router-link>
+        >{{ $t('menu.shop') }}</router-link>
         <router-link
           v-if="loggedIn"
           id="orders"
@@ -39,7 +29,7 @@
           data-testid="nav-orders"
           :class="{ active: activeTab === '/orders' }"
           @click="open = false"
-        >Orders</router-link>
+        >{{ $t('menu.orders') }}</router-link>
         <router-link
           v-if="loggedIn && admin"
           id="admin-orders"
@@ -47,7 +37,7 @@
           data-testid="nav-admin-orders"
           :class="{ active: activeTab === '/admin/orders' }"
           @click="open = false"
-        >All orders</router-link>
+        >{{ $t('menu.allOrders') }}</router-link>
         <router-link
           v-if="loggedIn"
           id="account"
@@ -55,7 +45,7 @@
           data-testid="nav-account"
           :class="{ active: activeTab === '/account' }"
           @click="open = false"
-        >Account</router-link>
+        >{{ $t('menu.account') }}</router-link>
         <span v-if="loggedIn" class="sc-nav-email" data-testid="menu-email">{{ email }}</span>
         <router-link
           v-if="loggedIn === false"
@@ -64,18 +54,28 @@
           data-testid="nav-login"
           :class="{ active: activeTab === '/login' }"
           @click="open = false"
-        >Log in</router-link>
+        >{{ $t('menu.login') }}</router-link>
         <button
           v-if="loggedIn"
           id="logout"
           class="sc-nav-action"
           data-testid="nav-logout"
           @click="logout"
-        >Log out</button>
+        >{{ $t('menu.logout') }}</button>
       </nav>
 
       <div class="sc-header-actions">
+        <LanguageSwitcher/>
         <ThemeToggle/>
+        <button
+          class="sc-burger"
+          type="button"
+          aria-label="menu"
+          data-testid="menu-burger"
+          @click.stop="open = !open"
+        >
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </div>
   </header>
@@ -84,10 +84,11 @@
 <script>
 import axios from 'axios'
 import ThemeToggle from './ThemeToggle.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 
 export default {
   name: 'CustomMenu',
-  components: { ThemeToggle },
+  components: { ThemeToggle, LanguageSwitcher },
   props: {
     activeTab: String,
     email: String,

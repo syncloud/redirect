@@ -9,43 +9,40 @@
     class="sc-page"
     data-testid="home-intro"
   >
-    <h1 class="sc-h1">Your Syncloud account</h1>
+    <h1 class="sc-h1">{{ $t('home.accountTitle') }}</h1>
     <p class="sc-lead">
-      This is where a Syncloud device gets its name on the internet. The account holds the
-      domain name for each device you own, keeps its certificate current, and carries the
-      subscription.
+      {{ $t('home.accountLead') }}
     </p>
 
     <div class="sc-card">
-      <h2 class="sc-h2">Already have a device</h2>
-      <p>Sign in to see your devices, their addresses and how much of your plan you are using.</p>
+      <h2 class="sc-h2">{{ $t('home.haveDeviceTitle') }}</h2>
+      <p>{{ $t('home.haveDeviceText') }}</p>
       <router-link
         class="sc-btn"
         to="/login"
         data-testid="home-login"
       >
-        Log in
+        {{ $t('home.login') }}
       </router-link>
     </div>
 
     <div class="sc-card">
-      <h2 class="sc-h2">Do not have one yet</h2>
+      <h2 class="sc-h2">{{ $t('home.noDeviceTitle') }}</h2>
       <p>
-        Buy a device assembled and ready, or build your own from a disk image and activate it
-        against a new account.
+        {{ $t('home.noDeviceText') }}
       </p>
       <router-link
         class="sc-btn"
         to="/shop"
         data-testid="home-shop"
       >
-        See the shop
+        {{ $t('home.shop') }}
       </router-link>
       <a
         class="home-build"
         href="https://syncloud.org/setup"
         data-testid="home-build"
-      >Build one yourself</a>
+      >{{ $t('home.build') }}</a>
     </div>
   </div>
 </template>
