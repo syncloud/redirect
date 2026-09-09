@@ -2,7 +2,6 @@ package subscription
 
 import (
 	"context"
-	"fmt"
 	"github.com/plutov/paypal/v4"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
@@ -51,13 +50,17 @@ func (p *PayPal) PlanInfo(subscriptionId string) (string, string, error) {
 func (p *PayPal) SwitchToAnnual(subscriptionId string) (string, error) {
 	planId, err := p.PlanId(subscriptionId)
 	if err != nil {
-		return "", err
+		return "", serviceError(err)
 	}
 	annualPlanId := p.AnnualPlanId(planId)
 	if annualPlanId == planId {
-		return "", fmt.Errorf("subscription is already annual")
+		return "", model.NewServiceError("This subscription is already annual.")
 	}
-	return p.Revise(subscriptionId, annualPlanId)
+	url, err := p.Revise(subscriptionId, annualPlanId)
+	if err != nil {
+		return "", serviceError(err)
+	}
+	return url, nil
 }
 
 func (p *PayPal) Period(planId string) string {

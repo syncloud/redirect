@@ -52,6 +52,7 @@
                   @click="switchToAnnual"
                 >Switch to annual</el-button>
               </div>
+              <div v-if="switchError" class="switch-error" data-testid="switch-error">{{ switchError }}</div>
             </div>
 
             <div v-show="userLoaded && subscriptionId === undefined">
@@ -324,6 +325,7 @@ export default {
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
       switchConfirmationVisible: false,
+      switchError: '',
       period: 'month',
       tier: 'pro',
       stripeMaxEnabled: false,
@@ -513,6 +515,7 @@ export default {
     },
     switchToAnnualConfirm: function () {
       this.switchConfirmationVisible = false
+      this.switchError = ''
       this.busy = 'switch'
       axios.post('/api/plan/switch')
         .then(response => {
@@ -523,7 +526,15 @@ export default {
             this.reload()
           }
         })
-        .catch(this.onError)
+        .catch(err => {
+          this.busy = ''
+          if (err.response && err.response.status === 401) {
+            this.$router.push('/login')
+            return
+          }
+          this.switchError = (err.response && err.response.data && err.response.data.message) ||
+            'Could not switch your subscription. Please try again.'
+        })
     },
     cancelSubscription: function () {
       this.cancelConfirmationVisible = true
@@ -584,6 +595,11 @@ export default {
 }
 .billing-row #switch_annual {
   margin-left: auto;
+}
+.switch-error {
+  margin-top: 8px;
+  color: var(--el-color-danger);
+  font-size: 14px;
 }
 .card-actions {
   display: flex;
