@@ -3,8 +3,8 @@
     <div class="sc-auth-wordmark">SYNCLOUD</div>
     <form class="sc-auth-card" data-testid="register-form" @submit="register">
       <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
-      <h2 class="sc-auth-title" data-testid="register-heading">Create your account</h2>
-      <p class="sc-auth-sub">First month free, then £5 a month. Cancel anytime.</p>
+      <h2 class="sc-auth-title" data-testid="register-heading">{{ $t('register.heading') }}</h2>
+      <p class="sc-auth-sub">{{ $t('register.subtitle') }}</p>
 
       <div id="errors_placeholder">
         <div class="sc-alert" :class="{ invisible: !isError }">{{ error }}</div>
@@ -12,27 +12,26 @@
 
       <div id="group-email" class="sc-field sc-field-float">
         <input id="register_email" data-testid="register-email" name="email" type="text" placeholder=" " required="" v-model="email">
-        <label for="register_email">Email</label>
+        <label for="register_email">{{ $t('register.email') }}</label>
         <span id="help-email" class="sc-help">{{ emailError }}</span>
       </div>
 
       <div id="group-password" class="sc-field sc-field-float">
         <input id="register_password" data-testid="register-password" name="password" type="password" placeholder=" " required="" v-model="password">
-        <label for="register_password">Password</label>
+        <label for="register_password">{{ $t('register.password') }}</label>
         <span id="help-password" class="sc-help">{{ passwordError }}</span>
       </div>
 
-      <button id="btnregister" data-testid="register-submit" name="btnregister" class="sc-btn">Create account</button>
+      <button id="btnregister" data-testid="register-submit" name="btnregister" class="sc-btn">{{ $t('register.submit') }}</button>
 
       <p class="sc-auth-note" data-testid="register-next-steps">
-        Next you will install Syncloud on your own hardware &mdash; a Raspberry Pi, an old PC
-        or a ready-made device &mdash; and activate it with this account.
-        <a href="https://syncloud.org/setup" data-testid="register-setup-link">See how it works</a>
+        {{ $t('register.nextSteps') }}
+        <a href="https://syncloud.org/setup" data-testid="register-setup-link">{{ $t('register.setupLink') }}</a>
       </p>
 
       <div class="sc-auth-links">
-        <router-link to="/login" data-testid="register-login">Already have an account?</router-link>
-        <router-link to="/privacy" data-testid="register-privacy">Privacy policy</router-link>
+        <router-link to="/login" data-testid="register-login">{{ $t('register.login') }}</router-link>
+        <router-link to="/privacy" data-testid="register-privacy">{{ $t('register.privacy') }}</router-link>
       </div>
     </form>
   </div>

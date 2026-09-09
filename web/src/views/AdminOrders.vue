@@ -1,12 +1,12 @@
 <template>
   <div class="sc-page">
-    <h1 class="sc-h1">All orders</h1>
-    <p class="sc-lead">Every paid order. Only administrators can see this.</p>
+    <h1 class="sc-h1">{{ $t('adminOrders.title') }}</h1>
+    <p class="sc-lead">{{ $t('adminOrders.lead') }}</p>
 
-    <div v-if="loading" class="sc-card" data-testid="admin-orders-loading">Loading orders.</div>
+    <div v-if="loading" class="sc-card" data-testid="admin-orders-loading">{{ $t('adminOrders.loading') }}</div>
 
     <div v-else-if="orders.length === 0" class="sc-card" data-testid="admin-orders-empty">
-      Nobody has ordered anything yet.
+      {{ $t('adminOrders.empty') }}
     </div>
 
     <template v-else>
@@ -56,7 +56,7 @@ export default {
         this.$router.push('/orders')
         return
       }
-      this.error = 'Something went wrong.'
+      this.error = this.$t('adminOrders.somethingWentWrong')
     }
   }
 }

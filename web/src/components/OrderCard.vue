@@ -24,7 +24,7 @@
     </template>
 
     <p class="sc-muted order-number" data-testid="order-reference">
-      Order {{ order.number }}
+      {{ $t('orderCard.orderNumber', { n: order.number }) }}
     </p>
   </router-link>
 </template>

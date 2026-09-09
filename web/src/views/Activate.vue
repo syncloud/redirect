@@ -3,12 +3,12 @@
     <div class="sc-auth-wordmark">SYNCLOUD</div>
     <div class="sc-auth-card">
       <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
-      <h2 class="sc-auth-title">Activation</h2>
+      <h2 class="sc-auth-title">{{ $t('activate.title') }}</h2>
       <p class="sc-auth-message" id="activated" data-testid="activate-message">
         {{ message }}
       </p>
       <p class="sc-auth-note">
-        <router-link to="/login" data-testid="activate-login">Continue to log in</router-link>
+        <router-link to="/login" data-testid="activate-login">{{ $t('activate.login') }}</router-link>
       </p>
     </div>
   </div>
@@ -27,7 +27,7 @@ export default {
   mounted () {
     const token = this.$route.query.token
     if (token === undefined) {
-      this.message = 'Unknown token'
+      this.message = this.$t('activate.unknownToken')
     } else {
       this.activate(token)
     }
