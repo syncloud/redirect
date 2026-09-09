@@ -1,17 +1,16 @@
 <template>
   <div class="sc-page">
-    <h1 class="sc-h1">Shop</h1>
+    <h1 class="sc-h1">{{ $t('shop.title') }}</h1>
     <p class="sc-lead">
-      A Syncloud device, assembled and ready to plug in. It arrives on this account, so
-      there is nothing else to sign up for.
+      {{ $t('shop.lead') }}
     </p>
 
     <div v-if="ordered" class="sc-card" data-testid="device-ordered">
-      <h2 class="sc-h2">Thank you</h2>
+      <h2 class="sc-h2">{{ $t('shop.thankYou') }}</h2>
       <p>
-        Your order is paid and we have it. We will email you at {{ email }} when it ships.
+        {{ $t('shop.orderPaid', { email: email }) }}
       </p>
-      <p class="sc-muted" data-testid="device-reference">Order {{ number }}</p>
+      <p class="sc-muted" data-testid="device-reference">{{ $t('shop.orderNumber', { n: number }) }}</p>
     </div>
 
     <template v-else>
@@ -27,17 +26,17 @@
           >
           <div>
             <h2 class="sc-h2 product-name">{{ device.name }}</h2>
-            <p class="product-from">from {{ money(device.price + shipping) }}</p>
+            <p class="product-from">{{ $t('shop.priceFrom', { price: money(device.price + shipping) }) }}</p>
             <ul class="product-points">
-              <li>Assembled and tested, with the system already written to the disk</li>
-              <li>Two drive bays, so a second disk can be added later</li>
-              <li>Arrives on this account, domain name and certificate ready</li>
+              <li>{{ $t('shop.point1') }}</li>
+              <li>{{ $t('shop.point2') }}</li>
+              <li>{{ $t('shop.point3') }}</li>
             </ul>
           </div>
         </div>
 
         <details class="spec" data-testid="device-spec">
-          <summary>More details</summary>
+          <summary>{{ $t('shop.moreDetails') }}</summary>
 
           <table class="spec-table" data-testid="device-spec-table">
             <tbody>
@@ -48,24 +47,22 @@
             </tbody>
           </table>
 
-          <h4 class="spec-heading">In the box</h4>
+          <h4 class="spec-heading">{{ $t('shop.inTheBox') }}</h4>
           <ul>
-            <li>Odroid HC4 board in its case</li>
-            <li>Boot memory, an SD card with Syncloud already written</li>
-            <li>The SSD you choose below, in the first bay</li>
-            <li>Power cable and ethernet cable</li>
+            <li>{{ $t('shop.boxItem1') }}</li>
+            <li>{{ $t('shop.boxItem2') }}</li>
+            <li>{{ $t('shop.boxItem3') }}</li>
+            <li>{{ $t('shop.boxItem4') }}</li>
           </ul>
           <p>
-            The second bay is empty. Put a disk in it whenever you like and turn it on from
-            Settings; nothing has to be decided now.
+            {{ $t('shop.secondBay') }}
           </p>
           <p>
-            It suits one household running apps for family or friends, or a small business
-            sharing things between colleagues and customers.
+            {{ $t('shop.suits') }}
           </p>
         </details>
 
-        <h3 class="option-title">Storage</h3>
+        <h3 class="option-title">{{ $t('shop.storage') }}</h3>
         <div class="options" data-testid="device-options">
           <button
             v-for="each in device.options"
@@ -77,7 +74,7 @@
             @click="option = each.code"
           >
             <span class="option-name">{{ each.name }}</span>
-            <span class="option-extra">{{ each.extra ? `+ ${money(each.extra)}` : 'included' }}</span>
+            <span class="option-extra">{{ each.extra ? $t('shop.optionExtra', { extra: money(each.extra) }) : $t('shop.optionIncluded') }}</span>
           </button>
         </div>
 
@@ -87,11 +84,11 @@
             <span data-testid="device-price">{{ money(device.price + extra) }}</span>
           </div>
           <div class="sc-summary-row">
-            <span>Delivery</span>
+            <span>{{ $t('shop.delivery') }}</span>
             <span data-testid="device-shipping">{{ money(shipping) }}</span>
           </div>
           <div class="sc-summary-row sc-summary-total">
-            <span>Total</span>
+            <span>{{ $t('shop.total') }}</span>
             <span data-testid="device-total">{{ money(total) }}</span>
           </div>
         </div>
@@ -104,22 +101,21 @@
           data-testid="shop-continue"
           @click="step = 'address'"
         >
-          Continue
+          {{ $t('shop.continue') }}
         </el-button>
       </div>
 
       <div v-if="loggedIn === false && step === 'choose'" class="sc-card" data-testid="shop-signin">
-        <h2 class="sc-h2">Sign in to order</h2>
+        <h2 class="sc-h2">{{ $t('shop.signInToOrder') }}</h2>
         <p>
-          A device is tied to the account that owns it, so ordering needs one. It takes a
-          moment and the same account runs the device afterwards.
+          {{ $t('shop.signInBlurb') }}
         </p>
         <router-link
           class="sc-btn"
           to="/login?next=/shop"
           data-testid="shop-signin-link"
         >
-          Sign in or create an account
+          {{ $t('shop.signInLink') }}
         </router-link>
       </div>
 
@@ -129,7 +125,7 @@
           <span class="chosen-total">{{ money(total) }}</span>
         </div>
         <button type="button" class="chosen-change" data-testid="shop-change" @click="step = 'choose'">
-          Change
+          {{ $t('shop.change') }}
         </button>
       </div>
 
@@ -139,12 +135,12 @@
           <span class="chosen-total chosen-address">{{ addressLine }}</span>
         </div>
         <button type="button" class="chosen-change" data-testid="shop-address-change" @click="step = 'address'">
-          Change
+          {{ $t('shop.change') }}
         </button>
       </div>
 
       <div v-if="loggedIn && step === 'address'" class="sc-card sc-form" data-testid="device-address">
-        <h2 class="sc-h2">Ship it to</h2>
+        <h2 class="sc-h2">{{ $t('shop.shipItTo') }}</h2>
 
         <div class="field">
           <input
@@ -155,7 +151,7 @@
             autocomplete="name"
             data-testid="device-name"
           >
-          <label for="device-name">Full name</label>
+          <label for="device-name">{{ $t('shop.fullName') }}</label>
         </div>
         <div class="field">
           <input
@@ -166,7 +162,7 @@
             autocomplete="street-address"
             data-testid="device-address-line"
           >
-          <label for="device-address-line">Address</label>
+          <label for="device-address-line">{{ $t('shop.address') }}</label>
         </div>
         <div class="field-row">
           <div class="field">
@@ -178,7 +174,7 @@
               autocomplete="address-level2"
               data-testid="device-city"
             >
-            <label for="device-city">City</label>
+            <label for="device-city">{{ $t('shop.city') }}</label>
           </div>
           <div class="field">
             <input
@@ -189,7 +185,7 @@
               autocomplete="postal-code"
               data-testid="device-postcode"
             >
-            <label for="device-postcode">Postcode</label>
+            <label for="device-postcode">{{ $t('shop.postcode') }}</label>
           </div>
         </div>
         <div class="field">
@@ -201,11 +197,11 @@
             autocomplete="country-name"
             data-testid="device-country"
           >
-          <label for="device-country">Country</label>
+          <label for="device-country">{{ $t('shop.country') }}</label>
         </div>
 
         <p v-if="incomplete" class="sc-help" data-testid="device-incomplete">
-          We need the whole address before you can pay.
+          {{ $t('shop.incomplete') }}
         </p>
 
         <el-button
@@ -216,12 +212,12 @@
           data-testid="shop-address-continue"
           @click="step = 'pay'"
         >
-          Continue
+          {{ $t('shop.continue') }}
         </el-button>
       </div>
 
       <div v-if="loggedIn && step === 'pay'" class="sc-card" data-testid="device-pay">
-        <h2 class="sc-h2">Pay {{ money(total) }}</h2>
+        <h2 class="sc-h2">{{ $t('shop.pay', { amount: money(total) }) }}</h2>
 
         <div class="pay-methods">
           <el-button
@@ -234,7 +230,7 @@
             data-testid="device-pay-stripe"
             @click="payWithStripe"
           >
-            Card
+            {{ $t('shop.card') }}
           </el-button>
 
           <div class="pay-paypal-wrap">
@@ -250,7 +246,7 @@
               class="pay-overlay"
               data-testid="device-paypal-loading"
             >
-              <span class="pay-spinner" aria-label="Loading PayPal"/>
+              <span class="pay-spinner" :aria-label="$t('shop.loadingPaypal')"/>
             </div>
 
             <div
@@ -258,7 +254,7 @@
               class="pay-overlay"
               data-testid="device-pay-busy"
             >
-              <span class="pay-spinner" aria-label="Opening PayPal"/>
+              <span class="pay-spinner" :aria-label="$t('shop.openingPaypal')"/>
             </div>
           </div>
         </div>
@@ -361,7 +357,7 @@ export default {
       this.busy = ''
       this.error = error.response && error.response.data
         ? error.response.data.message
-        : 'something went wrong'
+        : this.$t('shop.somethingWentWrong')
     },
     load () {
       axios.get('/api/device/catalog')

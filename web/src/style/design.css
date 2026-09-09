@@ -812,3 +812,51 @@ body {
 .sc-form .sc-field-float input:focus + label {
   color: var(--sc-primary);
 }
+.sc-lang {
+  position: relative;
+}
+
+.sc-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-ink-2);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sc-lang-menu {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  min-width: 160px;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: 14px;
+  box-shadow: var(--sc-shadow-card);
+  padding: 6px;
+  z-index: 60;
+}
+
+.sc-lang-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  color: var(--sc-ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sc-lang-menu button:hover { background: var(--sc-option-hover); }
+.sc-lang-menu button.active { color: var(--sc-primary); font-weight: 700; }
+

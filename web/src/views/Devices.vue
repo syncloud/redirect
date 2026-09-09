@@ -1,13 +1,13 @@
 <template>
   <div class="sc-page">
     <div id="has_domains" :class="{ invisible: !hasDomains }">
-      <h1 class="sc-h1">Devices</h1>
-      <p class="sc-lead">Your activated Syncloud devices and how much of your plan you are using.</p>
+      <h1 class="sc-h1">{{ $t('devices.title') }}</h1>
+      <p class="sc-lead">{{ $t('devices.lead') }}</p>
 
       <div class="sc-card sc-usage" data-testid="relay-usage">
         <div class="sc-usage-row" data-testid="usage-traffic">
           <div class="sc-usage-head">
-            <span class="sc-usage-name">Device access</span>
+            <span class="sc-usage-name">{{ $t('devices.deviceAccess') }}</span>
             <span class="sc-usage-value" data-testid="relay-usage-text">{{ relayText }}</span>
           </div>
           <div v-if="relayEnabled" class="sc-meter">
@@ -19,14 +19,13 @@
             ></div>
           </div>
           <p v-else class="sc-usage-off" data-testid="usage-traffic-off">
-            Your device is reached directly, with no traffic limit. Turn the relay on if your
-            connection has no public address.
+            {{ $t('devices.trafficOff') }}
           </p>
         </div>
 
         <div class="sc-usage-row" data-testid="usage-email">
           <div class="sc-usage-head">
-            <span class="sc-usage-name">Email sending</span>
+            <span class="sc-usage-name">{{ $t('devices.emailSending') }}</span>
             <span class="sc-usage-value" data-testid="usage-email-text">{{ emailText }}</span>
           </div>
           <div v-if="emailEnabled" class="sc-meter">
@@ -38,13 +37,12 @@
             ></div>
           </div>
           <p v-else class="sc-usage-off" data-testid="usage-email-off">
-            Your device sends email directly, with no limit. Turn the relay on if providers
-            reject mail from your address.
+            {{ $t('devices.emailOff') }}
           </p>
         </div>
 
         <router-link v-if="nearLimit" to="/account" data-testid="relay-upgrade" class="sc-usage-upgrade">
-          Approaching your limit &mdash; upgrade for more
+          {{ $t('devices.upgrade') }}
         </router-link>
       </div>
 
@@ -63,47 +61,47 @@
               id="delete"
               data-testid="device-delete"
               @click="domainDeleteConfirm(domain.name)"
-            >Deactivate</button>
+            >{{ $t('devices.deactivate') }}</button>
           </div>
 
           <dl class="sc-kv">
-            <dt>Domain address</dt>
+            <dt>{{ $t('devices.domainAddress') }}</dt>
             <dd>
               <a v-if="domain.has_domain_address" :href="domain.domain_address">{{ domain.domain_address }}</a>
-              <span v-else class="sc-kv-empty">Not mapped</span>
+              <span v-else class="sc-kv-empty">{{ $t('devices.notMapped') }}</span>
             </dd>
 
-            <dt>External address</dt>
+            <dt>{{ $t('devices.externalAddress') }}</dt>
             <dd>
               <a id="external_address" v-if="domain.has_external_address" :href="domain.external_address">{{ domain.external_address }}</a>
-              <span v-else class="sc-kv-empty">Not provided</span>
+              <span v-else class="sc-kv-empty">{{ $t('devices.notProvided') }}</span>
             </dd>
 
-            <dt>Internal address</dt>
+            <dt>{{ $t('devices.internalAddress') }}</dt>
             <dd>
               <a id="internal_address" v-if="domain.has_internal_address" :href="domain.internal_address">{{ domain.internal_address }}</a>
-              <span v-else class="sc-kv-empty">Not provided</span>
+              <span v-else class="sc-kv-empty">{{ $t('devices.notProvided') }}</span>
             </dd>
 
-            <dt>IPv6 address</dt>
+            <dt>{{ $t('devices.ipv6Address') }}</dt>
             <dd>
               <a id="ipv6_address" v-if="domain.has_ipv6_address" :href="domain.ipv6_address">{{ domain.ipv6_address }}</a>
-              <span id="ipv6_address_not_available" v-else class="sc-kv-empty">Not provided</span>
+              <span id="ipv6_address_not_available" v-else class="sc-kv-empty">{{ $t('devices.notProvided') }}</span>
             </dd>
 
             <template v-if="domain.name_servers">
-              <dt>Name servers</dt>
+              <dt>{{ $t('devices.nameServers') }}</dt>
               <dd>
-                <span v-if="domain.ns_check_state === 'matched'" class="sc-tag ok" data-testid="ns-status-matched">Matched</span>
-                <span v-if="domain.ns_check_state === 'mismatched'" class="sc-tag bad" data-testid="ns-status-mismatched">Not set at registrar</span>
-                <span v-if="domain.ns_check_state === 'checking'" class="sc-tag" data-testid="ns-status-checking">Checking...</span>
+                <span v-if="domain.ns_check_state === 'matched'" class="sc-tag ok" data-testid="ns-status-matched">{{ $t('devices.nsMatched') }}</span>
+                <span v-if="domain.ns_check_state === 'mismatched'" class="sc-tag bad" data-testid="ns-status-mismatched">{{ $t('devices.nsMismatched') }}</span>
+                <span v-if="domain.ns_check_state === 'checking'" class="sc-tag" data-testid="ns-status-checking">{{ $t('devices.nsChecking') }}</span>
                 <button
                   type="button"
                   class="sc-btn-quiet sc-btn-small"
                   data-testid="ns-revalidate"
                   :disabled="domain.ns_check_state === 'checking'"
                   @click="checkNameServers(domain)"
-                >Revalidate</button>
+                >{{ $t('devices.revalidate') }}</button>
                 <div v-for="(name_server, i) in domain.name_servers" :key="i">
                   <code>{{ name_server }}</code>
                 </div>
@@ -111,13 +109,13 @@
                   v-if="domain.ns_check_state === 'mismatched' && domain.ns_check_actual && domain.ns_check_actual.length > 0"
                   class="sc-kv-note"
                 >
-                  Currently set at registrar:
+                  {{ $t('devices.currentlyAtRegistrar') }}
                   <div v-for="(ns, i) in domain.ns_check_actual" :key="i"><code>{{ ns }}</code></div>
                 </div>
               </dd>
             </template>
 
-            <dt>Updated</dt>
+            <dt>{{ $t('devices.updated') }}</dt>
             <dd>{{ domain.nice_last_update }}</dd>
           </dl>
         </div>
@@ -126,18 +124,17 @@
 
     <div id="no_domains" data-testid="no-devices" :class="{ invisible: hasDomains }">
       <div class="sc-card sc-empty">
-        <h1 class="sc-h1">No devices yet</h1>
+        <h1 class="sc-h1">{{ $t('devices.noDevicesTitle') }}</h1>
         <p class="sc-lead" data-testid="no-devices-steps">
-          Your account is ready. Next, install Syncloud on your own hardware and
-          activate it with this account.
+          {{ $t('devices.noDevicesLead') }}
         </p>
         <ol data-testid="no-devices-list">
-          <li>Use a Raspberry Pi, an old PC, or a ready-made device</li>
-          <li>Write the Syncloud image to it and connect it to your router</li>
-          <li>Open the device in your browser and activate it with this account</li>
+          <li>{{ $t('devices.step1') }}</li>
+          <li>{{ $t('devices.step2') }}</li>
+          <li>{{ $t('devices.step3') }}</li>
         </ol>
         <a class="sc-btn sc-btn-inline" href="https://syncloud.org/setup" data-testid="no-devices-setup">
-          How to set up your device
+          {{ $t('devices.setupLink') }}
         </a>
       </div>
     </div>
@@ -150,10 +147,10 @@
     @confirm="domainDelete"
   >
     <template v-slot:title>
-      Deactivate {{ domainToDelete }}
+      {{ $t('devices.deactivateTitle', { name: domainToDelete }) }}
     </template>
     <template v-slot:text>
-      Device will be unlinked from the domain.<br>Domain will be released and might be taken by other user.<br>Proceed with caution!
+      {{ $t('devices.deleteWarn1') }}<br>{{ $t('devices.deleteWarn2') }}<br>{{ $t('devices.deleteWarn3') }}
     </template>
   </CustomDialog>
 </template>
@@ -274,9 +271,9 @@ export default {
     },
     emailText () {
       if (!this.emailEnabled) {
-        return 'Relay off'
+        return this.$t('devices.relayOff')
       }
-      return this.emailUsed + ' of ' + this.emailLimit + ' emails this month'
+      return this.$t('devices.emailUsage', { used: this.emailUsed, limit: this.emailLimit })
     },
     nearLimit () {
       return (this.relayEnabled && this.relayPercent >= 80) ||
@@ -299,9 +296,9 @@ export default {
     },
     relayText () {
       if (!this.relayEnabled) {
-        return 'Relay off'
+        return this.$t('devices.relayOff')
       }
-      return gb(this.relayUsed) + ' of ' + gb(this.relayLimit) + ' this month'
+      return this.$t('devices.relayUsage', { used: gb(this.relayUsed), limit: gb(this.relayLimit) })
     }
   },
   methods: {

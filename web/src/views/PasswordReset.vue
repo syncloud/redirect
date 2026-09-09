@@ -3,21 +3,21 @@
     <div class="sc-auth-wordmark">SYNCLOUD</div>
     <form class="sc-auth-card" data-testid="reset-form">
       <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
-      <h2 class="sc-auth-title" data-testid="reset-heading">Reset password</h2>
+      <h2 class="sc-auth-title" data-testid="reset-heading">{{ $t('passwordReset.heading') }}</h2>
 
       <div id="errors_placeholder" v-if="error !== ''">
         <div class="sc-alert">{{ error }}</div>
       </div>
 
       <div class="sc-field" v-if="error === ''">
-        <label for="password">New password</label>
+        <label for="password">{{ $t('passwordReset.password') }}</label>
         <input id="password" data-testid="reset-password" type="password" required="" v-model="password">
       </div>
 
-      <button id="reset" data-testid="reset-submit" class="sc-btn" v-if="error === ''" @click="reset">Reset password</button>
+      <button id="reset" data-testid="reset-submit" class="sc-btn" v-if="error === ''" @click="reset">{{ $t('passwordReset.submit') }}</button>
 
       <div class="sc-auth-links">
-        <router-link to="/login" data-testid="reset-login">Back to log in</router-link>
+        <router-link to="/login" data-testid="reset-login">{{ $t('passwordReset.backToLogin') }}</router-link>
       </div>
     </form>
   </div>
@@ -42,7 +42,7 @@ export default {
     getToken: function () {
       const token = this.$route.query.token
       if (token === undefined) {
-        this.error = 'No token found'
+        this.error = this.$t('passwordReset.noToken')
       }
       this.token = token
     },

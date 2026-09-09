@@ -3,7 +3,7 @@
     <div class="sc-auth-wordmark">SYNCLOUD</div>
     <form class="sc-auth-card" data-testid="login-form" @submit="login">
       <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
-      <h2 class="sc-auth-title" data-testid="login-heading">Log in</h2>
+      <h2 class="sc-auth-title" data-testid="login-heading">{{ $t('login.heading') }}</h2>
 
       <div id="errors_placeholder">
         <div class="sc-alert" id="error" :class="{ invisible: !isError }">{{ error }}</div>
@@ -11,21 +11,21 @@
 
       <div id="group-email" class="sc-field sc-field-float">
         <input id="email" data-testid="login-email" type="text" placeholder=" " required="" v-model="email">
-        <label for="email">Email</label>
+        <label for="email">{{ $t('login.email') }}</label>
         <span id="help-email" class="sc-help">{{ emailError }}</span>
       </div>
 
       <div id="group-password" class="sc-field sc-field-float">
         <input id="password" data-testid="login-password" type="password" placeholder=" " required="" v-model="password">
-        <label for="password">Password</label>
+        <label for="password">{{ $t('login.password') }}</label>
         <span id="help-password" class="sc-help">{{ passwordError }}</span>
       </div>
 
-      <button id="submit" data-testid="login-submit" class="sc-btn">Log in</button>
+      <button id="submit" data-testid="login-submit" class="sc-btn">{{ $t('login.submit') }}</button>
 
       <div class="sc-auth-links">
-        <router-link to="/forgot" id="forgot" data-testid="login-forgot">Forgot your password?</router-link>
-        <router-link to="/register" id="register" data-testid="login-register">Create an account</router-link>
+        <router-link to="/forgot" id="forgot" data-testid="login-forgot">{{ $t('login.forgot') }}</router-link>
+        <router-link to="/register" id="register" data-testid="login-register">{{ $t('login.register') }}</router-link>
       </div>
     </form>
   </div>

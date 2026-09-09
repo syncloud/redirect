@@ -24,14 +24,14 @@
           data-testid="nav-devices"
           :class="{ active: activeTab === '/' }"
           @click="open = false"
-        >Devices</router-link>
+        >{{ $t('menu.devices') }}</router-link>
         <router-link
           id="shop"
           to="/shop"
           data-testid="nav-shop"
           :class="{ active: activeTab === '/shop' }"
           @click="open = false"
-        >Shop</router-link>
+        >{{ $t('menu.shop') }}</router-link>
         <router-link
           v-if="loggedIn"
           id="orders"
@@ -39,7 +39,7 @@
           data-testid="nav-orders"
           :class="{ active: activeTab === '/orders' }"
           @click="open = false"
-        >Orders</router-link>
+        >{{ $t('menu.orders') }}</router-link>
         <router-link
           v-if="loggedIn && admin"
           id="admin-orders"
@@ -47,7 +47,7 @@
           data-testid="nav-admin-orders"
           :class="{ active: activeTab === '/admin/orders' }"
           @click="open = false"
-        >All orders</router-link>
+        >{{ $t('menu.allOrders') }}</router-link>
         <router-link
           v-if="loggedIn"
           id="account"
@@ -55,7 +55,7 @@
           data-testid="nav-account"
           :class="{ active: activeTab === '/account' }"
           @click="open = false"
-        >Account</router-link>
+        >{{ $t('menu.account') }}</router-link>
         <span v-if="loggedIn" class="sc-nav-email" data-testid="menu-email">{{ email }}</span>
         <router-link
           v-if="loggedIn === false"
@@ -64,17 +64,18 @@
           data-testid="nav-login"
           :class="{ active: activeTab === '/login' }"
           @click="open = false"
-        >Log in</router-link>
+        >{{ $t('menu.login') }}</router-link>
         <button
           v-if="loggedIn"
           id="logout"
           class="sc-nav-action"
           data-testid="nav-logout"
           @click="logout"
-        >Log out</button>
+        >{{ $t('menu.logout') }}</button>
       </nav>
 
       <div class="sc-header-actions">
+        <LanguageSwitcher/>
         <ThemeToggle/>
       </div>
     </div>
@@ -84,10 +85,11 @@
 <script>
 import axios from 'axios'
 import ThemeToggle from './ThemeToggle.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 
 export default {
   name: 'CustomMenu',
-  components: { ThemeToggle },
+  components: { ThemeToggle, LanguageSwitcher },
   props: {
     activeTab: String,
     email: String,

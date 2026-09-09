@@ -1,26 +1,25 @@
 <template>
   <div class="sc-page">
-    <h1 class="sc-h1">Orders</h1>
+    <h1 class="sc-h1">{{ $t('orders.title') }}</h1>
 
-    <div v-if="loading" class="sc-card" data-testid="orders-loading">Loading your orders.</div>
+    <div v-if="loading" class="sc-card" data-testid="orders-loading">{{ $t('orders.loading') }}</div>
 
     <template v-else>
       <div v-if="mine.length === 0 && unfinished.length === 0" class="sc-card" data-testid="orders-empty">
-        <p>You have not ordered anything yet.</p>
-        <router-link class="sc-btn" to="/shop" data-testid="orders-shop-link">Visit the shop</router-link>
+        <p>{{ $t('orders.empty') }}</p>
+        <router-link class="sc-btn" to="/shop" data-testid="orders-shop-link">{{ $t('orders.visitShop') }}</router-link>
       </div>
 
       <template v-if="unfinished.length > 0">
         <p class="unfinished-note" data-testid="orders-unfinished">
-          You started {{ unfinished.length === 1 ? 'an order' : 'these orders' }} but never
-          finished paying. Nothing has been charged. Tap to pick it up where you left off.
+          {{ $t('orders.unfinishedNote', { what: unfinished.length === 1 ? $t('orders.unfinishedOne') : $t('orders.unfinishedMany') }) }}
         </p>
         <OrderCard
           v-for="order in unfinished"
           :key="`unfinished-${order.number}`"
           :order="order"
           :to="`/shop?order=${order.number}`"
-          badge="Not paid"
+          :badge="$t('orders.notPaid')"
           :data-testid="`order-finish-${order.number}`"
         />
       </template>
@@ -72,7 +71,7 @@ export default {
       }
       this.error = error.response && error.response.data && error.response.data.message
         ? error.response.data.message
-        : 'Something went wrong.'
+        : this.$t('orders.somethingWentWrong')
     }
   }
 }
