@@ -578,6 +578,10 @@ func (w *Www) PlanSwitch(_ http.ResponseWriter, _ *http.Request, user model.User
 	}
 	if err != nil {
 		w.logger.Error("unable to switch subscription", zap.Error(err))
+		var serviceErr *model.ServiceError
+		if errors.As(err, &serviceErr) {
+			return nil, serviceErr
+		}
 		return nil, errors.New("invalid request")
 	}
 	return model.SwitchResponse{Url: url}, nil

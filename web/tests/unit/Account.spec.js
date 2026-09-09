@@ -354,6 +354,20 @@ test('Switch to annual redirects to the approval url', async () => {
   wrapper.unmount()
 })
 
+test('Switch to annual shows the provider message on failure', async () => {
+  const { mock } = mountSubscribed({ current_period: 'month', current_tier: 'pro' })
+  mock.onPost('/api/plan/switch').reply(422, { message: 'Payment for the subscription is in progress.' })
+
+  const wrapper = mount(Account, subscribedStubs)
+  await flushPromises()
+  await wrapper.find('#switch_annual').trigger('click')
+  await wrapper.find('#switch_confirmation').trigger('confirm')
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="switch-error"]').text()).toBe('Payment for the subscription is in progress.')
+  wrapper.unmount()
+})
+
 test('Stripe Checkout', async () => {
   const mock = new MockAdapter(axios)
   mock.onGet('/api/user').reply(200,
