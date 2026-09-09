@@ -55,13 +55,6 @@
 
           <div class="sc-device-title-row">
             <h3 id="title" class="sc-device-title" data-testid="device-title">{{ domain.device_title }}</h3>
-            <button
-              type="button"
-              class="sc-btn-quiet"
-              id="delete"
-              data-testid="device-delete"
-              @click="domainDeleteConfirm(domain.name)"
-            >{{ $t('devices.deactivate') }}</button>
           </div>
 
           <dl class="sc-kv">
@@ -90,8 +83,8 @@
             </dd>
 
             <template v-if="domain.name_servers">
-              <dt>{{ $t('devices.nameServers') }}</dt>
-              <dd>
+              <dt class="sc-kv-block">{{ $t('devices.nameServers') }}</dt>
+              <dd class="sc-kv-block">
                 <span v-if="domain.ns_check_state === 'matched'" class="sc-tag ok" data-testid="ns-status-matched">{{ $t('devices.nsMatched') }}</span>
                 <span v-if="domain.ns_check_state === 'mismatched'" class="sc-tag bad" data-testid="ns-status-mismatched">{{ $t('devices.nsMismatched') }}</span>
                 <span v-if="domain.ns_check_state === 'checking'" class="sc-tag" data-testid="ns-status-checking">{{ $t('devices.nsChecking') }}</span>
@@ -118,6 +111,16 @@
             <dt>{{ $t('devices.updated') }}</dt>
             <dd>{{ domain.nice_last_update }}</dd>
           </dl>
+
+          <div class="sc-device-foot">
+            <button
+              type="button"
+              class="sc-btn-quiet"
+              id="delete"
+              data-testid="device-delete"
+              @click="domainDeleteConfirm(domain.name)"
+            >{{ $t('devices.deactivate') }}</button>
+          </div>
         </div>
       </div>
     </div>
@@ -334,11 +337,7 @@ export default {
             let group = []
             const groups = []
             domains.forEach(domain => {
-              const converted = convert(domain)
-              group.push(converted)
-              if (converted.name_servers) {
-                this.checkNameServers(converted)
-              }
+              group.push(convert(domain))
               if (group.length === 2) {
                 groups.push(group)
                 group = []
@@ -348,6 +347,11 @@ export default {
               groups.push(group)
             }
             this.domainGroups = groups
+            this.allDomains.forEach(domain => {
+              if (domain.name_servers) {
+                this.checkNameServers(domain)
+              }
+            })
           } else {
             this.hasDomains = false
           }

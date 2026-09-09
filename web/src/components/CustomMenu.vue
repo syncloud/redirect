@@ -3,20 +3,10 @@
     <div class="sc-header-inner">
       <router-link class="sc-logo" :to="loggedIn ? '/' : '/shop'" data-testid="menu-brand">
         <img class="sc-logo-img" src="/logo.svg" alt="">
-        <span class="sc-logo-name">SYNCLOUD</span>
+        <span class="sc-logo-name">Syncloud</span>
       </router-link>
 
-      <button
-        class="sc-burger"
-        type="button"
-        aria-label="menu"
-        data-testid="menu-burger"
-        @click="open = !open"
-      >
-        <span></span><span></span><span></span>
-      </button>
-
-      <nav class="sc-nav" :class="{ open }" data-testid="menu-nav">
+      <nav class="sc-nav" :class="{ open }" data-testid="menu-nav" @click="open = false">
         <router-link
           v-if="loggedIn"
           id="devices"
@@ -77,6 +67,15 @@
       <div class="sc-header-actions">
         <LanguageSwitcher/>
         <ThemeToggle/>
+        <button
+          class="sc-burger"
+          type="button"
+          aria-label="menu"
+          data-testid="menu-burger"
+          @click.stop="open = !open"
+        >
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </div>
   </header>
