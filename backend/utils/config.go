@@ -509,6 +509,13 @@ func (config *Config) UserCleanerEnabled() bool {
 	return result
 }
 
+func (config *Config) GetPasswordTokenTtlSeconds() int64 {
+	if value, err := config.parser.GetInt64("cleaner", "password_token_ttl_seconds"); err == nil {
+		return value
+	}
+	return 3600
+}
+
 func (config *Config) mailInboundPort(key string, port int) int {
 	if value, err := config.parser.GetInt64("mail_inbound", key); err == nil {
 		return int(value)

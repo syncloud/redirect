@@ -20,12 +20,18 @@ type ActionsDb interface {
 	DeleteAction(actionId uint64) error
 }
 
-type Actions struct {
-	db ActionsDb
+type ActionsClock interface {
+	Now() time.Time
 }
 
-func NewActions(db ActionsDb) *Actions {
-	return &Actions{db: db}
+type Actions struct {
+	db               ActionsDb
+	clock            ActionsClock
+	passwordTokenTtl time.Duration
+}
+
+func NewActions(db ActionsDb, clock ActionsClock, passwordTokenTtl time.Duration) *Actions {
+	return &Actions{db: db, clock: clock, passwordTokenTtl: passwordTokenTtl}
 }
 
 func (a *Actions) GetActivateAction(token string) (*model.Action, error) {
@@ -46,6 +52,9 @@ func (a *Actions) GetPasswordAction(token string) (*model.Action, error) {
 	}
 	if action == nil {
 		return nil, model.NewServiceError("invalid password token")
+	}
+	if a.clock.Now().Sub(action.CreatedAt) > a.passwordTokenTtl {
+		return nil, model.NewServiceError("password token has expired")
 	}
 	return action, err
 }
@@ -68,7 +77,7 @@ func (a *Actions) UpsertPasswordAction(userId int64) (*model.Action, error) {
 
 func (a *Actions) upsertAction(userId int64, actionTypeId uint64) (*model.Action, error) {
 	token := utils.Uuid()
-	now := time.Now()
+	now := a.clock.Now()
 	action, err := a.db.GetAction(userId, actionTypeId)
 	if err != nil {
 		return nil, err
@@ -76,13 +85,14 @@ func (a *Actions) upsertAction(userId int64, actionTypeId uint64) (*model.Action
 	if action != nil {
 		action.Token = token
 		action.Timestamp = now
+		action.CreatedAt = now
 		err = a.db.UpdateAction(action)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		action = &model.Action{
-			ActionTypeId: actionTypeId, UserId: userId, Token: token, Timestamp: now,
+			ActionTypeId: actionTypeId, UserId: userId, Token: token, Timestamp: now, CreatedAt: now,
 		}
 		err = a.db.InsertAction(action)
 		if err != nil {

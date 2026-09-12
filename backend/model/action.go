@@ -8,6 +8,7 @@ type Action struct {
 	UserId       int64
 	Token        string
 	Timestamp    time.Time
+	CreatedAt    time.Time
 	SentAt       *time.Time
 	Attempts     int
 }
