@@ -509,11 +509,12 @@ func (m *MySql) GetAction(userId int64, actionTypeId uint64) (*model.Action, err
 			"action_type_id, "+
 			"user_id, "+
 			"token, "+
-			"timestamp "+
+			"timestamp, "+
+			"created_at "+
 			"FROM action "+
 			"WHERE user_id = ? and action_type_id = ?", userId, actionTypeId)
 	action := &model.Action{}
-	err := row.Scan(&action.Id, &action.ActionTypeId, &action.UserId, &action.Token, &action.Timestamp)
+	err := row.Scan(&action.Id, &action.ActionTypeId, &action.UserId, &action.Token, &action.Timestamp, &action.CreatedAt)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, nil
@@ -533,11 +534,12 @@ func (m *MySql) GetActionByToken(token string, actionTypeId uint64) (*model.Acti
 			"action_type_id, "+
 			"user_id, "+
 			"token, "+
-			"timestamp "+
+			"timestamp, "+
+			"created_at "+
 			"FROM action "+
 			"WHERE token = ? and action_type_id = ?", token, actionTypeId)
 	action := &model.Action{}
-	err := row.Scan(&action.Id, &action.ActionTypeId, &action.UserId, &action.Token, &action.Timestamp)
+	err := row.Scan(&action.Id, &action.ActionTypeId, &action.UserId, &action.Token, &action.Timestamp, &action.CreatedAt)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, nil
@@ -557,9 +559,10 @@ func (m *MySql) InsertAction(action *model.Action) error {
 			"user_id, " +
 			"token, " +
 			"timestamp, " +
+			"created_at, " +
 			"sent_at, " +
 			"attempts" +
-			") values (?,?,?,?,?,?)")
+			") values (?,?,?,?,?,?,?)")
 	if err != nil {
 		log.Println("unable to insert action (prepare): ", err)
 		return err
@@ -570,6 +573,7 @@ func (m *MySql) InsertAction(action *model.Action) error {
 		action.UserId,
 		action.Token,
 		action.Timestamp,
+		action.CreatedAt,
 		action.SentAt,
 		action.Attempts,
 	)
@@ -588,6 +592,7 @@ func (m *MySql) UpdateAction(action *model.Action) error {
 			"user_id = ?, " +
 			"token = ?, " +
 			"timestamp = ?, " +
+			"created_at = ?, " +
 			"sent_at = NULL, " +
 			"attempts = 0 " +
 			"WHERE id = ?")
@@ -601,6 +606,7 @@ func (m *MySql) UpdateAction(action *model.Action) error {
 		action.UserId,
 		action.Token,
 		action.Timestamp,
+		action.CreatedAt,
 		action.Id,
 	)
 	if err != nil {
@@ -680,6 +686,22 @@ func (m *MySql) DeleteAction(actionId uint64) error {
 		return fmt.Errorf("DB error")
 	}
 	return nil
+}
+
+func (m *MySql) DeleteActionsCreatedBefore(actionTypeId uint64, before time.Time) (int64, error) {
+
+	stmt, err := m.db.Prepare("DELETE FROM action WHERE action_type_id = ? AND created_at < ?")
+	if err != nil {
+		log.Println("Cannot delete expired actions (prepare): ", actionTypeId, err)
+		return 0, fmt.Errorf("DB error")
+	}
+	defer stmt.Close()
+	result, err := stmt.Exec(actionTypeId, before)
+	if err != nil {
+		log.Println("Cannot delete expired actions (exec): ", actionTypeId, err)
+		return 0, fmt.Errorf("DB error")
+	}
+	return result.RowsAffected()
 }
 
 func (m *MySql) GetCount(query string) (int64, error) {

@@ -12,6 +12,7 @@ type Database interface {
 	UpdateUser(user *model.User) error
 	DeleteUser(userId int64) error
 	DeleteActions(userId int64) error
+	DeleteActionsCreatedBefore(actionTypeId uint64, before time.Time) (int64, error)
 }
 
 type State interface {
@@ -36,13 +37,15 @@ type SubscriptionChecker interface {
 }
 
 type Cleaner struct {
-	database Database
-	state    State
-	mail     Mail
-	remover  Remover
-	checker  SubscriptionChecker
-	enabled  bool
-	logger   *zap.Logger
+	database             Database
+	state                State
+	mail                 Mail
+	remover              Remover
+	checker              SubscriptionChecker
+	passwordActionTypeId uint64
+	passwordTokenTtl     time.Duration
+	enabled              bool
+	logger               *zap.Logger
 }
 
 func NewCleaner(
@@ -51,16 +54,20 @@ func NewCleaner(
 	mail Mail,
 	remover Remover,
 	checker SubscriptionChecker,
+	passwordActionTypeId uint64,
+	passwordTokenTtl time.Duration,
 	enabled bool,
 	logger *zap.Logger) *Cleaner {
 	return &Cleaner{
-		database: database,
-		state:    state,
-		mail:     mail,
-		remover:  remover,
-		checker:  checker,
-		enabled:  enabled,
-		logger:   logger,
+		database:             database,
+		state:                state,
+		mail:                 mail,
+		remover:              remover,
+		checker:              checker,
+		passwordActionTypeId: passwordActionTypeId,
+		passwordTokenTtl:     passwordTokenTtl,
+		enabled:              enabled,
+		logger:               logger,
 	}
 }
 
@@ -72,13 +79,29 @@ func (c *Cleaner) Start() error {
 
 	go func() {
 		for {
-			err := c.Clean(time.Now())
+			now := time.Now()
+			err := c.PurgeExpiredPasswordActions(now)
+			if err != nil {
+				c.logger.Error("unable to purge expired password actions", zap.Error(err))
+			}
+			err = c.Clean(now)
 			if err != nil {
 				c.logger.Error("unable to clean users", zap.Error(err))
 			}
 			time.Sleep(60 * time.Second)
 		}
 	}()
+	return nil
+}
+
+func (c *Cleaner) PurgeExpiredPasswordActions(now time.Time) error {
+	deleted, err := c.database.DeleteActionsCreatedBefore(c.passwordActionTypeId, now.Add(-c.passwordTokenTtl))
+	if err != nil {
+		return err
+	}
+	if deleted > 0 {
+		c.logger.Info("purged expired password actions", zap.Int64("count", deleted))
+	}
 	return nil
 }
 
