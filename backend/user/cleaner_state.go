@@ -37,6 +37,10 @@ func (s *CleanerState) Get() (int64, error) {
 		return 0, err
 	}
 	userIdStr := strings.TrimSpace(string(contents))
+	if userIdStr == "" {
+		s.logger.Warn("is empty, will use 0", zap.String("file", s.file))
+		return 0, nil
+	}
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
 		return 0, err
