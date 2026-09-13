@@ -129,9 +129,19 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func(database *db.MySql) *service.Actions {
-		return service.NewActions(database)
+	err = c.Singleton(func() *clock.SystemClock {
+		return clock.New()
+	})
+	if err != nil {
+		return nil, err
+	}
 
+	err = c.Singleton(func(database *db.MySql, systemClock *clock.SystemClock, config *utils.Config) *service.Actions {
+		return service.NewActions(
+			database,
+			systemClock,
+			time.Duration(config.GetPasswordTokenTtlSeconds())*time.Second,
+		)
 	})
 	if err != nil {
 		return nil, err
@@ -433,13 +443,6 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
-	err = c.Singleton(func() *clock.SystemClock {
-		return clock.New()
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	err = c.Singleton(func(database *db.MySql, systemClock *clock.SystemClock) *outbound.UsageMetrics {
 		return outbound.NewUsageMetrics(database, systemClock, logger)
 	})
@@ -658,6 +661,8 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mailService,
 			domains,
 			router,
+			service.ActionPassword,
+			time.Duration(config.GetPasswordTokenTtlSeconds())*time.Second,
 			config.UserCleanerEnabled(),
 			logger,
 		)
