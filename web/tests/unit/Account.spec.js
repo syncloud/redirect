@@ -291,7 +291,7 @@ function mountSubscribed (planData) {
   return { mock }
 }
 
-const subscribedStubs = {
+const mountOptions = {
   attachTo: document.body,
   props: { checkUserSession: jest.fn() },
   global: {
@@ -315,7 +315,7 @@ const subscribedStubs = {
 
 test('Max monthly subscriber sees max price and switch option', async () => {
   mountSubscribed({ current_period: 'month', current_tier: 'max' })
-  const wrapper = mount(Account, subscribedStubs)
+  const wrapper = mount(Account, mountOptions)
   await flushPromises()
   expect(wrapper.find('[data-testid="billing-current"]').text()).toBe('£15 / month')
   expect(wrapper.find('[data-testid="switch-annual"]').exists()).toBe(true)
@@ -324,7 +324,7 @@ test('Max monthly subscriber sees max price and switch option', async () => {
 
 test('Max annual subscriber sees max annual price and no switch option', async () => {
   mountSubscribed({ current_period: 'year', current_tier: 'max' })
-  const wrapper = mount(Account, subscribedStubs)
+  const wrapper = mount(Account, mountOptions)
   await flushPromises()
   expect(wrapper.find('[data-testid="billing-current"]').text()).toBe('£180 / year')
   expect(wrapper.find('[data-testid="switch-annual"]').exists()).toBe(false)
@@ -341,7 +341,7 @@ test('Switch to annual redirects to the approval url', async () => {
   const originalLocation = window.location
   Object.defineProperty(window, 'location', { configurable: true, writable: true, value: { href: '' } })
 
-  const wrapper = mount(Account, subscribedStubs)
+  const wrapper = mount(Account, mountOptions)
   await flushPromises()
   await wrapper.find('#switch_annual').trigger('click')
   await wrapper.find('#switch_confirmation').trigger('confirm')
@@ -358,13 +358,70 @@ test('Switch to annual shows the provider message on failure', async () => {
   const { mock } = mountSubscribed({ current_period: 'month', current_tier: 'pro' })
   mock.onPost('/api/plan/switch').reply(422, { message: 'Payment for the subscription is in progress.' })
 
-  const wrapper = mount(Account, subscribedStubs)
+  const wrapper = mount(Account, mountOptions)
   await flushPromises()
   await wrapper.find('#switch_annual').trigger('click')
   await wrapper.find('#switch_confirmation').trigger('confirm')
   await flushPromises()
 
   expect(wrapper.find('[data-testid="switch-error"]').text()).toBe('Payment for the subscription is in progress.')
+  wrapper.unmount()
+})
+
+function mountUnsubscribed () {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/user').reply(200, {
+    data: {
+      active: true,
+      email: 'test@example.com',
+      notification_enabled: true,
+      update_token: '0a'
+    }
+  })
+  mock.onGet('/api/plan').reply(200, { data: { plan_id: '1', client_id: '2' } })
+  return { mock }
+}
+
+function atDate (iso) {
+  jest.spyOn(Date, 'now').mockReturnValue(new Date(iso).getTime())
+}
+
+afterEach(() => {
+  jest.restoreAllMocks()
+})
+
+test('Price change notice is shown before the change date', async () => {
+  atDate('2026-10-14T23:00:00Z')
+  mountUnsubscribed()
+  const wrapper = mount(Account, mountOptions)
+  await flushPromises()
+
+  const notice = wrapper.find('[data-testid="price-change-notice"]')
+  expect(notice.exists()).toBe(true)
+  expect(notice.text()).toContain('£7 / month')
+  expect(notice.text()).toContain('£70 / year')
+  expect(notice.text()).toContain('15 October 2026')
+  wrapper.unmount()
+})
+
+test('Price change notice is gone on the change date', async () => {
+  atDate('2026-10-15T00:00:00Z')
+  mountUnsubscribed()
+  const wrapper = mount(Account, mountOptions)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="price-change-notice"]').exists()).toBe(false)
+  wrapper.unmount()
+})
+
+test('Price change notice is not shown to an active subscriber', async () => {
+  atDate('2026-10-01T00:00:00Z')
+  mountSubscribed({ current_period: 'month', current_tier: 'pro' })
+  const wrapper = mount(Account, mountOptions)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="billing-current"]').text()).toBe('£5 / month')
+  expect(wrapper.find('[data-testid="price-change-notice"]').exists()).toBe(false)
   wrapper.unmount()
 })
 

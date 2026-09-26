@@ -4,7 +4,7 @@
     <form class="sc-auth-card" data-testid="register-form" @submit="register">
       <img class="sc-auth-logo" src="/logo.svg" alt="Syncloud">
       <h2 class="sc-auth-title" data-testid="register-heading">{{ $t('register.heading') }}</h2>
-      <p class="sc-auth-sub">{{ $t('register.subtitle') }}</p>
+      <p class="sc-auth-sub" data-testid="register-subtitle">{{ $t('register.subtitle', { price: monthlyPrice }) }}</p>
 
       <div id="errors_placeholder">
         <div class="sc-alert" :class="{ invisible: !isError }">{{ error }}</div>
@@ -40,6 +40,7 @@
 <script>
 import axios from 'axios'
 import { storedGclid } from '../attribution'
+import { proMonthlyAmount } from '../data/pricing'
 
 function showError (component, error) {
   if ('parameters_messages' in error) {
@@ -74,6 +75,11 @@ export default {
       passwordError: '',
       error: '',
       isError: false
+    }
+  },
+  computed: {
+    monthlyPrice: function () {
+      return proMonthlyAmount()
     }
   },
   methods: {

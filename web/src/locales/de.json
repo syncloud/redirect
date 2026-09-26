@@ -14,6 +14,7 @@
     "emailSupport": "E-Mail-Support",
     "billing": "Abrechnung:",
     "switchToAnnual": "Zu jährlich wechseln",
+    "priceChangeNotice": "Ab dem {date} kostet der Pro-Tarif {monthly} oder {annual}. Wenn Sie vorher abonnieren, zahlen Sie bis zur nächsten Verlängerung den aktuellen Preis.",
     "billingLabel": "Abrechnung",
     "monthly": "Monatlich",
     "annual": "Jährlich",
@@ -211,7 +212,7 @@
   },
   "register": {
     "heading": "Erstellen Sie Ihr Konto",
-    "subtitle": "Erster Monat kostenlos, danach £5 pro Monat. Jederzeit kündbar.",
+    "subtitle": "Erster Monat kostenlos, danach {price} pro Monat. Jederzeit kündbar.",
     "email": "E-Mail",
     "password": "Passwort",
     "submit": "Konto erstellen",

@@ -14,6 +14,7 @@
     "emailSupport": "邮件支持",
     "billing": "计费：",
     "switchToAnnual": "切换为年付",
+    "priceChangeNotice": "自 {date} 起，Pro 方案为 {monthly} 或 {annual}。在此之前订阅，可按当前价格计费至下次续订。",
     "billingLabel": "计费",
     "monthly": "月付",
     "annual": "年付",
@@ -211,7 +212,7 @@
   },
   "register": {
     "heading": "创建您的账户",
-    "subtitle": "首月免费，之后每月 £5。可随时取消。",
+    "subtitle": "首月免费，之后每月 {price}。可随时取消。",
     "email": "邮箱",
     "password": "密码",
     "submit": "创建账户",
