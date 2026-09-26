@@ -14,6 +14,7 @@
     "emailSupport": "Email support",
     "billing": "Billing:",
     "switchToAnnual": "Switch to annual",
+    "priceChangeNotice": "From {date} the Pro plan is {monthly} or {annual}. If you subscribe before then, you pay the current price until your next renewal.",
     "billingLabel": "Billing",
     "monthly": "Monthly",
     "annual": "Annual",
@@ -211,7 +212,7 @@
   },
   "register": {
     "heading": "Create your account",
-    "subtitle": "First month free, then £5 a month. Cancel anytime.",
+    "subtitle": "First month free, then {price} a month. Cancel anytime.",
     "email": "Email",
     "password": "Password",
     "submit": "Create account",

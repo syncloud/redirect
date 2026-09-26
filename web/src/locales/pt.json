@@ -14,6 +14,7 @@
     "emailSupport": "Suporte por e-mail",
     "billing": "Faturamento:",
     "switchToAnnual": "Mudar para anual",
+    "priceChangeNotice": "A partir de {date}, o plano Pro custa {monthly} ou {annual}. Se você assinar antes dessa data, pagará o preço atual até a próxima renovação.",
     "billingLabel": "Faturamento",
     "monthly": "Mensal",
     "annual": "Anual",
@@ -211,7 +212,7 @@
   },
   "register": {
     "heading": "Crie sua conta",
-    "subtitle": "Primeiro mês grátis, depois £5 por mês. Cancele quando quiser.",
+    "subtitle": "Primeiro mês grátis, depois {price} por mês. Cancele quando quiser.",
     "email": "E-mail",
     "password": "Senha",
     "submit": "Criar conta",

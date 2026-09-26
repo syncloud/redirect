@@ -19,6 +19,8 @@ test('user can toggle notifications, subscribe with crypto, and cancel subscript
   await page.locator('#crypto_transaction_id').fill('12345678901')
   await page.locator('#crypto_subscribe_btn').click()
   await expect(page.locator('#subscription_active')).toBeVisible()
+  await expect(page.getByTestId('price-change-notice'),
+    'an active subscriber must not see the price change notice').toHaveCount(0)
 
   await page.locator('#cancel').click()
   await page.getByTestId('dialog-confirm').click()

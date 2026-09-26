@@ -14,6 +14,7 @@
     "emailSupport": "メールサポート",
     "billing": "お支払い:",
     "switchToAnnual": "年払いに切り替える",
+    "priceChangeNotice": "{date}から Pro プランは {monthly} または {annual} になります。それまでに登録すると、次回の更新まで現在の価格が適用されます。",
     "billingLabel": "お支払い",
     "monthly": "月払い",
     "annual": "年払い",
@@ -211,7 +212,7 @@
   },
   "register": {
     "heading": "アカウントを作成",
-    "subtitle": "最初の1か月は無料、その後は月額£5。いつでもキャンセルできます。",
+    "subtitle": "最初の1か月は無料、その後は月額{price}。いつでもキャンセルできます。",
     "email": "メールアドレス",
     "password": "パスワード",
     "submit": "アカウントを作成",

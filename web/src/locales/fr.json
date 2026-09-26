@@ -14,6 +14,7 @@
     "emailSupport": "Assistance par e-mail",
     "billing": "Facturation :",
     "switchToAnnual": "Passer à l'annuel",
+    "priceChangeNotice": "À partir du {date}, l'offre Pro passe à {monthly} ou {annual}. Si vous vous abonnez avant cette date, vous payez le prix actuel jusqu'à votre prochain renouvellement.",
     "billingLabel": "Facturation",
     "monthly": "Mensuel",
     "annual": "Annuel",
@@ -211,7 +212,7 @@
   },
   "register": {
     "heading": "Créez votre compte",
-    "subtitle": "Premier mois gratuit, puis £5 par mois. Annulez à tout moment.",
+    "subtitle": "Premier mois gratuit, puis {price} par mois. Annulez à tout moment.",
     "email": "E-mail",
     "password": "Mot de passe",
     "submit": "Créer un compte",

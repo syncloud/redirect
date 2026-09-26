@@ -56,6 +56,16 @@
             </div>
 
             <div v-show="userLoaded && subscriptionId === undefined">
+              <div
+                v-if="priceChangeNoticeVisible"
+                class="price-change-notice"
+                data-testid="price-change-notice"
+              >{{ $t('account.priceChangeNotice', {
+                date: priceChangeDate,
+                monthly: proPriceFromPriceChangeDate.month,
+                annual: proPriceFromPriceChangeDate.year
+              }) }}</div>
+
               <div class="pay-section-label">{{ $t('account.billingLabel') }}</div>
               <el-radio-group v-if="userLoaded" v-model="period" size="large">
                 <el-radio-button label="month" data-testid="billing-month">{{ $t('account.monthly') }}</el-radio-button>
@@ -291,6 +301,13 @@ import CustomDialog from '../components/CustomDialog.vue'
 import { loadScript } from '@paypal/paypal-js'
 import { CircleCheck, CopyDocument, Check, Close, Delete, CreditCard } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
+import i18n from '../i18n'
+import {
+  TIER_PRICES,
+  TIER_PRICES_FROM_PRICE_CHANGE_DATE,
+  priceChangeDateText,
+  priceChangePending
+} from '../data/pricing'
 
 export default {
   name: 'Account',
@@ -308,10 +325,7 @@ export default {
       subscriptionId: String,
       subscriptionPeriod: '',
       subscriptionTier: '',
-      tierPrices: {
-        pro: { month: '£5 / month', year: '£60 / year' },
-        max: { month: '£15 / month', year: '£180 / year' }
-      },
+      tierPrices: TIER_PRICES,
       domainGroups: Array,
       planMonthlyId: String,
       planAnnualId: String,
@@ -362,11 +376,23 @@ export default {
     maxEnabled: function () {
       return this.stripeMaxEnabled || this.paypalMaxEnabled
     },
+    periodKey: function () {
+      return this.period === 'year' ? 'year' : 'month'
+    },
     proPrice: function () {
-      return this.period === 'year' ? '£60 / year' : '£5 / month'
+      return TIER_PRICES.pro[this.periodKey]
     },
     maxPrice: function () {
-      return this.period === 'year' ? '£180 / year' : '£15 / month'
+      return TIER_PRICES.max[this.periodKey]
+    },
+    priceChangeNoticeVisible: function () {
+      return this.userLoaded && this.subscriptionId === undefined && priceChangePending()
+    },
+    priceChangeDate: function () {
+      return priceChangeDateText(i18n.global.locale.value)
+    },
+    proPriceFromPriceChangeDate: function () {
+      return TIER_PRICES_FROM_PRICE_CHANGE_DATE.pro
     },
     currentTierKey: function () {
       return this.subscriptionTier === 'max' ? 'max' : 'pro'
@@ -606,6 +632,16 @@ export default {
 }
 .danger-card {
   --el-card-border-color: var(--el-color-danger);
+}
+.price-change-notice {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-inline-start: 3px solid var(--el-color-primary);
+  border-radius: 4px;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+  line-height: 1.6;
 }
 .pay-section-label {
   font-weight: 600;
