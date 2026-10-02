@@ -320,6 +320,14 @@ func (config *Config) Domain() string {
 	return value
 }
 
+func (config *Config) SiteDomain() string {
+	value, err := config.parser.Get("redirect", "site_domain")
+	if err != nil {
+		log.Fatalln("Cannot read config: ", err)
+	}
+	return value
+}
+
 func (config *Config) SmtpHost() string {
 	value, err := config.parser.Get("smtp", "host")
 	if err != nil {

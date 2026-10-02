@@ -75,7 +75,8 @@ func (s *StateStub) Set(userId int64) error {
 }
 
 type MailStub struct {
-	trial        bool
+	welcome      bool
+	planReminder bool
 	lockSoon     bool
 	locked       bool
 	removed      bool
@@ -102,8 +103,13 @@ func (m *MailStub) SendAccountLocked(_ string) error {
 	return nil
 }
 
-func (m *MailStub) SendTrial(_ string) error {
-	m.trial = true
+func (m *MailStub) SendWelcome(_ string) error {
+	m.welcome = true
+	return nil
+}
+
+func (m *MailStub) SendPlanReminder(_ string) error {
+	m.planReminder = true
 	return nil
 }
 
@@ -174,7 +180,7 @@ func TestCleaner_Clean_Subscribed_Skip(t *testing.T) {
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
-	assert.False(t, mail.trial)
+	assert.False(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
 }
@@ -191,12 +197,12 @@ func TestCleaner_Clean_Locked_Skip(t *testing.T) {
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
-	assert.False(t, mail.trial)
+	assert.False(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
 }
 
-func TestCleaner_Clean_StatusCreated_SendTrial(t *testing.T) {
+func TestCleaner_Clean_StatusCreated_SendWelcome(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2, RegisteredAt: now}
 	database := &DatabaseStub{user: user}
@@ -207,13 +213,13 @@ func TestCleaner_Clean_StatusCreated_SendTrial(t *testing.T) {
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
-	assert.True(t, user.IsTrialEmailSent())
-	assert.True(t, mail.trial)
+	assert.True(t, user.IsWelcomeEmailSent())
+	assert.True(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
 }
 
-func TestCleaner_Clean_StatusCreated_SendTrial_Once(t *testing.T) {
+func TestCleaner_Clean_StatusCreated_SendWelcome_Once(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2, RegisteredAt: now}
 	database := &DatabaseStub{user: user}
@@ -224,24 +230,24 @@ func TestCleaner_Clean_StatusCreated_SendTrial_Once(t *testing.T) {
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
-	assert.True(t, user.IsTrialEmailSent())
-	assert.True(t, mail.trial)
+	assert.True(t, user.IsWelcomeEmailSent())
+	assert.True(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
 
-	mail.trial = false
+	mail.welcome = false
 	err = cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
-	assert.False(t, mail.trial)
+	assert.False(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
 }
 
-func TestCleaner_Clean_StatusTrialSent_LessThan20Days_Skip(t *testing.T) {
+func TestCleaner_Clean_StatusWelcomeSent_LessThan7Days_Skip(t *testing.T) {
 	now := time.Now()
-	user := &model.User{Id: 2, RegisteredAt: now.AddDate(0, 0, -19)}
-	user.TrialEmailSent(now)
+	user := &model.User{Id: 2, RegisteredAt: now.AddDate(0, 0, -6)}
+	user.WelcomeEmailSent(now)
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
@@ -250,16 +256,16 @@ func TestCleaner_Clean_StatusTrialSent_LessThan20Days_Skip(t *testing.T) {
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
-	assert.True(t, user.IsTrialEmailSent())
-	assert.False(t, mail.trial)
+	assert.True(t, user.IsWelcomeEmailSent())
+	assert.False(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
 }
 
-func TestCleaner_Clean_StatusTrialSent_MoreThan20Days_SendLockEmail(t *testing.T) {
+func TestCleaner_Clean_StatusWelcomeSent_MoreThan7Days_SendPlanReminder(t *testing.T) {
 	now := time.Now()
 	user := &model.User{Id: 2}
-	user.TrialEmailSent(now.AddDate(0, 0, -21))
+	user.WelcomeEmailSent(now.AddDate(0, 0, -8))
 	database := &DatabaseStub{user: user}
 	state := &StateStub{userId: 1}
 	mail := &MailStub{}
@@ -268,10 +274,55 @@ func TestCleaner_Clean_StatusTrialSent_MoreThan20Days_SendLockEmail(t *testing.T
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
+	assert.True(t, user.IsPlanEmailSent())
+	assert.True(t, mail.planReminder)
+	assert.False(t, mail.lockSoon)
+	assert.False(t, mail.locked)
+}
+
+func TestCleaner_Clean_StatusPlanSent_LessThan13Days_Skip(t *testing.T) {
+	now := time.Now()
+	user := &model.User{Id: 2}
+	user.PlanEmailSent(now.AddDate(0, 0, -12))
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	cleaner := newTestCleaner(database, state, mail, remover, &CheckerStub{})
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.True(t, user.IsPlanEmailSent())
+	assert.False(t, mail.lockSoon)
+}
+
+func TestCleaner_Clean_StatusPlanSent_MoreThan13Days_SendLockEmail(t *testing.T) {
+	now := time.Now()
+	user := &model.User{Id: 2}
+	user.PlanEmailSent(now.AddDate(0, 0, -14))
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	cleaner := newTestCleaner(database, state, mail, remover, &CheckerStub{})
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
 	assert.True(t, user.IsLockEmailSent())
-	assert.False(t, mail.trial)
 	assert.True(t, mail.lockSoon)
 	assert.False(t, mail.locked)
+}
+
+func TestCleaner_Clean_Welcome_DoesNotAlsoSendPlanReminder(t *testing.T) {
+	now := time.Now()
+	user := &model.User{Id: 2}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	cleaner := newTestCleaner(database, state, mail, remover, &CheckerStub{})
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.True(t, mail.welcome)
+	assert.False(t, mail.planReminder)
 }
 
 func TestCleaner_Clean_StatusLockSoonSent_LessThan10Days_Skip(t *testing.T) {
@@ -287,7 +338,7 @@ func TestCleaner_Clean_StatusLockSoonSent_LessThan10Days_Skip(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
 	assert.True(t, user.IsLockEmailSent())
-	assert.False(t, mail.trial)
+	assert.False(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.False(t, mail.locked)
 	assert.False(t, remover.domainsRemoved)
@@ -306,7 +357,7 @@ func TestCleaner_Clean_StatusLockSoonSent_MoreThan10Days_Lock(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), state.userId)
 	assert.True(t, user.IsLocked())
-	assert.False(t, mail.trial)
+	assert.False(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.True(t, mail.locked)
 	assert.True(t, remover.domainsRemoved)
@@ -384,7 +435,7 @@ func TestCleaner_Clean_PayPalUnsubscribe_Lock(t *testing.T) {
 	err := cleaner.Clean(now)
 	assert.NoError(t, err)
 	assert.True(t, user.IsLocked())
-	assert.False(t, mail.trial)
+	assert.False(t, mail.welcome)
 	assert.False(t, mail.lockSoon)
 	assert.True(t, mail.unsubscribed)
 	assert.True(t, remover.domainsRemoved)

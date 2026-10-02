@@ -21,7 +21,8 @@ type State interface {
 }
 
 type Mail interface {
-	SendTrial(to string) error
+	SendWelcome(to string) error
+	SendPlanReminder(to string) error
 	SendAccountLockSoon(to string) error
 	SendAccountLocked(to string) error
 	SendAccountRemoved(to string) error
@@ -155,12 +156,23 @@ func (c *Cleaner) Clean(now time.Time) error {
 
 	}
 	if user.IsStatusCreated() {
-		user.TrialEmailSent(now)
+		user.WelcomeEmailSent(now)
 		err = c.database.UpdateUser(user)
 		if err != nil {
 			return err
 		}
-		err = c.mail.SendTrial(user.Email)
+		err = c.mail.SendWelcome(user.Email)
+		if err != nil {
+			return err
+		}
+	}
+	if user.IsReadyForPlanEmail(now) {
+		user.PlanEmailSent(now)
+		err = c.database.UpdateUser(user)
+		if err != nil {
+			return err
+		}
+		err = c.mail.SendPlanReminder(user.Email)
 		if err != nil {
 			return err
 		}

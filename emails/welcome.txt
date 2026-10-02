@@ -1,0 +1,16 @@
+Subject: Welcome to Syncloud - next step is your device
+Hello,
+
+Your Syncloud account is ready. You have 30 days free. No payment is needed and no card is stored.
+
+The next step is to get a device running:
+
+https://{site_domain}/setup
+
+You can use a Raspberry Pi, a spare PC, a virtual machine, or a server you rent. Write the image, start the machine, then choose a name. That name becomes the address you reach your server on, and the HTTPS certificate is issued for you.
+
+After that you install apps from the store in one click.
+
+If you get stuck at any point, reply to this email and say where you got to. A real person reads it.
+
+Thank you for choosing Syncloud!

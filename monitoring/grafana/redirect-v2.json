@@ -18,7 +18,7 @@
   "version": 1,
   "refresh": "30s",
   "time": {
-    "from": "now-30d",
+    "from": "now-24h",
     "to": "now"
   },
   "templating": {
@@ -27,20 +27,20 @@
         "name": "env",
         "label": "env",
         "type": "custom",
-        "query": "uat,prod",
+        "query": "prod,uat",
         "current": {
-          "text": "uat",
-          "value": "uat"
+          "text": "prod",
+          "value": "prod"
         },
         "options": [
           {
-            "text": "uat",
-            "value": "uat",
+            "text": "prod",
+            "value": "prod",
             "selected": true
           },
           {
-            "text": "prod",
-            "value": "prod",
+            "text": "uat",
+            "value": "uat",
             "selected": false
           }
         ]

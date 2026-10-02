@@ -163,6 +163,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			config.MailSubjectPrefix(),
 			config.MailDeviceErrorTo(),
 			config.Domain(),
+			config.SiteDomain(),
 			logger,
 		)
 	})

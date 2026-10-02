@@ -21,7 +21,8 @@ type Mail struct {
 	planUnSubscribeTemplatePath string
 	releaseAnnouncementPath     string
 	dnsCleanPath                string
-	subscriptionTrialPath       string
+	welcomePath                 string
+	planReminderPath            string
 	accountLockSoonPath         string
 	accountLockedPath           string
 	accountRemovedPath          string
@@ -35,6 +36,7 @@ type Mail struct {
 	subjectPrefix               string
 	deviceErrorTo               string
 	mainDomain                  string
+	siteDomain                  string
 	logger                      *zap.Logger
 }
 
@@ -44,6 +46,7 @@ func NewMail(smtp *smtp.Smtp,
 	subjectPrefix string,
 	deviceErrorTo string,
 	mainDomain string,
+	siteDomain string,
 	logger *zap.Logger,
 ) *Mail {
 
@@ -57,7 +60,8 @@ func NewMail(smtp *smtp.Smtp,
 		planUnSubscribeTemplatePath: mailPath + "/plan_unsubscribe.txt",
 		releaseAnnouncementPath:     mailPath + "/release_announcement.txt",
 		dnsCleanPath:                mailPath + "/dns_clean.txt",
-		subscriptionTrialPath:       mailPath + "/subscription_trial.txt",
+		welcomePath:                 mailPath + "/welcome.txt",
+		planReminderPath:            mailPath + "/plan_reminder.txt",
 		accountLockSoonPath:         mailPath + "/account_lock_soon.txt",
 		accountLockedPath:           mailPath + "/account_locked.txt",
 		accountRemovedPath:          mailPath + "/account_removed.txt",
@@ -70,6 +74,7 @@ func NewMail(smtp *smtp.Smtp,
 		from:                        from,
 		deviceErrorTo:               deviceErrorTo,
 		mainDomain:                  mainDomain,
+		siteDomain:                  siteDomain,
 		logger:                      logger,
 	}
 }
@@ -189,9 +194,16 @@ func (m *Mail) SendDnsCleanNotification(to string, userDomain string) error {
 	}, to, m.deviceErrorTo)
 }
 
-func (m *Mail) SendTrial(to string) error {
-	return m.SendNotification(m.subscriptionTrialPath, map[string]string{
+func (m *Mail) SendWelcome(to string) error {
+	return m.SendNotification(m.welcomePath, map[string]string{
+		"site_domain": m.siteDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendPlanReminder(to string) error {
+	return m.SendNotification(m.planReminderPath, map[string]string{
 		"main_domain": m.mainDomain,
+		"site_domain": m.siteDomain,
 	}, to, m.deviceErrorTo)
 }
 

@@ -1,0 +1,18 @@
+Subject: Syncloud - 23 days left on your free trial
+Hello,
+
+You have 23 days left of your free 30 days.
+
+If your device is running, nothing changes until the trial ends. To keep it after that, the subscription is here:
+
+https://www.{main_domain}/account
+
+The subscription pays for your address, the HTTPS certificate, and reaching your server from outside without opening ports on your router. The software itself is open source and always free.
+
+If you have not got a device running yet, that is the part to do first:
+
+https://{site_domain}/setup
+
+Stuck, or decided it is not for you? Reply and tell me why. Either answer is useful.
+
+Thank you for choosing Syncloud!

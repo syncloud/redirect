@@ -3,11 +3,12 @@ package model
 import "time"
 
 const (
-	StatusCreated        int64 = 0
-	StatusTrialEmailSent int64 = 1
-	StatusLockEmailSent  int64 = 2
-	StatusLocked         int64 = 3
-	StatusSubscribed     int64 = 4
+	StatusCreated          int64 = 0
+	StatusWelcomeEmailSent int64 = 1
+	StatusLockEmailSent    int64 = 2
+	StatusLocked           int64 = 3
+	StatusSubscribed       int64 = 4
+	StatusPlanEmailSent    int64 = 6
 
 	SubscriptionTypePayPal = 1
 	SubscriptionTypeCrypto = 2
@@ -46,8 +47,12 @@ func (u *User) IsNDaysSinceStatus(now time.Time, days int) bool {
 	return u.StatusAt.Before(now.AddDate(0, 0, -days))
 }
 
+func (u *User) IsReadyForPlanEmail(now time.Time) bool {
+	return u.Status == StatusWelcomeEmailSent && u.IsNDaysSinceStatus(now, 7)
+}
+
 func (u *User) IsReadyForLockEmail(now time.Time) bool {
-	return u.Status == StatusTrialEmailSent && u.IsNDaysSinceStatus(now, 20)
+	return u.Status == StatusPlanEmailSent && u.IsNDaysSinceStatus(now, 13)
 }
 
 func (u *User) IsReadyForAccountLock(now time.Time) bool {
@@ -62,13 +67,22 @@ func (u *User) IsStatusCreated() bool {
 	return u.Status == StatusCreated
 }
 
-func (u *User) TrialEmailSent(now time.Time) {
+func (u *User) WelcomeEmailSent(now time.Time) {
 	u.StatusAt = now
-	u.Status = StatusTrialEmailSent
+	u.Status = StatusWelcomeEmailSent
 }
 
-func (u *User) IsTrialEmailSent() bool {
-	return u.Status == StatusTrialEmailSent
+func (u *User) IsWelcomeEmailSent() bool {
+	return u.Status == StatusWelcomeEmailSent
+}
+
+func (u *User) PlanEmailSent(now time.Time) {
+	u.StatusAt = now
+	u.Status = StatusPlanEmailSent
+}
+
+func (u *User) IsPlanEmailSent() bool {
+	return u.Status == StatusPlanEmailSent
 }
 
 func (u *User) IsLockEmailSent() bool {
