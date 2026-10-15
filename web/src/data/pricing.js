@@ -16,6 +16,12 @@ export function priceChangePending (now = Date.now()) {
   return now < PRICE_CHANGE_DATE.getTime()
 }
 
+export function tierPrices (now = Date.now()) {
+  return priceChangePending(now)
+    ? TIER_PRICES
+    : { ...TIER_PRICES, ...TIER_PRICES_FROM_PRICE_CHANGE_DATE }
+}
+
 export function proMonthlyAmount (now = Date.now()) {
   return priceChangePending(now) ? PRO_MONTHLY_AMOUNT : PRO_MONTHLY_AMOUNT_FROM_PRICE_CHANGE_DATE
 }

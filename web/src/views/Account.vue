@@ -82,7 +82,7 @@
                 >
                   <div class="plan-head">
                     <span class="plan-name">{{ $t('account.proName') }}</span>
-                    <span class="plan-price">{{ proPrice }}</span>
+                    <span class="plan-price" data-testid="plan-pro-price">{{ proPrice }}</span>
                   </div>
                   <ul class="plan-features">
                     <li>{{ $t('account.relay10gb') }}</li>
@@ -303,10 +303,10 @@ import { CircleCheck, CopyDocument, Check, Close, Delete, CreditCard } from '@el
 import { markRaw } from 'vue'
 import i18n from '../i18n'
 import {
-  TIER_PRICES,
   TIER_PRICES_FROM_PRICE_CHANGE_DATE,
   priceChangeDateText,
-  priceChangePending
+  priceChangePending,
+  tierPrices
 } from '../data/pricing'
 
 export default {
@@ -325,7 +325,6 @@ export default {
       subscriptionId: String,
       subscriptionPeriod: '',
       subscriptionTier: '',
-      tierPrices: TIER_PRICES,
       domainGroups: Array,
       planMonthlyId: String,
       planAnnualId: String,
@@ -379,11 +378,14 @@ export default {
     periodKey: function () {
       return this.period === 'year' ? 'year' : 'month'
     },
+    tierPrices: function () {
+      return tierPrices()
+    },
     proPrice: function () {
-      return TIER_PRICES.pro[this.periodKey]
+      return this.tierPrices.pro[this.periodKey]
     },
     maxPrice: function () {
-      return TIER_PRICES.max[this.periodKey]
+      return this.tierPrices.max[this.periodKey]
     },
     priceChangeNoticeVisible: function () {
       return this.userLoaded && this.subscriptionId === undefined && priceChangePending()
