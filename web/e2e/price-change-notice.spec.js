@@ -23,3 +23,20 @@ test('the price change notice shows before the change date and not after', async
   await expect(page.getByTestId('plan-pro')).toBeVisible()
   await expect(page.getByTestId('price-change-notice')).toHaveCount(0)
 })
+
+test('the pro plan card quotes the price that will be charged', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-01T10:00:00Z'))
+  await registerActivateAndLogin(page, 'plan-price')
+
+  await goToAccount(page)
+  await expect(page.getByTestId('plan-pro-price')).toHaveText('£5 / month')
+  await page.getByTestId('billing-year').click()
+  await expect(page.getByTestId('plan-pro-price')).toHaveText('£60 / year')
+
+  await page.clock.setFixedTime(new Date('2026-10-20T10:00:00Z'))
+  await page.reload()
+  await expect(page.getByTestId('plan-pro')).toBeVisible()
+  await expect(page.getByTestId('plan-pro-price')).toHaveText('£7 / month')
+  await page.getByTestId('billing-year').click()
+  await expect(page.getByTestId('plan-pro-price')).toHaveText('£70 / year')
+})
