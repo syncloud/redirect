@@ -1,3 +1,10 @@
+(hosted_site) {
+	@{args[0]} tls sni {args[0]}
+	route @{args[0]} {
+		proxy 127.0.0.1:8443
+	}
+}
+
 {
 	email support@syncloud.it
 	acme_ca {$ACME_CA}
@@ -19,10 +26,7 @@
 			}
 		}
 		:443 {
-			@sites tls sni {$RELAY_SITE_SNI}
-			route @sites {
-				proxy 127.0.0.1:8443
-			}
+			import /etc/caddy/sni.d/*.caddy
 			@relay tls sni relay.{$REDIRECT_DOMAIN}
 			route @relay {
 				proxy 127.0.0.1:7000

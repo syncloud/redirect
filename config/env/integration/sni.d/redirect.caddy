@@ -1,0 +1,5 @@
+import hosted_site www.syncloud.test
+import hosted_site syncloud.test
+import hosted_site api.syncloud.test
+import hosted_site shop.syncloud.test
+import hosted_site stats.syncloud.test
