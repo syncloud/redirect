@@ -25,6 +25,8 @@ $SCP config/common "${REMOTE}:/tmp/syncloud-redirect/common"
 $SCP build/www "${REMOTE}:/tmp/syncloud-redirect/web"
 
 $SCP "config/env/${DEPLOY_ENV:?DEPLOY_ENV is required}/config.cfg" "${REMOTE}:/tmp/syncloud-redirect/config.cfg"
+$SCP "config/env/$DEPLOY_ENV/caddy.env" "${REMOTE}:/tmp/syncloud-redirect/caddy.env"
+$SCP "config/env/$DEPLOY_ENV/sni.d" "${REMOTE}:/tmp/syncloud-redirect/sni.d"
 
 set +x
 PAYMENTS="[paypal]
