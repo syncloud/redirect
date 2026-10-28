@@ -5,6 +5,7 @@ import (
 	"github.com/plutov/paypal/v4"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
+	"time"
 )
 
 type PayPal struct {
@@ -153,4 +154,19 @@ func (p *PayPal) IsActive(id string) (bool, error) {
 		return false, err
 	}
 	return details.SubscriptionStatus == paypal.SubscriptionStatusActive, nil
+}
+
+func (p *PayPal) PaidThrough(id string) (time.Time, error) {
+	details, err := p.GetSubscriptionDetails(id)
+	if err != nil {
+		return time.Time{}, err
+	}
+	lastPayment := details.BillingInfo.LastPayment.Time
+	if lastPayment.IsZero() {
+		return time.Time{}, nil
+	}
+	if p.Period(details.PlanID) == model.PeriodYear {
+		return lastPayment.AddDate(1, 0, 0), nil
+	}
+	return lastPayment.AddDate(0, 1, 0), nil
 }

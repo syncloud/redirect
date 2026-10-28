@@ -1,0 +1,12 @@
+Subject: Your Syncloud subscription ends on {ends_at}
+Hello,
+
+Your Syncloud subscription has been canceled and will not renew.
+
+You have already paid for the current period, so your device, its address and its certificate keep working until {ends_at}. Nothing changes before then.
+
+After that date the account is locked and the device address is released.
+
+If you would like to keep it, you can resubscribe at any time: https://www.{main_domain}/account
+
+Thank you for choosing Syncloud!

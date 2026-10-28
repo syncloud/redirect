@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Mail struct {
@@ -19,6 +20,7 @@ type Mail struct {
 	activateTemplatePath        string
 	planSubscribeTemplatePath   string
 	planUnSubscribeTemplatePath string
+	planEndingTemplatePath      string
 	releaseAnnouncementPath     string
 	dnsCleanPath                string
 	welcomePath                 string
@@ -58,6 +60,7 @@ func NewMail(smtp *smtp.Smtp,
 		activateTemplatePath:        mailPath + "/activate.txt",
 		planSubscribeTemplatePath:   mailPath + "/plan_subscribe.txt",
 		planUnSubscribeTemplatePath: mailPath + "/plan_unsubscribe.txt",
+		planEndingTemplatePath:      mailPath + "/plan_ending.txt",
 		releaseAnnouncementPath:     mailPath + "/release_announcement.txt",
 		dnsCleanPath:                mailPath + "/dns_clean.txt",
 		welcomePath:                 mailPath + "/welcome.txt",
@@ -178,6 +181,13 @@ func relayGigabytes(bytes int64) string {
 func (m *Mail) SendPlanUnSubscribed(to string) error {
 	return m.SendNotification(m.planUnSubscribeTemplatePath, map[string]string{
 		"domain": m.mainDomain,
+	}, to, m.deviceErrorTo)
+}
+
+func (m *Mail) SendPlanEnding(to string, endsAt time.Time) error {
+	return m.SendNotification(m.planEndingTemplatePath, map[string]string{
+		"main_domain": m.mainDomain,
+		"ends_at":     endsAt.Format("2 January 2006"),
 	}, to, m.deviceErrorTo)
 }
 

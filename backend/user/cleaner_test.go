@@ -75,12 +75,14 @@ func (s *StateStub) Set(userId int64) error {
 }
 
 type MailStub struct {
-	welcome      bool
-	planReminder bool
-	lockSoon     bool
-	locked       bool
-	removed      bool
-	unsubscribed bool
+	welcome          bool
+	planReminder     bool
+	lockSoon         bool
+	locked           bool
+	removed          bool
+	unsubscribed     bool
+	planEnding       bool
+	planEndingEndsAt time.Time
 }
 
 func (m *MailStub) SendPlanUnSubscribed(_ string) error {
@@ -113,12 +115,23 @@ func (m *MailStub) SendPlanReminder(_ string) error {
 	return nil
 }
 
+func (m *MailStub) SendPlanEnding(_ string, endsAt time.Time) error {
+	m.planEnding = true
+	m.planEndingEndsAt = endsAt
+	return nil
+}
+
 type CheckerStub struct {
-	active bool
+	active      bool
+	paidThrough time.Time
 }
 
 func (c *CheckerStub) IsActive(_ int, _ string) (bool, error) {
 	return c.active, nil
+}
+
+func (c *CheckerStub) PaidThrough(_ int, _ string) (time.Time, error) {
+	return c.paidThrough, nil
 }
 
 type RemoverStub struct {
@@ -458,6 +471,73 @@ func TestCleaner_Clean_StripeInactive_Lock(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, user.IsLocked())
 	assert.True(t, mail.unsubscribed)
+	assert.True(t, remover.domainsRemoved)
+	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
+}
+
+func TestCleaner_Clean_Inactive_PaidPeriodNotEnded_KeepsDomain(t *testing.T) {
+	now := time.Now()
+	paidThrough := now.Add(24 * time.Hour)
+	subscriptionId := "1"
+	subscriptionType := model.SubscriptionTypeStripe
+	user := &model.User{Id: 2, Status: model.StatusSubscribed,
+		SubscriptionId: &subscriptionId, SubscriptionType: &subscriptionType}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	checker := &CheckerStub{active: false, paidThrough: paidThrough}
+
+	cleaner := newTestCleaner(database, state, mail, remover, checker)
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), state.userId)
+	assert.False(t, remover.domainsRemoved)
+	assert.False(t, user.IsLocked())
+	assert.True(t, user.IsSubscribed())
+	assert.False(t, mail.unsubscribed)
+	assert.True(t, mail.planEnding)
+	assert.Equal(t, paidThrough, mail.planEndingEndsAt)
+	assert.True(t, user.IsPlanEndingEmailSent())
+}
+
+func TestCleaner_Clean_Inactive_PaidPeriodNotEnded_EmailSentOnce(t *testing.T) {
+	now := time.Now()
+	subscriptionId := "1"
+	subscriptionType := model.SubscriptionTypeStripe
+	user := &model.User{Id: 2, Status: model.StatusPlanEndingEmailSent,
+		SubscriptionId: &subscriptionId, SubscriptionType: &subscriptionType}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	checker := &CheckerStub{active: false, paidThrough: now.Add(24 * time.Hour)}
+
+	cleaner := newTestCleaner(database, state, mail, remover, checker)
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.False(t, mail.planEnding)
+	assert.False(t, remover.domainsRemoved)
+	assert.True(t, user.IsSubscribed())
+}
+
+func TestCleaner_Clean_Inactive_PaidPeriodEnded_DeletesDomain(t *testing.T) {
+	now := time.Now()
+	subscriptionId := "1"
+	subscriptionType := model.SubscriptionTypeStripe
+	user := &model.User{Id: 2, SubscriptionId: &subscriptionId, SubscriptionType: &subscriptionType}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	checker := &CheckerStub{active: false, paidThrough: now.Add(-time.Second)}
+
+	cleaner := newTestCleaner(database, state, mail, remover, checker)
+	err := cleaner.Clean(now)
+	assert.NoError(t, err)
+	assert.True(t, user.IsLocked())
+	assert.True(t, mail.unsubscribed)
+	assert.False(t, mail.planEnding)
 	assert.True(t, remover.domainsRemoved)
 	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
 }

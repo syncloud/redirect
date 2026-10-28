@@ -3,11 +3,13 @@ package subscription
 import (
 	"fmt"
 	"github.com/syncloud/redirect/model"
+	"time"
 )
 
 type Provider interface {
 	Unsubscribe(id string) error
 	IsActive(id string) (bool, error)
+	PaidThrough(id string) (time.Time, error)
 }
 
 type Router struct {
@@ -41,5 +43,16 @@ func (r *Router) IsActive(subscriptionType int, id string) (bool, error) {
 		return r.stripe.IsActive(id)
 	default:
 		return false, fmt.Errorf("unsupported subscription type: %d", subscriptionType)
+	}
+}
+
+func (r *Router) PaidThrough(subscriptionType int, id string) (time.Time, error) {
+	switch subscriptionType {
+	case model.SubscriptionTypePayPal:
+		return r.paypal.PaidThrough(id)
+	case model.SubscriptionTypeStripe:
+		return r.stripe.PaidThrough(id)
+	default:
+		return time.Time{}, fmt.Errorf("unsupported subscription type: %d", subscriptionType)
 	}
 }
