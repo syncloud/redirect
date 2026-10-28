@@ -4,17 +4,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/model"
 	"testing"
+	"time"
 )
 
 type ProviderStub struct {
 	name        string
 	unsubscribe *string
 	active      bool
+	paidThrough time.Time
 }
 
 func (p *ProviderStub) Unsubscribe(id string) error {
 	p.unsubscribe = &id
 	return nil
+}
+
+func (p *ProviderStub) PaidThrough(_ string) (time.Time, error) {
+	return p.paidThrough, nil
 }
 
 func (p *ProviderStub) IsActive(_ string) (bool, error) {
@@ -72,4 +78,23 @@ func TestRouter_IsActive_RoutesByType(t *testing.T) {
 
 	_, err = router.IsActive(model.SubscriptionTypeCrypto, "sub-3")
 	assert.NotNil(t, err)
+}
+
+func TestRouter_PaidThrough_RoutesByType(t *testing.T) {
+	paypalPaidThrough := time.Date(2026, 11, 28, 10, 51, 56, 0, time.UTC)
+	stripePaidThrough := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
+	paypal := &ProviderStub{name: "paypal", paidThrough: paypalPaidThrough}
+	stripe := &ProviderStub{name: "stripe", paidThrough: stripePaidThrough}
+	router := NewRouter(paypal, stripe)
+
+	got, err := router.PaidThrough(model.SubscriptionTypePayPal, "sub-1")
+	assert.NoError(t, err)
+	assert.Equal(t, paypalPaidThrough, got)
+
+	got, err = router.PaidThrough(model.SubscriptionTypeStripe, "sub-2")
+	assert.NoError(t, err)
+	assert.Equal(t, stripePaidThrough, got)
+
+	_, err = router.PaidThrough(model.SubscriptionTypeCrypto, "sub-3")
+	assert.Error(t, err)
 }

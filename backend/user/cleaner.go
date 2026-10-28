@@ -22,6 +22,7 @@ type State interface {
 
 type Mail interface {
 	SendWelcome(to string) error
+	SendPlanEnding(to string, endsAt time.Time) error
 	SendPlanReminder(to string) error
 	SendAccountLockSoon(to string) error
 	SendAccountLocked(to string) error
@@ -35,6 +36,7 @@ type Remover interface {
 
 type SubscriptionChecker interface {
 	IsActive(subscriptionType int, id string) (bool, error)
+	PaidThrough(subscriptionType int, id string) (time.Time, error)
 }
 
 type Cleaner struct {
@@ -139,6 +141,31 @@ func (c *Cleaner) Clean(now time.Time) error {
 			return err
 		}
 		if active {
+			return c.state.Set(id)
+		}
+
+		paidThrough, err := c.checker.PaidThrough(*user.SubscriptionType, *user.SubscriptionId)
+		if err != nil {
+			return err
+		}
+		if now.Before(paidThrough) {
+			c.logger.Info("subscription is not active but the paid period has not ended",
+				zap.Int("type", *user.SubscriptionType),
+				zap.Time("paid through", paidThrough))
+
+			if user.IsPlanEndingEmailSent() {
+				return c.state.Set(id)
+			}
+			user.PlanEndingEmailSent(now)
+			err = c.database.UpdateUser(user)
+			if err != nil {
+				return err
+			}
+			err = c.mail.SendPlanEnding(user.Email, paidThrough)
+			if err != nil {
+				return err
+			}
+
 			return c.state.Set(id)
 		}
 

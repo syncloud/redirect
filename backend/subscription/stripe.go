@@ -7,6 +7,7 @@ import (
 	stripesub "github.com/stripe/stripe-go/v81/subscription"
 	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
+	"time"
 )
 
 const (
@@ -189,4 +190,16 @@ func (s *Stripe) IsActive(id string) (bool, error) {
 		return false, err
 	}
 	return sub.Status == stripe.SubscriptionStatusActive || sub.Status == stripe.SubscriptionStatusTrialing, nil
+}
+
+func (s *Stripe) PaidThrough(id string) (time.Time, error) {
+	stripe.Key = s.secretKey
+	sub, err := stripesub.Get(id, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if sub.CurrentPeriodEnd == 0 {
+		return time.Time{}, nil
+	}
+	return time.Unix(sub.CurrentPeriodEnd, 0).UTC(), nil
 }

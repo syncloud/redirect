@@ -3,12 +3,13 @@ package model
 import "time"
 
 const (
-	StatusCreated          int64 = 0
-	StatusWelcomeEmailSent int64 = 1
-	StatusLockEmailSent    int64 = 2
-	StatusLocked           int64 = 3
-	StatusSubscribed       int64 = 4
-	StatusPlanEmailSent    int64 = 6
+	StatusCreated             int64 = 0
+	StatusWelcomeEmailSent    int64 = 1
+	StatusLockEmailSent       int64 = 2
+	StatusLocked              int64 = 3
+	StatusSubscribed          int64 = 4
+	StatusPlanEmailSent       int64 = 6
+	StatusPlanEndingEmailSent int64 = 7
 
 	SubscriptionTypePayPal = 1
 	SubscriptionTypeCrypto = 2
@@ -108,6 +109,15 @@ func (u *User) Subscribe(subscriptionId string, subscriptionType int, plan strin
 	u.SubscriptionType = &subscriptionType
 	u.Plan = &plan
 	u.Status = StatusSubscribed
+}
+
+func (u *User) PlanEndingEmailSent(now time.Time) {
+	u.StatusAt = now
+	u.Status = StatusPlanEndingEmailSent
+}
+
+func (u *User) IsPlanEndingEmailSent() bool {
+	return u.Status == StatusPlanEndingEmailSent
 }
 
 func (u *User) UnSubscribe(now time.Time) {

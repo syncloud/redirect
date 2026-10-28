@@ -2,7 +2,9 @@ package service
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
+	"time"
 )
 
 func TestParseBody(t *testing.T) {
@@ -41,4 +43,21 @@ func TestSubjectPrefixedWhenConfigured(t *testing.T) {
 func TestSubjectPrefixSeparatedByOneSpace(t *testing.T) {
 	mail := &Mail{subjectPrefix: "TEST"}
 	assert.NotContains(t, mail.subject("Reset password"), "  ")
+}
+
+func TestPlanEndingTemplateRendersDateInSubjectAndBody(t *testing.T) {
+	buf, err := os.ReadFile("../../emails/plan_ending.txt")
+	assert.NoError(t, err)
+
+	endsAt := time.Date(2026, 11, 28, 10, 51, 56, 0, time.UTC)
+	subject, body, err := ParseBody(string(buf), map[string]string{
+		"main_domain": "example.com",
+		"ends_at":     endsAt.Format("2 January 2006"),
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "Your Syncloud subscription ends on 28 November 2026", subject)
+	assert.Contains(t, body, "28 November 2026")
+	assert.Contains(t, body, "https://www.example.com/account")
+	assert.NotContains(t, body, "{")
 }
