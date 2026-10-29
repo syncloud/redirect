@@ -39,12 +39,12 @@ function catalog (mock) {
 
 const RouterLinkStub = { props: ['to'], template: '<a :href="to"><slot /></a>' }
 
-function mountShop (query = {}, replace = jest.fn(), loggedIn = true) {
+function mountShop (query = {}, replace = jest.fn(), loggedIn = true, push = jest.fn()) {
   return mount(Shop, {
     props: { loggedIn },
     global: {
       components: { ElButton, RouterLink: RouterLinkStub },
-      mocks: { $route: { query }, $router: { replace } }
+      mocks: { $route: { query }, $router: { replace, push } }
     }
   })
 }
@@ -146,7 +146,8 @@ test('shows the product to a visitor who is not signed in', async () => {
   expect(wrapper.find('[data-testid="device-choice"]').exists()).toBe(true)
   expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£244.00')
 
-  expect(wrapper.find('[data-testid="shop-signin"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="shop-signin-link"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(false)
   expect(wrapper.find('[data-testid="device-pay"]').exists()).toBe(false)
   expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
 })
@@ -155,10 +156,12 @@ test('asks a signed out visitor to sign in rather than to pay', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)
 
-  const wrapper = mountShop({}, jest.fn(), false)
+  const push = jest.fn()
+  const wrapper = mountShop({}, jest.fn(), false, push)
   await flushPromises()
 
-  expect(wrapper.find('[data-testid="shop-signin-link"]').attributes('href')).toBe('/login?next=/shop')
+  await wrapper.find('[data-testid="shop-signin-link"]').trigger('click')
+  expect(push).toHaveBeenCalledWith('/login?next=/shop')
 })
 
 test('keeps checkout out of the way until the device is chosen', async () => {
