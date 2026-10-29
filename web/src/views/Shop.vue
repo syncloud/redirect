@@ -103,20 +103,16 @@
         >
           {{ $t('shop.continue') }}
         </el-button>
-      </div>
-
-      <div v-if="loggedIn === false && step === 'choose'" class="sc-card" data-testid="shop-signin">
-        <h2 class="sc-h2">{{ $t('shop.signInToOrder') }}</h2>
-        <p>
-          {{ $t('shop.signInBlurb') }}
-        </p>
-        <router-link
-          class="sc-btn"
-          to="/login?next=/shop"
+        <el-button
+          v-else-if="loggedIn === false"
+          type="primary"
+          size="large"
+          class="continue"
           data-testid="shop-signin-link"
+          @click="$router.push('/login?next=/shop')"
         >
-          {{ $t('shop.signInLink') }}
-        </router-link>
+          {{ $t('shop.signInToOrder') }}
+        </el-button>
       </div>
 
       <div v-if="loggedIn && step !== 'choose'" class="sc-card chosen" data-testid="shop-chosen">

@@ -48,11 +48,12 @@ test('the shop is readable without an account', async ({ page }, testInfo) => {
   await expect(page.getByTestId('device-total')).toContainText('£')
   await shoot(page, testInfo, 'shop-signed-out')
 
-  await expect(page.getByTestId('shop-signin')).toBeVisible()
+  await expect(page.getByTestId('shop-signin-link')).toBeVisible()
+  await expect(page.getByTestId('shop-continue')).toHaveCount(0)
   await expect(page.getByTestId('device-pay')).toHaveCount(0)
 
   await page.getByTestId('shop-signin-link').click()
-  await expect(page).toHaveURL(/\/login\?next=\/shop$/)
+  await expect(page.getByTestId('login-form')).toBeVisible()
 })
 
 test('the shop prices the device from the catalogue', async ({ page }, testInfo) => {

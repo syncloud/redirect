@@ -1,7 +1,7 @@
 import { createServer, Model, Response } from 'miragejs'
 
 let state = {
-  loggedIn: true,
+  loggedIn: false,
   unfinished: [
     {
       number: 7,
