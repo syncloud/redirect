@@ -27,7 +27,6 @@ type Session struct {
 	hostname    string
 	peer        string
 	helo        string
-	resolver    Resolver
 	logger      *zap.Logger
 
 	from   string
@@ -109,9 +108,8 @@ func (s *Session) connect(domain string) error {
 			zap.String("domain", domain), zap.Error(err))
 		return tryAgain(ErrUnreachable, smtp.EnhancedCode{4, 4, 1})
 	}
-	announced, helo, err := Announce(connection, s.hostname, Client{
+	helo, err := Announce(connection, s.hostname, Client{
 		Address: s.peer,
-		Name:    s.resolver.Name(s.peer),
 		Helo:    s.helo,
 	})
 	if err != nil {
@@ -120,7 +118,7 @@ func (s *Session) connect(domain string) error {
 			zap.String("domain", domain), zap.Error(err))
 		return relayError(err)
 	}
-	client := smtp.NewClient(announced)
+	client := smtp.NewClient(connection)
 	if err := client.Hello(helo); err != nil {
 		_ = client.Close()
 		return relayError(err)
