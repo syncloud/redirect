@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"net"
 	"time"
 
 	"github.com/emersion/go-smtp"
+	"github.com/pires/go-proxyproto"
 )
 
 type SmtpServer struct {
@@ -24,8 +26,15 @@ func NewSmtpServer(address string, mailbox *Mailbox) *SmtpServer {
 }
 
 func (s *SmtpServer) Start() error {
+	tcp, err := net.Listen("tcp", s.server.Addr)
+	if err != nil {
+		return err
+	}
+	listener := &proxyproto.Listener{Listener: tcp, Policy: func(net.Addr) (proxyproto.Policy, error) {
+		return proxyproto.REQUIRE, nil
+	}}
 	go func() {
-		if err := s.server.ListenAndServe(); err != nil {
+		if err := s.server.Serve(listener); err != nil {
 			log.Printf("device smtp stopped: %v", err)
 		}
 	}()

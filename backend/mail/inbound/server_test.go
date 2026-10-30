@@ -24,6 +24,8 @@ type fakeDevice struct {
 	dataErr error
 
 	mutex      sync.Mutex
+	client     string
+	helo       string
 	from       string
 	recipients []string
 	body       string
@@ -31,9 +33,11 @@ type fakeDevice struct {
 
 type deviceSession struct {
 	device *fakeDevice
+	conn   *gosmtp.Conn
 }
 
 func (s *deviceSession) Mail(from string, _ *gosmtp.MailOptions) error {
+	s.device.greeted(s.conn.Conn().RemoteAddr().String(), s.conn.Hostname())
 	s.device.mutex.Lock()
 	defer s.device.mutex.Unlock()
 	s.device.from = from
@@ -67,6 +71,19 @@ func (s *deviceSession) Data(r io.Reader) error {
 func (s *deviceSession) Reset()        {}
 func (s *deviceSession) Logout() error { return nil }
 
+func (d *fakeDevice) greeted(client string, helo string) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.client = client
+	d.helo = helo
+}
+
+func (d *fakeDevice) seen() (string, string) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	return d.client, d.helo
+}
+
 func (d *fakeDevice) got() ([]string, string) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -74,12 +91,15 @@ func (d *fakeDevice) got() ([]string, string) {
 }
 
 func startDevice(device *fakeDevice) (*fakeDevice, func(), error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	tcp, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, nil, err
 	}
-	server := gosmtp.NewServer(gosmtp.BackendFunc(func(_ *gosmtp.Conn) (gosmtp.Session, error) {
-		return &deviceSession{device: device}, nil
+	listener := &proxyproto.Listener{Listener: tcp, Policy: func(net.Addr) (proxyproto.Policy, error) {
+		return proxyproto.REQUIRE, nil
+	}}
+	server := gosmtp.NewServer(gosmtp.BackendFunc(func(c *gosmtp.Conn) (gosmtp.Session, error) {
+		return &deviceSession{device: device, conn: c}, nil
 	}))
 	server.Domain = "device.syncloud.it"
 	go func() { _ = server.Serve(listener) }()
@@ -154,7 +174,7 @@ func relayedWith(dialer DeviceDialer, domains map[string]*model.Domain,
 
 	router := NewRouter(&fakeStore{domains: domains})
 	server := NewServer(address, "mx.syncloud.it", router, dialer, connections,
-		mail.NewInFlight(0), traffic, testResolver(), 1024*1024, zap.NewNop())
+		mail.NewInFlight(0), traffic, 1024*1024, zap.NewNop())
 	if err := server.Start(); err != nil {
 		return "", nil, nil, err
 	}
@@ -424,7 +444,7 @@ func TestInbound_PortConflictStopsTheApi(t *testing.T) {
 
 	server := NewServer(held.Addr().String(), "mx.syncloud.it",
 		NewRouter(&fakeStore{domains: map[string]*model.Domain{}}), &fakeDialer{},
-		mail.NewConnections(0), mail.NewInFlight(0), &fakeTraffic{}, testResolver(), 1024*1024, zap.NewNop())
+		mail.NewConnections(0), mail.NewInFlight(0), &fakeTraffic{}, 1024*1024, zap.NewNop())
 
 	assert.Error(t, server.Start())
 }

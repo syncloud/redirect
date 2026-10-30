@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	DialTimeout    = 30 * time.Second
-	ResolveTimeout = 2 * time.Second
+	DialTimeout = 30 * time.Second
 )
 
 type Server struct {
@@ -22,7 +21,7 @@ type Server struct {
 }
 
 func NewServer(address string, hostname string, router *Router, dialer DeviceDialer,
-	connections *mail.Connections, inFlight *mail.InFlight, traffic Traffic, resolver Resolver,
+	connections *mail.Connections, inFlight *mail.InFlight, traffic Traffic,
 	maxMessageBytes int64, logger *zap.Logger) *Server {
 	s := &Server{logger: logger}
 	server := smtp.NewServer(smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
@@ -34,7 +33,7 @@ func NewServer(address string, hostname string, router *Router, dialer DeviceDia
 		return &Session{
 			router: router, dialer: dialer, connections: connections, inFlight: inFlight,
 			traffic:  traffic,
-			hostname: hostname, peer: peer, helo: c.Hostname(), resolver: resolver,
+			hostname: hostname, peer: peer, helo: c.Hostname(),
 			logger: logger,
 		}, nil
 	}))

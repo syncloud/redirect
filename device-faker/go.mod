@@ -2,6 +2,9 @@ module github.com/syncloud/device-faker
 
 go 1.25.1
 
-require github.com/emersion/go-smtp v0.24.0
+require (
+	github.com/emersion/go-smtp v0.24.0
+	github.com/pires/go-proxyproto v0.15.0
+)
 
 require github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6 // indirect
