@@ -1,142 +1,40 @@
-# Debugging CI failures
+# Project structure
 
-When a CI build fails, start by identifying the failing step:
-```sh
-curl -s "http://ci.syncloud.org:8080/api/repos/syncloud/redirect/builds/{N}" | python3 -c "
-import json,sys
-b=json.load(sys.stdin)
-for stage in b.get('stages', []):
-    for step in stage.get('steps', []):
-        if step.get('status') == 'failure':
-            print(f\"stage {stage.get('number')} step {step.get('number')}: {step.get('name')}\")
-"
-```
+- `backend/` — Go binaries and services (api, www, metrics, cleaner)
+- `web/` — Vue 3 frontend using Vite
+- `test/` — Python integration tests against the API
+- `caddy-smtp/`, `dns-faker/`, `device-faker/`, `ses-faker/`, `paypal-faker/`,
+  `stripe-faker/` — stand-ins the CI environment runs instead of the real thing
+- `.drone.jsonnet` — pipelines
 
-Get the log for a specific stage/step:
-```sh
-curl -s "http://ci.syncloud.org:8080/api/repos/syncloud/redirect/builds/{N}/logs/{stage}/{step}" | python3 -c "
-import json,sys
-for line in json.load(sys.stdin):
-    print(line.get('out', ''), end='')
-" | tail -120
-```
-
-Example from build `1216`:
-- failing pipeline: `redirect-amd64`
-- failing step: `stage 1 step 6`
-- failure reason: Jest picked up `www/e2e/*.spec.js` and executed Playwright files during `npm run test`
-
-# CI
-
-Web UI:
-```text
-http://ci.syncloud.org:8080/syncloud/redirect
-```
-
-Drone API examples:
-```sh
-curl -s "http://ci.syncloud.org:8080/api/repos/syncloud/redirect/builds?limit=5"
-curl -s "http://ci.syncloud.org:8080/api/repos/syncloud/redirect/builds/{N}"
-curl -s "http://ci.syncloud.org:8080/api/repos/syncloud/redirect/builds/{N}/logs/{stage}/{step}"
-```
+The frontend directory is `web/`, not `www/`. Paths under `www/` in older notes
+or commit messages are stale.
 
 ## Build structure
 
-The main repo pipeline currently does:
-1. `build web`
-   Runs `npm install`, `npm run test`, `npm run lint`, `npm run build`
-2. `build backend`
-3. `package`
-4. `test-integration`
-5. `test-ui-playwright`
-6. `artifact`
+The main pipeline runs, in order: `build web` (`npm install`, `npm run test`,
+`npm run lint`, `npm run build`), `test backend`, `test caddy plugin`,
+`build backend`, `package`, `docker`, `build test api`, the fakers,
+`deploy test`, `test-api`, `test-ui-desktop`, `test-ui-mobile`, then
+`deploy uat`, `deploy prod` and `artifact`.
 
-The UI test migration separates test runners:
-- `npm run test` = Jest unit tests only
-- `npm run test:e2e` = Playwright end-to-end tests only
+`deploy prod` runs only on a push to `stable`, after the tests above it.
 
-If Jest starts executing `www/e2e/*.spec.js`, CI will fail before Playwright even starts.
-Keep `www/jest.config.js` ignoring `e2e/`.
+## Frontend test split
 
-## Locator conventions
+- `web/tests/unit/` — Jest unit and component tests (`npm run test`)
+- `web/e2e/` — Playwright browser tests (`npm run test:e2e`)
 
-Prefer `data-testid` over role/text locators for anything asserted or clicked in a Playwright test. When a new element needs to be targeted by a test, add a `data-testid="..."` attribute to the Vue template and use `page.getByTestId(...)` in the spec.
+Do not mix them. Jest must not discover `e2e/`, and Playwright must not depend
+on Jest config or setup files — keep `web/jest.config.js` ignoring `e2e/`. If
+Jest starts executing `web/e2e/*.spec.js`, CI fails before Playwright starts.
 
-Why:
-- Role + accessible-name matching is a partial-match by default and breaks when another element on the page contains the same text (e.g. `Account` vs `Delete this account`).
-- Text matching couples tests to copy changes and translations.
-- `data-testid` is stable, explicit, and survives refactors of DOM structure.
+Playwright layout: shared `*.spec.js` flows run on both `desktop` and `mobile`,
+`*.mobile.spec.js` holds mobile-only assertions, screenshots are taken on
+failure in `web/e2e/fixtures.js`, and videos land in `web/test-results`.
 
-Use role/text locators only for elements genuinely verified as user-facing semantics (e.g. asserting a button literally reads "Confirm"), not as the primary hook.
-
-## Playwright notes
-
-Playwright tests live in:
-```text
-www/e2e/
-```
-
-Configuration:
-```text
-www/playwright.config.js
-```
-
-Current intent:
-- shared `*.spec.js` flows run on both `desktop` and `mobile`
-- `*.mobile.spec.js` holds mobile-only assertions
-- screenshots are taken explicitly on failure in `www/e2e/fixtures.js`
-- videos are retained in `www/test-results`
-
-The layout is:
-- full desktop run (`test-ui-desktop` in Drone)
-- full mobile run (`test-ui-mobile` in Drone)
-- extra mobile-specific checks where needed
-
-## CI artifacts
-
-Artifacts are uploaded by the `artifact` step and served by an nginx file browser at `http://ci.syncloud.org:8081`.
-
-List build artifacts:
-```sh
-curl -s "http://ci.syncloud.org:8081/files/redirect/{N}/"
-```
-
-Typical layout for a redirect build:
-```
-{N}/
-  redirect-{N}.tar.gz
-  distro/
-  playwright-report/
-  playwright-results/
-    <test-slug>/
-      error-context.md
-      failure-full-page.png
-      trace.zip
-      video.webm
-```
-
-Fetch a Playwright failure's page snapshot + error:
-```sh
-curl -s "http://ci.syncloud.org:8081/files/redirect/{N}/playwright-results/<slug>/error-context.md"
-```
-
-Download the trace and inspect URLs or network calls locally:
-```sh
-curl -O "http://ci.syncloud.org:8081/files/redirect/{N}/playwright-results/<slug>/trace.zip"
-unzip -q trace.zip -d trace/
-grep -oE "/some-path\?[^\" ]*" trace/0-trace.trace | head
-```
-
-Those directories are populated from:
-- `www/playwright-report/`
-- `www/test-results/`
-
-# Project structure
-
-- `backend/` — Go backend binaries and services
-- `www/` — Vue 3 frontend using Vite
-- `integration/` — Python integration tests (API)
-- `.drone.jsonnet` — Drone pipelines
+Playwright cannot run on this Termux host, so a Playwright change is only
+really verified once Drone has run it.
 
 ## Database
 
@@ -148,15 +46,34 @@ applies pending migrations on startup; `backend/cmd/migrate` is the manual CLI
 Add a migration as `0000NN_name.up.sql` + `0000NN_name.down.sql`, numbered from
 the highest existing prefix.
 
-## Frontend test split
+## Metrics
 
-- `www/tests/unit/` — Jest unit/component tests
-- `www/e2e/` — Playwright browser tests
+`backend/metrics` is a single `prometheus.Collector` passed to
+`metrics.NewServer`. A new counter has to be added in three places or it is
+silently absent from `/metrics`: the struct, `New()`, and both `Describe` and
+`Collect`.
 
-Do not mix them:
-- Jest should not discover `e2e/`
-- Playwright should not depend on Jest config or setup files
+Counters labelled with anything a browser sends must bound the label values —
+`event.Events` for event names and `label.Allowed` for languages both reject or
+fold unknown values, so a crafted request cannot invent new time series.
 
-# Local limitations
+## Artifacts
 
-Playwright does not run on this Termux/Android host. Syntax checks and repo edits can be done locally, but real Playwright execution must be validated in Drone's Linux environment.
+Uploaded by the `artifact` step, served at `http://ci.syncloud.org:8081`:
+
+```sh
+curl -s "http://ci.syncloud.org:8081/files/redirect/{N}/"
+```
+
+A redirect build holds `redirect-{N}.tar.gz`, `distro/`, `playwright-report/`
+and `playwright-results/<test-slug>/` with `error-context.md`,
+`failure-full-page.png`, `trace.zip` and `video.webm`. Those come from
+`web/playwright-report/` and `web/test-results/`.
+
+To read a Playwright failure without a browser:
+
+```sh
+curl -s "http://ci.syncloud.org:8081/files/redirect/{N}/playwright-results/<slug>/error-context.md"
+curl -O "http://ci.syncloud.org:8081/files/redirect/{N}/playwright-results/<slug>/trace.zip"
+unzip -q trace.zip -d trace/ && grep -oE "/some-path\?[^\" ]*" trace/0-trace.trace | head
+```

@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/syncloud/redirect/event"
+	"github.com/syncloud/redirect/label"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/product"
 	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -90,6 +93,8 @@ type Www struct {
 	paypal         WwwPayPal
 	orders         WwwOrders
 	metrics        *metrics.Metrics
+	events         *event.Events
+	languages      *label.Allowed
 	domain         string
 	store          *sessions.CookieStore
 	count404       int64
@@ -130,6 +135,8 @@ func NewWww(
 		mailRelay:      mailRelay,
 		paypal:         paypal,
 		metrics:        metrics,
+		events:         event.NewEvents(event.Shop()),
+		languages:      label.NewAllowed(label.Languages()),
 		domain:         domain,
 		store:          sessions.NewCookieStore(authSecretSey),
 		socket:         socket,
@@ -180,6 +187,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan/subscribe/stripe/checkout", w.Secured(HandleUser(w.StripeCheckout))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe", w.Secured(HandleUser(w.SubscribeStripe))).Methods("POST")
 	r.HandleFunc("/plan/switch", w.Secured(HandleUser(w.PlanSwitch))).Methods("POST")
+	r.HandleFunc("/event", w.SiteEvent).Methods("POST")
 	r.HandleFunc("/device/catalog", Handle(w.DeviceCatalog)).Methods("GET")
 	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrder))).Methods("POST")
 	r.HandleFunc("/device/order/complete", w.Secured(HandleUser(w.DeviceOrderComplete))).Methods("POST")
@@ -820,6 +828,25 @@ func (w *Www) notFoundHandler(resp http.ResponseWriter, r *http.Request) {
 	http.NotFound(resp, r)
 }
 
+func (w *Www) SiteEvent(resp http.ResponseWriter, req *http.Request) {
+	request := model.SiteEventRequest{}
+	if err := json.NewDecoder(io.LimitReader(req.Body, 1024)).Decode(&request); err != nil {
+		http.Error(resp, "unreadable event", http.StatusBadRequest)
+		return
+	}
+	if !w.events.Known(request.Event) {
+		w.logger.Info("event rejected", zap.String("event", request.Event))
+		http.Error(resp, "unknown event", http.StatusNotFound)
+		return
+	}
+	source := "direct"
+	if request.Gclid {
+		source = "ad"
+	}
+	w.metrics.Event(request.Event, source, w.languages.Label(request.Language))
+	resp.WriteHeader(http.StatusNoContent)
+}
+
 func (w *Www) DeviceCatalog(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
 	w.metrics.Request("device_catalog")
 	return model.DeviceCatalogResponse{
@@ -852,9 +879,11 @@ func (w *Www) DeviceOrder(_ http.ResponseWriter, req *http.Request, user model.U
 	}
 	reference, err := w.orders.Start(order, request.Provider)
 	if err != nil {
+		w.metrics.DeviceOrder(request.Provider, "failed")
 		w.logger.Error("unable to start the order", zap.Error(err))
 		return nil, err
 	}
+	w.metrics.DeviceOrder(request.Provider, "started")
 	return model.DeviceOrderResponse{
 		Number:            order.Id,
 		Reference:         reference,

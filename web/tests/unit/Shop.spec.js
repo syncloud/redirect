@@ -5,8 +5,15 @@ import flushPromises from 'flush-promises'
 import Shop from '../../src/views/Shop.vue'
 import { loadScript } from '@paypal/paypal-js'
 import { ElButton } from 'element-plus'
+import { track } from '../../src/track'
 
 jest.mock('@paypal/paypal-js')
+jest.mock('../../src/track', () => ({
+  ...jest.requireActual('../../src/track'),
+  track: jest.fn()
+}))
+
+beforeEach(() => track.mockClear())
 
 const CATALOG = {
   data: {
@@ -39,9 +46,11 @@ function catalog (mock) {
 
 const RouterLinkStub = { props: ['to'], template: '<a :href="to"><slot /></a>' }
 
+const UNKNOWN = 'unknown'
+
 function mountShop (query = {}, replace = jest.fn(), loggedIn = true, push = jest.fn()) {
   return mount(Shop, {
-    props: { loggedIn },
+    props: loggedIn === UNKNOWN ? { loggedIn: undefined } : { loggedIn },
     global: {
       components: { ElButton, RouterLink: RouterLinkStub },
       mocks: { $route: { query }, $router: { replace, push } }
@@ -299,4 +308,170 @@ test('shows progress while the PayPal button itself is loading', async () => {
   await flushPromises()
 
   expect(wrapper.find('[data-testid="device-paypal-loading"]').exists()).toBe(false)
+})
+
+const names = () => track.mock.calls.map(call => call[0])
+
+test('counts the shop view as soon as the page opens', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  mountShop()
+  await flushPromises()
+
+  expect(names()).toContain('shop.view')
+})
+
+test('counts a signed out visitor once, not on every render', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+  await wrapper.find('[data-testid="device-option-2tx2"]').trigger('click')
+  await flushPromises()
+
+  expect(names().filter(name => name === 'shop.signedout')).toHaveLength(1)
+})
+
+test('does not call a visitor signed out while the session is still unknown', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), UNKNOWN)
+  await flushPromises()
+
+  expect(names()).not.toContain('shop.signedout')
+  expect(wrapper.find('[data-testid="shop-waiting"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="shop-waiting"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('[data-testid="shop-signin-link"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(false)
+})
+
+test('counts the visitor signed out once the session comes back empty', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), UNKNOWN)
+  await flushPromises()
+  await wrapper.setProps({ loggedIn: false })
+  await flushPromises()
+
+  expect(names()).toContain('shop.signedout')
+  expect(wrapper.find('[data-testid="shop-signin-link"]').exists()).toBe(true)
+})
+
+test('records every step a buyer takes on the way to paying by card', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+  mock.onPost('/api/device/order').reply(200,
+    { data: { reference: 'OURREF', url: 'https://checkout.example/session' } })
+  delete window.location
+  window.location = { href: '' }
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await wrapper.find('[data-testid="device-option-2tx2"]').trigger('click')
+  await proceed(wrapper)
+  await fill(wrapper)
+  await wrapper.find('[data-testid="device-pay-stripe"]').trigger('click')
+  await flushPromises()
+
+  expect(names()).toEqual([
+    'shop.view',
+    'shop.option',
+    'shop.continue',
+    'shop.address',
+    'shop.pay.view',
+    'shop.pay.stripe'
+  ])
+})
+
+test('counts the press on sign in to order', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+  await wrapper.find('[data-testid="shop-signin-link"]').trigger('click')
+
+  expect(names()).toContain('shop.signin')
+})
+
+test('counts the specification being opened, not merely rendered', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  expect(names()).not.toContain('shop.spec')
+
+  const spec = wrapper.find('[data-testid="device-spec"]')
+  spec.element.open = true
+  await spec.trigger('toggle')
+
+  expect(names()).toContain('shop.spec')
+})
+
+test('counts a completed order', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+  mock.onPost('/api/device/order/complete').reply(200, { data: { number: 42 } })
+
+  mountShop({ reference: 'OURREF' })
+  await flushPromises()
+
+  expect(names()).toContain('shop.ordered')
+})
+
+test('counts a failure and says so instead of only logging it', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/device/catalog').reply(200, {
+    data: { ...CATALOG.data, paypal_client_id: 'test-client-id' }
+  })
+  mock.onGet('/api/user').reply(200, { data: { email: 'a@b.c' } })
+  loadScript.mockRejectedValue(new Error('blocked'))
+  const logged = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await proceed(wrapper)
+  await fill(wrapper)
+  await flushPromises()
+
+  expect(names()).toContain('shop.paypal.failed')
+  expect(wrapper.find('[data-testid="device-error"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="device-paypal-loading"]').exists()).toBe(false)
+  logged.mockRestore()
+})
+
+test('counts a server error on the way to checkout', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+  mock.onPost('/api/device/order').reply(500, { message: 'no' })
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await proceed(wrapper)
+  await fill(wrapper)
+  await wrapper.find('[data-testid="device-pay-stripe"]').trigger('click')
+  await flushPromises()
+
+  expect(names()).toContain('shop.error')
+})
+
+test('treats a missing session prop as unknown rather than signed out', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mount(Shop, {
+    global: {
+      components: { ElButton, RouterLink: RouterLinkStub },
+      mocks: { $route: { query: {} }, $router: { replace: jest.fn(), push: jest.fn() } }
+    }
+  })
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="shop-waiting"]').exists()).toBe(true)
+  expect(names()).not.toContain('shop.signedout')
 })

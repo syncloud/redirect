@@ -218,3 +218,57 @@ test('the orders page needs an account', async ({ page }) => {
   await page.goto('/orders')
   await expect(page).toHaveURL(/\/login/)
 })
+
+test('the shop reports each step the visitor takes', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.beacons = []
+    const send = navigator.sendBeacon && navigator.sendBeacon.bind(navigator)
+    navigator.sendBeacon = (url, body) => {
+      if (String(url).includes('/api/event')) {
+        body.text().then(text => window.beacons.push(JSON.parse(text)))
+      }
+      return send ? send(url, body) : true
+    }
+  })
+
+  await page.goto('/shop')
+  await expect(page.getByTestId('device-choice')).toBeVisible()
+  await expect(page.getByTestId('shop-signin-link')).toBeVisible()
+
+  await page.getByTestId('device-option-2tx2').click()
+  await page.getByTestId('shop-signin-link').click()
+  await expect(page.getByTestId('login-form')).toBeVisible()
+
+  await expect
+    .poll(async () => (await page.evaluate(() => window.beacons)).map(each => each.event))
+    .toEqual(expect.arrayContaining([
+      'shop.view',
+      'shop.signedout',
+      'shop.option',
+      'shop.signin'
+    ]))
+
+  const reported = await page.evaluate(() => window.beacons)
+  for (const each of reported) {
+    expect(each.gclid, 'no click id was set, so nothing may claim an ad').toBe(false)
+    expect(each.language).toBe('en')
+    expect(JSON.stringify(each), 'a beacon must not carry a session').not.toContain('session')
+
+    const echoed = await page.request.post('/api/event', { data: each })
+    expect(echoed.status(), `${each.event} must be a step the server counts`).toBe(204)
+  }
+})
+
+test('the event endpoint counts only the steps it knows', async ({ page }) => {
+  await page.goto('/shop')
+
+  const known = await page.request.post('/api/event', {
+    data: { event: 'shop.view', gclid: false, language: 'en' }
+  })
+  expect(known.status(), 'a known step is counted').toBe(204)
+
+  for (const event of ['', 'shop.anything', 'user.deleted']) {
+    const refused = await page.request.post('/api/event', { data: { event: event } })
+    expect(refused.status(), `${event} must not become a metric label`).toBe(404)
+  }
+})

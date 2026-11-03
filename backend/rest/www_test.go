@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncloud/redirect/event"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
@@ -435,4 +436,59 @@ func (s *WwwOrdersStub) Retry(_ int64, _ int64, _ string) (*product.Order, error
 
 func (s *WwwOrdersStub) Describe(device, option string) (string, string, error) {
 	return device, option, nil
+}
+
+func shopWww() *Www {
+	return NewWww(
+		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
+		&WwwUsersStub{},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		&WwwStripeStub{},
+		&WwwOrdersStub{},
+		&WwwRelayStub{},
+		&WwwMailRelayStub{},
+		&WwwPayPalStub{},
+		metrics.New(),
+		"example.com",
+		[]byte("secret_key"),
+		"",
+		1000,
+		10000,
+		log.Default(),
+	)
+}
+
+func postEvent(www *Www, body string) *httptest.ResponseRecorder {
+	rr := httptest.NewRecorder()
+	www.SiteEvent(rr, httptest.NewRequest("POST", "/event", bytes.NewReader([]byte(body))))
+	return rr
+}
+
+func TestSiteEvent_CountsAKnownStep(t *testing.T) {
+	www := shopWww()
+	for _, name := range event.Shop() {
+		rr := postEvent(www, fmt.Sprintf(`{"event":"%s","language":"de"}`, name))
+		assert.Equal(t, http.StatusNoContent, rr.Code, name)
+	}
+}
+
+func TestSiteEvent_RefusesAnythingNotOnTheList(t *testing.T) {
+	www := shopWww()
+	for _, name := range []string{"", "shop.anything", "user.deleted", "shop.view "} {
+		rr := postEvent(www, fmt.Sprintf(`{"event":"%s"}`, name))
+		assert.Equal(t, http.StatusNotFound, rr.Code, name)
+	}
+}
+
+func TestSiteEvent_RefusesRubbish(t *testing.T) {
+	www := shopWww()
+	assert.Equal(t, http.StatusBadRequest, postEvent(www, "not json").Code)
+}
+
+func TestSiteEvent_AcceptsAnUnknownLanguageWithoutMakingALabelForIt(t *testing.T) {
+	www := shopWww()
+	rr := postEvent(www, fmt.Sprintf(`{"event":"%s","language":"klingon"}`, event.ShopView))
+	assert.Equal(t, http.StatusNoContent, rr.Code)
 }
