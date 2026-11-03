@@ -35,7 +35,7 @@
           </div>
         </div>
 
-        <details class="spec" data-testid="device-spec">
+        <details class="spec" data-testid="device-spec" @toggle="onSpecToggle">
           <summary>{{ $t('shop.moreDetails') }}</summary>
 
           <table class="spec-table" data-testid="device-spec-table">
@@ -71,7 +71,7 @@
             class="option"
             :class="{ 'option-on': option === each.code }"
             :data-testid="`device-option-${each.code}`"
-            @click="option = each.code"
+            @click="chooseOption(each.code)"
           >
             <span class="option-name">{{ each.name }}</span>
             <span class="option-extra">{{ each.extra ? $t('shop.optionExtra', { extra: money(each.extra) }) : $t('shop.optionIncluded') }}</span>
@@ -99,7 +99,7 @@
           size="large"
           class="continue"
           data-testid="shop-continue"
-          @click="step = 'address'"
+          @click="toAddress"
         >
           {{ $t('shop.continue') }}
         </el-button>
@@ -109,9 +109,19 @@
           size="large"
           class="continue"
           data-testid="shop-signin-link"
-          @click="$router.push('/login?next=/shop')"
+          @click="toSignIn"
         >
           {{ $t('shop.signInToOrder') }}
+        </el-button>
+        <el-button
+          v-else
+          type="primary"
+          size="large"
+          class="continue"
+          disabled
+          data-testid="shop-waiting"
+        >
+          {{ $t('shop.continue') }}
         </el-button>
       </div>
 
@@ -206,7 +216,7 @@
           class="continue"
           :disabled="incomplete"
           data-testid="shop-address-continue"
-          @click="step = 'pay'"
+          @click="toPay"
         >
           {{ $t('shop.continue') }}
         </el-button>
@@ -264,6 +274,22 @@
 <script>
 import axios from 'axios'
 import { loadScript } from '@paypal/paypal-js'
+import {
+  track,
+  SHOP_VIEW,
+  SHOP_SIGNED_OUT,
+  SHOP_OPTION,
+  SHOP_SPEC,
+  SHOP_SIGN_IN,
+  SHOP_CONTINUE,
+  SHOP_ADDRESS,
+  SHOP_PAY_VIEW,
+  SHOP_PAY_STRIPE,
+  SHOP_PAY_PAYPAL,
+  SHOP_PAYPAL_FAILED,
+  SHOP_ERROR,
+  SHOP_ORDERED
+} from '../track'
 import { CreditCard } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 
@@ -271,7 +297,7 @@ export default {
   name: 'DeviceView',
   props: {
     checkUserSession: Function,
-    loggedIn: Boolean
+    loggedIn: { type: Boolean, default: undefined }
   },
   data () {
     return {
@@ -329,9 +355,23 @@ export default {
       if (value === 'pay') {
         this.$nextTick(() => this.loadPayPal())
       }
+    },
+    loggedIn (value) {
+      if (value === false) {
+        track(SHOP_SIGNED_OUT)
+      }
+    },
+    incomplete (value, was) {
+      if (was && !value) {
+        track(SHOP_ADDRESS)
+      }
     }
   },
   mounted () {
+    track(SHOP_VIEW)
+    if (this.loggedIn === false) {
+      track(SHOP_SIGNED_OUT)
+    }
     this.load()
     const returned = this.$route.query.reference
     if (returned) {
@@ -350,10 +390,34 @@ export default {
       return `£${(pence / 100).toFixed(2)}`
     },
     onError (error) {
+      track(SHOP_ERROR)
       this.busy = ''
       this.error = error.response && error.response.data
         ? error.response.data.message
         : this.$t('shop.somethingWentWrong')
+    },
+    chooseOption (code) {
+      if (this.option !== code) {
+        track(SHOP_OPTION)
+      }
+      this.option = code
+    },
+    onSpecToggle (toggle) {
+      if (toggle.target.open) {
+        track(SHOP_SPEC)
+      }
+    },
+    toSignIn () {
+      track(SHOP_SIGN_IN)
+      this.$router.push('/login?next=/shop')
+    },
+    toAddress () {
+      track(SHOP_CONTINUE)
+      this.step = 'address'
+    },
+    toPay () {
+      track(SHOP_PAY_VIEW)
+      this.step = 'pay'
     },
     load () {
       axios.get('/api/device/catalog')
@@ -411,9 +475,11 @@ export default {
         .then(response => {
           this.number = response.data.data.number
           this.ordered = true
+          track(SHOP_ORDERED)
         })
     },
     payWithStripe () {
+      track(SHOP_PAY_STRIPE)
       this.error = ''
       this.busy = 'stripe'
       this.order('stripe')
@@ -440,6 +506,7 @@ export default {
           return paypal.Buttons({
             style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44, borderRadius: 0 },
             onClick: () => {
+              track(SHOP_PAY_PAYPAL)
               this.error = ''
               this.busy = 'paypal'
             },
@@ -471,7 +538,9 @@ export default {
           this.paypalLoading = false
         })
         .catch(error => {
+          track(SHOP_PAYPAL_FAILED)
           this.paypalLoading = false
+          this.error = this.$t('shop.somethingWentWrong')
           console.error('failed to load the PayPal JS SDK script', error)
         })
     }
