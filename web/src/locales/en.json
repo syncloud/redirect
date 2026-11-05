@@ -51,7 +51,8 @@
     "continueQuestion": "Continue?",
     "cancelTitle": "Cancel subscription",
     "cancelBody": "You are about to cancel your subscription",
-    "switchFailed": "Could not switch your subscription. Please try again."
+    "switchFailed": "Could not switch your subscription. Please try again.",
+    "paypalUnavailable": "PayPal could not be loaded. Please reload the page, or pay by card."
   },
   "activate": {
     "title": "Activation",

@@ -63,3 +63,33 @@ describe('the shop beacon', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/event', expect.objectContaining({ method: 'POST' }))
   })
 })
+
+describe('a beacon that cannot be sent', () => {
+  let beacon
+  let fetching
+
+  beforeEach(() => {
+    beacon = navigator.sendBeacon
+    fetching = global.fetch
+  })
+
+  afterEach(() => {
+    navigator.sendBeacon = beacon
+    global.fetch = fetching
+  })
+
+  it('never throws into the payment it was measuring', () => {
+    navigator.sendBeacon = () => {
+      throw new Error('blocked by the browser')
+    }
+
+    expect(() => track(SHOP_PAY_STRIPE)).not.toThrow()
+  })
+
+  it('never throws when the browser offers no transport at all', () => {
+    delete navigator.sendBeacon
+    delete global.fetch
+
+    expect(() => track(SHOP_PAY_STRIPE)).not.toThrow()
+  })
+})

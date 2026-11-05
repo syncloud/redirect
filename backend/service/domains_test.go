@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/change"
 	"github.com/syncloud/redirect/metrics"
@@ -129,11 +130,12 @@ type DomainsUsersStub struct {
 	userId         int64
 	authenticated  bool
 	subscriptionId *string
+	status         int64
 }
 
 func (users *DomainsUsersStub) Authenticate(email *string, _ *string) (*model.User, error) {
 	if users.authenticated {
-		return &model.User{Id: users.userId, Email: *email, Active: true, SubscriptionId: users.subscriptionId}, nil
+		return &model.User{Id: users.userId, Email: *email, Active: true, SubscriptionId: users.subscriptionId, Status: users.status}, nil
 	}
 	return nil, fmt.Errorf("authentication failed")
 }
@@ -514,4 +516,83 @@ func TestDomains_Update_UnchangedRelayLeavesDnsAlone(t *testing.T) {
 	dnsStub := updateRelayWithoutAddressChange(db, false)
 
 	assert.False(t, dnsStub.updated)
+}
+
+func acquireCounts(t *testing.T, m *metrics.Metrics) map[string]float64 {
+	registry := prometheus.NewPedanticRegistry()
+	assert.Nil(t, registry.Register(m))
+	families, err := registry.Gather()
+	assert.Nil(t, err)
+	counts := map[string]float64{}
+	for _, family := range families {
+		if family.GetName() != "redirect_domain_acquire_total" {
+			continue
+		}
+		for _, metric := range family.GetMetric() {
+			key := ""
+			for _, pair := range metric.GetLabel() {
+				if key != "" {
+					key += ","
+				}
+				key += pair.GetName() + "=" + pair.GetValue()
+			}
+			counts[key] = metric.GetCounter().GetValue()
+		}
+	}
+	return counts
+}
+
+func acquireRequest(domain string) model.DomainAcquireRequest {
+	password := "password"
+	email := "test@example.com"
+	mac := "11:22:33:44:55:66"
+	deviceName := "name"
+	deviceTitle := "title"
+	return model.DomainAcquireRequest{
+		Email:            &email,
+		Password:         &password,
+		Domain:           &domain,
+		DeviceMacAddress: &mac,
+		DeviceName:       &deviceName,
+		DeviceTitle:      &deviceTitle,
+	}
+}
+
+func TestDomainAcquire_CountsAFirstTimeDeviceOfANonPayingUser(t *testing.T) {
+	m := metrics.New()
+	db := &DomainsDbStub{found: false}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(&DnsStub{}, db, users, m, "syncloud.it", "", &DetectorStub{}, "")
+
+	_, err := domains.DomainAcquire(acquireRequest("test123.syncloud.it"), "")
+
+	assert.Nil(t, err)
+	assert.True(t, db.inserted)
+	assert.Equal(t, map[string]float64{"domain=new,owner=free": 1}, acquireCounts(t, m))
+}
+
+func TestDomainAcquire_CountsAReinstallSeparatelyAndNotesTheOwnerPays(t *testing.T) {
+	m := metrics.New()
+	db := &DomainsDbStub{found: true, userId: 1}
+	users := &DomainsUsersStub{authenticated: true, userId: 1, status: model.StatusSubscribed}
+	domains := NewDomains(&DnsStub{}, db, users, m, "syncloud.it", "", &DetectorStub{}, "")
+
+	_, err := domains.DomainAcquire(acquireRequest("test123.syncloud.it"), "")
+
+	assert.Nil(t, err)
+	assert.True(t, db.updated)
+	assert.False(t, db.inserted)
+	assert.Equal(t, map[string]float64{"domain=existing,owner=subscriber": 1}, acquireCounts(t, m))
+}
+
+func TestDomainAcquire_CountsNothingWhenTheDomainIsSomeoneElses(t *testing.T) {
+	m := metrics.New()
+	db := &DomainsDbStub{found: true, userId: 2}
+	users := &DomainsUsersStub{authenticated: true, userId: 1}
+	domains := NewDomains(&DnsStub{}, db, users, m, "syncloud.it", "", &DetectorStub{}, "")
+
+	_, err := domains.DomainAcquire(acquireRequest("test123.syncloud.it"), "")
+
+	assert.NotNil(t, err)
+	assert.Empty(t, acquireCounts(t, m))
 }

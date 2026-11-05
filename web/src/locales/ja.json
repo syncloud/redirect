@@ -51,7 +51,8 @@
     "continueQuestion": "続けますか?",
     "cancelTitle": "サブスクリプションのキャンセル",
     "cancelBody": "サブスクリプションをキャンセルしようとしています",
-    "switchFailed": "サブスクリプションを変更できませんでした。もう一度お試しください。"
+    "switchFailed": "サブスクリプションを変更できませんでした。もう一度お試しください。",
+    "paypalUnavailable": "PayPal を読み込めませんでした。ページを再読み込みするか、カードでお支払いください。"
   },
   "activate": {
     "title": "アクティベーション",

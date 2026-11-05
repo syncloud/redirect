@@ -20,6 +20,7 @@
                 >{{ $t('account.active') }}</el-tag>
                 <span
                   id="subscription_inactive"
+                  data-testid="subscription-inactive"
                   class="trial-note"
                   v-if="userLoaded && subscriptionId === undefined"
                 >{{ $t('account.trialNote') }}</span>
@@ -131,13 +132,14 @@
                 <div class="pay-paypal-wrap">
                   <div id="paypal-buttons" class="pay-paypal" v-show="tier === 'pro' || paypalMaxEnabled"></div>
 
+                  <div v-if="paypalBroken" class="switch-error" data-testid="plan-paypal-failed">{{ $t('account.paypalUnavailable') }}</div>
                   <div v-if="busy === 'paypal'" class="pay-overlay" data-testid="account-pay-busy">
                     <span class="pay-spinner" :aria-label="$t('account.openingPaypal')"/>
                   </div>
                 </div>
 
                 <div class="pay-crypto" v-show="tier === 'pro'">
-                  <el-button text id="crypto_year" data-testid="crypto-toggle" @click="cryptoOpen = !cryptoOpen">
+                  <el-button text id="crypto_year" data-testid="crypto-toggle" @click="toggleCrypto">
                     {{ $t('account.payCrypto') }}
                   </el-button>
                   <div v-show="cryptoOpen" class="crypto-details">
@@ -303,6 +305,21 @@ import { CircleCheck, CopyDocument, Check, Close, Delete, CreditCard } from '@el
 import { markRaw } from 'vue'
 import i18n from '../i18n'
 import {
+  track,
+  PLAN_VIEW,
+  PLAN_SUBSCRIBED,
+  PLAN_TIER,
+  PLAN_PERIOD,
+  PLAN_STRIPE,
+  PLAN_PAYPAL,
+  PLAN_PAYPAL_FAILED,
+  PLAN_CRYPTO,
+  PLAN_CRYPTO_SENT,
+  PLAN_SWITCH_ANNUAL,
+  PLAN_CANCEL,
+  PLAN_ERROR
+} from '../track'
+import {
   TIER_PRICES_FROM_PRICE_CHANGE_DATE,
   priceChangeDateText,
   priceChangePending,
@@ -331,6 +348,7 @@ export default {
       clientId: String,
       sdkUrl: '',
       paypalLoaded: Boolean,
+      paypalBroken: false,
       userLoaded: Boolean,
       deleteConfirmationVisible: false,
       cancelConfirmationVisible: false,
@@ -352,6 +370,19 @@ export default {
       Close: markRaw(Close),
       Delete: markRaw(Delete),
       CreditCard: markRaw(CreditCard)
+    }
+  },
+  watch: {
+    userLoaded (value) {
+      if (value && this.subscriptionId === undefined) {
+        track(PLAN_VIEW)
+      }
+    },
+    tier () {
+      track(PLAN_TIER)
+    },
+    period () {
+      track(PLAN_PERIOD)
     }
   },
   mounted () {
@@ -444,20 +475,29 @@ export default {
             this.enablePayPal(this.clientId)
           }
         })
-        .catch(this.onError)
+        .catch(this.onPlanError)
     },
     subscribe: function () {
 
     },
+    toggleCrypto: function () {
+      this.cryptoOpen = !this.cryptoOpen
+      if (this.cryptoOpen) {
+        track(PLAN_CRYPTO)
+      }
+    },
     cryptoSubscribe: function () {
+      track(PLAN_CRYPTO_SENT)
       axios.post('/api/plan/subscribe/crypto', { subscription_id: this.cryptoTransactionId })
         .then(_ => {
+          track(PLAN_SUBSCRIBED)
           this.reload()
         })
-        .catch(this.onError)
+        .catch(this.onPlanError)
     },
     stripeCheckout: function () {
       this.busy = 'stripe'
+      track(PLAN_STRIPE)
       const annual = this.period === 'year'
       let plan
       if (this.tier === 'max') {
@@ -469,15 +509,16 @@ export default {
         .then(response => {
           window.location.href = response.data.data.url
         })
-        .catch(this.onError)
+        .catch(this.onPlanError)
     },
     confirmStripe: function (sessionId) {
       axios.post('/api/plan/subscribe/stripe', { subscription_id: sessionId })
         .then(_ => {
+          track(PLAN_SUBSCRIBED)
           this.$router.replace({ query: {} })
           this.reload()
         })
-        .catch(this.onError)
+        .catch(this.onPlanError)
     },
     enablePayPal: function (clientId) {
       const options = {
@@ -496,6 +537,7 @@ export default {
               style: { layout: 'vertical', label: 'paypal', tagline: false, height: 44, borderRadius: 0 },
               onClick: () => {
                 this.busy = 'paypal'
+                track(PLAN_PAYPAL)
               },
               onCancel: () => {
                 this.busy = ''
@@ -515,15 +557,18 @@ export default {
               onApprove: (data, actions) => {
                 axios.post('/api/plan/subscribe/paypal', { subscription_id: data.subscriptionID })
                   .then(_ => {
+                    track(PLAN_SUBSCRIBED)
                     this.reload()
                   })
-                  .catch(this.onError)
+                  .catch(this.onPlanError)
               }
             })
             .render('#paypal-buttons')
           this.paypalLoaded = true
         })
         .catch((err) => {
+          this.paypalBroken = true
+          track(PLAN_PAYPAL_FAILED)
           console.error('failed to load the PayPal JS SDK script', err)
         })
     },
@@ -536,6 +581,7 @@ export default {
         .catch(this.onError)
     },
     switchToAnnual: function () {
+      track(PLAN_SWITCH_ANNUAL)
       this.switchConfirmationVisible = true
     },
     switchToAnnualConfirm: function () {
@@ -553,6 +599,7 @@ export default {
         })
         .catch(err => {
           this.busy = ''
+          track(PLAN_ERROR)
           if (err.response && err.response.status === 401) {
             this.$router.push('/login')
             return
@@ -562,6 +609,7 @@ export default {
         })
     },
     cancelSubscription: function () {
+      track(PLAN_CANCEL)
       this.cancelConfirmationVisible = true
     },
     cancelSubscriptionConfirm: function () {
@@ -570,7 +618,7 @@ export default {
         .then(_ => {
           this.reload()
         })
-        .catch(this.onError)
+        .catch(this.onPlanError)
     },
     accountDelete: function () {
       this.deleteConfirmationVisible = true
@@ -582,6 +630,10 @@ export default {
           this.checkUserSession()
         })
         .catch(this.onError)
+    },
+    onPlanError: function (err) {
+      track(PLAN_ERROR)
+      this.onError(err)
     },
     onError: function (err) {
       this.busy = ''

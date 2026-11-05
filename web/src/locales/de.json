@@ -51,7 +51,8 @@
     "continueQuestion": "Fortfahren?",
     "cancelTitle": "Abonnement kündigen",
     "cancelBody": "Sie sind dabei, Ihr Abonnement zu kündigen",
-    "switchFailed": "Ihr Abonnement konnte nicht umgestellt werden. Bitte versuchen Sie es erneut."
+    "switchFailed": "Ihr Abonnement konnte nicht umgestellt werden. Bitte versuchen Sie es erneut.",
+    "paypalUnavailable": "PayPal konnte nicht geladen werden. Bitte laden Sie die Seite neu oder zahlen Sie mit Karte."
   },
   "activate": {
     "title": "Aktivierung",
