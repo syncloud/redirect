@@ -51,7 +51,8 @@
     "continueQuestion": "继续吗？",
     "cancelTitle": "取消订阅",
     "cancelBody": "您即将取消您的订阅",
-    "switchFailed": "无法切换您的订阅，请重试。"
+    "switchFailed": "无法切换您的订阅，请重试。",
+    "paypalUnavailable": "无法加载 PayPal，请重新加载页面或使用银行卡支付。"
   },
   "activate": {
     "title": "激活",

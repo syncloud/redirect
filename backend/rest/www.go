@@ -135,7 +135,7 @@ func NewWww(
 		mailRelay:      mailRelay,
 		paypal:         paypal,
 		metrics:        metrics,
-		events:         event.NewEvents(event.Shop()),
+		events:         event.NewEvents(event.Site()),
 		languages:      label.NewAllowed(label.Languages()),
 		domain:         domain,
 		store:          sessions.NewCookieStore(authSecretSey),

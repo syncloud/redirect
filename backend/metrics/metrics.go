@@ -8,6 +8,7 @@ type Metrics struct {
 	cleaner   *prometheus.CounterVec
 	events    *prometheus.CounterVec
 	orders    *prometheus.CounterVec
+	acquires  *prometheus.CounterVec
 	rogue     *RogueDevices
 }
 
@@ -48,6 +49,13 @@ func New() *Metrics {
 			},
 			[]string{"provider", "outcome"},
 		),
+		acquires: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "redirect_domain_acquire_total",
+				Help: "Devices claiming a domain, by whether the name had ever been claimed before and whether its owner already subscribes.",
+			},
+			[]string{"domain", "owner"},
+		),
 		rogue: NewRogueDevices(),
 	}
 }
@@ -62,6 +70,10 @@ func (m *Metrics) Event(event, source, language string) {
 
 func (m *Metrics) DeviceOrder(provider, outcome string) {
 	m.orders.WithLabelValues(provider, outcome).Inc()
+}
+
+func (m *Metrics) DomainAcquire(domain, owner string) {
+	m.acquires.WithLabelValues(domain, owner).Inc()
 }
 
 func (m *Metrics) DnsClient(action string) {
@@ -82,6 +94,7 @@ func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	m.cleaner.Describe(ch)
 	m.events.Describe(ch)
 	m.orders.Describe(ch)
+	m.acquires.Describe(ch)
 	m.rogue.Describe(ch)
 }
 
@@ -91,5 +104,6 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	m.cleaner.Collect(ch)
 	m.events.Collect(ch)
 	m.orders.Collect(ch)
+	m.acquires.Collect(ch)
 	m.rogue.Collect(ch)
 }

@@ -51,7 +51,8 @@
     "continueQuestion": "Continuar?",
     "cancelTitle": "Cancelar assinatura",
     "cancelBody": "Você está prestes a cancelar sua assinatura",
-    "switchFailed": "Não foi possível alterar a sua subscrição. Tente novamente."
+    "switchFailed": "Não foi possível alterar a sua subscrição. Tente novamente.",
+    "paypalUnavailable": "Não foi possível carregar o PayPal. Recarregue a página ou pague com cartão."
   },
   "activate": {
     "title": "Ativação",

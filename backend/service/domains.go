@@ -245,6 +245,10 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 	}
 	updateToken := utils.Uuid()
 	now := time.Now()
+	owner := metrics.OwnerFree
+	if user.Status == model.StatusSubscribed {
+		owner = metrics.OwnerSubscriber
+	}
 	if domain == nil {
 		domain = &model.Domain{
 			Name:             *request.Domain,
@@ -267,6 +271,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		if err != nil {
 			return nil, err
 		}
+		d.metrics.DomainAcquire(metrics.DomainNew, owner)
 
 	} else {
 		domain.UpdateToken = &updateToken
@@ -279,6 +284,7 @@ func (d *Domains) DomainAcquire(request model.DomainAcquireRequest, domainField 
 		if err != nil {
 			return nil, err
 		}
+		d.metrics.DomainAcquire(metrics.DomainExisting, owner)
 
 	}
 	domain.BackwardCompatibleDomain(d.domain)

@@ -51,7 +51,8 @@
     "continueQuestion": "Continuer ?",
     "cancelTitle": "Annuler l'abonnement",
     "cancelBody": "Vous êtes sur le point d'annuler votre abonnement",
-    "switchFailed": "Impossible de changer votre abonnement. Veuillez réessayer."
+    "switchFailed": "Impossible de changer votre abonnement. Veuillez réessayer.",
+    "paypalUnavailable": "Impossible de charger PayPal. Veuillez recharger la page ou payer par carte."
   },
   "activate": {
     "title": "Activation",

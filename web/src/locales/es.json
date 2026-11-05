@@ -51,7 +51,8 @@
     "continueQuestion": "¿Continuar?",
     "cancelTitle": "Cancelar suscripción",
     "cancelBody": "Estás a punto de cancelar tu suscripción",
-    "switchFailed": "No se pudo cambiar tu suscripción. Inténtalo de nuevo."
+    "switchFailed": "No se pudo cambiar tu suscripción. Inténtalo de nuevo.",
+    "paypalUnavailable": "No se pudo cargar PayPal. Recarga la página o paga con tarjeta."
   },
   "activate": {
     "title": "Activación",
