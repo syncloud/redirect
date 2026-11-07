@@ -251,29 +251,26 @@ export function mock () {
         return new Response(200, {}, {
           data: {
             devices: [{
-              code: 'h4',
-              name: 'Syncloud H4',
-              board: 'odroid-hc4',
-              price: 22900,
+              code: 'x1',
+              name: 'Syncloud X1',
+              board: 'amd64',
+              price: 58200,
               specs: [
-                { name: 'CPU', value: 'Amlogic S905X3, Cortex-A55' },
-                { name: 'RAM', value: '4 GB DDR4' },
-                { name: 'Drive bays', value: '2 x SATA, 3.5 or 2.5 inch' },
-                { name: 'Ethernet', value: '1 Gb' },
-                { name: 'CPU cores', value: '4' },
-                { name: 'CPU frequency', value: '1.8 GHz' },
-                { name: 'Boot media', value: 'Micro SD card, included' },
-                { name: 'USB', value: 'USB 2.0 x 1' },
-                { name: 'Video', value: 'HDMI 2.0, 4K at 60 Hz' },
-                { name: 'Size', value: '84 x 90.5 x 25 mm' }
+                { name: 'Base', value: 'GMKtec NucBox G10' },
+                { name: 'CPU', value: 'AMD Ryzen 5 3500U' },
+                { name: 'CPU cores', value: '4 cores, 8 threads' },
+                { name: 'CPU frequency', value: '2.1 GHz, up to 3.7 GHz' },
+                { name: 'RAM', value: '16 GB DDR4, up to 64 GB' },
+                { name: 'Disk', value: '1 TB NVMe SSD' },
+                { name: 'Disk slots', value: '2 x M.2 2280, PCIe 3.0 x4' },
+                { name: 'Ethernet', value: '2.5 Gb' },
+                { name: 'USB', value: 'USB 3.2 and USB-C' },
+                { name: 'Video', value: 'Three displays, 4K' },
+                { name: 'Wireless', value: 'Wi-Fi 5, Bluetooth 5.0' },
+                { name: 'Size', value: '127 x 127 x 45 mm' }
               ],
               options: [
-                { code: '120', name: '120 GB SSD', extra: 0 },
-                { code: '120x2', name: '120 GB SSD x 2', extra: 3000 },
-                { code: '1t', name: '1 TB SSD', extra: 8000 },
-                { code: '1tx2', name: '1 TB SSD x 2', extra: 18000 },
-                { code: '2t', name: '2 TB SSD', extra: 20000 },
-                { code: '2tx2', name: '2 TB SSD x 2', extra: 43000 }
+                { code: '1t', name: '1 TB NVMe SSD', extra: 0 }
               ]
             }],
             shipping: 1500,

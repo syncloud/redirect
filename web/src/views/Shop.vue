@@ -16,18 +16,39 @@
     <template v-else>
       <div v-show="step === 'choose'" class="sc-card" data-testid="device-choice">
         <div class="product-head">
-          <img
-            class="product-photo"
-            src="/assets/syncloud-h4.jpg"
-            :alt="device.name"
-            width="180"
-            height="180"
-            data-testid="device-photo"
-          >
-          <div>
+          <div class="product-gallery">
+            <button
+              type="button"
+              class="product-open"
+              data-testid="device-photo-open"
+              @click="openPhoto"
+            >
+              <img
+                class="product-photo"
+                :src="photos[photo]"
+                :alt="device.name"
+                width="180"
+                height="180"
+                data-testid="device-photo"
+              >
+            </button>
+            <div class="product-thumbs" data-testid="device-thumbs">
+              <button
+                v-for="(each, index) in photos"
+                :key="each"
+                type="button"
+                class="product-thumb"
+                :class="{ 'product-thumb-on': index === photo }"
+                :data-testid="'device-thumb-' + index"
+                @click="photo = index"
+              >
+                <img :src="each" :alt="device.name" width="40" height="40">
+              </button>
+            </div>
+          </div>
+          <div class="product-info">
             <h2 class="sc-h2 product-name">{{ device.name }}</h2>
-            <p class="product-from">{{ $t('shop.priceFrom', { price: money(device.price + shipping) }) }}</p>
-            <ul class="product-points">
+            <ul class="product-points" data-testid="device-points">
               <li>{{ $t('shop.point1') }}</li>
               <li>{{ $t('shop.point2') }}</li>
               <li>{{ $t('shop.point3') }}</li>
@@ -61,22 +82,6 @@
             {{ $t('shop.suits') }}
           </p>
         </details>
-
-        <h3 class="option-title">{{ $t('shop.storage') }}</h3>
-        <div class="options" data-testid="device-options">
-          <button
-            v-for="each in device.options"
-            :key="each.code"
-            type="button"
-            class="option"
-            :class="{ 'option-on': option === each.code }"
-            :data-testid="`device-option-${each.code}`"
-            @click="chooseOption(each.code)"
-          >
-            <span class="option-name">{{ each.name }}</span>
-            <span class="option-extra">{{ each.extra ? $t('shop.optionExtra', { extra: money(each.extra) }) : $t('shop.optionIncluded') }}</span>
-          </button>
-        </div>
 
         <div class="sc-summary">
           <div class="sc-summary-row">
@@ -268,6 +273,50 @@
     </template>
 
     <p v-if="error" class="sc-warn" data-testid="device-error">{{ error }}</p>
+
+    <div
+      v-if="zoomed"
+      class="lightbox"
+      data-testid="device-lightbox"
+      @click="zoomed = false"
+      @touchstart="onTouchStart"
+      @touchend="onTouchEnd"
+    >
+      <button
+        type="button"
+        class="lightbox-step lightbox-back"
+        :aria-label="$t('shop.previousPhoto')"
+        data-testid="device-photo-previous"
+        @click.stop="previousPhoto"
+      >
+        &lsaquo;
+      </button>
+      <img
+        class="lightbox-photo"
+        :src="photos[photo]"
+        :alt="device.name"
+        data-testid="device-lightbox-photo"
+        @click.stop
+      >
+      <button
+        type="button"
+        class="lightbox-step lightbox-forward"
+        :aria-label="$t('shop.nextPhoto')"
+        data-testid="device-photo-next"
+        @click.stop="nextPhoto"
+      >
+        &rsaquo;
+      </button>
+      <button
+        type="button"
+        class="lightbox-close"
+        :aria-label="$t('shop.close')"
+        data-testid="device-lightbox-close"
+        @click.stop="zoomed = false"
+      >
+        &times;
+      </button>
+    </div>
   </div>
 </template>
 
@@ -278,8 +327,8 @@ import {
   track,
   SHOP_VIEW,
   SHOP_SIGNED_OUT,
-  SHOP_OPTION,
   SHOP_SPEC,
+  SHOP_PHOTO,
   SHOP_SIGN_IN,
   SHOP_CONTINUE,
   SHOP_ADDRESS,
@@ -302,6 +351,15 @@ export default {
   data () {
     return {
       device: { name: '', price: 0, specs: [], options: [] },
+      photos: [
+        '/assets/syncloud-x1.jpg',
+        '/assets/syncloud-x1-ports.jpg',
+        '/assets/syncloud-x1-inside.jpg',
+        '/assets/syncloud-x1-cooling.jpg'
+      ],
+      photo: 0,
+      zoomed: false,
+      swipeFrom: 0,
       shipping: 0,
       currency: 'GBP',
       paypalClientId: '',
@@ -368,6 +426,7 @@ export default {
     }
   },
   mounted () {
+    window.addEventListener('keydown', this.onKey)
     track(SHOP_VIEW)
     if (this.loggedIn === false) {
       track(SHOP_SIGNED_OUT)
@@ -385,6 +444,9 @@ export default {
       this.resume(Number(resume))
     }
   },
+  unmounted () {
+    window.removeEventListener('keydown', this.onKey)
+  },
   methods: {
     money (pence) {
       return `£${(pence / 100).toFixed(2)}`
@@ -396,15 +458,47 @@ export default {
         ? error.response.data.message
         : this.$t('shop.somethingWentWrong')
     },
-    chooseOption (code) {
-      if (this.option !== code) {
-        track(SHOP_OPTION)
-      }
-      this.option = code
-    },
     onSpecToggle (toggle) {
       if (toggle.target.open) {
         track(SHOP_SPEC)
+      }
+    },
+    openPhoto () {
+      track(SHOP_PHOTO)
+      this.zoomed = true
+    },
+    onKey (press) {
+      if (!this.zoomed) {
+        return
+      }
+      if (press.key === 'Escape') {
+        this.zoomed = false
+      }
+      if (press.key === 'ArrowRight') {
+        this.nextPhoto()
+      }
+      if (press.key === 'ArrowLeft') {
+        this.previousPhoto()
+      }
+    },
+    nextPhoto () {
+      this.photo = (this.photo + 1) % this.photos.length
+    },
+    previousPhoto () {
+      this.photo = (this.photo + this.photos.length - 1) % this.photos.length
+    },
+    onTouchStart (touch) {
+      this.swipeFrom = touch.changedTouches[0].clientX
+    },
+    onTouchEnd (touch) {
+      const moved = touch.changedTouches[0].clientX - this.swipeFrom
+      if (Math.abs(moved) < 40) {
+        return
+      }
+      if (moved < 0) {
+        this.nextPhoto()
+      } else {
+        this.previousPhoto()
       }
     },
     toSignIn () {
@@ -671,10 +765,100 @@ export default {
   margin: 0;
 }
 
-.product-from {
-  margin: 2px 0 0;
-  color: var(--sc-muted);
-  font-size: 0.95rem;
+.product-gallery {
+  flex: none;
+}
+
+.product-open {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
+.product-thumbs {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.product-thumb {
+  padding: 0;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-control-radius);
+  background: var(--sc-field-bg);
+  line-height: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.product-thumb-on {
+  border-color: var(--sc-primary);
+}
+
+.product-thumb img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.8);
+  cursor: zoom-out;
+}
+
+.lightbox-photo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--sc-control-radius);
+}
+
+.lightbox-step {
+  position: absolute;
+  top: 50%;
+  width: 48px;
+  height: 64px;
+  transform: translateY(-50%);
+  border: 0;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 2.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-back {
+  left: 0;
+  border-radius: 0 var(--sc-control-radius) var(--sc-control-radius) 0;
+}
+
+.lightbox-forward {
+  right: 0;
+  border-radius: var(--sc-control-radius) 0 0 var(--sc-control-radius);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  padding: 4px 10px;
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .product-points {
@@ -734,53 +918,6 @@ export default {
   margin: 12px 0 0;
 }
 
-.option-title {
-  margin: 24px 0 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--sc-ink-2);
-}
-
-.options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-}
-
-.option {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 14px;
-  border: 1px solid var(--sc-border);
-  border-radius: var(--sc-control-radius);
-  background: var(--sc-surface);
-  color: var(--sc-ink);
-  font-family: var(--sc-font);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.option:hover {
-  border-color: var(--sc-primary);
-}
-
-.option-on {
-  border-color: var(--sc-primary);
-  box-shadow: 0 0 0 2px var(--sc-primary-soft);
-}
-
-.option-name {
-  font-weight: 600;
-}
-
-.option-extra {
-  color: var(--sc-muted);
-  font-size: 0.85rem;
-}
-
 @media (max-width: 560px) {
   .product-head {
     gap: 14px;
@@ -791,12 +928,43 @@ export default {
     height: 96px;
   }
 
-  .product-points {
-    display: none;
+  .product-gallery {
+    display: contents;
   }
 
-  .options {
-    grid-template-columns: repeat(2, 1fr);
+  .product-open {
+    order: 1;
+  }
+
+  .product-info {
+    display: contents;
+  }
+
+  .product-name {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .product-thumbs {
+    order: 3;
+    flex-basis: 100%;
+    margin-top: 0;
+  }
+
+  .product-thumb {
+    flex: 1;
+  }
+
+  .product-thumb img {
+    width: 100%;
+    height: 60px;
+  }
+
+  .product-points {
+    order: 4;
+    flex-basis: 100%;
+    margin-top: 0;
   }
 }
 
