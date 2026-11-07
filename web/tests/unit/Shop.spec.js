@@ -18,19 +18,18 @@ beforeEach(() => track.mockClear())
 const CATALOG = {
   data: {
     devices: [{
-      code: 'h4',
-      name: 'Syncloud H4',
-      price: 22900,
+      code: 'x1',
+      name: 'Syncloud X1',
+      price: 58200,
       specs: [
-        { name: 'CPU', value: 'Amlogic S905X3, Cortex-A55' },
-        { name: 'RAM', value: '4 GB DDR4' },
-        { name: 'Drive bays', value: '2 x SATA, 3.5 or 2.5 inch' },
-        { name: 'Ethernet', value: '1 Gb' },
-        { name: 'USB', value: 'USB 2.0 x 1' }
+        { name: 'Base', value: 'GMKtec NucBox G10' },
+        { name: 'CPU', value: 'AMD Ryzen 5 3500U' },
+        { name: 'RAM', value: '16 GB DDR4, up to 64 GB' },
+        { name: 'Disk', value: '1 TB NVMe SSD' },
+        { name: 'Ethernet', value: '2.5 Gb' }
       ],
       options: [
-        { code: '120', name: '120 GB SSD', extra: 0 },
-        { code: '2tx2', name: '2 TB SSD x 2', extra: 43000 }
+        { code: '1t', name: '1 TB NVMe SSD', extra: 0 }
       ]
     }],
     shipping: 1500,
@@ -78,16 +77,176 @@ async function fill (wrapper) {
   await flushPromises()
 }
 
-test('adds shipping to whichever option is chosen', async () => {
+test('adds shipping to the one price there is', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)
 
   const wrapper = mountShop()
   await flushPromises()
-  expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£244.00')
 
-  await wrapper.find('[data-testid="device-option-2tx2"]').trigger('click')
-  expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£674.00')
+  expect(wrapper.find('[data-testid="device-price"]').text()).toBe('£582.00')
+  expect(wrapper.find('[data-testid="device-shipping"]').text()).toBe('£15.00')
+  expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£597.00')
+})
+
+test('offers nothing to choose, because the build is fixed', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="device-options"]').exists()).toBe(false)
+})
+
+test('opens the photo full size when it is pressed', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  expect(wrapper.find('[data-testid="device-lightbox"]').exists()).toBe(false)
+
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+  expect(wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src'))
+    .toBe(wrapper.find('[data-testid="device-photo"]').attributes('src'))
+
+  await wrapper.find('[data-testid="device-lightbox"]').trigger('click')
+  expect(wrapper.find('[data-testid="device-lightbox"]').exists()).toBe(false)
+})
+
+test('shows another picture of the device when a thumbnail is pressed', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  const first = wrapper.find('[data-testid="device-photo"]').attributes('src')
+
+  await wrapper.find('[data-testid="device-thumb-2"]').trigger('click')
+  const second = wrapper.find('[data-testid="device-photo"]').attributes('src')
+  expect(second).not.toBe(first)
+
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+  expect(wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src')).toBe(second)
+})
+
+test('steps through the pictures with the arrows, and wraps round', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+
+  const shown = () => wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src')
+  const first = shown()
+
+  await wrapper.find('[data-testid="device-photo-next"]').trigger('click')
+  expect(shown()).not.toBe(first)
+  expect(wrapper.find('[data-testid="device-lightbox"]').exists()).toBe(true)
+
+  await wrapper.find('[data-testid="device-photo-previous"]').trigger('click')
+  expect(shown()).toBe(first)
+
+  await wrapper.find('[data-testid="device-photo-previous"]').trigger('click')
+  expect(shown()).not.toBe(first)
+
+  await wrapper.find('[data-testid="device-photo-next"]').trigger('click')
+  expect(shown()).toBe(first)
+})
+
+test('steps through the pictures with the keyboard', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+
+  const shown = () => wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src')
+  const first = shown()
+
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+  await wrapper.vm.$nextTick()
+  expect(shown()).not.toBe(first)
+
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+  await wrapper.vm.$nextTick()
+  expect(shown()).toBe(first)
+
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+  await wrapper.vm.$nextTick()
+  expect(wrapper.find('[data-testid="device-lightbox"]').exists()).toBe(false)
+})
+
+test('swipes between the pictures on a touch screen', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+
+  const lightbox = wrapper.find('[data-testid="device-lightbox"]')
+  const shown = () => wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src')
+  const first = shown()
+
+  await lightbox.trigger('touchstart', { changedTouches: [{ clientX: 300 }] })
+  await lightbox.trigger('touchend', { changedTouches: [{ clientX: 100 }] })
+  const second = shown()
+  expect(second).not.toBe(first)
+
+  await lightbox.trigger('touchstart', { changedTouches: [{ clientX: 100 }] })
+  await lightbox.trigger('touchend', { changedTouches: [{ clientX: 300 }] })
+  expect(shown()).toBe(first)
+})
+
+test('a tap that is not a swipe leaves the picture alone', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+
+  const lightbox = wrapper.find('[data-testid="device-lightbox"]')
+  const first = wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src')
+
+  await lightbox.trigger('touchstart', { changedTouches: [{ clientX: 200 }] })
+  await lightbox.trigger('touchend', { changedTouches: [{ clientX: 210 }] })
+
+  expect(wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src')).toBe(first)
+})
+
+test('the picture itself does not close the full screen view', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+
+  await wrapper.find('[data-testid="device-lightbox-photo"]').trigger('click')
+  expect(wrapper.find('[data-testid="device-lightbox"]').exists()).toBe(true)
+
+  await wrapper.find('[data-testid="device-lightbox-close"]').trigger('click')
+  expect(wrapper.find('[data-testid="device-lightbox"]').exists()).toBe(false)
+})
+
+test('the picture chosen in the full screen view stays chosen on the card', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+  await wrapper.find('[data-testid="device-photo-next"]').trigger('click')
+  const chosen = wrapper.find('[data-testid="device-lightbox-photo"]').attributes('src')
+
+  await wrapper.find('[data-testid="device-lightbox-close"]').trigger('click')
+
+  expect(wrapper.find('[data-testid="device-photo"]').attributes('src')).toBe(chosen)
 })
 
 test('will not let you pay before the address is complete', async () => {
@@ -124,7 +283,7 @@ test('never tells the server what the order costs', async () => {
 
   expect(posted).not.toHaveProperty('total')
   expect(posted).not.toHaveProperty('price')
-  expect(posted.device).toBe('h4')
+  expect(posted.device).toBe('x1')
   expect(window.location.href).toBe('https://checkout.example/session')
 })
 
@@ -153,7 +312,7 @@ test('shows the product to a visitor who is not signed in', async () => {
   await flushPromises()
 
   expect(wrapper.find('[data-testid="device-choice"]').exists()).toBe(true)
-  expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£244.00')
+  expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£597.00')
 
   expect(wrapper.find('[data-testid="shop-signin-link"]').exists()).toBe(true)
   expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(false)
@@ -186,7 +345,7 @@ test('keeps checkout out of the way until the device is chosen', async () => {
   await proceed(wrapper)
 
   expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(true)
-  expect(wrapper.find('[data-testid="shop-chosen"]').text()).toContain('£244.00')
+  expect(wrapper.find('[data-testid="shop-chosen"]').text()).toContain('£597.00')
 
   await wrapper.find('[data-testid="shop-change"]').trigger('click')
   expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
@@ -228,8 +387,8 @@ test('says what is in the box without pushing the choice off the screen', async 
   const spec = wrapper.find('[data-testid="device-spec"]')
   expect(spec.exists()).toBe(true)
   expect(spec.element.open).toBe(false)
-  expect(spec.text()).toContain('Odroid HC4')
-  expect(spec.text()).toContain('second bay')
+  expect(spec.text()).toContain('GMKtec NucBox G10')
+  expect(spec.text()).toContain('second disk slot')
 })
 
 test('pressing PayPal says something is happening', async () => {
@@ -279,8 +438,8 @@ test('keeps the full specification behind the expander', async () => {
   expect(wrapper.find('[data-testid="device-highlights"]').exists()).toBe(false)
 
   const table = wrapper.find('[data-testid="device-spec-table"]')
-  expect(table.text()).toContain('Amlogic S905X3')
-  expect(table.text()).toContain('USB 2.0 x 1')
+  expect(table.text()).toContain('AMD Ryzen 5 3500U')
+  expect(table.text()).toContain('2.5 Gb')
   expect(wrapper.find('[data-testid="device-spec"]').element.open).toBeFalsy()
 })
 
@@ -326,9 +485,8 @@ test('counts a signed out visitor once, not on every render', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)
 
-  const wrapper = mountShop({}, jest.fn(), false)
+  mountShop({}, jest.fn(), false)
   await flushPromises()
-  await wrapper.find('[data-testid="device-option-2tx2"]').trigger('click')
   await flushPromises()
 
   expect(names().filter(name => name === 'shop.signedout')).toHaveLength(1)
@@ -371,7 +529,6 @@ test('records every step a buyer takes on the way to paying by card', async () =
 
   const wrapper = mountShop()
   await flushPromises()
-  await wrapper.find('[data-testid="device-option-2tx2"]').trigger('click')
   await proceed(wrapper)
   await fill(wrapper)
   await wrapper.find('[data-testid="device-pay-stripe"]').trigger('click')
@@ -379,7 +536,6 @@ test('records every step a buyer takes on the way to paying by card', async () =
 
   expect(names()).toEqual([
     'shop.view',
-    'shop.option',
     'shop.continue',
     'shop.address',
     'shop.pay.view',
@@ -411,6 +567,19 @@ test('counts the specification being opened, not merely rendered', async () => {
   await spec.trigger('toggle')
 
   expect(names()).toContain('shop.spec')
+})
+
+test('counts the photo being opened', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  expect(names()).not.toContain('shop.photo')
+
+  await wrapper.find('[data-testid="device-photo-open"]').trigger('click')
+
+  expect(names()).toContain('shop.photo')
 })
 
 test('counts a completed order', async () => {

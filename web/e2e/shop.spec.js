@@ -62,14 +62,50 @@ test('the shop prices the device from the catalogue', async ({ page }, testInfo)
 
   await expect(page.getByTestId('device-choice')).toBeVisible()
   await expect(page.getByTestId('device-photo')).toBeVisible()
-  const cheapest = await page.getByTestId('device-total').textContent()
+  const photoLoaded = await page.getByTestId('device-photo')
+    .evaluate(img => img.complete && img.naturalWidth > 0)
+  expect(photoLoaded, 'the product photo must actually load').toBe(true)
+  const total = await page.getByTestId('device-total').textContent()
   await shoot(page, testInfo, 'device-choice')
 
-  await page.getByTestId('device-option-2tx2').click()
-  const dearer = await page.getByTestId('device-total').textContent()
+  await expect(page.getByTestId('device-options')).toHaveCount(0)
+  expect(total).toMatch(/^£\d+\.\d\d$/)
+})
 
-  expect(cheapest).not.toBe(dearer)
-  expect(cheapest).toMatch(/^£\d+\.\d\d$/)
+test('every picture of the device loads and can be enlarged', async ({ page }, testInfo) => {
+  await signedIn(page, 'buy-photos')
+  await goToShop(page)
+
+  await expect(page.getByTestId('device-points')).toBeVisible()
+
+  const thumbs = await page.getByTestId(/^device-thumb-\d+$/).count()
+  expect(thumbs, 'the device must be shown from more than one angle').toBeGreaterThan(1)
+
+  for (let i = 0; i < thumbs; i++) {
+    await page.getByTestId(`device-thumb-${i}`).click()
+    await expect
+      .poll(() => page.getByTestId('device-photo')
+        .evaluate(img => img.complete && img.naturalWidth > 0), { timeout: 10000 })
+      .toBe(true)
+  }
+
+  await page.getByTestId('device-thumb-0').click()
+  await page.getByTestId('device-photo-open').click()
+  await expect(page.getByTestId('device-lightbox')).toBeVisible()
+  await shoot(page, testInfo, 'device-photo-large')
+
+  const opened = await page.getByTestId('device-lightbox-photo').getAttribute('src')
+
+  await page.getByTestId('device-photo-next').click()
+  const stepped = await page.getByTestId('device-lightbox-photo').getAttribute('src')
+  expect(stepped, 'the forward arrow must move to another picture').not.toBe(opened)
+  await expect(page.getByTestId('device-lightbox')).toBeVisible()
+
+  await page.getByTestId('device-photo-previous').click()
+  expect(await page.getByTestId('device-lightbox-photo').getAttribute('src')).toBe(opened)
+
+  await page.getByTestId('device-lightbox-close').click()
+  await expect(page.getByTestId('device-lightbox')).toHaveCount(0)
 })
 
 test('paying cannot start until the address is complete', async ({ page }, testInfo) => {
@@ -118,7 +154,7 @@ test('a card payment is taken and the order is confirmed', async ({ page }, test
 
   const confirmation = await waitForEmailTo(buyer)
   expect(confirmation.subject, 'the buyer is told their order number').toContain(number)
-  expect(confirmation.body).toContain('Syncloud H4')
+  expect(confirmation.body).toContain('Syncloud X1')
   expect(confirmation.body).toContain('Ada Lovelace')
   expect(confirmation.body).toContain('1 Analytical Street')
   expect(confirmation.body).toContain(total.replace('£', ''))
@@ -235,7 +271,6 @@ test('the shop reports each step the visitor takes', async ({ page }) => {
   await expect(page.getByTestId('device-choice')).toBeVisible()
   await expect(page.getByTestId('shop-signin-link')).toBeVisible()
 
-  await page.getByTestId('device-option-2tx2').click()
   await page.getByTestId('shop-signin-link').click()
   await expect(page.getByTestId('login-form')).toBeVisible()
 
@@ -244,7 +279,6 @@ test('the shop reports each step the visitor takes', async ({ page }) => {
     .toEqual(expect.arrayContaining([
       'shop.view',
       'shop.signedout',
-      'shop.option',
       'shop.signin'
     ]))
 

@@ -5,6 +5,7 @@ const (
 	ShopSignedOut   = "shop.signedout"
 	ShopOption      = "shop.option"
 	ShopSpec        = "shop.spec"
+	ShopPhoto       = "shop.photo"
 	ShopSignIn      = "shop.signin"
 	ShopContinue    = "shop.continue"
 	ShopAddress     = "shop.address"
@@ -22,6 +23,7 @@ func Shop() []string {
 		ShopSignedOut,
 		ShopOption,
 		ShopSpec,
+		ShopPhoto,
 		ShopSignIn,
 		ShopContinue,
 		ShopAddress,
