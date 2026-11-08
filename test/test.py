@@ -187,6 +187,26 @@ def test_get_user_data(domain, artifact_dir):
     assert expected == user_data
 
 
+def test_domain_update_dkim_key_2048(domain, artifact_dir):
+    email = 'test-dkim-2048@syncloud.test'
+    password = 'pass123456'
+    create_user(domain, email, password, artifact_dir)
+    update_token = api.domain_acquire(domain, 'test-dkim-2048.{}'.format(domain), email, password)
+    dkim_key = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA' + 'A' * 348
+    response = requests.post('https://api.{0}/domain/update'.format(domain),
+                             json={
+                                 'token': update_token,
+                                 'ip': '192.192.1.1',
+                                 'web_protocol': 'https',
+                                 'web_local_port': 443,
+                                 'web_port': 443,
+                                 'dkim_key': dkim_key
+                             },
+                             verify=False)
+    assert response.status_code == 200, response.text
+    assert json.loads(response.text)['success'], response.text
+
+
 def test_get_user_no_domains(domain, artifact_dir):
     email = 'test_get_user_no_domains@syncloud.test'
     password = 'pass123456'
