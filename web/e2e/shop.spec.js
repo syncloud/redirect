@@ -28,6 +28,20 @@ async function goToShop (page) {
   await expect(page).toHaveURL(/\/shop$/)
 }
 
+function codeFrom (body) {
+  const found = body.match(/\b[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}\b/)
+  return found === null ? null : found[0]
+}
+
+async function goToAccount (page) {
+  const burger = page.getByTestId('menu-burger')
+  if (await burger.isVisible()) {
+    await burger.click()
+  }
+  await page.getByTestId('nav-account').click()
+  await expect(page).toHaveURL(/\/account$/)
+}
+
 async function address (page, email) {
   await page.getByTestId('shop-continue').click()
   await expect(page.getByTestId('shop-chosen')).toBeVisible()
@@ -49,6 +63,7 @@ test('the shop can be bought from without an account', async ({ page }, testInfo
   await expect(page.getByTestId('device-choice')).toBeVisible()
   await expect(page.getByTestId('device-photo')).toBeVisible()
   await expect(page.getByTestId('device-total')).toContainText('£')
+  await expect(page.getByTestId('shop-year-included')).toBeVisible()
   await shoot(page, testInfo, 'shop-signed-out')
 
   await expect(page.getByTestId('shop-continue'),
@@ -231,6 +246,89 @@ test('a card payment is taken from a buyer with no account', async ({ page }, te
   expect(support.body, 'support must know there is no account behind it')
     .toContain('Has an account: no')
   expect(support.body).toContain('Ada Lovelace')
+
+  expect(codeFrom(confirmation.body),
+    'the buyer is sent the code for the year they paid for').not.toBeNull()
+})
+
+test('the year that came with the device is claimed with the code in the email', async ({ page }, testInfo) => {
+  const buyer = uniqueEmail('guest-year')
+  await page.goto('/shop')
+  await address(page, buyer)
+  await page.getByTestId('device-pay-stripe').click()
+  await page.getByTestId('faker-pay').click()
+  await expect(page.getByTestId('device-ordered')).toBeVisible()
+
+  const confirmation = await waitForEmailTo(buyer)
+  const code = codeFrom(confirmation.body)
+  expect(code, 'the confirmation must carry a code').not.toBeNull()
+
+  const owner = uniqueEmail('guest-year-account')
+  await registerUser(page, owner, 'password123')
+  await activateLatestUser(page)
+  await loginUser(page, owner, 'password123')
+
+  await goToAccount(page)
+  await page.getByTestId('redeem-toggle').click()
+  await page.getByTestId('redeem-code').fill(code)
+  await page.getByTestId('redeem-submit').click()
+
+  await expect(page.getByTestId('redeem-failed')).toHaveCount(0)
+  await expect(page.getByTestId('subscription-inactive')).toHaveCount(0)
+  await expect(page.getByTestId('billing-included'),
+    'an included year must not be quoted a monthly price').toBeVisible()
+  await expect(page.getByTestId('billing-current')).toHaveCount(0)
+  await expect(page.getByTestId('switch-annual')).toHaveCount(0)
+  await shoot(page, testInfo, 'plan-year-claimed')
+})
+
+test('a code only pays for the one device it came with', async ({ page }) => {
+  const buyer = uniqueEmail('guest-once')
+  await page.goto('/shop')
+  await address(page, buyer)
+  await page.getByTestId('device-pay-stripe').click()
+  await page.getByTestId('faker-pay').click()
+  await expect(page.getByTestId('device-ordered')).toBeVisible()
+
+  const code = codeFrom((await waitForEmailTo(buyer)).body)
+
+  const first = uniqueEmail('once-first')
+  await registerUser(page, first, 'password123')
+  await activateLatestUser(page)
+  await loginUser(page, first, 'password123')
+  await goToAccount(page)
+  await page.getByTestId('redeem-toggle').click()
+  await page.getByTestId('redeem-code').fill(code)
+  await page.getByTestId('redeem-submit').click()
+  await expect(page.getByTestId('subscription-inactive')).toHaveCount(0)
+  await signOut(page)
+
+  const second = uniqueEmail('once-second')
+  await registerUser(page, second, 'password123')
+  await activateLatestUser(page)
+  await loginUser(page, second, 'password123')
+  await goToAccount(page)
+  await page.getByTestId('redeem-toggle').click()
+  await page.getByTestId('redeem-code').fill(code)
+  await page.getByTestId('redeem-submit').click()
+
+  await expect(page.getByTestId('redeem-failed'),
+    'a second account must not get the same year').toBeVisible()
+})
+
+test('a code we never issued is refused without losing the page', async ({ page }) => {
+  const owner = uniqueEmail('bad-code')
+  await registerUser(page, owner, 'password123')
+  await activateLatestUser(page)
+  await loginUser(page, owner, 'password123')
+
+  await goToAccount(page)
+  await page.getByTestId('redeem-toggle').click()
+  await page.getByTestId('redeem-code').fill('ZZZZ-ZZZZ-ZZZZ')
+  await page.getByTestId('redeem-submit').click()
+
+  await expect(page.getByTestId('redeem-failed')).toBeVisible()
+  await expect(page).toHaveURL(/\/account$/)
 })
 
 test('a buyer with no account cannot pay until the email is one we can reach', async ({ page }) => {

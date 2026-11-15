@@ -130,7 +130,7 @@ func (c *Cleaner) Clean(now time.Time) error {
 	if user.IsSubscribed() {
 		c.logger.Info("cleaner user subscribed")
 
-		if !user.IsPayPal() && !user.IsStripe() {
+		if !user.IsAutoManaged() {
 			c.logger.Info("cleaner subscription type is not auto-managed")
 
 			return c.state.Set(id)

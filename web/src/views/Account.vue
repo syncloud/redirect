@@ -40,10 +40,11 @@
               <div class="billing-row">
                 <span>
                   {{ $t('account.billing') }}
-                  <strong data-testid="billing-current">{{ currentPriceText }}</strong>
+                  <strong v-if="!included" data-testid="billing-current">{{ currentPriceText }}</strong>
+                  <strong v-else data-testid="billing-included">{{ $t('account.billingIncluded') }}</strong>
                 </span>
                 <el-button
-                  v-if="subscriptionPeriod === 'month'"
+                  v-if="!included && subscriptionPeriod === 'month'"
                   type="primary"
                   plain
                   size="small"
@@ -199,6 +200,39 @@
                     </el-row>
                   </div>
                 </div>
+
+                <div class="pay-crypto">
+                  <el-button text data-testid="redeem-toggle" @click="redeemOpen = !redeemOpen">
+                    {{ $t('account.haveCode') }}
+                  </el-button>
+                  <div v-show="redeemOpen" class="crypto-details">
+                    <el-row class="crypto-row">
+                      <el-col>{{ $t('account.codeWhere') }}</el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col>
+                        <el-input v-model="redeemCode" data-testid="redeem-code"></el-input>
+                      </el-col>
+                    </el-row>
+                    <el-row v-if="redeemError !== ''" class="crypto-row">
+                      <el-col>
+                        <div class="switch-error" data-testid="redeem-failed">{{ redeemError }}</div>
+                      </el-col>
+                    </el-row>
+                    <el-row class="crypto-row">
+                      <el-col style="text-align:right">
+                        <el-button
+                          @click="redeem"
+                          type="primary"
+                          :disabled="redeemCode.trim().length < 14"
+                          data-testid="redeem-submit"
+                        >
+                          {{ $t('account.redeem') }}
+                        </el-button>
+                      </el-col>
+                    </el-row>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -326,6 +360,8 @@ import {
   tierPrices
 } from '../data/pricing'
 
+const GRANT = 4
+
 export default {
   name: 'Account',
   components: {
@@ -340,6 +376,7 @@ export default {
       notificationEnabled: Boolean,
       email: '',
       subscriptionId: String,
+      subscriptionType: undefined,
       subscriptionPeriod: '',
       subscriptionTier: '',
       domainGroups: Array,
@@ -363,6 +400,9 @@ export default {
       busy: '',
       cryptoOpen: false,
       cryptoTransactionId: '',
+      redeemOpen: false,
+      redeemCode: '',
+      redeemError: '',
       wallet: '0x1c644443EA113Ef5aA17255a777EB909e2217566',
       copied: false,
       CopyDocument: markRaw(CopyDocument),
@@ -430,6 +470,9 @@ export default {
     currentTierKey: function () {
       return this.subscriptionTier === 'max' ? 'max' : 'pro'
     },
+    included: function () {
+      return this.subscriptionType === GRANT
+    },
     currentPriceText: function () {
       return this.tierPrices[this.currentTierKey][this.subscriptionPeriod === 'year' ? 'year' : 'month']
     },
@@ -453,6 +496,7 @@ export default {
           this.notificationEnabled = response.data.data.notification_enabled
           this.email = response.data.data.email
           this.subscriptionId = response.data.data.subscription_id
+          this.subscriptionType = response.data.data.subscription_type
           this.userLoaded = true
           this.loadPlan(this.subscriptionId)
         })
@@ -485,6 +529,22 @@ export default {
       if (this.cryptoOpen) {
         track(PLAN_CRYPTO)
       }
+    },
+    redeem: function () {
+      this.redeemError = ''
+      axios.post('/api/plan/redeem', { code: this.redeemCode })
+        .then(_ => {
+          this.redeemOpen = false
+          this.redeemCode = ''
+          this.reload()
+        })
+        .catch(err => {
+          if (err.response !== undefined && err.response.status === 400) {
+            this.redeemError = err.response.data.message
+            return
+          }
+          this.onPlanError(err)
+        })
     },
     cryptoSubscribe: function () {
       track(PLAN_CRYPTO_SENT)

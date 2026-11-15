@@ -125,6 +125,13 @@ func (config *Config) GetWwwRateLimitPerHour() int {
 	return 8
 }
 
+func (config *Config) GetDeviceGrantMonths() int {
+	if value, err := config.parser.GetInt64("www", "device_grant_months"); err == nil {
+		return int(value)
+	}
+	return 12
+}
+
 func (config *Config) GetOrderRateLimitPerMinute() int {
 	if value, err := config.parser.GetInt64("www", "order_rate_limit_per_minute"); err == nil {
 		return int(value)
