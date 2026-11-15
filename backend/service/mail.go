@@ -130,8 +130,9 @@ func (m *Mail) SendDeviceOrderStatus(order *product.Order, device, option, messa
 	}, to...)
 }
 
-func (m *Mail) SendDeviceOrderCustomer(order *product.Order, device, option string) error {
+func (m *Mail) SendDeviceOrderCustomer(order *product.Order, device, option, code string) error {
 	return m.SendNotification(m.deviceOrderCustomerPath, map[string]string{
+		"code":      code,
 		"number":    strconv.FormatInt(order.Id, 10),
 		"name":      order.Name,
 		"device":    device,

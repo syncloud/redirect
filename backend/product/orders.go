@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/syncloud/redirect/model"
 	"go.uber.org/zap"
 )
 
 type Mail interface {
 	SendDeviceOrder(order *Order, device, option string) error
-	SendDeviceOrderCustomer(order *Order, device, option string) error
+	SendDeviceOrderCustomer(order *Order, device, option, code string) error
 	SendDeviceOrderStatus(order *Order, device, option, message string) error
 	SendDeviceOrderStuck(order *Order, reason string) error
 }
@@ -38,11 +39,12 @@ type Orders struct {
 	checkouts *Checkouts
 	store     Store
 	mail      Mail
+	grants    Minter
 	logger    *zap.Logger
 }
 
-func NewOrders(catalog *Catalog, checkouts *Checkouts, store Store, mail Mail, logger *zap.Logger) *Orders {
-	return &Orders{catalog: catalog, checkouts: checkouts, store: store, mail: mail, logger: logger}
+func NewOrders(catalog *Catalog, checkouts *Checkouts, store Store, mail Mail, grants Minter, logger *zap.Logger) *Orders {
+	return &Orders{catalog: catalog, checkouts: checkouts, store: store, mail: mail, grants: grants, logger: logger}
 }
 
 func (o *Orders) Catalog() []Device {
@@ -150,7 +152,11 @@ func (o *Orders) Settle(order *Order) error {
 			zap.String("reference", order.Reference))
 		return nil
 	}
-	return o.mail.SendDeviceOrderCustomer(order, device, option)
+	included, err := o.grants.Mint(fmt.Sprintf("order:%d", order.Id), model.PlanPro, 1)
+	if err != nil {
+		return err
+	}
+	return o.mail.SendDeviceOrderCustomer(order, device, option, included.Code)
 }
 
 func (o *Orders) Redact(userId int64) error {

@@ -15,6 +15,7 @@ import (
 	"github.com/syncloud/redirect/clock"
 	"github.com/syncloud/redirect/db"
 	"github.com/syncloud/redirect/dns"
+	"github.com/syncloud/redirect/grant"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/mail"
 	"github.com/syncloud/redirect/mail/inbound"
@@ -171,9 +172,24 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		return nil, err
 	}
 
+	err = c.Singleton(func(database *db.MySql) *grant.Provider {
+		return grant.NewProvider(database, time.Now)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, config *utils.Config) *grant.Grants {
+		return grant.NewGrants(database, config.GetDeviceGrantMonths())
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Singleton(func(
 		database *db.MySql,
 		mailService *service.Mail,
+		grants *grant.Grants,
 		config *utils.Config,
 	) (*product.Orders, error) {
 		stripeCheckout := payment.NewStripe(
@@ -196,6 +212,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			product.NewCheckouts(paypalCheckout, stripeCheckout),
 			database,
 			mailService,
+			grants,
 			logger,
 		)
 		return orders, nil
@@ -253,8 +270,9 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 	err = c.Singleton(func(
 		paypal *subscription.PayPal,
 		stripe *subscription.Stripe,
+		included *grant.Provider,
 	) *subscription.Router {
-		return subscription.NewRouter(paypal, stripe)
+		return subscription.NewRouter(paypal, stripe, included)
 	})
 	if err != nil {
 		return nil, err
@@ -274,6 +292,13 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mailService,
 			subscriptions,
 		)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Singleton(func(database *db.MySql, users *service.Users) *grant.Redeemer {
+		return grant.NewRedeemer(database, users, logger)
 	})
 	if err != nil {
 		return nil, err
@@ -581,6 +606,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 		users *service.Users,
 		mailService *service.Mail,
 		actions *service.Actions,
+		grants *grant.Redeemer,
 		stripe *subscription.Stripe,
 		paypal *subscription.PayPal,
 		orders *product.Orders,
@@ -602,6 +628,7 @@ func NewContainer(configPath string, secretPath string, mailPath string) (contai
 			mailService,
 			stripe,
 			orders,
+			grants,
 			usage,
 			mailUsage,
 			paypal,

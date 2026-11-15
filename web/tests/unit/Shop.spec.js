@@ -321,6 +321,16 @@ test('shows the product to a visitor who is not signed in', async () => {
   expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
 })
 
+test('says the first year of the plan comes with the device', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="shop-year-included"]').text()).toBe(en.shop.yearIncluded)
+})
+
 test('keeps the account explanation out of the way until a visitor asks for it', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)

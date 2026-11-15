@@ -98,6 +98,10 @@
           </div>
         </div>
 
+        <p class="sc-muted year-included" data-testid="shop-year-included">
+          {{ $t('shop.yearIncluded') }}
+        </p>
+
         <el-button
           type="primary"
           size="large"
@@ -754,6 +758,12 @@ export default {
 }
 
 .signed-out {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.year-included {
   margin-top: 10px;
   text-align: center;
   font-size: 0.95rem;

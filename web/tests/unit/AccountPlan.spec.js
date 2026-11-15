@@ -237,3 +237,88 @@ test('an error elsewhere on the page is not counted as a plan error', async () =
   log.mockRestore()
   wrapper.unmount()
 })
+
+test('an account with no plan is offered the code that came with a device', async () => {
+  server()
+  const wrapper = mount(Account, options)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="redeem-code"]').isVisible()).toBe(false)
+
+  await wrapper.find('[data-testid="redeem-toggle"]').trigger('click')
+  expect(wrapper.find('[data-testid="redeem-code"]').isVisible()).toBe(true)
+  expect(wrapper.find('[data-testid="redeem-submit"]').attributes('disabled')).toBeDefined()
+})
+
+test('a code is sent as typed and the plan is reloaded', async () => {
+  const mock = server()
+  let sent
+  mock.onPost('/api/plan/redeem').reply(config => {
+    sent = JSON.parse(config.data)
+    return [200, { data: { plan: 'pro', ends_at: '2027-11-15T00:00:00Z' } }]
+  })
+  const wrapper = mount(Account, options)
+  await flushPromises()
+
+  await wrapper.find('[data-testid="redeem-toggle"]').trigger('click')
+  await wrapper.find('[data-testid="redeem-code"]').setValue('aaaa-bbbb-cccc')
+  await wrapper.find('[data-testid="redeem-submit"]').trigger('click')
+  await flushPromises()
+
+  expect(sent).toEqual({ code: 'aaaa-bbbb-cccc' })
+  expect(wrapper.find('[data-testid="redeem-failed"]').exists()).toBe(false)
+})
+
+test('a refused code says why instead of throwing the buyer at the error page', async () => {
+  const mock = server()
+  mock.onPost('/api/plan/redeem').reply(400, { message: 'that code has already been used' })
+  const push = jest.fn()
+  const wrapper = mount(Account, { ...options, global: { ...options.global, mocks: { $router: { push, replace: jest.fn() } } } })
+  await flushPromises()
+
+  await wrapper.find('[data-testid="redeem-toggle"]').trigger('click')
+  await wrapper.find('[data-testid="redeem-code"]').setValue('aaaa-bbbb-cccc')
+  await wrapper.find('[data-testid="redeem-submit"]').trigger('click')
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="redeem-failed"]').text()).toBe('that code has already been used')
+  expect(push).not.toHaveBeenCalledWith('/error')
+})
+
+test('a code field is not offered to an account that already has a plan', async () => {
+  server('sub-1')
+  const wrapper = mount(Account, options)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="redeem-toggle"]').isVisible()).toBe(false)
+})
+
+test('an included year is not quoted a price it will not be charged', async () => {
+  const mock = new MockAdapter(axios)
+  mock.onGet('/api/user').reply(200, {
+    data: {
+      active: true,
+      email: 'test@example.com',
+      notification_enabled: true,
+      update_token: '0a',
+      subscription_id: '7',
+      subscription_type: 4
+    }
+  })
+  mock.onGet('/api/plan').reply(200, { data: { client_id: '2' } })
+  const wrapper = mount(Account, options)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="billing-included"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="billing-current"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="switch-annual"]').exists()).toBe(false)
+})
+
+test('a paying subscriber still sees what they are charged', async () => {
+  server('sub-1')
+  const wrapper = mount(Account, options)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="billing-current"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="billing-included"]').exists()).toBe(false)
+})

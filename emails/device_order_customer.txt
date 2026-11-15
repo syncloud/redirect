@@ -11,5 +11,11 @@ We will ship it to:
 {city} {postcode}
 {country}
 
-We will email you again when it is on its way. If anything above is wrong,
-reply to this email and we will sort it out.
+Your first year is included. When the device arrives, create a Syncloud
+account or sign in to the one you have, and enter this code on the plan page:
+
+{code}
+
+Keep this email until you have used it. We will email you again when the
+device is on its way. If anything above is wrong, reply to this email and we
+will sort it out.

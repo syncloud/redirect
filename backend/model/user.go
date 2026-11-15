@@ -14,6 +14,7 @@ const (
 	SubscriptionTypePayPal = 1
 	SubscriptionTypeCrypto = 2
 	SubscriptionTypeStripe = 3
+	SubscriptionTypeGrant  = 4
 
 	PlanPro = "pro"
 	PlanMax = "max"
@@ -133,4 +134,12 @@ func (u *User) IsPayPal() bool {
 
 func (u *User) IsStripe() bool {
 	return u.SubscriptionType != nil && *u.SubscriptionType == SubscriptionTypeStripe
+}
+
+func (u *User) IsGrant() bool {
+	return u.SubscriptionType != nil && *u.SubscriptionType == SubscriptionTypeGrant
+}
+
+func (u *User) IsAutoManaged() bool {
+	return u.IsPayPal() || u.IsStripe() || u.IsGrant()
 }

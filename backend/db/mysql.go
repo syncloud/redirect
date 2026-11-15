@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/syncloud/redirect/grant"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/product"
 	"go.uber.org/zap"
@@ -1172,4 +1173,77 @@ func (m *MySql) RedactOrders(userId int64) error {
 			"where user_id = ?",
 		userId)
 	return err
+}
+
+func (m *MySql) InsertGrant(g *grant.Grant) (int64, error) {
+	res, err := m.db.Exec(
+		"INSERT into plan_grant (code, `plan`, months, uses_left, source) values (?,?,?,?,?)",
+		g.Code, g.Plan, g.Months, g.UsesLeft, g.Source)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (m *MySql) GetGrantByCode(code string) (*grant.Grant, error) {
+	found := &grant.Grant{}
+	err := m.db.QueryRow(
+		"SELECT id, code, `plan`, months, uses_left, source from plan_grant where code = ?",
+		code).Scan(&found.Id, &found.Code, &found.Plan, &found.Months, &found.UsesLeft, &found.Source)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return found, nil
+}
+
+func (m *MySql) ClaimGrantUse(id int64) (bool, error) {
+	res, err := m.db.Exec(
+		"UPDATE plan_grant set uses_left = uses_left - 1 where id = ? and uses_left > 0", id)
+	if err != nil {
+		return false, err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return affected == 1, nil
+}
+
+func (m *MySql) ReleaseGrantUse(id int64) error {
+	_, err := m.db.Exec("UPDATE plan_grant set uses_left = uses_left + 1 where id = ?", id)
+	return err
+}
+
+func (m *MySql) InsertRedemption(r *grant.Redemption) (int64, error) {
+	res, err := m.db.Exec(
+		"INSERT into plan_grant_redemption (grant_id, user_id, `plan`, ends_at) values (?,?,?,?)",
+		r.GrantId, r.UserId, r.Plan, r.EndsAt)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (m *MySql) DeleteRedemption(id int64) error {
+	_, err := m.db.Exec("DELETE from plan_grant_redemption where id = ?", id)
+	return err
+}
+
+func (m *MySql) GetRedemption(id int64) (*grant.Redemption, error) {
+	found := &grant.Redemption{}
+	userId := sql.NullInt64{}
+	err := m.db.QueryRow(
+		"SELECT id, grant_id, user_id, `plan`, ends_at from plan_grant_redemption where id = ?",
+		id).Scan(&found.Id, &found.GrantId, &userId, &found.Plan, &found.EndsAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	found.UserId = userId.Int64
+	return found, nil
 }

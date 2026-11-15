@@ -3,9 +3,11 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/event"
+	"github.com/syncloud/redirect/grant"
 	"github.com/syncloud/redirect/log"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
@@ -14,6 +16,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 type WwwDomainsStub struct {
@@ -163,6 +166,7 @@ func TestLogin_CreateSession(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwOrdersStub{},
+		&WwwGrantsStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -208,6 +212,7 @@ func TestLoginAgain_NotError(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwOrdersStub{},
+		&WwwGrantsStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -268,6 +273,7 @@ func TestLoginFresh_NotError(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwOrdersStub{},
+		&WwwGrantsStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -314,6 +320,7 @@ func TestLogout_ClearSession(t *testing.T) {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwOrdersStub{},
+		&WwwGrantsStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -364,6 +371,7 @@ func orderWww(orders *WwwOrdersStub) *Www {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		orders,
+		&WwwGrantsStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -379,6 +387,39 @@ func orderWww(orders *WwwOrdersStub) *Www {
 	)
 }
 
+func grantWww(grants *WwwGrantsStub) *Www {
+	return NewWww(
+		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
+		&WwwUsersStub{authenticated: true},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		&WwwStripeStub{},
+		&WwwOrdersStub{},
+		grants,
+		&WwwRelayStub{},
+		&WwwMailRelayStub{},
+		&WwwPayPalStub{},
+		metrics.New(),
+		"example.com",
+		[]byte("secret_key"),
+		"",
+		1000,
+		10000,
+		1000,
+		10000,
+		log.Default(),
+	)
+}
+
+func redeemRequest(t *testing.T, code string) *http.Request {
+	body, err := json.Marshal(model.PlanRedeemRequest{Code: code})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return httptest.NewRequest("POST", "/plan/redeem", strings.NewReader(string(body)))
+}
+
 func sessionWww() *Www {
 	return NewWww(
 		&WwwDomainsStub{},
@@ -388,6 +429,7 @@ func sessionWww() *Www {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwOrdersStub{},
+		&WwwGrantsStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -489,6 +531,7 @@ func shopWww() *Www {
 		&WwwMailStub{},
 		&WwwStripeStub{},
 		&WwwOrdersStub{},
+		&WwwGrantsStub{},
 		&WwwRelayStub{},
 		&WwwMailRelayStub{},
 		&WwwPayPalStub{},
@@ -595,5 +638,50 @@ func TestDeviceOrderRefusesAGuestEmailItCannotDeliverTo(t *testing.T) {
 		if orders.started != nil {
 			t.Fatalf("%q started an order anyway", typed)
 		}
+	}
+}
+
+func TestPlanRedeemTakesTheCodeFromTheBuyerAndReportsThePeriod(t *testing.T) {
+	endsAt := time.Date(2027, 11, 15, 0, 0, 0, 0, time.UTC)
+	grants := &WwwGrantsStub{redemption: &grant.Redemption{Id: 3, Plan: "pro", EndsAt: endsAt}}
+	www := grantWww(grants)
+
+	response, err := www.PlanRedeem(httptest.NewRecorder(), redeemRequest(t, "aaaa-bbbb-cccc"),
+		model.User{Id: 42})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if grants.redeemed != "aaaa-bbbb-cccc" {
+		t.Fatalf("redeemed %q", grants.redeemed)
+	}
+	if grants.forUser != 42 {
+		t.Fatalf("redeemed for account %d", grants.forUser)
+	}
+	redeemed, ok := response.(model.PlanRedeemResponse)
+	if !ok {
+		t.Fatalf("response %T", response)
+	}
+	if redeemed.Plan != "pro" || !redeemed.EndsAt.Equal(endsAt) {
+		t.Fatalf("response %+v", redeemed)
+	}
+}
+
+func TestPlanRedeemPassesOnWhyACodeWasRefused(t *testing.T) {
+	grants := &WwwGrantsStub{err: grant.ErrUsedUp}
+	www := grantWww(grants)
+
+	_, err := www.PlanRedeem(httptest.NewRecorder(), redeemRequest(t, "aaaa-bbbb-cccc"),
+		model.User{Id: 42})
+
+	refused := &model.ServiceError{}
+	if !errors.As(err, &refused) {
+		t.Fatalf("error %T %v", err, err)
+	}
+	if refused.StatusCode != http.StatusBadRequest {
+		t.Fatalf("a mistyped code answered %d", refused.StatusCode)
+	}
+	if refused.Error() != grant.ErrUsedUp.Error() {
+		t.Fatalf("message %q", refused.Error())
 	}
 }

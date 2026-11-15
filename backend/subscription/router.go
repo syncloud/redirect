@@ -15,12 +15,14 @@ type Provider interface {
 type Router struct {
 	paypal Provider
 	stripe Provider
+	grant  Provider
 }
 
-func NewRouter(paypal Provider, stripe Provider) *Router {
+func NewRouter(paypal Provider, stripe Provider, grant Provider) *Router {
 	return &Router{
 		paypal: paypal,
 		stripe: stripe,
+		grant:  grant,
 	}
 }
 
@@ -30,6 +32,8 @@ func (r *Router) Unsubscribe(subscriptionType int, id string) error {
 		return r.paypal.Unsubscribe(id)
 	case model.SubscriptionTypeStripe:
 		return r.stripe.Unsubscribe(id)
+	case model.SubscriptionTypeGrant:
+		return r.grant.Unsubscribe(id)
 	default:
 		return fmt.Errorf("unsupported subscription type: %d", subscriptionType)
 	}
@@ -41,6 +45,8 @@ func (r *Router) IsActive(subscriptionType int, id string) (bool, error) {
 		return r.paypal.IsActive(id)
 	case model.SubscriptionTypeStripe:
 		return r.stripe.IsActive(id)
+	case model.SubscriptionTypeGrant:
+		return r.grant.IsActive(id)
 	default:
 		return false, fmt.Errorf("unsupported subscription type: %d", subscriptionType)
 	}
@@ -52,6 +58,8 @@ func (r *Router) PaidThrough(subscriptionType int, id string) (time.Time, error)
 		return r.paypal.PaidThrough(id)
 	case model.SubscriptionTypeStripe:
 		return r.stripe.PaidThrough(id)
+	case model.SubscriptionTypeGrant:
+		return r.grant.PaidThrough(id)
 	default:
 		return time.Time{}, fmt.Errorf("unsupported subscription type: %d", subscriptionType)
 	}
