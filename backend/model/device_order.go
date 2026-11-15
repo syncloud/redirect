@@ -9,6 +9,7 @@ type DeviceCatalogResponse struct {
 }
 
 type DeviceOrderRequest struct {
+	Email    string `json:"email"`
 	Device   string `json:"device"`
 	Option   string `json:"option"`
 	Provider string `json:"provider"`
@@ -64,7 +65,8 @@ type DeviceOrderDetailView struct {
 }
 
 type DeviceOrderCompleteResponse struct {
-	Number int64 `json:"number"`
+	Number int64  `json:"number"`
+	Email  string `json:"email"`
 }
 
 type DeviceOrderRetryRequest struct {

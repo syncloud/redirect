@@ -92,15 +92,15 @@ func (o *Orders) Start(order *Order, provider string) (string, error) {
 	return order.Reference, nil
 }
 
-func (o *Orders) Complete(userId int64, reference string) (int64, error) {
+func (o *Orders) Complete(userId int64, reference string) (*Order, error) {
 	order, err := o.store.GetOrderByReference(reference)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if order == nil || order.UserId != userId {
-		return 0, ErrNoOrder
+		return nil, ErrNoOrder
 	}
-	return order.Id, o.Settle(order)
+	return order, o.Settle(order)
 }
 
 func (o *Orders) Settle(order *Order) error {

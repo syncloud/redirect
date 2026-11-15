@@ -436,19 +436,18 @@ func TestOrders_Settle_ConfirmsToTheAccountThatOrdered(t *testing.T) {
 	}
 }
 
-func TestOrders_Settle_WithoutAnAccountStillTellsSupport(t *testing.T) {
+func TestOrders_Settle_WithARedactedEmailStillTellsSupport(t *testing.T) {
 	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
 	store := newStore()
 	mail := &recordingMail{}
 	o := orders(checkout, store, mail)
 
-	order := &Order{
-		UserId: 7, Device: "h4", Option: "1t",
-		Name: "A B", Address: "1 Road", City: "Town", Postcode: "X1", Country: "Germany",
-	}
+	order := addressed()
 	if _, err := o.Start(order, "stripe"); err != nil {
 		t.Fatal(err)
 	}
+	store.only().Email = ""
+
 	if _, err := o.Complete(7, order.Reference); err != nil {
 		t.Fatal(err)
 	}
@@ -457,7 +456,7 @@ func TestOrders_Settle_WithoutAnAccountStillTellsSupport(t *testing.T) {
 		t.Fatal("support was not told")
 	}
 	if mail.confirmed != nil {
-		t.Fatal("confirmed to an order with no account")
+		t.Fatal("confirmed to an order with nobody to confirm to")
 	}
 }
 
@@ -534,5 +533,75 @@ func TestOrders_SetStatus_RefusesAnythingNotInTheVocabulary(t *testing.T) {
 	}
 	if err := o.SetStatus(9999, "sent", ""); !errors.Is(err, ErrNoOrder) {
 		t.Fatalf("want ErrNoOrder got %v", err)
+	}
+}
+
+func TestStartTakesAnOrderWithNoAccount(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: paidTotal}
+	store, mail := newStore(), &recordingMail{}
+	service := orders(checkout, store, mail)
+
+	guest := addressed()
+	guest.UserId = 0
+	guest.Email = "guest@example.com"
+
+	reference, err := service.Start(guest, "stripe")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	order, err := service.Complete(0, reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if order.Email != "guest@example.com" {
+		t.Fatalf("the order lost the email the buyer typed: %q", order.Email)
+	}
+	if mail.confirmed == nil {
+		t.Fatal("a buyer with no account was never sent a confirmation")
+	}
+	if mail.confirmed.Email != "guest@example.com" {
+		t.Fatalf("confirmed to %q", mail.confirmed.Email)
+	}
+	if mail.sent == nil {
+		t.Fatal("support was not told about the guest order")
+	}
+}
+
+func TestStartRefusesAnOrderWithNoEmailToConfirmTo(t *testing.T) {
+	guest := addressed()
+	guest.UserId = 0
+	guest.Email = ""
+
+	_, err := orders(&recordingCheckout{}, newStore(), &recordingMail{}).Start(guest, "stripe")
+	if err == nil {
+		t.Fatal("want an error when there is no way to reach the buyer")
+	}
+}
+
+func TestCompleteRefusesAGuestReferenceForAnAccountOrder(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: paidTotal}
+	store, mail := newStore(), &recordingMail{}
+	service, reference := started(t, checkout, store, mail)
+
+	if _, err := service.Complete(0, reference); err == nil {
+		t.Fatal("a signed-out caller must not settle an order that belongs to an account")
+	}
+}
+
+func TestCompleteRefusesAnAccountClaimingAGuestOrder(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: paidTotal}
+	store, mail := newStore(), &recordingMail{}
+	service := orders(checkout, store, mail)
+
+	guest := addressed()
+	guest.UserId = 0
+	reference, err := service.Start(guest, "stripe")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := service.Complete(7, reference); err == nil {
+		t.Fatal("an account must not settle a guest order")
 	}
 }

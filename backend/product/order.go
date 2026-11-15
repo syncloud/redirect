@@ -30,6 +30,7 @@ func (o *Order) Missing() []string {
 		name  string
 		value string
 	}{
+		{"email", o.Email},
 		{"name", o.Name},
 		{"address", o.Address},
 		{"city", o.City},

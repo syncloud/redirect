@@ -99,7 +99,6 @@
         </div>
 
         <el-button
-          v-if="loggedIn"
           type="primary"
           size="large"
           class="continue"
@@ -108,29 +107,38 @@
         >
           {{ $t('shop.continue') }}
         </el-button>
-        <el-button
-          v-else-if="loggedIn === false"
-          type="primary"
-          size="large"
-          class="continue"
-          data-testid="shop-signin-link"
-          @click="toSignIn"
+        <p v-if="loggedIn === false" class="sc-muted signed-out">
+          <button
+            type="button"
+            class="signed-out-link"
+            data-testid="shop-account-why"
+            :aria-expanded="accountOpen ? 'true' : 'false'"
+            @click="accountOpen = !accountOpen"
+          >
+            {{ $t('shop.needAccount') }}
+          </button>
+        </p>
+        <p
+          v-if="loggedIn === false && accountOpen"
+          class="sc-muted signed-out signed-out-next"
+          data-testid="shop-account-later"
         >
-          {{ $t('shop.signInToOrder') }}
-        </el-button>
-        <el-button
-          v-else
-          type="primary"
-          size="large"
-          class="continue"
-          disabled
-          data-testid="shop-waiting"
-        >
-          {{ $t('shop.continue') }}
-        </el-button>
+          {{ $t('shop.accountLater') }}
+        </p>
+        <p v-if="loggedIn === false" class="sc-muted signed-out signed-out-next">
+          {{ $t('shop.haveAccount') }}
+          <button
+            type="button"
+            class="signed-out-link"
+            data-testid="shop-signin-link"
+            @click="toSignIn"
+          >
+            {{ $t('shop.signIn') }}
+          </button>
+        </p>
       </div>
 
-      <div v-if="loggedIn && step !== 'choose'" class="sc-card chosen" data-testid="shop-chosen">
+      <div v-if="step !== 'choose'" class="sc-card chosen" data-testid="shop-chosen">
         <div>
           <span class="chosen-name">{{ device.name }}, {{ optionName }}</span>
           <span class="chosen-total">{{ money(total) }}</span>
@@ -140,7 +148,7 @@
         </button>
       </div>
 
-      <div v-if="loggedIn && step === 'pay'" class="sc-card chosen" data-testid="shop-address-chosen">
+      <div v-if="step === 'pay'" class="sc-card chosen" data-testid="shop-address-chosen">
         <div>
           <span class="chosen-name">{{ name }}</span>
           <span class="chosen-total chosen-address">{{ addressLine }}</span>
@@ -150,8 +158,25 @@
         </button>
       </div>
 
-      <div v-if="loggedIn && step === 'address'" class="sc-card sc-form" data-testid="device-address">
+      <div v-if="step === 'address'" class="sc-card sc-form" data-testid="device-address">
         <h2 class="sc-h2">{{ $t('shop.shipItTo') }}</h2>
+
+        <template v-if="!loggedIn">
+          <div class="field">
+            <input
+              id="device-email"
+              v-model="email"
+              type="email"
+              placeholder=" "
+              autocomplete="email"
+              data-testid="device-email"
+            >
+            <label for="device-email">{{ $t('shop.email') }}</label>
+          </div>
+          <p class="sc-help" data-testid="device-email-why">
+            {{ $t('shop.emailWhy') }}
+          </p>
+        </template>
 
         <div class="field">
           <input
@@ -227,7 +252,7 @@
         </el-button>
       </div>
 
-      <div v-if="loggedIn && step === 'pay'" class="sc-card" data-testid="device-pay">
+      <div v-if="step === 'pay'" class="sc-card" data-testid="device-pay">
         <h2 class="sc-h2">{{ $t('shop.pay', { amount: money(total) }) }}</h2>
 
         <div class="pay-methods">
@@ -342,6 +367,8 @@ import {
 import { CreditCard } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
 export default {
   name: 'DeviceView',
   props: {
@@ -359,6 +386,7 @@ export default {
       ],
       photo: 0,
       zoomed: false,
+      accountOpen: false,
       swipeFrom: 0,
       shipping: 0,
       currency: 'GBP',
@@ -404,8 +432,12 @@ export default {
       return this.busy !== ''
     },
     incomplete () {
-      return [this.name, this.address, this.city, this.postcode, this.country]
+      const missing = [this.name, this.address, this.city, this.postcode, this.country]
         .some(field => field.trim() === '')
+      if (this.loggedIn) {
+        return missing
+      }
+      return missing || !EMAIL.test(this.email)
     }
   },
   watch: {
@@ -543,6 +575,7 @@ export default {
         device: this.device.code,
         option: this.option,
         provider: provider,
+        email: this.email,
         name: this.name,
         address: this.address,
         city: this.city,
@@ -568,6 +601,7 @@ export default {
       return axios.post('/api/device/order/complete', { reference: reference })
         .then(response => {
           this.number = response.data.data.number
+          this.email = response.data.data.email
           this.ordered = true
           track(SHOP_ORDERED)
         })
@@ -717,6 +751,26 @@ export default {
 .continue {
   width: 100%;
   margin-top: 20px;
+}
+
+.signed-out {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.signed-out-next {
+  margin-top: 2px;
+}
+
+.signed-out-link {
+  border: 0;
+  background: none;
+  color: var(--sc-primary);
+  font-family: var(--sc-font);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0;
 }
 
 .chosen {

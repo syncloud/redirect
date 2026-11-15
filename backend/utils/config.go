@@ -125,6 +125,20 @@ func (config *Config) GetWwwRateLimitPerHour() int {
 	return 8
 }
 
+func (config *Config) GetOrderRateLimitPerMinute() int {
+	if value, err := config.parser.GetInt64("www", "order_rate_limit_per_minute"); err == nil {
+		return int(value)
+	}
+	return 10
+}
+
+func (config *Config) GetOrderRateLimitPerHour() int {
+	if value, err := config.parser.GetInt64("www", "order_rate_limit_per_hour"); err == nil {
+		return int(value)
+	}
+	return 30
+}
+
 func (config *Config) GetApiMetricsAddr() string {
 	if value, err := config.parser.Get("metrics", "api_addr"); err == nil {
 		return value
