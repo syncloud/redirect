@@ -146,7 +146,12 @@ func (m *Mail) SendDeviceOrderCustomer(order *product.Order, device, option stri
 }
 
 func (m *Mail) SendDeviceOrder(order *product.Order, device, option string) error {
+	account := "no"
+	if order.UserId != 0 {
+		account = "yes"
+	}
 	return m.SendNotification(m.deviceOrderPath, map[string]string{
+		"account":   account,
 		"number":    strconv.FormatInt(order.Id, 10),
 		"name":      order.Name,
 		"device":    device,

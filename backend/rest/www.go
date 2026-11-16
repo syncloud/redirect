@@ -11,6 +11,7 @@ import (
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
 	"github.com/syncloud/redirect/product"
+	"github.com/syncloud/redirect/validation"
 	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
 	"io"
@@ -102,6 +103,8 @@ type Www struct {
 	logger         *zap.Logger
 	burstLimit     *RateLimiter
 	sustainedLimit *RateLimiter
+	orderBurst     *RateLimiter
+	orderSustained *RateLimiter
 }
 
 func NewWww(
@@ -121,6 +124,8 @@ func NewWww(
 	socket string,
 	rateLimitPerMinute int,
 	rateLimitPerHour int,
+	orderRateLimitPerMinute int,
+	orderRateLimitPerHour int,
 	logger *zap.Logger,
 ) *Www {
 	return &Www{
@@ -143,10 +148,12 @@ func NewWww(
 		logger:         logger,
 		burstLimit:     NewRateLimiter(rateLimitPerMinute, time.Minute),
 		sustainedLimit: NewRateLimiter(rateLimitPerHour, time.Hour),
+		orderBurst:     NewRateLimiter(orderRateLimitPerMinute, time.Minute),
+		orderSustained: NewRateLimiter(orderRateLimitPerHour, time.Hour),
 	}
 }
 
-func (w *Www) Limited(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+func (w *Www) limitedBy(burst, sustained *RateLimiter, next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		ip, err := w.requestIp(req)
 		if err != nil {
@@ -154,13 +161,21 @@ func (w *Www) Limited(next func(http.ResponseWriter, *http.Request)) func(http.R
 			return
 		}
 		now := time.Now()
-		if !w.burstLimit.Allow(*ip, now) || !w.sustainedLimit.Allow(*ip, now) {
+		if !burst.Allow(*ip, now) || !sustained.Allow(*ip, now) {
 			w.logger.Info("rate limit exceeded", zap.String("path", req.URL.Path))
 			fail(writer, model.NewServiceErrorWithCode("too many requests", http.StatusTooManyRequests))
 			return
 		}
 		next(writer, req)
 	}
+}
+
+func (w *Www) Limited(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return w.limitedBy(w.burstLimit, w.sustainedLimit, next)
+}
+
+func (w *Www) LimitedOrders(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return w.limitedBy(w.orderBurst, w.orderSustained, next)
 }
 
 func (w *Www) Start() error {
@@ -189,8 +204,8 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan/switch", w.Secured(HandleUser(w.PlanSwitch))).Methods("POST")
 	r.HandleFunc("/event", w.SiteEvent).Methods("POST")
 	r.HandleFunc("/device/catalog", Handle(w.DeviceCatalog)).Methods("GET")
-	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrder))).Methods("POST")
-	r.HandleFunc("/device/order/complete", w.Secured(HandleUser(w.DeviceOrderComplete))).Methods("POST")
+	r.HandleFunc("/device/order", w.LimitedOrders(w.Optional(HandleUser(w.DeviceOrder)))).Methods("POST")
+	r.HandleFunc("/device/order/complete", w.Optional(HandleUser(w.DeviceOrderComplete))).Methods("POST")
 	r.HandleFunc("/device/orders", w.Secured(HandleUser(w.DeviceOrders))).Methods("GET")
 	r.HandleFunc("/device/order", w.Secured(HandleUser(w.DeviceOrderDetail))).Methods("GET")
 	r.HandleFunc("/device/orders/unfinished", w.Secured(HandleUser(w.DeviceOrdersUnfinished))).Methods("GET")
@@ -392,6 +407,17 @@ func (w *Www) orderViews(orders []*product.Order, withAccount bool) []model.Devi
 		views = append(views, view)
 	}
 	return views
+}
+
+func (w *Www) Optional(handle func(_ http.ResponseWriter, r *http.Request, user model.User)) func(w http.ResponseWriter, r *http.Request) {
+	return func(resp http.ResponseWriter, r *http.Request) {
+		user, err := w.getSessionUser(r)
+		if err != nil {
+			handle(resp, r, model.User{})
+			return
+		}
+		handle(resp, r, *user)
+	}
 }
 
 func (w *Www) SecuredAdmin(handle func(_ http.ResponseWriter, r *http.Request, user model.User)) func(w http.ResponseWriter, r *http.Request) {
@@ -866,9 +892,19 @@ func (w *Www) DeviceOrder(_ http.ResponseWriter, req *http.Request, user model.U
 		return nil, errors.New("invalid request")
 	}
 
+	email := user.Email
+	if user.Id == 0 {
+		fieldValidator := validation.New()
+		given := fieldValidator.Email(&request.Email)
+		if fieldValidator.HasErrors() {
+			return nil, &model.ParameterError{ParameterErrors: fieldValidator.ToParametersMessages()}
+		}
+		email = *given
+	}
+
 	order := &product.Order{
 		UserId:   user.Id,
-		Email:    user.Email,
+		Email:    email,
 		Device:   request.Device,
 		Option:   request.Option,
 		Name:     request.Name,
@@ -900,12 +936,12 @@ func (w *Www) DeviceOrderComplete(_ http.ResponseWriter, req *http.Request, user
 		w.logger.Error("unable to parse", zap.Error(err))
 		return nil, errors.New("invalid request")
 	}
-	number, err := w.orders.Complete(user.Id, request.Reference)
+	order, err := w.orders.Complete(user.Id, request.Reference)
 	if err != nil {
 		w.logger.Error("unable to complete the order", zap.Error(err))
 		return nil, err
 	}
-	return model.DeviceOrderCompleteResponse{Number: number}, nil
+	return model.DeviceOrderCompleteResponse{Number: order.Id, Email: order.Email}, nil
 }
 
 type WwwOrders interface {
@@ -913,7 +949,7 @@ type WwwOrders interface {
 	Catalog() []product.Device
 	Shipping() int
 	Start(order *product.Order, provider string) (string, error)
-	Complete(userId int64, reference string) (int64, error)
+	Complete(userId int64, reference string) (*product.Order, error)
 	Mine(userId int64) ([]*product.Order, error)
 	All() ([]*product.Order, error)
 	SetStatus(id int64, status string, comment string) error

@@ -28,9 +28,12 @@ async function goToShop (page) {
   await expect(page).toHaveURL(/\/shop$/)
 }
 
-async function address (page) {
+async function address (page, email) {
   await page.getByTestId('shop-continue').click()
   await expect(page.getByTestId('shop-chosen')).toBeVisible()
+  if (email) {
+    await page.getByTestId('device-email').fill(email)
+  }
   await page.getByTestId('device-name').fill('Ada Lovelace')
   await page.getByTestId('device-address-line').fill('1 Analytical Street')
   await page.getByTestId('device-city').fill('London')
@@ -40,7 +43,7 @@ async function address (page) {
   await expect(page.getByTestId('shop-address-chosen')).toBeVisible()
 }
 
-test('the shop is readable without an account', async ({ page }, testInfo) => {
+test('the shop can be bought from without an account', async ({ page }, testInfo) => {
   await page.goto('/shop')
 
   await expect(page.getByTestId('device-choice')).toBeVisible()
@@ -48,12 +51,34 @@ test('the shop is readable without an account', async ({ page }, testInfo) => {
   await expect(page.getByTestId('device-total')).toContainText('£')
   await shoot(page, testInfo, 'shop-signed-out')
 
-  await expect(page.getByTestId('shop-signin-link')).toBeVisible()
-  await expect(page.getByTestId('shop-continue')).toHaveCount(0)
+  await expect(page.getByTestId('shop-continue'),
+    'a visitor with no account must be able to start an order').toBeEnabled()
+  await expect(page.getByTestId('shop-account-later')).toHaveCount(0)
+  await page.getByTestId('shop-account-why').click()
+  await expect(page.getByTestId('shop-account-later'),
+    'a visitor who asks is told when an account will be needed').toBeVisible()
   await expect(page.getByTestId('device-pay')).toHaveCount(0)
 
+  await page.getByTestId('shop-continue').click()
+  await expect(page.getByTestId('device-address')).toBeVisible()
+  await expect(page.getByTestId('device-email'),
+    'a buyer with no account is asked where to send the receipt').toBeVisible()
+})
+
+test('the shop still offers an account holder the way in', async ({ page }) => {
+  await page.goto('/shop')
+
+  await expect(page.getByTestId('shop-signin-link')).toBeVisible()
+  await expect(page.getByTestId('shop-account-why')).toBeVisible()
   await page.getByTestId('shop-signin-link').click()
   await expect(page.getByTestId('login-form')).toBeVisible()
+})
+
+test('a visitor reaches the shop from the menu without signing in', async ({ page }) => {
+  await page.goto('/privacy')
+  await goToShop(page)
+
+  await expect(page.getByTestId('shop-continue')).toBeEnabled()
 })
 
 test('the shop prices the device from the catalogue', async ({ page }, testInfo) => {
@@ -69,6 +94,8 @@ test('the shop prices the device from the catalogue', async ({ page }, testInfo)
   await shoot(page, testInfo, 'device-choice')
 
   await expect(page.getByTestId('device-options')).toHaveCount(0)
+  await expect(page.getByTestId('shop-account-why'),
+    'an account holder is not asked whether they need an account').toHaveCount(0)
   expect(total).toMatch(/^£\d+\.\d\d$/)
 })
 
@@ -163,8 +190,83 @@ test('a card payment is taken and the order is confirmed', async ({ page }, test
 
   const support = await waitForEmailTo('support@syncloud.it')
   expect(support.subject).toContain(number)
-  expect(support.body, 'support must see which account ordered').toContain(`Account: ${buyer}`)
+  expect(support.body, 'support must see who ordered').toContain(`Email: ${buyer}`)
+  expect(support.body, 'support must see it came from an account').toContain('Has an account: yes')
   expect(support.body).toContain('Ada Lovelace')
+})
+
+test('a card payment is taken from a buyer with no account', async ({ page }, testInfo) => {
+  const buyer = uniqueEmail('guest-card')
+  await page.goto('/shop')
+  await address(page, buyer)
+
+  const total = await page.getByTestId('device-total').textContent()
+  await page.getByTestId('device-pay-stripe').click()
+
+  await expect(page.getByTestId('faker-pay')).toBeVisible()
+  await expect(page.getByTestId('faker-amount'),
+    'a guest must be charged exactly what the page quoted')
+    .toHaveText(`GBP ${total.replace('£', '')}`)
+
+  await page.getByTestId('faker-pay').click()
+
+  await expect(page.getByTestId('device-ordered')).toBeVisible()
+  await expect(page.getByTestId('device-reference')).toContainText('Order')
+  await expect(page.getByTestId('device-ordered'),
+    'the buyer is told where the receipt went').toContainText(buyer)
+  await shoot(page, testInfo, 'device-ordered-guest')
+
+  const number = (await page.getByTestId('device-reference').textContent())
+    .replace('Order ', '').trim()
+
+  const confirmation = await waitForEmailTo(buyer)
+  expect(confirmation.subject, 'the buyer is told their order number').toContain(number)
+  expect(confirmation.body).toContain('Syncloud X1')
+  expect(confirmation.body).toContain('Ada Lovelace')
+  expect(confirmation.body).toContain(total.replace('£', ''))
+
+  const support = await waitForEmailTo('support@syncloud.it')
+  expect(support.subject).toContain(number)
+  expect(support.body, 'support must see who ordered').toContain(`Email: ${buyer}`)
+  expect(support.body, 'support must know there is no account behind it')
+    .toContain('Has an account: no')
+  expect(support.body).toContain('Ada Lovelace')
+})
+
+test('a buyer with no account cannot pay until the email is one we can reach', async ({ page }) => {
+  await page.goto('/shop')
+  await page.getByTestId('shop-continue').click()
+  await page.getByTestId('device-name').fill('Ada Lovelace')
+  await page.getByTestId('device-address-line').fill('1 Analytical Street')
+  await page.getByTestId('device-city').fill('London')
+  await page.getByTestId('device-postcode').fill('E1 6AN')
+  await page.getByTestId('device-country').fill('United Kingdom')
+
+  await expect(page.getByTestId('shop-address-continue'),
+    'a whole address with no email is not enough').toBeDisabled()
+
+  await page.getByTestId('device-email').fill('not-an-email')
+  await expect(page.getByTestId('shop-address-continue')).toBeDisabled()
+
+  await page.getByTestId('device-email').fill('guest@example.com')
+  await expect(page.getByTestId('shop-address-continue')).toBeEnabled()
+})
+
+test('the order endpoint refuses a guest order with no email', async ({ page }) => {
+  const refused = await page.request.post('/api/device/order', {
+    data: {
+      device: 'x1',
+      option: '1t',
+      provider: 'stripe',
+      name: 'Ada Lovelace',
+      address: '1 Analytical Street',
+      city: 'London',
+      postcode: 'E1 6AN',
+      country: 'United Kingdom'
+    }
+  })
+  expect(refused.status(),
+    'the server must not take an order it cannot confirm').toBeGreaterThanOrEqual(400)
 })
 
 test('a paypal payment is taken and the order is confirmed', async ({ page }, testInfo) => {

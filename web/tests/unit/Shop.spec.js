@@ -6,6 +6,7 @@ import Shop from '../../src/views/Shop.vue'
 import { loadScript } from '@paypal/paypal-js'
 import { ElButton } from 'element-plus'
 import { track } from '../../src/track'
+import en from '../../src/locales/en.json'
 
 jest.mock('@paypal/paypal-js')
 jest.mock('../../src/track', () => ({
@@ -314,13 +315,41 @@ test('shows the product to a visitor who is not signed in', async () => {
   expect(wrapper.find('[data-testid="device-choice"]').exists()).toBe(true)
   expect(wrapper.find('[data-testid="device-total"]').text()).toBe('£597.00')
 
+  expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(true)
   expect(wrapper.find('[data-testid="shop-signin-link"]').exists()).toBe(true)
-  expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(false)
   expect(wrapper.find('[data-testid="device-pay"]').exists()).toBe(false)
   expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(false)
 })
 
-test('asks a signed out visitor to sign in rather than to pay', async () => {
+test('keeps the account explanation out of the way until a visitor asks for it', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="shop-account-why"]').text()).toBe(en.shop.needAccount)
+  expect(wrapper.find('[data-testid="shop-account-later"]').exists()).toBe(false)
+
+  await wrapper.find('[data-testid="shop-account-why"]').trigger('click')
+  expect(wrapper.find('[data-testid="shop-account-later"]').text()).toBe(en.shop.accountLater)
+
+  await wrapper.find('[data-testid="shop-account-why"]').trigger('click')
+  expect(wrapper.find('[data-testid="shop-account-later"]').exists()).toBe(false)
+})
+
+test('does not raise the question of accounts with someone who already has one', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="shop-account-why"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="shop-account-later"]').exists()).toBe(false)
+})
+
+test('offers a signed out visitor the way to sign in without demanding it', async () => {
   const mock = new MockAdapter(axios)
   catalog(mock)
 
@@ -500,10 +529,9 @@ test('does not call a visitor signed out while the session is still unknown', as
   await flushPromises()
 
   expect(names()).not.toContain('shop.signedout')
-  expect(wrapper.find('[data-testid="shop-waiting"]').exists()).toBe(true)
-  expect(wrapper.find('[data-testid="shop-waiting"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="shop-continue"]').attributes('disabled')).toBeUndefined()
   expect(wrapper.find('[data-testid="shop-signin-link"]').exists()).toBe(false)
-  expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(false)
 })
 
 test('counts the visitor signed out once the session comes back empty', async () => {
@@ -641,6 +669,103 @@ test('treats a missing session prop as unknown rather than signed out', async ()
   })
   await flushPromises()
 
-  expect(wrapper.find('[data-testid="shop-waiting"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="shop-continue"]').exists()).toBe(true)
   expect(names()).not.toContain('shop.signedout')
+})
+
+test('lets a visitor with no account reach the address form', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+  await proceed(wrapper)
+
+  expect(wrapper.find('[data-testid="device-address"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="device-email"]').exists()).toBe(true)
+})
+
+test('asks a visitor with no account where to send the receipt', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+  await proceed(wrapper)
+  await fillAddress(wrapper)
+
+  expect(wrapper.find('[data-testid="shop-address-continue"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('[data-testid="device-incomplete"]').exists()).toBe(true)
+
+  await wrapper.find('[data-testid="device-email"]').setValue('guest@example.com')
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="shop-address-continue"]').attributes('disabled')).toBeUndefined()
+})
+
+test('will not take an address with an email that cannot be delivered to', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+  await proceed(wrapper)
+  await fillAddress(wrapper)
+
+  for (const typed of ['guest', 'guest@', 'guest@example', 'a b@example.com', '']) {
+    await wrapper.find('[data-testid="device-email"]').setValue(typed)
+    await flushPromises()
+    const blocked = wrapper.find('[data-testid="shop-address-continue"]')
+      .attributes('disabled') !== undefined
+    expect({ typed, blocked }).toEqual({ typed, blocked: true })
+  }
+})
+
+test('does not ask a signed in buyer for an email it already has', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+
+  const wrapper = mountShop()
+  await flushPromises()
+  await proceed(wrapper)
+  await fillAddress(wrapper)
+
+  expect(wrapper.find('[data-testid="device-email"]').exists()).toBe(false)
+  expect(wrapper.find('[data-testid="shop-address-continue"]').attributes('disabled')).toBeUndefined()
+})
+
+test('sends the email a visitor with no account typed along with the order', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+  mock.onPost('/api/device/order').reply(200,
+    { data: { reference: 'OURREF', url: 'https://checkout.example/session' } })
+  delete window.location
+  window.location = { href: '' }
+
+  const wrapper = mountShop({}, jest.fn(), false)
+  await flushPromises()
+  await proceed(wrapper)
+  await fillAddress(wrapper)
+  await wrapper.find('[data-testid="device-email"]').setValue('guest@example.com')
+  await fill(wrapper)
+
+  await wrapper.find('[data-testid="device-pay-stripe"]').trigger('click')
+  await flushPromises()
+
+  const sent = JSON.parse(mock.history.post[0].data)
+  expect(sent.email).toBe('guest@example.com')
+  expect(sent.name).toBe('A B')
+})
+
+test('tells a visitor with no account where the receipt went', async () => {
+  const mock = new MockAdapter(axios)
+  catalog(mock)
+  mock.onPost('/api/device/order/complete').reply(200,
+    { data: { number: 12, email: 'guest@example.com' } })
+
+  const wrapper = mountShop({ reference: 'OURREF' }, jest.fn(), false)
+  await flushPromises()
+
+  expect(wrapper.find('[data-testid="device-ordered"]').exists()).toBe(true)
+  expect(wrapper.find('[data-testid="device-ordered"]').text()).toContain('guest@example.com')
 })

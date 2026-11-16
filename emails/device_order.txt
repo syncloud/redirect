@@ -11,4 +11,5 @@ Ship to:
 {city} {postcode}
 {country}
 
-Account: {email}
+Email: {email}
+Has an account: {account}

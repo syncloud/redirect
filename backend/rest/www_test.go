@@ -12,6 +12,7 @@ import (
 	"github.com/syncloud/redirect/product"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -171,6 +172,8 @@ func TestLogin_CreateSession(t *testing.T) {
 		"",
 		1000,
 		10000,
+		1000,
+		10000,
 		log.Default(),
 	)
 	email := "test@example.com"
@@ -212,6 +215,8 @@ func TestLoginAgain_NotError(t *testing.T) {
 		"example.com",
 		[]byte("secret_key"),
 		"",
+		1000,
+		10000,
 		1000,
 		10000,
 		log.Default(),
@@ -272,6 +277,8 @@ func TestLoginFresh_NotError(t *testing.T) {
 		"",
 		1000,
 		10000,
+		1000,
+		10000,
 		log.Default(),
 	)
 	email := "test@example.com"
@@ -316,6 +323,8 @@ func TestLogout_ClearSession(t *testing.T) {
 		"",
 		1000,
 		10000,
+		1000,
+		10000,
 		log.Default(),
 	)
 	email := "test@example.com"
@@ -346,6 +355,30 @@ func (s *WwwMailRelayStub) UsedMessages(_ int64) (int64, error) { return 0, nil 
 func (s *WwwMailRelayStub) LimitMessages(_ int64) int64         { return 0 }
 func (s *WwwMailRelayStub) Enabled(_ int64) (bool, error)       { return false, nil }
 
+func orderWww(orders *WwwOrdersStub) *Www {
+	return NewWww(
+		&WwwDomainsStub{},
+		&WwwNsCheckerStub{},
+		&WwwUsersStub{authenticated: true},
+		&WwwActionsStub{},
+		&WwwMailStub{},
+		&WwwStripeStub{},
+		orders,
+		&WwwRelayStub{},
+		&WwwMailRelayStub{},
+		&WwwPayPalStub{},
+		metrics.New(),
+		"example.com",
+		[]byte("secret_key"),
+		"",
+		1000,
+		10000,
+		1000,
+		10000,
+		log.Default(),
+	)
+}
+
 func sessionWww() *Www {
 	return NewWww(
 		&WwwDomainsStub{},
@@ -362,6 +395,8 @@ func sessionWww() *Www {
 		"example.com",
 		[]byte("secret_key"),
 		"",
+		1000,
+		10000,
 		1000,
 		10000,
 		log.Default(),
@@ -406,7 +441,9 @@ func TestSessionCarryingAUserIdIsAccepted(t *testing.T) {
 	assert.Equal(t, int64(42), user.Id)
 }
 
-type WwwOrdersStub struct{}
+type WwwOrdersStub struct {
+	started *product.Order
+}
 
 func (s *WwwOrdersStub) Catalog() []product.Device { return nil }
 
@@ -414,9 +451,14 @@ func (s *WwwOrdersStub) Shipping() int { return 1500 }
 
 func (s *WwwOrdersStub) Redact(_ int64) error { return nil }
 
-func (s *WwwOrdersStub) Start(_ *product.Order, _ string) (string, error) { return "", nil }
+func (s *WwwOrdersStub) Start(order *product.Order, _ string) (string, error) {
+	s.started = order
+	return "REF", nil
+}
 
-func (s *WwwOrdersStub) Complete(_ int64, _ string) (int64, error) { return 1, nil }
+func (s *WwwOrdersStub) Complete(_ int64, _ string) (*product.Order, error) {
+	return &product.Order{Id: 1, Email: "buyer@example.com"}, nil
+}
 
 func (s *WwwOrdersStub) Mine(_ int64) ([]*product.Order, error) { return nil, nil }
 
@@ -456,6 +498,8 @@ func shopWww() *Www {
 		"",
 		1000,
 		10000,
+		1000,
+		10000,
 		log.Default(),
 	)
 }
@@ -491,4 +535,65 @@ func TestSiteEvent_AcceptsAnUnknownLanguageWithoutMakingALabelForIt(t *testing.T
 	www := shopWww()
 	rr := postEvent(www, fmt.Sprintf(`{"event":"%s","language":"klingon"}`, event.ShopView))
 	assert.Equal(t, http.StatusNoContent, rr.Code)
+}
+
+func orderRequest(t *testing.T, email string) *http.Request {
+	body := `{"device":"x1","option":"1t","provider":"stripe","email":"` + email + `",` +
+		`"name":"Ada","address":"1 Road","city":"London","postcode":"E1","country":"United Kingdom"}`
+	req, err := http.NewRequest("POST", "/device/order", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return req
+}
+
+func TestDeviceOrderTakesTheEmailTheGuestTyped(t *testing.T) {
+	orders := &WwwOrdersStub{}
+	www := orderWww(orders)
+
+	_, err := www.DeviceOrder(httptest.NewRecorder(), orderRequest(t, "Guest@Example.COM"), model.User{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if orders.started == nil {
+		t.Fatal("an order with no account was not started")
+	}
+	if orders.started.UserId != 0 {
+		t.Fatalf("a guest order was attached to account %d", orders.started.UserId)
+	}
+	if orders.started.Email != "guest@example.com" {
+		t.Fatalf("the guest email was stored as %q", orders.started.Email)
+	}
+}
+
+func TestDeviceOrderIgnoresAnEmailSentByAnAccountHolder(t *testing.T) {
+	orders := &WwwOrdersStub{}
+	www := orderWww(orders)
+
+	_, err := www.DeviceOrder(httptest.NewRecorder(), orderRequest(t, "someone@else.com"),
+		model.User{Id: 42, Email: "owner@example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if orders.started.Email != "owner@example.com" {
+		t.Fatalf("an account order was confirmed to %q", orders.started.Email)
+	}
+	if orders.started.UserId != 42 {
+		t.Fatalf("the order lost its account: %d", orders.started.UserId)
+	}
+}
+
+func TestDeviceOrderRefusesAGuestEmailItCannotDeliverTo(t *testing.T) {
+	for _, typed := range []string{"", "guest", "guest@", "guest@example", "a b@example.com"} {
+		orders := &WwwOrdersStub{}
+		www := orderWww(orders)
+
+		_, err := www.DeviceOrder(httptest.NewRecorder(), orderRequest(t, typed), model.User{})
+		if err == nil {
+			t.Fatalf("%q was accepted as an email", typed)
+		}
+		if orders.started != nil {
+			t.Fatalf("%q started an order anyway", typed)
+		}
+	}
 }
