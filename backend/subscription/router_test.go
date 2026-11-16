@@ -30,19 +30,22 @@ func (p *ProviderStub) IsActive(_ string) (bool, error) {
 func TestRouter_Unsubscribe_PayPal(t *testing.T) {
 	paypal := &ProviderStub{name: "paypal"}
 	stripe := &ProviderStub{name: "stripe"}
-	router := NewRouter(paypal, stripe)
+	included := &ProviderStub{name: "grant"}
+	router := NewRouter(paypal, stripe, included)
 
 	err := router.Unsubscribe(model.SubscriptionTypePayPal, "sub-1")
 
 	assert.Nil(t, err)
 	assert.Equal(t, "sub-1", *paypal.unsubscribe)
 	assert.Nil(t, stripe.unsubscribe)
+	assert.Nil(t, included.unsubscribe)
 }
 
 func TestRouter_Unsubscribe_Stripe(t *testing.T) {
 	paypal := &ProviderStub{name: "paypal"}
 	stripe := &ProviderStub{name: "stripe"}
-	router := NewRouter(paypal, stripe)
+	included := &ProviderStub{name: "grant"}
+	router := NewRouter(paypal, stripe, included)
 
 	err := router.Unsubscribe(model.SubscriptionTypeStripe, "sub-2")
 
@@ -54,7 +57,8 @@ func TestRouter_Unsubscribe_Stripe(t *testing.T) {
 func TestRouter_Unsubscribe_Unsupported(t *testing.T) {
 	paypal := &ProviderStub{name: "paypal"}
 	stripe := &ProviderStub{name: "stripe"}
-	router := NewRouter(paypal, stripe)
+	included := &ProviderStub{name: "grant"}
+	router := NewRouter(paypal, stripe, included)
 
 	err := router.Unsubscribe(model.SubscriptionTypeCrypto, "sub-3")
 
@@ -66,7 +70,8 @@ func TestRouter_Unsubscribe_Unsupported(t *testing.T) {
 func TestRouter_IsActive_RoutesByType(t *testing.T) {
 	paypal := &ProviderStub{name: "paypal", active: true}
 	stripe := &ProviderStub{name: "stripe", active: false}
-	router := NewRouter(paypal, stripe)
+	included := &ProviderStub{name: "grant"}
+	router := NewRouter(paypal, stripe, included)
 
 	paypalActive, err := router.IsActive(model.SubscriptionTypePayPal, "sub-1")
 	assert.Nil(t, err)
@@ -75,6 +80,11 @@ func TestRouter_IsActive_RoutesByType(t *testing.T) {
 	stripeActive, err := router.IsActive(model.SubscriptionTypeStripe, "sub-2")
 	assert.Nil(t, err)
 	assert.False(t, stripeActive)
+
+	included.active = true
+	grantActive, err := router.IsActive(model.SubscriptionTypeGrant, "7")
+	assert.Nil(t, err)
+	assert.True(t, grantActive)
 
 	_, err = router.IsActive(model.SubscriptionTypeCrypto, "sub-3")
 	assert.NotNil(t, err)
@@ -85,7 +95,8 @@ func TestRouter_PaidThrough_RoutesByType(t *testing.T) {
 	stripePaidThrough := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
 	paypal := &ProviderStub{name: "paypal", paidThrough: paypalPaidThrough}
 	stripe := &ProviderStub{name: "stripe", paidThrough: stripePaidThrough}
-	router := NewRouter(paypal, stripe)
+	included := &ProviderStub{name: "grant"}
+	router := NewRouter(paypal, stripe, included)
 
 	got, err := router.PaidThrough(model.SubscriptionTypePayPal, "sub-1")
 	assert.NoError(t, err)
@@ -94,6 +105,12 @@ func TestRouter_PaidThrough_RoutesByType(t *testing.T) {
 	got, err = router.PaidThrough(model.SubscriptionTypeStripe, "sub-2")
 	assert.NoError(t, err)
 	assert.Equal(t, stripePaidThrough, got)
+
+	grantPaidThrough := time.Date(2027, 11, 15, 0, 0, 0, 0, time.UTC)
+	included.paidThrough = grantPaidThrough
+	got, err = router.PaidThrough(model.SubscriptionTypeGrant, "7")
+	assert.NoError(t, err)
+	assert.Equal(t, grantPaidThrough, got)
 
 	_, err = router.PaidThrough(model.SubscriptionTypeCrypto, "sub-3")
 	assert.Error(t, err)

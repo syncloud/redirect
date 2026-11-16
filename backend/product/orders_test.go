@@ -2,6 +2,7 @@ package product
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -31,6 +32,7 @@ func (r *recordingCheckout) Paid(string) (bool, int, string, error) {
 }
 
 type recordingMail struct {
+	code          string
 	sent          *Order
 	confirmed     *Order
 	statusChanges []string
@@ -42,7 +44,8 @@ func (m *recordingMail) SendDeviceOrder(order *Order, device, option string) err
 	return nil
 }
 
-func (m *recordingMail) SendDeviceOrderCustomer(order *Order, device, option string) error {
+func (m *recordingMail) SendDeviceOrderCustomer(order *Order, device, option, code string) error {
+	m.code = code
 	m.confirmed = order
 	return nil
 }
@@ -185,7 +188,11 @@ func (s *memoryStore) MarkOrderPaid(id int64) error {
 }
 
 func orders(checkout *recordingCheckout, store *memoryStore, mail *recordingMail) *Orders {
-	return NewOrders(catalog(), NewCheckouts(checkout, checkout), store, mail, zap.NewNop())
+	return mintingOrders(checkout, store, mail, &mintingStub{})
+}
+
+func mintingOrders(checkout *recordingCheckout, store *memoryStore, mail *recordingMail, minter *mintingStub) *Orders {
+	return NewOrders(catalog(), NewCheckouts(checkout, checkout), store, mail, minter, zap.NewNop())
 }
 
 func addressed() *Order {
@@ -603,5 +610,87 @@ func TestCompleteRefusesAnAccountClaimingAGuestOrder(t *testing.T) {
 
 	if _, err := service.Complete(7, reference); err == nil {
 		t.Fatal("an account must not settle a guest order")
+	}
+}
+
+func TestOrders_Settle_IncludesTheFirstYearWithTheDevice(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
+	store := newStore()
+	mail := &recordingMail{}
+	minter := &mintingStub{}
+	o := mintingOrders(checkout, store, mail, minter)
+
+	order := &Order{
+		UserId: 7, Email: "buyer@example.com", Device: "h4", Option: "1t",
+		Name: "A B", Address: "1 Road", City: "Town", Postcode: "X1", Country: "Germany",
+	}
+	if _, err := o.Start(order, "stripe"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := o.Complete(7, order.Reference); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(minter.minted) != 1 {
+		t.Fatalf("minted %d grants", len(minter.minted))
+	}
+	if minter.minted[0].UsesLeft != 1 {
+		t.Fatalf("a code sent to one buyer may be used %d times", minter.minted[0].UsesLeft)
+	}
+	if minter.minted[0].Source != fmt.Sprintf("order:%d", order.Id) {
+		t.Fatalf("grant source %q does not name the order", minter.minted[0].Source)
+	}
+	if mail.code != minter.minted[0].Code {
+		t.Fatalf("confirmation carried %q, minted %q", mail.code, minter.minted[0].Code)
+	}
+}
+
+func TestOrders_Settle_MintsNothingForAnOrderWeCannotEmail(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
+	store := newStore()
+	mail := &recordingMail{}
+	minter := &mintingStub{}
+	o := mintingOrders(checkout, store, mail, minter)
+
+	order := &Order{
+		UserId: 7, Email: "buyer@example.com", Device: "h4", Option: "1t",
+		Name: "A B", Address: "1 Road", City: "Town", Postcode: "X1", Country: "Germany",
+	}
+	if _, err := o.Start(order, "stripe"); err != nil {
+		t.Fatal(err)
+	}
+	store.only().Email = ""
+
+	if err := o.Settle(store.only()); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(minter.minted) != 0 {
+		t.Fatalf("minted %d codes with nowhere to send them", len(minter.minted))
+	}
+}
+
+func TestOrders_Settle_FailsRatherThanConfirmWithoutTheIncludedYear(t *testing.T) {
+	checkout := &recordingCheckout{paid: true, amount: 22900 + 8000 + 1500, currency: "GBP"}
+	store := newStore()
+	mail := &recordingMail{}
+	minter := &mintingStub{err: errors.New("no codes today")}
+	o := mintingOrders(checkout, store, mail, minter)
+
+	order := &Order{
+		UserId: 7, Email: "buyer@example.com", Device: "h4", Option: "1t",
+		Name: "A B", Address: "1 Road", City: "Town", Postcode: "X1", Country: "Germany",
+	}
+	if _, err := o.Start(order, "stripe"); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := o.Complete(7, order.Reference)
+
+	if err == nil {
+		t.Fatal("a buyer must not be told their order is done with no code in the email")
+	}
+	if mail.confirmed != nil {
+		t.Fatal("confirmed without a code")
 	}
 }

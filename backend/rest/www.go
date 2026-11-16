@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/syncloud/redirect/event"
+	"github.com/syncloud/redirect/grant"
 	"github.com/syncloud/redirect/label"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
@@ -93,6 +94,7 @@ type Www struct {
 	mailRelay      WwwMailRelay
 	paypal         WwwPayPal
 	orders         WwwOrders
+	grants         WwwGrants
 	metrics        *metrics.Metrics
 	events         *event.Events
 	languages      *label.Allowed
@@ -115,6 +117,7 @@ func NewWww(
 	mail WwwMail,
 	stripe WwwStripe,
 	orders WwwOrders,
+	grants WwwGrants,
 	relay WwwRelay,
 	mailRelay WwwMailRelay,
 	paypal WwwPayPal,
@@ -136,6 +139,7 @@ func NewWww(
 		mail:           mail,
 		stripe:         stripe,
 		orders:         orders,
+		grants:         grants,
 		relay:          relay,
 		mailRelay:      mailRelay,
 		paypal:         paypal,
@@ -202,6 +206,7 @@ func (w *Www) Start() error {
 	r.HandleFunc("/plan/subscribe/stripe/checkout", w.Secured(HandleUser(w.StripeCheckout))).Methods("POST")
 	r.HandleFunc("/plan/subscribe/stripe", w.Secured(HandleUser(w.SubscribeStripe))).Methods("POST")
 	r.HandleFunc("/plan/switch", w.Secured(HandleUser(w.PlanSwitch))).Methods("POST")
+	r.HandleFunc("/plan/redeem", w.Limited(w.Secured(HandleUser(w.PlanRedeem)))).Methods("POST")
 	r.HandleFunc("/event", w.SiteEvent).Methods("POST")
 	r.HandleFunc("/device/catalog", Handle(w.DeviceCatalog)).Methods("GET")
 	r.HandleFunc("/device/order", w.LimitedOrders(w.Optional(HandleUser(w.DeviceOrder)))).Methods("POST")
@@ -655,6 +660,24 @@ func (w *Www) SubscribePayPal(_ http.ResponseWriter, req *http.Request, _ model.
 		return nil, errors.New("invalid request")
 	}
 	return "OK", nil
+}
+
+func (w *Www) PlanRedeem(_ http.ResponseWriter, req *http.Request, user model.User) (interface{}, error) {
+	w.metrics.Request("plan_redeem")
+	request := model.PlanRedeemRequest{}
+	err := json.NewDecoder(req.Body).Decode(&request)
+	if err != nil {
+		w.logger.Error("unable to parse", zap.Error(err))
+		return nil, errors.New("invalid request")
+	}
+	redemption, err := w.grants.Redeem(&user, request.Code, time.Now())
+	if errors.Is(err, grant.ErrNoCode) || errors.Is(err, grant.ErrUsedUp) {
+		return nil, &model.ServiceError{InternalError: err, StatusCode: http.StatusBadRequest}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return model.PlanRedeemResponse{Plan: redemption.Plan, EndsAt: redemption.EndsAt}, nil
 }
 
 func (w *Www) SubscribeCrypto(_ http.ResponseWriter, req *http.Request, _ model.User) (interface{}, error) {

@@ -573,3 +573,43 @@ func TestCleaner_Clean_Last_ResetToZero(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), state.userId)
 }
+
+func TestCleaner_Clean_GrantEnding_WarnsAndKeepsTheDomains(t *testing.T) {
+	now := time.Now()
+	subscriptionId := "1"
+	subscriptionType := model.SubscriptionTypeGrant
+	user := &model.User{Id: 2, SubscriptionId: &subscriptionId, SubscriptionType: &subscriptionType}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	checker := &CheckerStub{active: false, paidThrough: now.AddDate(0, 0, 10)}
+
+	cleaner := newTestCleaner(database, state, mail, remover, checker)
+	err := cleaner.Clean(now)
+
+	assert.NoError(t, err)
+	assert.True(t, mail.planEnding, "a device buyer is told before the included year runs out")
+	assert.False(t, remover.domainsRemoved)
+	assert.False(t, mail.unsubscribed)
+}
+
+func TestCleaner_Clean_GrantOver_TakesTheDomainsBack(t *testing.T) {
+	now := time.Now()
+	subscriptionId := "1"
+	subscriptionType := model.SubscriptionTypeGrant
+	user := &model.User{Id: 2, SubscriptionId: &subscriptionId, SubscriptionType: &subscriptionType}
+	database := &DatabaseStub{user: user}
+	state := &StateStub{userId: 1}
+	mail := &MailStub{}
+	remover := &RemoverStub{}
+	checker := &CheckerStub{active: false, paidThrough: now.AddDate(0, 0, -1)}
+
+	cleaner := newTestCleaner(database, state, mail, remover, checker)
+	err := cleaner.Clean(now)
+
+	assert.NoError(t, err)
+	assert.True(t, mail.unsubscribed)
+	assert.True(t, remover.domainsRemoved)
+	assert.Equal(t, int64(2), remover.domainsRemovedUserId)
+}
