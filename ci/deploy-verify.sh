@@ -81,6 +81,19 @@ if [ -z "$frps_running" ]; then
 fi
 echo "frps OK"
 
+for i in $(seq 1 5); do
+    stun_type=$(timeout 5 bash -c "exec 3<>/dev/udp/$DEPLOY_HOST/3478; printf '\x00\x01\x00\x00\x21\x12\xa4\x42verifystun00' >&3; head -c 2 <&3 | od -An -tx1" 2>/dev/null | tr -d ' ' || true)
+    if [ "$stun_type" = "0101" ]; then break; fi
+    sleep 2
+done
+if [ "$stun_type" != "0101" ]; then
+    echo "stun did not answer a binding request on udp/3478: '$stun_type'"
+    $SSH $REMOTE sudo -n docker ps -a --filter name=redirect-stun || true
+    $SSH $REMOTE sudo -n docker logs redirect-stun 2>&1 | tail -40 || true
+    exit 1
+fi
+echo "stun OK"
+
 $SSH $REMOTE "sudo -n docker exec caddy find /data/caddy/certificates -name '*.crt'" 2>&1 || true
 
 for i in $(seq 1 30); do
