@@ -1,7 +1,10 @@
 package dns
 
 import (
+	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncloud/redirect/log"
@@ -15,11 +18,18 @@ type Route53Stub struct {
 	createHostedZoneInput   *route53.CreateHostedZoneInput
 	deleteHostedZoneInput   *route53.DeleteHostedZoneInput
 	getHostedZoneInput      *route53.GetHostedZoneInput
+	waitedFor               []string
+	waitError               error
 }
 
 func (r *Route53Stub) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
 	r.resourceRecordSetsInput = input
-	return nil, nil
+	return &route53.ChangeResourceRecordSetsOutput{ChangeInfo: &route53.ChangeInfo{Id: aws.String("/change/C1")}}, nil
+}
+
+func (r *Route53Stub) WaitUntilResourceRecordSetsChangedWithContext(_ aws.Context, input *route53.GetChangeInput, _ ...request.WaiterOption) error {
+	r.waitedFor = append(r.waitedFor, *input.Id)
+	return r.waitError
 }
 
 func (r *Route53Stub) CreateHostedZone(input *route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error) {
@@ -35,6 +45,21 @@ func (r *Route53Stub) DeleteHostedZone(input *route53.DeleteHostedZoneInput) (*r
 func (r *Route53Stub) GetHostedZone(input *route53.GetHostedZoneInput) (*route53.GetHostedZoneOutput, error) {
 	r.getHostedZoneInput = input
 	return nil, nil
+}
+
+func TestAmazonDns_CreateCertbotRecord_WaitsForChangeInSync(t *testing.T) {
+	client := &Route53Stub{}
+	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
+	err := amazonDns.CreateCertbotRecord("zone", "_acme-challenge.device.syncloud.it", []string{"a", "b"})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"/change/C1"}, client.waitedFor)
+}
+
+func TestAmazonDns_CreateCertbotRecord_FailsWhenNotInSync(t *testing.T) {
+	client := &Route53Stub{waitError: errors.New("timeout")}
+	amazonDns := New(client, metrics.New(), 10, "syncloud.it", log.Default())
+	err := amazonDns.CreateCertbotRecord("zone", "_acme-challenge.device.syncloud.it", []string{"a"})
+	assert.ErrorContains(t, err, "not in sync")
 }
 
 func TestAmazonDns_CreateCertbotRecord_QuoteValue(t *testing.T) {
