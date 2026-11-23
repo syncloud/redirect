@@ -144,6 +144,14 @@ run_container() {
 run_container redirect-api api
 run_container redirect-www www
 
+docker rm -f redirect-stun 2>/dev/null || true
+docker run -d \
+    --name redirect-stun \
+    --restart=unless-stopped \
+    --network=host \
+    --user "$REDIRECT_UID:$REDIRECT_GID" \
+    "$TAG" /usr/local/bin/stun
+
 install -m 0644 -o "$REDIRECT_UID" -g "$REDIRECT_GID" "$STAGE/common/frp/frps.toml" "$REDIRECT_DIR/frps.toml"
 FRPS_IMAGE=snowdreamtech/frps:0.61.1
 docker pull "$FRPS_IMAGE"
@@ -182,7 +190,7 @@ docker run -d \
     "$NODE_EXPORTER_IMAGE" \
     --path.rootfs=/host
 
-for name in redirect-api redirect-www node-exporter caddy frps rspamd; do
+for name in redirect-api redirect-www redirect-stun node-exporter caddy frps rspamd; do
     for i in $(seq 1 30); do
         if docker ps -q --filter name="$name" --filter status=running | grep -q .; then
             break
