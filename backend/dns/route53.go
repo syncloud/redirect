@@ -1,10 +1,12 @@
 package dns
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/syncloud/redirect/metrics"
 	"github.com/syncloud/redirect/model"
@@ -12,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"log"
 	"strings"
+	"time"
 )
 
 var defaultIpv4 string
@@ -26,6 +29,9 @@ const (
 
 	defaultTtl = 600
 	certbotTtl = 10
+
+	certbotSyncTimeout = 2 * time.Minute
+	certbotSyncDelay   = 2 * time.Second
 )
 
 func init() {
@@ -49,6 +55,7 @@ type Route53 interface {
 	CreateHostedZone(input *route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
 	DeleteHostedZone(input *route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error)
 	GetHostedZone(input *route53.GetHostedZoneInput) (*route53.GetHostedZoneOutput, error)
+	WaitUntilResourceRecordSetsChangedWithContext(ctx aws.Context, input *route53.GetChangeInput, opts ...request.WaiterOption) error
 }
 
 type AmazonDns struct {
@@ -143,7 +150,7 @@ func (a *AmazonDns) CreateCertbotRecord(hostedZoneId string, name string, values
 	for _, value := range values {
 		records = append(records, `"`+value+`"`)
 	}
-	return a.commit([]*route53.Change{
+	return a.commitAndWait([]*route53.Change{
 		a.change("UPSERT", name, "TXT", certbotTtl, records...),
 	}, hostedZoneId)
 }
@@ -217,6 +224,35 @@ func (a *AmazonDns) actionDomain(domain string, ipv4 *string, ipv6 *string, dkim
 
 	err := a.commit(changes, hostedZoneId)
 	return err
+}
+
+func (a *AmazonDns) commitAndWait(changes []*route53.Change, hostedZoneId string) error {
+	a.metrics.DnsClient("connect")
+	output, err := a.client.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
+		ChangeBatch:  &route53.ChangeBatch{Changes: changes},
+		HostedZoneId: aws.String(hostedZoneId),
+	})
+	if err != nil {
+		a.metrics.DnsClient("error")
+		return err
+	}
+	a.metrics.DnsClient("commit")
+	if output == nil || output.ChangeInfo == nil || output.ChangeInfo.Id == nil {
+		return errors.New("route53 returned no change id")
+	}
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), certbotSyncTimeout)
+	defer cancel()
+	err = a.client.WaitUntilResourceRecordSetsChangedWithContext(ctx,
+		&route53.GetChangeInput{Id: output.ChangeInfo.Id},
+		request.WithWaiterDelay(request.ConstantWaiterDelay(certbotSyncDelay)),
+	)
+	if err != nil {
+		a.metrics.DnsClient("error")
+		return fmt.Errorf("route53 change %s not in sync: %w", *output.ChangeInfo.Id, err)
+	}
+	a.logger.Info("route53 change in sync", zap.String("change", *output.ChangeInfo.Id), zap.Duration("took", time.Since(start)))
+	return nil
 }
 
 func (a *AmazonDns) commit(changes []*route53.Change, hostedZoneId string) error {
